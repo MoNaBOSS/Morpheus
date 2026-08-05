@@ -22,8 +22,21 @@ export type MorpheusPlatform = 'win32' | 'darwin' | 'linux';
 
 export type MorpheusActionKind = 'process' | 'filesystem' | 'introspection';
 
-/** Coarse severity, used for presentation and for future policy tiers. */
-export type MorpheusRiskTier = 'read' | 'write' | 'execute';
+/**
+ * Risk classification driving the permission engine.
+ *
+ * `high` and `critical` always require explicit confirmation regardless of the
+ * active profile or any stored grant. See docs/security/PERMISSION_MODEL.md.
+ */
+export type MorpheusRiskTier = 'low' | 'medium' | 'high' | 'critical';
+
+/** Tiers whose confirmation can never be waived by a profile or a grant. */
+export const MORPHEUS_MANDATORY_CONFIRMATION_TIERS: readonly MorpheusRiskTier[] =
+  Object.freeze(['high', 'critical']);
+
+export function requiresMandatoryConfirmation(tier: MorpheusRiskTier): boolean {
+  return MORPHEUS_MANDATORY_CONFIRMATION_TIERS.includes(tier);
+}
 
 export type MorpheusActionId = 'app.launch' | 'file.createText' | 'system.report';
 
@@ -42,6 +55,11 @@ export type MorpheusActionDescriptor = {
   readonly id: MorpheusActionId;
   readonly kind: MorpheusActionKind;
   readonly riskTier: MorpheusRiskTier;
+  /**
+   * Read-only and free of identifying information, so it may run without a
+   * prompt under every profile. Only ever true for `low` risk.
+   */
+  readonly privacySafe: boolean;
   readonly labelKey: string;
   readonly descriptionKey: string;
   /** Platforms with a shipped capability implementation. */
@@ -75,7 +93,8 @@ export const MORPHEUS_ACTIONS: Readonly<Record<MorpheusActionId, MorpheusActionD
   'app.launch': Object.freeze({
     id: 'app.launch',
     kind: 'process',
-    riskTier: 'execute',
+    riskTier: 'medium',
+    privacySafe: false,
     labelKey: 'dashboard:morpheus.actions.appLaunch.label',
     descriptionKey: 'dashboard:morpheus.actions.appLaunch.description',
     platforms: Object.freeze(['win32'] as const),
@@ -86,7 +105,8 @@ export const MORPHEUS_ACTIONS: Readonly<Record<MorpheusActionId, MorpheusActionD
   'file.createText': Object.freeze({
     id: 'file.createText',
     kind: 'filesystem',
-    riskTier: 'write',
+    riskTier: 'medium',
+    privacySafe: false,
     labelKey: 'dashboard:morpheus.actions.fileCreateText.label',
     descriptionKey: 'dashboard:morpheus.actions.fileCreateText.description',
     platforms: Object.freeze(['win32'] as const),
@@ -99,7 +119,8 @@ export const MORPHEUS_ACTIONS: Readonly<Record<MorpheusActionId, MorpheusActionD
   'system.report': Object.freeze({
     id: 'system.report',
     kind: 'introspection',
-    riskTier: 'read',
+    riskTier: 'low',
+    privacySafe: true,
     labelKey: 'dashboard:morpheus.actions.systemReport.label',
     descriptionKey: 'dashboard:morpheus.actions.systemReport.description',
     platforms: Object.freeze(['win32'] as const),
