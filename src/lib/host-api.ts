@@ -47,6 +47,11 @@ import type {
   AcpChatRespondPermissionPayload,
 } from '@shared/acp-chat/types';
 import type { CronJobCreateInput, CronJobUpdateInput } from '@shared/types/cron';
+import type {
+  MorpheusCancelActionPayload,
+  MorpheusRequestActionPayload,
+  MorpheusRespondPermissionPayload,
+} from '@shared/morpheus/action-types';
 import { invokeHost } from './host-api-client';
 
 export type {
@@ -406,6 +411,16 @@ export const hostApi = {
     recentTokenHistory: (limit?: number) => (
       invokeHost('usage', 'recentTokenHistory', { limit })
     ),
+  },
+  morpheus: {
+    describeActions: () => invokeHost('morpheus', 'describeActions'),
+    systemInfo: () => invokeHost('morpheus', 'systemInfo'),
+    requestAction: (input: MorpheusRequestActionPayload) => invokeHost('morpheus', 'requestAction', input),
+    respondPermission: (input: MorpheusRespondPermissionPayload) => (
+      invokeHost('morpheus', 'respondPermission', input)
+    ),
+    cancelAction: (input: MorpheusCancelActionPayload) => invokeHost('morpheus', 'cancelAction', input),
+    auditRecent: (limit?: number) => invokeHost('morpheus', 'auditRecent', { limit }),
   },
 };
 

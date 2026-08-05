@@ -110,5 +110,96 @@
             "relayModelRequired": "Model name is required",
             "relayModelInvalid": "Enter only the model name, for example gpt-image-2. Do not include provider/model."
         }
+    },
+    "morpheus": {
+        "title": "Morpheus Command Center",
+        "subtitle": "Native system actions with explicit confirmation and an append-only audit trail.",
+        "systemPanel": {
+            "title": "System",
+            "description": "Privacy-safe runtime information.",
+            "unavailable": "System information is unavailable.",
+            "platform": "Platform",
+            "arch": "Architecture",
+            "cpu": "Processors",
+            "memory": "Memory",
+            "uptime": "Uptime",
+            "appVersion": "App version",
+            "runtime": "Runtime",
+            "memoryValue": "{{free}} free of {{total}}"
+        },
+        "launcher": {
+            "title": "Actions",
+            "description": "Every action asks for confirmation before it runs.",
+            "run": "Run",
+            "unsupported": "Not available on this platform",
+            "fileNameLabel": "File name",
+            "fileNamePlaceholder": "notes.txt",
+            "contentLabel": "Content",
+            "contentPlaceholder": "Text to write",
+            "applicationLabel": "Application"
+        },
+        "applications": {
+            "notepad": "Notepad"
+        },
+        "actions": {
+            "appLaunch": {
+                "label": "Launch an approved application",
+                "description": "Starts an application from the built-in approved list."
+            },
+            "fileCreateText": {
+                "label": "Create a text file",
+                "description": "Writes a new text file inside the approved Morpheus folder."
+            },
+            "systemReport": {
+                "label": "Report system information",
+                "description": "Collects privacy-safe details about this machine's runtime."
+            }
+        },
+        "phases": {
+            "requested": "Requested",
+            "awaiting-permission": "Awaiting confirmation",
+            "denied": "Denied",
+            "running": "Running",
+            "succeeded": "Succeeded",
+            "failed": "Failed",
+            "cancelled": "Cancelled",
+            "timed-out": "Timed out",
+            "unsupported-platform": "Unsupported"
+        },
+        "permission": {
+            "title": "Confirm this action",
+            "description": "Morpheus is about to run: {{action}}",
+            "executableLabel": "Application to launch",
+            "fileLabel": "File to create",
+            "noTarget": "This action reads runtime information only. Nothing is written or launched.",
+            "fileBytes": "{{bytes}} bytes",
+            "allow": "Allow",
+            "deny": "Deny"
+        },
+        "timeline": {
+            "title": "Execution timeline",
+            "description": "Live phases reported by the main process.",
+            "emptyTitle": "No actions yet",
+            "emptyDescription": "Run an action to see its real execution phases here.",
+            "systemSummary": "{{platform}} {{release}} ({{arch}})"
+        },
+        "audit": {
+            "title": "Audit log",
+            "description": "Append-only record. File content is never stored.",
+            "loading": "Loading audit records…",
+            "emptyTitle": "No audit records yet",
+            "emptyDescription": "Every confirmed or denied action is recorded here."
+        },
+        "boot": {
+            "phases": {
+                "init": "Initialising interface",
+                "settings": "Loading preferences",
+                "bridge": "Verifying host bridge",
+                "runtime": "Checking agent runtime",
+                "ready": "Ready"
+            },
+            "skip": "Press Esc to skip",
+            "title": "MORPHEUS"
+        }
     }
 }

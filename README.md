@@ -150,6 +150,34 @@ ClawX can automatically check for new versions on startup. When an update is ava
 
 ---
 
+### 🟢 Morpheus Command Center (Concept Build 0.1)
+
+The first milestone of the Morpheus product surface. **Dashboard** in the sidebar opens a command
+center for native system actions that run in the Electron main process rather than through the agent
+runtime.
+
+- **Boot sequence** — a Matrix-inspired startup overlay that advances on real signals (settings
+  hydration, a host-bridge round trip, gateway status). Press `Esc` or click to skip; it always
+  dismisses itself within a bounded time.
+- **Native actions** — launch an approved application, create a text file inside a main-process
+  controlled folder, or report privacy-safe system information. These are the first entries in an
+  extensible action registry, not a fixed set.
+- **Explicit confirmation** — every action shows what the main process actually *resolved* (the
+  absolute executable or file path) before anything runs. Denying performs no work at all.
+- **Execution timeline** — live phases reported by the main process. Nothing is simulated.
+- **Audit log** — an append-only JSONL record under your user data folder. Every phase is written
+  before it reaches the interface, and file content is never stored (only its size and a digest).
+
+Action policy is compiled into the application and cannot be modified from the interface. The
+renderer sends a logical action id and validated parameters only — never an executable path, command
+line, environment, or arbitrary filesystem path. See
+[`harness/reference/morpheus-execution-architecture.md`](harness/reference/morpheus-execution-architecture.md).
+
+Windows ships the three capabilities today; the registry is platform-aware, so macOS and Linux
+implementations are added as new modules without changing the runtime, contract, or interface.
+
+---
+
 ## Getting Started
 
 ### System Requirements

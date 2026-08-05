@@ -61,6 +61,11 @@ const onAppEvent = <E extends HostEventName<'app'>>(
   handler: HostEventHandler<'app', E>,
 ) => onIpc(HOST_EVENT_CHANNELS.app[event], handler);
 
+const onMorpheusEvent = <E extends HostEventName<'morpheus'>>(
+  event: E,
+  handler: HostEventHandler<'morpheus', E>,
+) => onIpc(HOST_EVENT_CHANNELS.morpheus[event], handler);
+
 export const hostEvents = {
   onGatewayStatus: (handler: HostEventHandler<'gateway', 'statusChanged'>) => (
     onGatewayEvent('statusChanged', handler)
@@ -121,4 +126,7 @@ export const hostEvents = {
   onOpenClawCliInstalled: (
     handler: HostEventHandler<'app', 'openClawCliInstalled'>,
   ) => onAppEvent('openClawCliInstalled', handler),
+  onMorpheusActionEvent: (handler: HostEventHandler<'morpheus', 'actionEvent'>) => (
+    onMorpheusEvent('actionEvent', handler)
+  ),
 };

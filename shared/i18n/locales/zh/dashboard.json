@@ -110,5 +110,96 @@
             "relayModelRequired": "请填写模型名",
             "relayModelInvalid": "请只填写模型名，例如 gpt-image-2；不要填写 provider/model。"
         }
+    },
+    "morpheus": {
+        "title": "Morpheus 指挥中心",
+        "subtitle": "需要明确确认的本机系统操作，并附带只追加的审计记录。",
+        "systemPanel": {
+            "title": "系统",
+            "description": "不含隐私信息的运行时信息。",
+            "unavailable": "系统信息不可用。",
+            "platform": "平台",
+            "arch": "架构",
+            "cpu": "处理器",
+            "memory": "内存",
+            "uptime": "运行时间",
+            "appVersion": "应用版本",
+            "runtime": "运行时",
+            "memoryValue": "{{total}} 中可用 {{free}}"
+        },
+        "launcher": {
+            "title": "操作",
+            "description": "每个操作在执行前都会请求确认。",
+            "run": "运行",
+            "unsupported": "此平台不支持",
+            "fileNameLabel": "文件名",
+            "fileNamePlaceholder": "notes.txt",
+            "contentLabel": "内容",
+            "contentPlaceholder": "要写入的文本",
+            "applicationLabel": "应用程序"
+        },
+        "applications": {
+            "notepad": "记事本"
+        },
+        "actions": {
+            "appLaunch": {
+                "label": "启动已批准的应用程序",
+                "description": "从内置批准列表中启动一个应用程序。"
+            },
+            "fileCreateText": {
+                "label": "创建文本文件",
+                "description": "在已批准的 Morpheus 文件夹中写入新的文本文件。"
+            },
+            "systemReport": {
+                "label": "报告系统信息",
+                "description": "收集本机运行时的非隐私信息。"
+            }
+        },
+        "phases": {
+            "requested": "已请求",
+            "awaiting-permission": "等待确认",
+            "denied": "已拒绝",
+            "running": "执行中",
+            "succeeded": "已成功",
+            "failed": "已失败",
+            "cancelled": "已取消",
+            "timed-out": "已超时",
+            "unsupported-platform": "不支持"
+        },
+        "permission": {
+            "title": "确认此操作",
+            "description": "Morpheus 即将执行：{{action}}",
+            "executableLabel": "将启动的应用程序",
+            "fileLabel": "将创建的文件",
+            "noTarget": "此操作仅读取运行时信息，不会写入或启动任何内容。",
+            "fileBytes": "{{bytes}} 字节",
+            "allow": "允许",
+            "deny": "拒绝"
+        },
+        "timeline": {
+            "title": "执行时间线",
+            "description": "由主进程上报的实时阶段。",
+            "emptyTitle": "暂无操作",
+            "emptyDescription": "运行一个操作即可在此查看其真实执行阶段。",
+            "systemSummary": "{{platform}} {{release}}（{{arch}}）"
+        },
+        "audit": {
+            "title": "审计日志",
+            "description": "只追加记录，绝不保存文件内容。",
+            "loading": "正在加载审计记录…",
+            "emptyTitle": "暂无审计记录",
+            "emptyDescription": "每一次确认或拒绝的操作都会记录在此。"
+        },
+        "boot": {
+            "phases": {
+                "init": "正在初始化界面",
+                "settings": "正在加载偏好设置",
+                "bridge": "正在验证宿主桥接",
+                "runtime": "正在检查 Agent 运行时",
+                "ready": "就绪"
+            },
+            "skip": "按 Esc 跳过",
+            "title": "MORPHEUS"
+        }
     }
 }

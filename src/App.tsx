@@ -3,7 +3,7 @@
  * Handles routing and global providers
  */
 import { Navigate, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { Component, useEffect } from 'react';
+import { Component, useEffect, useState } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import i18n from './i18n';
@@ -11,6 +11,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Models } from './pages/Models';
 import { Chat } from './pages/Chat';
+import { Dashboard } from './pages/Dashboard';
 import { Agents } from './pages/Agents';
 import { Channels } from './pages/Channels';
 import { Skills } from './pages/Skills';
@@ -26,6 +27,7 @@ import { rendererExtensionRegistry } from './extensions/registry';
 import { loadExternalRendererExtensions } from './extensions/_ext-bridge.generated';
 import { UpdateNotifier } from './components/update/UpdateNotifier';
 import { useNewChatAction } from './components/layout/use-new-chat-action';
+import { MorpheusBoot } from './components/morpheus/boot/MorpheusBoot';
 import { hostEvents } from './lib/host-events';
 
 
@@ -98,6 +100,14 @@ function App() {
   const location = useLocation();
   const skipSetupForE2E = typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get('e2eSkipSetup') === '1';
+  // Main decides whether the boot sequence plays; see loadMainWindow in
+  // electron/main/index.ts. Absent parameter means "play", so a normal launch
+  // needs no flag.
+  const [morpheusBootEnabled] = useState(() => (
+    typeof window === 'undefined'
+      ? false
+      : new URLSearchParams(window.location.search).get('morpheusBoot') !== 'off'
+  ));
   const initSettings = useSettingsStore((state) => state.init);
   const theme = useSettingsStore((state) => state.theme);
   const language = useSettingsStore((state) => state.language);
@@ -204,6 +214,7 @@ function App() {
           {/* Main application routes */}
           <Route element={<MainLayout />}>
             <Route path="/" element={<Chat />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/models" element={<Models />} />
             <Route path="/agents" element={<Agents />} />
             <Route path="/channels" element={<Channels />} />
@@ -218,6 +229,13 @@ function App() {
         </Routes>
 
         <UpdateNotifier />
+
+        {/*
+          Boot overlay. A sibling of <Routes> rather than a route, so routing,
+          store initialisation and the setup redirect all proceed underneath it.
+          Kept below the Toaster's z-index.
+        */}
+        <MorpheusBoot enabled={morpheusBootEnabled} />
 
         {/* Global toast notifications */}
         <Toaster

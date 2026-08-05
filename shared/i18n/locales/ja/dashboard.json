@@ -110,5 +110,96 @@
             "relayModelRequired": "モデル名が必要です",
             "relayModelInvalid": "gpt-image-2 のようなモデル名のみを入力してください。provider/model は入力しないでください。"
         }
+    },
+    "morpheus": {
+        "title": "Morpheus コマンドセンター",
+        "subtitle": "明示的な確認を伴うネイティブ操作と、追記専用の監査ログ。",
+        "systemPanel": {
+            "title": "システム",
+            "description": "プライバシーに配慮したランタイム情報。",
+            "unavailable": "システム情報を取得できません。",
+            "platform": "プラットフォーム",
+            "arch": "アーキテクチャ",
+            "cpu": "プロセッサ",
+            "memory": "メモリ",
+            "uptime": "稼働時間",
+            "appVersion": "アプリバージョン",
+            "runtime": "ランタイム",
+            "memoryValue": "{{total}} 中 {{free}} 空き"
+        },
+        "launcher": {
+            "title": "アクション",
+            "description": "すべてのアクションは実行前に確認を求めます。",
+            "run": "実行",
+            "unsupported": "このプラットフォームでは利用できません",
+            "fileNameLabel": "ファイル名",
+            "fileNamePlaceholder": "notes.txt",
+            "contentLabel": "内容",
+            "contentPlaceholder": "書き込むテキスト",
+            "applicationLabel": "アプリケーション"
+        },
+        "applications": {
+            "notepad": "メモ帳"
+        },
+        "actions": {
+            "appLaunch": {
+                "label": "承認済みアプリケーションを起動",
+                "description": "組み込みの承認済みリストからアプリケーションを起動します。"
+            },
+            "fileCreateText": {
+                "label": "テキストファイルを作成",
+                "description": "承認済みの Morpheus フォルダに新しいテキストファイルを書き込みます。"
+            },
+            "systemReport": {
+                "label": "システム情報を取得",
+                "description": "このマシンのランタイムに関する非個人情報を収集します。"
+            }
+        },
+        "phases": {
+            "requested": "要求済み",
+            "awaiting-permission": "確認待ち",
+            "denied": "拒否",
+            "running": "実行中",
+            "succeeded": "成功",
+            "failed": "失敗",
+            "cancelled": "キャンセル",
+            "timed-out": "タイムアウト",
+            "unsupported-platform": "非対応"
+        },
+        "permission": {
+            "title": "この操作を確認",
+            "description": "Morpheus が次を実行しようとしています: {{action}}",
+            "executableLabel": "起動するアプリケーション",
+            "fileLabel": "作成するファイル",
+            "noTarget": "この操作はランタイム情報を読み取るだけで、書き込みも起動も行いません。",
+            "fileBytes": "{{bytes}} バイト",
+            "allow": "許可",
+            "deny": "拒否"
+        },
+        "timeline": {
+            "title": "実行タイムライン",
+            "description": "メインプロセスが報告する実際のフェーズ。",
+            "emptyTitle": "まだアクションはありません",
+            "emptyDescription": "アクションを実行すると、実際の実行フェーズがここに表示されます。",
+            "systemSummary": "{{platform}} {{release}}（{{arch}}）"
+        },
+        "audit": {
+            "title": "監査ログ",
+            "description": "追記専用の記録です。ファイル内容は保存されません。",
+            "loading": "監査記録を読み込み中…",
+            "emptyTitle": "監査記録はまだありません",
+            "emptyDescription": "許可・拒否されたすべての操作がここに記録されます。"
+        },
+        "boot": {
+            "phases": {
+                "init": "インターフェースを初期化中",
+                "settings": "設定を読み込み中",
+                "bridge": "ホストブリッジを検証中",
+                "runtime": "エージェントランタイムを確認中",
+                "ready": "準備完了"
+            },
+            "skip": "Esc でスキップ",
+            "title": "MORPHEUS"
+        }
     }
 }

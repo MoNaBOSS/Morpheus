@@ -674,3 +674,59 @@
     transform: translateY(-4px);
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Morpheus surfaces
+ *
+ * Scoped to [data-morpheus] on purpose. The shared token triplets above are
+ * asserted on by E2E theme specs, so Morpheus adds its own variables rather
+ * than redefining any of them.
+ * ------------------------------------------------------------------------- */
+[data-morpheus] {
+  --morpheus-accent: 142 71% 45%;
+  --morpheus-glow: 142 71% 45% / 0.25;
+  --morpheus-grid: 142 30% 40% / 0.12;
+}
+
+.dark [data-morpheus] {
+  --morpheus-accent: 142 71% 55%;
+  --morpheus-glow: 142 71% 55% / 0.35;
+  --morpheus-grid: 142 40% 60% / 0.14;
+}
+
+/* Boot sequence overlay */
+.morpheus-boot {
+  background:
+    radial-gradient(ellipse at center, hsl(var(--morpheus-glow)) 0%, transparent 70%),
+    hsl(0 0% 2%);
+}
+
+.morpheus-boot-title {
+  color: hsl(var(--morpheus-accent));
+  text-shadow: 0 0 18px hsl(var(--morpheus-glow));
+  letter-spacing: 0.5em;
+}
+
+.morpheus-boot-phase {
+  color: hsl(var(--morpheus-accent));
+}
+
+@keyframes morpheus-boot-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+.morpheus-boot-leaving {
+  animation: morpheus-boot-fade-out 320ms ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .morpheus-boot-leaving {
+    animation-duration: 1ms;
+  }
+}

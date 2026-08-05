@@ -10,6 +10,17 @@ import type { AgentsSnapshot } from '../types/agent';
 import type { CronJob, CronJobCreateInput, CronJobUpdateInput } from '../types/cron';
 import type { GatewayHealth, GatewayStatus } from '../types/gateway';
 import type { MarketplaceSkill, QuickAccessSkill, Skill } from '../types/skill';
+import type {
+  MorpheusAcknowledgement,
+  MorpheusAuditRecentPayload,
+  MorpheusAuditRecentResult,
+  MorpheusCancelActionPayload,
+  MorpheusDescribeActionsResult,
+  MorpheusRequestActionPayload,
+  MorpheusRequestActionResult,
+  MorpheusRespondPermissionPayload,
+  MorpheusSystemInfo,
+} from '../morpheus/action-types';
 import type { WebBrowserNavigatePayload } from '../web-browser';
 
 export type JsonRecord = Record<string, unknown>;
@@ -1010,6 +1021,19 @@ export type HostApiContract = {
   };
   usage: {
     recentTokenHistory: (payload?: UsageHistoryPayload) => UsageHistoryEntry[];
+  };
+  /**
+   * Morpheus native actions. Execution authority is Main-owned; the Renderer
+   * supplies a logical action id and validated parameters only. See
+   * `harness/reference/morpheus-execution-architecture.md`.
+   */
+  morpheus: {
+    describeActions: () => MorpheusDescribeActionsResult;
+    systemInfo: () => MorpheusSystemInfo;
+    requestAction: (payload: MorpheusRequestActionPayload) => MorpheusRequestActionResult;
+    respondPermission: (payload: MorpheusRespondPermissionPayload) => MorpheusAcknowledgement;
+    cancelAction: (payload: MorpheusCancelActionPayload) => MorpheusAcknowledgement;
+    auditRecent: (payload?: MorpheusAuditRecentPayload) => MorpheusAuditRecentResult;
   };
 };
 

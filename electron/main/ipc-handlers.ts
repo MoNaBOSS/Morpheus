@@ -54,6 +54,9 @@ import { createSettingsApi } from '../services/settings-api';
 import { createChannelsApi } from '../services/channels-api';
 import { createAgentsApi } from '../services/agents-api';
 import { createChatApi } from '../services/chat-api';
+import { createMorpheusService } from '../services/morpheus';
+import { createMorpheusApi } from '../services/morpheus-api';
+import { HOST_EVENT_CHANNELS } from '@shared/host-events/contract';
 import { AcpSessionAccessRegistry } from '../services/acp-session-access-registry';
 import { createAttachmentAccess, StagedAttachmentRegistry } from '../services/attachment-access';
 import { createAttachmentOpenWithService } from '../services/attachment-open-with';
@@ -152,6 +155,17 @@ function registerTypedHostHandlers(
     stagedAttachments,
     openWith: attachmentOpenWith,
   });
+  // Morpheus native actions. Every phase transition is emitted on a single
+  // channel; the window guard mirrors `sendMainWindowEvent` in main/index.ts so
+  // a closed window cannot throw out of the runtime.
+  const morpheusRuntime = createMorpheusService({
+    userDataDir: app.getPath('userData'),
+    appVersion: app.getVersion(),
+    emit: (event) => {
+      if (mainWindow.isDestroyed()) return;
+      mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.actionEvent, event);
+    },
+  });
   hostApiRegistry.registerCoreServices({
     app: createAppApi(),
     openclaw: createOpenClawApi(),
@@ -178,6 +192,7 @@ function registerTypedHostHandlers(
     cron: createCronApi({ gatewayManager }),
     skills: createSkillsApi({ clawHubService, gatewayManager }),
     usage: createUsageApi(),
+    morpheus: createMorpheusApi({ runtime: morpheusRuntime }),
   });
   registerHostInvokeHandler(hostApiRegistry);
 }

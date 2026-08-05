@@ -4,6 +4,7 @@ import type {
 } from '../acp-chat/types';
 import type { UpdateStatusSnapshot } from '../host-api/contract';
 import type { ChatRuntimeEvent } from '../chat-runtime-events';
+import type { MorpheusActionEvent } from '../morpheus/action-types';
 import type {
   GatewayNotification,
   GatewayRuntimePayload,
@@ -101,6 +102,14 @@ export type HostEventContract = {
     newChat: () => void;
     openClawCliInstalled: (installedPath: string) => void;
   };
+  /**
+   * One channel for the whole Morpheus run lifecycle. The discriminated `phase`
+   * in the envelope distinguishes transitions, so adding a phase never adds a
+   * channel. Every emission originates from a real Main-process transition.
+   */
+  morpheus: {
+    actionEvent: (payload: MorpheusActionEvent) => void;
+  };
 };
 
 export type HostEventModule = keyof HostEventContract;
@@ -144,6 +153,9 @@ export const HOST_EVENT_CHANNELS = {
     navigate: 'navigate',
     newChat: 'new-chat',
     openClawCliInstalled: 'openclaw:cli-installed',
+  },
+  morpheus: {
+    actionEvent: 'morpheus:action-event',
   },
 } as const satisfies {
   [M in Exclude<HostEventModule, 'channel'>]: {

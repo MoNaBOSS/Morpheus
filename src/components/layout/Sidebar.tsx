@@ -22,6 +22,7 @@ import {
   Check,
   X,
   Cpu,
+  LayoutDashboard,
   ImagePlus,
   ChevronRight,
   ChevronsUpDown,
@@ -409,6 +410,12 @@ export function Sidebar() {
   const extraNavItems = rendererExtensionRegistry.getExtraNavItems();
 
   const coreNavItems = [
+    {
+      to: '/dashboard',
+      icon: <LayoutDashboard className="h-4 w-4" strokeWidth={2} />,
+      label: t('sidebar.dashboard'),
+      testId: 'sidebar-nav-dashboard',
+    },
     {
       to: '/models',
       icon: <Cpu className="h-4 w-4" strokeWidth={2} />,

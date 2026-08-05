@@ -529,6 +529,34 @@ describe('hostApi facade', () => {
     }));
   });
 
+  it('routes morpheus native action methods through hostInvoke', async () => {
+    hostInvoke
+      .mockResolvedValueOnce({ id: 'req-1', ok: true, data: { platform: 'win32', actions: [], applicationKeys: [] } })
+      .mockResolvedValueOnce({ id: 'req-2', ok: true, data: { runId: 'run-1' } })
+      .mockResolvedValueOnce({ id: 'req-3', ok: true, data: { accepted: true } })
+      .mockResolvedValueOnce({ id: 'req-4', ok: true, data: { accepted: true } })
+      .mockResolvedValueOnce({ id: 'req-5', ok: true, data: { entries: [], truncated: false } });
+    const { hostApi } = await import('@/lib/host-api');
+
+    await hostApi.morpheus.describeActions();
+    await hostApi.morpheus.requestAction({ actionId: 'file.createText', params: { fileName: 'a.txt', content: 'hi' } });
+    await hostApi.morpheus.respondPermission({ runId: 'run-1', decision: 'granted' });
+    await hostApi.morpheus.cancelAction({ runId: 'run-1' });
+    await hostApi.morpheus.auditRecent(25);
+
+    expect(hostInvoke.mock.calls.map(([request]) => `${request.module}.${request.action}`)).toEqual([
+      'morpheus.describeActions',
+      'morpheus.requestAction',
+      'morpheus.respondPermission',
+      'morpheus.cancelAction',
+      'morpheus.auditRecent',
+    ]);
+    expect(hostInvoke.mock.calls[1][0].payload).toEqual({
+      actionId: 'file.createText',
+      params: { fileName: 'a.txt', content: 'hi' },
+    });
+  });
+
   it('keeps hostApi response types on facade methods instead of call-site generics', () => {
     const srcRoot = join(process.cwd(), 'src');
     const files: string[] = [];

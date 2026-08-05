@@ -212,14 +212,29 @@ function createWindow(): BrowserWindow {
   return win;
 }
 
+/**
+ * Whether the Morpheus boot sequence should play for this launch.
+ *
+ * A normal launch plays it. E2E suppresses it so the ~49 existing specs keep
+ * their current first-paint behaviour, unless a spec explicitly opts in with
+ * `--morpheus-boot=on` (which reaches process.argv through the Playwright
+ * fixture's `additionalArgs`).
+ */
+function shouldPlayMorpheusBoot(): boolean {
+  if (!isE2EMode) return true;
+  return process.argv.includes('--morpheus-boot=on');
+}
+
 function loadMainWindow(win: BrowserWindow): void {
   const shouldSkipSetupForE2E = process.env.CLAWX_E2E_SKIP_SETUP === '1';
+  const morpheusBoot = shouldPlayMorpheusBoot() ? 'on' : 'off';
 
   if (process.env.VITE_DEV_SERVER_URL) {
     const rendererUrl = new URL(process.env.VITE_DEV_SERVER_URL);
     if (shouldSkipSetupForE2E) {
       rendererUrl.searchParams.set('e2eSkipSetup', '1');
     }
+    rendererUrl.searchParams.set('morpheusBoot', morpheusBoot);
     win.loadURL(rendererUrl.toString());
     if (!isE2EMode) {
       win.webContents.openDevTools();
@@ -227,8 +242,8 @@ function loadMainWindow(win: BrowserWindow): void {
   } else {
     win.loadFile(join(__dirname, '../../dist/index.html'), {
       query: shouldSkipSetupForE2E
-        ? { e2eSkipSetup: '1' }
-        : undefined,
+        ? { e2eSkipSetup: '1', morpheusBoot }
+        : { morpheusBoot },
     });
   }
 }
