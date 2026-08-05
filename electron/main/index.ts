@@ -48,6 +48,8 @@ import {
 } from './quit-lifecycle';
 import { createSignalQuitHandler } from './signal-quit';
 import { acquireProcessInstanceFileLock } from './process-instance-lock';
+import { readCliIntegrationState } from './cli-integration-consent';
+import { migrateClawXProfile, resolveLegacyClawXUserData } from '../services/morpheus/migration';
 import { ensureBuiltinSkillsInstalled, ensurePreinstalledSkillsInstalled, trimBundledOpenClawSkillsAndConfigs } from '../utils/skill-config';
 
 import { deviceOAuthManager } from '../utils/device-oauth';
@@ -55,7 +57,7 @@ import { browserOAuthManager } from '../utils/browser-oauth';
 import { whatsAppLoginManager } from '../utils/whatsapp-login';
 import { syncAllProviderAuthToRuntime } from '../services/providers/provider-runtime-sync';
 
-const WINDOWS_APP_USER_MODEL_ID = 'app.clawx.desktop';
+const WINDOWS_APP_USER_MODEL_ID = 'app.morpheus.desktop';
 const isE2EMode = process.env.CLAWX_E2E === '1';
 const requestedUserDataDir = process.env.CLAWX_USER_DATA_DIR?.trim();
 const requestedRemoteDebuggingPort = process.env.CLAWX_REMOTE_DEBUGGING_PORT?.trim();
@@ -69,12 +71,12 @@ if (isE2EMode && requestedUserDataDir) {
 }
 
 // On Linux, set CHROME_DESKTOP so Chromium can find the correct .desktop file.
-// On Wayland this maps the running window to clawx.desktop (→ icon + app grouping);
+// On Wayland this maps the running window to morpheus.desktop (→ icon + app grouping);
 // on X11 it supplements the StartupWMClass matching.
 // Must be called before app.whenReady() / before any window is created.
 if (process.platform === 'linux') {
   const linuxApp = app as typeof app & { setDesktopName?: (desktopName: string) => void };
-  linuxApp.setDesktopName?.('clawx.desktop');
+  linuxApp.setDesktopName?.('morpheus.desktop');
 }
 
 // Prevent multiple instances of the app from running simultaneously.
@@ -166,6 +168,7 @@ function createWindow(): BrowserWindow {
   const isWindows = process.platform === 'win32';
   const useCustomTitleBar = isWindows;
   const win = new BrowserWindow({
+    title: 'Morpheus',
     width: 1280,
     height: 800,
     minWidth: 960,
@@ -316,7 +319,27 @@ function createMainWindow(): BrowserWindow {
 async function initialize(): Promise<void> {
   // Initialize logger first
   logger.init();
-  logger.info('=== ClawX Application Starting ===');
+  logger.info('=== Morpheus Application Starting ===');
+
+  // Import an existing ClawX profile exactly once. Changing the application id
+  // moved userData, so without this an existing user would see an empty
+  // profile. The source is only ever read; the marker prevents re-import.
+  if (!isE2EMode) {
+    try {
+      const morpheusUserData = app.getPath('userData');
+      const legacyDir = resolveLegacyClawXUserData(morpheusUserData);
+      if (legacyDir) {
+        const outcome = migrateClawXProfile({
+          sourceDir: legacyDir,
+          destinationDir: morpheusUserData,
+        });
+        logger.info(`[Migration] ${outcome.status}`, JSON.stringify(outcome));
+      }
+    } catch (error) {
+      // A failed import must never prevent startup.
+      logger.warn('[Migration] Profile import failed; continuing with a fresh profile:', error);
+    }
+  }
   logger.debug(
     `Runtime: platform=${process.platform}/${process.arch}, electron=${process.versions.electron}, node=${process.versions.node}, packaged=${app.isPackaged}, pid=${process.pid}, ppid=${process.ppid}`
   );
@@ -569,16 +592,24 @@ async function initialize(): Promise<void> {
     });
   }
 
-  // Auto-install openclaw CLI and shell completions (non-blocking).
+  // CLI integration is an explicit, one-time user choice — never a silent
+  // per-launch mutation of the user's HKCU PATH. Until the user opts in from
+  // Setup or Settings, this does nothing at all.
+  // See electron/main/cli-integration-consent.ts.
   if (!isE2EMode) {
-    void autoInstallCliIfNeeded((installedPath) => {
-      mainWindow?.webContents.send('openclaw:cli-installed', installedPath);
-    }).then(() => {
-      generateCompletionCache();
-      installCompletionToProfile();
-    }).catch((error) => {
-      logger.warn('CLI auto-install failed:', error);
-    });
+    const cliConsent = readCliIntegrationState(app.getPath('userData'));
+    if (cliConsent.choice === 'enabled') {
+      void autoInstallCliIfNeeded((installedPath) => {
+        mainWindow?.webContents.send('openclaw:cli-installed', installedPath);
+      }).then(() => {
+        generateCompletionCache();
+        installCompletionToProfile();
+      }).catch((error) => {
+        logger.warn('CLI integration failed:', error);
+      });
+    } else {
+      logger.info(`[CLI] Integration ${cliConsent.choice}; PATH left untouched.`);
+    }
   }
 }
 

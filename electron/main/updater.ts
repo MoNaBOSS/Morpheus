@@ -2,21 +2,23 @@
  * Auto-Updater Module
  * Handles automatic application updates using electron-updater
  *
- * Update providers are configured in electron-builder.yml (OSS primary, GitHub fallback).
- * For prerelease channels (alpha, beta), the feed URL is overridden at runtime
- * to point at the channel-specific OSS directory (e.g. /alpha/, /beta/).
+ * Morpheus ships with NO update feed. The inherited ClawX feed is rejected by
+ * electron/main/updater-policy.ts, and the updater stays inert, reporting
+ * 'not-configured', until a real Morpheus endpoint is published.
  */
 import { autoUpdater, UpdateInfo, ProgressInfo, UpdateDownloadedEvent } from 'electron-updater';
 import { BrowserWindow, app, ipcMain } from 'electron';
 import { logger } from '../utils/logger';
 import { EventEmitter } from 'events';
 import { setQuitting } from './app-state';
-
-/** Base CDN URL (without trailing channel path) */
-const OSS_BASE_URL = 'https://oss.intelli-spectrum.com';
+import { resolveUpdateConfiguration } from './updater-policy';
 
 export interface UpdateStatus {
-  status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
+  /**
+   * `not-configured` is a first-class honest state: Morpheus has no update
+   * endpoint yet and deliberately does not reuse the inherited ClawX feed.
+   */
+  status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error' | 'not-configured';
   info?: UpdateInfo;
   progress?: ProgressInfo;
   error?: string;
@@ -46,6 +48,8 @@ export class AppUpdater extends EventEmitter {
   private status: UpdateStatus = { status: 'idle' };
   private autoInstallTimer: NodeJS.Timeout | null = null;
   private autoInstallCountdown = 0;
+  /** False until a real Morpheus endpoint is configured. */
+  private feedConfigured = false;
 
   /** Delay (in seconds) before auto-installing a downloaded update. */
   private static readonly AUTO_INSTALL_DELAY_SECONDS = 5;
@@ -69,11 +73,27 @@ export class AppUpdater extends EventEmitter {
       debug: (msg: string) => logger.debug('[Updater]', msg),
     };
 
+    const version = app.getVersion();
+    const configuration = resolveUpdateConfiguration();
+
+    if (!configuration.configured) {
+      // No feed URL is set and no listeners are attached, so electron-updater
+      // can never reach out. Morpheus must not inherit the ClawX feed: see
+      // electron/main/updater-policy.ts.
+      this.feedConfigured = false;
+      this.status = { status: 'not-configured' };
+      logger.info(
+        `[Updater] Version: ${version}. Update feed ${configuration.reason}; auto-update is inert.`,
+      );
+      return;
+    }
+
+    this.feedConfigured = true;
+
     // Override feed URL for prerelease channels so that
     // alpha -> /alpha/alpha-mac.yml, beta -> /beta/beta-mac.yml, etc.
-    const version = app.getVersion();
     const channel = detectChannel(version);
-    const feedUrl = `${OSS_BASE_URL}/${channel}`;
+    const feedUrl = `${configuration.feedUrl}/${channel}`;
 
     logger.info(`[Updater] Version: ${version}, channel: ${channel}, feedUrl: ${feedUrl}`);
 
@@ -170,6 +190,12 @@ export class AppUpdater extends EventEmitter {
    * final status so the UI never gets stuck in 'checking'.
    */
   async checkForUpdates(): Promise<UpdateInfo | null> {
+    if (!this.feedConfigured) {
+      // Report the honest state instead of attempting an inherited feed.
+      this.updateStatus({ status: 'not-configured' });
+      return null;
+    }
+
     try {
       const result = await autoUpdater.checkForUpdates();
 
@@ -201,6 +227,11 @@ export class AppUpdater extends EventEmitter {
    * Download available update
    */
   async downloadUpdate(): Promise<void> {
+    if (!this.feedConfigured) {
+      this.updateStatus({ status: 'not-configured' });
+      return;
+    }
+
     try {
       await autoUpdater.downloadUpdate();
     } catch (error) {
@@ -221,6 +252,11 @@ export class AppUpdater extends EventEmitter {
    * the window cleanly while ShipIt runs independently to replace the app.
    */
   quitAndInstall(): void {
+    if (!this.feedConfigured) {
+      this.updateStatus({ status: 'not-configured' });
+      return;
+    }
+
     logger.info('[Updater] quitAndInstall called');
     setQuitting();
     autoUpdater.quitAndInstall();

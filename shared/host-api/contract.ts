@@ -106,7 +106,8 @@ export type UpdateProgressSnapshot = {
   bytesPerSecond: number;
 };
 export type UpdateStatusSnapshot = {
-  status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
+  /** `not-configured`: no Morpheus update endpoint is published yet. */
+  status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error' | 'not-configured';
   info?: UpdateInfoSnapshot;
   progress?: UpdateProgressSnapshot;
   error?: string;
