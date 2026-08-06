@@ -30,7 +30,7 @@ function stubOptions(runtime = stubRuntime()) {
   return {
     runtime,
     grants: stubGrants() as never,
-    filesRoot: 'C:\Morpheus\files',
+    filesRoot: 'C:\\Morpheus\\files',
     auditHealth: () => 'healthy' as const,
   };
 }
