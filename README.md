@@ -150,11 +150,11 @@ ClawX can automatically check for new versions on startup. When an update is ava
 
 ---
 
-### 🟢 Morpheus Command Center (Concept Build 0.1)
+### 🟢 Morpheus Command Center (0.1.1)
 
-The first milestone of the Morpheus product surface. **Dashboard** in the sidebar opens a command
-center for native system actions that run in the Electron main process rather than through the agent
-runtime.
+Morpheus opens on the **Command Center** at `/`; chat lives at `/chat` and remains fully functional.
+Commands are interpreted into a typed execution plan, evaluated against a risk-based permission
+policy, and executed in the Electron main process rather than through the agent runtime.
 
 - **Boot sequence** — a Matrix-inspired startup overlay that advances on real signals (settings
   hydration, a host-bridge round trip, gateway status). Press `Esc` or click to skip; it always
@@ -162,8 +162,10 @@ runtime.
 - **Native actions** — launch an approved application, create a text file inside a main-process
   controlled folder, or report privacy-safe system information. These are the first entries in an
   extensible action registry, not a fixed set.
-- **Explicit confirmation** — every action shows what the main process actually *resolved* (the
-  absolute executable or file path) before anything runs. Denying performs no work at all.
+- **Risk-based permissions** — Strict, Balanced (default) and Autonomous profiles. Privacy-safe reads
+  run automatically; other actions ask once and can be remembered for an exact target, for the session
+  or permanently. Every prompt shows what the main process actually *resolved*. Grants are revocable
+  from the Permission Center in Settings.
 - **Execution timeline** — live phases reported by the main process. Nothing is simulated.
 - **Audit log** — an append-only JSONL record under your user data folder. Every phase is written
   before it reaches the interface, and file content is never stored (only its size and a digest).
