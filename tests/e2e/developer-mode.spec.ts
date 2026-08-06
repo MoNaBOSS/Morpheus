@@ -18,6 +18,8 @@ test.describe('ClawX developer-mode gated UI', () => {
     await page.evaluate(() => {
       window.location.hash = '#/';
     });
+    // 0.1.1: the composer lives on /chat, not on the Command Center at `/`.
+    await page.getByTestId('sidebar-nav-chat').click();
     await expect(page.getByTestId('chat-composer-input')).toBeVisible();
 
     await page.getByTestId('sidebar-nav-models').click();

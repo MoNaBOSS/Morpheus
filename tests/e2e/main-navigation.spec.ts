@@ -21,6 +21,9 @@ test.describe('ClawX main navigation without setup flow', () => {
       const page = await getStableWindow(app);
 
       await expect(page.getByTestId('main-layout')).toBeVisible();
+      // 0.1.1: `/` is the Command Center. Chat has its own nav entry.
+      await expect(page.getByTestId('command-center-page')).toBeVisible();
+      await page.getByTestId('sidebar-nav-chat').click();
       await expect(page.getByTestId('chat-page')).toBeVisible();
       await expect(page.getByTestId('main-content')).toBeVisible();
       await expect(page.getByTestId('sidebar-resize-handle')).toBeVisible();
@@ -45,6 +48,8 @@ test.describe('ClawX main navigation without setup flow', () => {
 
     try {
       const page = await getStableWindow(app);
+      await expect(page.getByTestId('command-center-page')).toBeVisible();
+      await page.getByTestId('sidebar-nav-chat').click();
       await expect(page.getByTestId('chat-page')).toBeVisible();
 
       await page.getByTestId('sidebar-nav-models').click();
@@ -65,7 +70,8 @@ test.describe('ClawX main navigation without setup flow', () => {
       });
 
       await expect(page.getByTestId('chat-page')).toBeVisible();
-      await expect(page).toHaveURL(/#\/$/);
+      // 0.1.1: the native New Chat item targets /chat, matching the sidebar action.
+      await expect(page).toHaveURL(/#\/chat$/);
     } finally {
       await closeElectronApp(app);
     }
