@@ -1,3 +1,7 @@
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -13,12 +17,24 @@ import {
   type MorpheusCapabilityRegistry,
 } from '@electron/services/morpheus/capability-registry';
 import type { MorpheusAuditSink } from '@electron/services/morpheus/audit';
-import type { MorpheusPermissionGate } from '@electron/services/morpheus/permission-gate';
-import { createAlwaysPromptPermissionGate } from '@electron/services/morpheus/permission-gate';
+import type { MorpheusPermissionGate } from '@electron/services/morpheus/policy/permission-gate';
+import { createMorpheusGrantStore } from '@electron/services/morpheus/policy/grant-store';
 import type { MorpheusRootProvider } from '@electron/services/morpheus/roots';
 import type { MorpheusActionEvent, MorpheusAuditEntry } from '@shared/morpheus/action-types';
 
 const roots: MorpheusRootProvider = { resolve: () => 'C:\\root' };
+
+/**
+ * These tests exercise run lifecycle, not policy. An always-prompt gate keeps
+ * every assertion about ordering, idempotency and limits meaningful; profile
+ * and grant behaviour is covered by morpheus-policy-engine.test.ts.
+ */
+function alwaysPromptGate(): MorpheusPermissionGate {
+  return {
+    evaluate: () => ({ outcome: 'prompt', reason: 'prompt-required' }),
+    recordGrantUse: () => {},
+  };
+}
 
 type Harness = {
   runtime: MorpheusRuntime;
@@ -69,13 +85,15 @@ function makeHarness(options: {
     async recent() {
       return { entries: audited.slice(-10), truncated: false };
     },
+    isHealthy: () => !options.auditFails,
   };
 
   const runtime = createMorpheusRuntime({
     registry,
     roots,
     audit,
-    gate: options.gate ?? createAlwaysPromptPermissionGate(),
+    gate: options.gate ?? alwaysPromptGate(),
+    grants: createMorpheusGrantStore({ userDataDir: mkdtempSync(join(tmpdir(), 'morpheus-runtime-')) }),
     appVersion: '0.1.0',
     platform: options.platform ?? 'win32',
     env: { SystemRoot: 'C:\\Windows' },
@@ -176,7 +194,10 @@ describe('morpheus runtime — permission gate', () => {
   });
 
   it('honours a policy gate that denies outright', async () => {
-    const gate: MorpheusPermissionGate = { evaluate: () => ({ kind: 'auto', decision: 'denied' }) };
+    const gate: MorpheusPermissionGate = {
+      evaluate: () => ({ outcome: 'deny', reason: 'persistent-denial' }),
+      recordGrantUse: () => {},
+    };
     const h = makeHarness({ gate });
     await h.runtime.requestAction({ actionId: 'system.report' });
 

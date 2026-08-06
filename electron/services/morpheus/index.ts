@@ -11,7 +11,9 @@ import type { MorpheusActionEvent } from '@shared/morpheus/action-types';
 
 import { createMorpheusAuditSink } from './audit';
 import { createMorpheusCapabilityRegistry } from './capability-registry';
-import { createAlwaysPromptPermissionGate } from './permission-gate';
+import { createMorpheusGrantStore, type MorpheusGrantStore } from './policy/grant-store';
+import { createPolicyPermissionGate } from './policy/permission-gate';
+import { createMorpheusPolicyEngine, type AuditHealth } from './policy/policy-engine';
 import { createMorpheusRootProvider } from './roots';
 import { createMorpheusRuntime, type MorpheusRuntime } from './runtime';
 import { win32AppLaunchCapability } from './capabilities/win32/app-launch';
@@ -24,7 +26,15 @@ export type CreateMorpheusServiceOptions = {
   emit: (event: MorpheusActionEvent) => void;
 };
 
-export function createMorpheusService(options: CreateMorpheusServiceOptions): MorpheusRuntime {
+export type MorpheusService = {
+  runtime: MorpheusRuntime;
+  grants: MorpheusGrantStore;
+  /** Current approved files root, for the Command Center's artifacts panel. */
+  filesRoot: string;
+  auditHealth: () => AuditHealth;
+};
+
+export function createMorpheusService(options: CreateMorpheusServiceOptions): MorpheusService {
   const registry = createMorpheusCapabilityRegistry();
   registry.register(win32AppLaunchCapability);
   registry.register(win32CreateTextFileCapability);
@@ -35,14 +45,27 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     auditDir: join(options.userDataDir, 'morpheus', 'audit'),
   });
 
-  return createMorpheusRuntime({
+  const grants = createMorpheusGrantStore({ userDataDir: options.userDataDir });
+  const engine = createMorpheusPolicyEngine(grants);
+  const gate = createPolicyPermissionGate(engine, grants);
+
+  // Audit health is observed, not assumed: a sink that starts failing must move
+  // the product into degraded-security mode rather than continuing silently.
+  const auditHealth = (): AuditHealth => (audit.isHealthy() ? 'healthy' : 'degraded');
+
+  const runtime = createMorpheusRuntime({
     registry,
     roots,
     audit,
-    gate: createAlwaysPromptPermissionGate(),
+    gate,
+    grants,
+    auditHealth,
     appVersion: options.appVersion,
     emit: options.emit,
   });
+
+  return { runtime, grants, filesRoot: roots.resolve('morpheusFiles'), auditHealth };
 }
 
 export type { MorpheusRuntime } from './runtime';
+export type { MorpheusGrantStore } from './policy/grant-store';

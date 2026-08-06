@@ -10,6 +10,31 @@ import {
 } from '@electron/services/morpheus-api';
 import type { MorpheusRuntime } from '@electron/services/morpheus';
 
+function stubGrants() {
+  return {
+    getProfile: vi.fn(() => 'balanced' as const),
+    setProfile: vi.fn(),
+    findGrant: vi.fn(),
+    createGrant: vi.fn(),
+    recordUse: vi.fn(),
+    revoke: vi.fn(() => true),
+    revokeAllSession: vi.fn(() => 0),
+    reset: vi.fn(),
+    listSessionGrants: vi.fn(() => []),
+    listPersistentGrants: vi.fn(() => []),
+    listDeniedScopes: vi.fn(() => []),
+  };
+}
+
+function stubOptions(runtime = stubRuntime()) {
+  return {
+    runtime,
+    grants: stubGrants() as never,
+    filesRoot: 'C:\Morpheus\files',
+    auditHealth: () => 'healthy' as const,
+  };
+}
+
 function stubRuntime(): MorpheusRuntime {
   return {
     describeActions: vi.fn(() => ({ platform: 'win32', actions: [], applicationKeys: [] })),
@@ -136,19 +161,27 @@ describe('validateAuditRecentPayload', () => {
 
 describe('createMorpheusApi', () => {
   it('exposes exactly the contract surface', () => {
-    expect(Object.keys(createMorpheusApi({ runtime: stubRuntime() })).sort()).toEqual([
+    expect(Object.keys(createMorpheusApi(stubOptions())).sort()).toEqual([
       'auditRecent',
       'cancelAction',
       'describeActions',
+      'filesRoot',
+      'interpretCommand',
+      'openFilesRoot',
+      'permissionCenter',
       'requestAction',
+      'resetPermissionPolicy',
       'respondPermission',
+      'revokeAllSessionGrants',
+      'revokeGrant',
+      'setPermissionProfile',
       'systemInfo',
     ]);
   });
 
   it('forwards validated payloads to the runtime', async () => {
     const runtime = stubRuntime();
-    const api = createMorpheusApi({ runtime });
+    const api = createMorpheusApi(stubOptions(runtime));
 
     await api.requestAction({ actionId: 'system.report' });
     expect(runtime.requestAction).toHaveBeenCalledWith({ actionId: 'system.report' });
@@ -159,7 +192,7 @@ describe('createMorpheusApi', () => {
 
   it('never reaches the runtime with an invalid payload', async () => {
     const runtime = stubRuntime();
-    const api = createMorpheusApi({ runtime });
+    const api = createMorpheusApi(stubOptions(runtime));
 
     await expect(async () => api.requestAction({ actionId: 'shell.exec' } as never)).rejects.toThrow();
     await expect(async () => api.requestAction({
@@ -172,7 +205,7 @@ describe('createMorpheusApi', () => {
 
   it('does not audit or gate the read-only system info call', () => {
     const runtime = stubRuntime();
-    createMorpheusApi({ runtime }).systemInfo();
+    createMorpheusApi(stubOptions(runtime)).systemInfo();
     expect(runtime.systemInfo).toHaveBeenCalledTimes(1);
     expect(runtime.requestAction).not.toHaveBeenCalled();
   });

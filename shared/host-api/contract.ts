@@ -21,6 +21,13 @@ import type {
   MorpheusRespondPermissionPayload,
   MorpheusSystemInfo,
 } from '../morpheus/action-types';
+import type { ExecutionOriginType, InterpretationResult } from '../morpheus/execution-types';
+import type {
+  PermissionAcknowledgement,
+  PermissionCenterSnapshot,
+  RevokeGrantPayload,
+  SetPermissionProfilePayload,
+} from '../morpheus/permission-types';
 import type { WebBrowserNavigatePayload } from '../web-browser';
 
 export type JsonRecord = Record<string, unknown>;
@@ -817,6 +824,12 @@ export type DeliveryChannelGroup = {
 };
 export type DeliveryTargetsResult = HostSuccess & { targets: DeliveryChannelGroup[] };
 
+export type MorpheusInterpretPayload = {
+  objective: string;
+  originType?: ExecutionOriginType;
+};
+export type MorpheusFilesRootResult = { path: string };
+
 export type HostApiContract = {
   app: {
     openClawDoctor: (payload: OpenClawDoctorPayload) => Omit<OpenClawDoctorResult, 'mode'>;
@@ -1035,6 +1048,16 @@ export type HostApiContract = {
     respondPermission: (payload: MorpheusRespondPermissionPayload) => MorpheusAcknowledgement;
     cancelAction: (payload: MorpheusCancelActionPayload) => MorpheusAcknowledgement;
     auditRecent: (payload?: MorpheusAuditRecentPayload) => MorpheusAuditRecentResult;
+    /** Turns a natural-language objective into a typed execution plan. */
+    interpretCommand: (payload: MorpheusInterpretPayload) => InterpretationResult;
+    permissionCenter: () => PermissionCenterSnapshot;
+    setPermissionProfile: (payload: SetPermissionProfilePayload) => PermissionAcknowledgement;
+    revokeGrant: (payload: RevokeGrantPayload) => PermissionAcknowledgement;
+    revokeAllSessionGrants: () => PermissionAcknowledgement;
+    resetPermissionPolicy: () => PermissionAcknowledgement;
+    filesRoot: () => MorpheusFilesRootResult;
+    /** Opens the approved folder via a typed capability, not renderer shell access. */
+    openFilesRoot: () => PermissionAcknowledgement;
   };
 };
 

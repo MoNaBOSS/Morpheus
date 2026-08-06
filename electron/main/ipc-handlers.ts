@@ -158,7 +158,7 @@ function registerTypedHostHandlers(
   // Morpheus native actions. Every phase transition is emitted on a single
   // channel; the window guard mirrors `sendMainWindowEvent` in main/index.ts so
   // a closed window cannot throw out of the runtime.
-  const morpheusRuntime = createMorpheusService({
+  const morpheusService = createMorpheusService({
     userDataDir: app.getPath('userData'),
     appVersion: app.getVersion(),
     emit: (event) => {
@@ -192,7 +192,12 @@ function registerTypedHostHandlers(
     cron: createCronApi({ gatewayManager }),
     skills: createSkillsApi({ clawHubService, gatewayManager }),
     usage: createUsageApi(),
-    morpheus: createMorpheusApi({ runtime: morpheusRuntime }),
+    morpheus: createMorpheusApi({
+      runtime: morpheusService.runtime,
+      grants: morpheusService.grants,
+      filesRoot: morpheusService.filesRoot,
+      auditHealth: morpheusService.auditHealth,
+    }),
   });
   registerHostInvokeHandler(hostApiRegistry);
 }

@@ -25,8 +25,21 @@ import type {
   MorpheusSystemInfo,
 } from '@shared/morpheus/action-types';
 
+import { shell } from 'electron';
+
+import {
+  EXECUTION_ORIGIN_TYPES,
+  type ExecutionOriginType,
+} from '@shared/morpheus/execution-types';
+import {
+  PERMISSION_PROFILES,
+  type PermissionCenterSnapshot,
+  type PermissionProfile,
+} from '@shared/morpheus/permission-types';
+import { interpretCommand } from '@shared/morpheus/interpreter/deterministic';
+
 import type { CompleteHostServiceRegistry } from '../main/ipc/host-contract';
-import type { MorpheusRuntime } from './morpheus';
+import type { MorpheusRuntime, MorpheusGrantStore } from './morpheus';
 
 export class MorpheusValidationError extends Error {
   constructor(message: string) {
@@ -135,11 +148,96 @@ export function validateAuditRecentPayload(payload: unknown): MorpheusAuditRecen
 
 export type CreateMorpheusApiOptions = {
   runtime: MorpheusRuntime;
+  grants: MorpheusGrantStore;
+  filesRoot: string;
+  auditHealth: () => 'healthy' | 'degraded';
 };
 
+/**
+ * Interprets a command into a typed plan.
+ *
+ * Runs in Main so the canonical approved root — never a renderer-supplied path
+ * — becomes the plan's resource scope.
+ */
+export function validateInterpretPayload(payload: unknown): { objective: string; originType: ExecutionOriginType } {
+  const record = requireRecord(payload, 'interpretCommand payload');
+  assertNoUnknownKeys(record, ['objective', 'originType'], 'interpretCommand payload');
+  const objective = requireNonEmptyString(record.objective, 'objective');
+  if (objective.length > 2000) throw new MorpheusValidationError('objective is too long');
+  const originType = record.originType === undefined ? 'command-bar' : record.originType;
+  if (!EXECUTION_ORIGIN_TYPES.includes(originType as ExecutionOriginType)) {
+    throw new MorpheusValidationError('unsupported originType');
+  }
+  return { objective, originType: originType as ExecutionOriginType };
+}
+
+export function validateSetProfilePayload(payload: unknown): { profile: PermissionProfile } {
+  const record = requireRecord(payload, 'setPermissionProfile payload');
+  assertNoUnknownKeys(record, ['profile'], 'setPermissionProfile payload');
+  if (!PERMISSION_PROFILES.includes(record.profile as PermissionProfile)) {
+    throw new MorpheusValidationError('unknown permission profile');
+  }
+  return { profile: record.profile as PermissionProfile };
+}
+
+export function validateRevokePayload(payload: unknown): { grantId: string } {
+  const record = requireRecord(payload, 'revokeGrant payload');
+  assertNoUnknownKeys(record, ['grantId'], 'revokeGrant payload');
+  return { grantId: requireNonEmptyString(record.grantId, 'grantId') };
+}
+
 export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHostServiceRegistry['morpheus'] {
-  const { runtime } = options;
+  const { runtime, grants, filesRoot, auditHealth } = options;
   return {
+    interpretCommand: (payload) => {
+      const { objective, originType } = validateInterpretPayload(payload);
+      return interpretCommand({
+        objective,
+        origin: originType === 'command-bar'
+          ? { type: 'command-bar', commandText: objective }
+          : { type: 'action-launcher' },
+        platform: process.platform,
+        filesRoot,
+      });
+    },
+
+    permissionCenter: (): PermissionCenterSnapshot => ({
+      profile: grants.getProfile(),
+      sessionGrants: grants.listSessionGrants(),
+      persistentGrants: grants.listPersistentGrants(),
+      deniedScopes: grants.listDeniedScopes(),
+      auditDegraded: auditHealth() === 'degraded',
+    }),
+
+    setPermissionProfile: (payload) => {
+      grants.setProfile(validateSetProfilePayload(payload).profile);
+      return { ok: true };
+    },
+
+    revokeGrant: (payload) => ({ ok: grants.revoke(validateRevokePayload(payload).grantId) }),
+
+    revokeAllSessionGrants: () => {
+      grants.revokeAllSession();
+      return { ok: true };
+    },
+
+    resetPermissionPolicy: () => {
+      grants.reset();
+      return { ok: true };
+    },
+
+    filesRoot: () => ({ path: filesRoot }),
+
+    /**
+     * Opens the approved folder through a typed, Main-owned capability. The
+     * renderer never gets shell access, and the path is the canonical root
+     * rather than anything it supplied.
+     */
+    openFilesRoot: async () => {
+      await shell.openPath(filesRoot);
+      return { ok: true };
+    },
+
     describeActions: (): MorpheusDescribeActionsResult => runtime.describeActions(),
     systemInfo: (): MorpheusSystemInfo => runtime.systemInfo(),
     requestAction: (payload): Promise<MorpheusRequestActionResult> => (

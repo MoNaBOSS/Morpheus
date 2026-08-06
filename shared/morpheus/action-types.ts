@@ -128,6 +128,7 @@ export type MorpheusActionEvent = {
   result?: MorpheusActionResult;
   error?: MorpheusError;
   durationMs?: number;
+  reason?: string;
 };
 
 /** Renderer-side projection of a run. */
@@ -154,15 +155,21 @@ export type MorpheusPermissionDecision = 'granted' | 'denied';
 export type MorpheusRequestActionPayload = {
   actionId: string;
   params?: MorpheusActionParams;
+  originType?: import('./execution-types').ExecutionOriginType;
+  agentId?: string;
 };
 
 export type MorpheusRequestActionResult = {
   runId: string;
 };
 
+export type MorpheusPermissionDecisionInput =
+  | MorpheusPermissionDecision
+  | 'deny' | 'deny-always' | 'allow-once' | 'allow-session' | 'allow-always';
+
 export type MorpheusRespondPermissionPayload = {
   runId: string;
-  decision: MorpheusPermissionDecision;
+  decision: MorpheusPermissionDecisionInput;
 };
 
 export type MorpheusCancelActionPayload = {
@@ -191,6 +198,8 @@ export type MorpheusAuditEntry = {
   actionId: MorpheusActionId;
   phase: MorpheusRunPhase;
   decision?: MorpheusPermissionDecision;
+  reason?: string;
+  grantId?: string;
   params?: Record<string, string | number | boolean>;
   target?: MorpheusResolvedTarget;
   outcome?: MorpheusActionResult;

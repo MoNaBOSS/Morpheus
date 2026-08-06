@@ -52,6 +52,8 @@ import type {
   MorpheusRequestActionPayload,
   MorpheusRespondPermissionPayload,
 } from '@shared/morpheus/action-types';
+import type { ExecutionOriginType } from '@shared/morpheus/execution-types';
+import type { PermissionProfile } from '@shared/morpheus/permission-types';
 import { invokeHost } from './host-api-client';
 
 export type {
@@ -421,6 +423,18 @@ export const hostApi = {
     ),
     cancelAction: (input: MorpheusCancelActionPayload) => invokeHost('morpheus', 'cancelAction', input),
     auditRecent: (limit?: number) => invokeHost('morpheus', 'auditRecent', { limit }),
+    interpretCommand: (objective: string, originType?: ExecutionOriginType) => (
+      invokeHost('morpheus', 'interpretCommand', { objective, originType })
+    ),
+    permissionCenter: () => invokeHost('morpheus', 'permissionCenter'),
+    setPermissionProfile: (profile: PermissionProfile) => (
+      invokeHost('morpheus', 'setPermissionProfile', { profile })
+    ),
+    revokeGrant: (grantId: string) => invokeHost('morpheus', 'revokeGrant', { grantId }),
+    revokeAllSessionGrants: () => invokeHost('morpheus', 'revokeAllSessionGrants'),
+    resetPermissionPolicy: () => invokeHost('morpheus', 'resetPermissionPolicy'),
+    filesRoot: () => invokeHost('morpheus', 'filesRoot'),
+    openFilesRoot: () => invokeHost('morpheus', 'openFilesRoot'),
   },
 };
 

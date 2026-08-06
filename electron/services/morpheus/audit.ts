@@ -40,6 +40,12 @@ export interface MorpheusAuditSink {
    */
   record(entry: MorpheusAuditEntry): Promise<void>;
   recent(limit: number): Promise<MorpheusAuditRecentResult>;
+  /**
+   * False once a write has failed and has not since recovered. The policy
+   * engine reads this to enter degraded-security mode rather than executing
+   * privileged work that cannot be recorded.
+   */
+  isHealthy(): boolean;
 }
 
 export type MorpheusAuditSinkOptions = {
@@ -90,6 +96,8 @@ export function createMorpheusAuditSink(options: MorpheusAuditSinkOptions): Morp
   // Serializes writes. Every record awaits the previous one, so file order and
   // sequence order can never diverge.
   let chain: Promise<void> = Promise.resolve();
+  /** Flipped by a failed append; the policy engine degrades on this. */
+  let healthy = true;
 
   const filePathFor = (date: Date): string => join(auditDir, `${FILE_PREFIX}${dayStamp(date)}${FILE_SUFFIX}`);
 
@@ -146,7 +154,15 @@ export function createMorpheusAuditSink(options: MorpheusAuditSinkOptions): Morp
     // Synchronous append on purpose. Volume is a handful of lines per
     // user-initiated action, and this removes the flush window entirely: there
     // is no buffered state that a crash could lose.
-    appendFileSync(path, `${JSON.stringify(safe)}\n`, 'utf8');
+    try {
+      appendFileSync(path, `${JSON.stringify(safe)}\n`, 'utf8');
+      healthy = true;
+    } catch (error) {
+      // Surfaced rather than swallowed: an unhealthy sink must move the policy
+      // engine into degraded-security mode, not be silently tolerated.
+      healthy = false;
+      throw error;
+    }
   };
 
   return {
@@ -183,5 +199,7 @@ export function createMorpheusAuditSink(options: MorpheusAuditSinkOptions): Morp
       }
       return { entries, truncated: lines.length > slice.length };
     },
+
+    isHealthy: () => healthy,
   };
 }

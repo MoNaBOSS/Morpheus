@@ -52,7 +52,16 @@ import {
   type MorpheusCapabilityRegistry,
   type MorpheusResolution,
 } from './capability-registry';
-import type { MorpheusPermissionGate } from './permission-gate';
+import type { MorpheusPermissionGate } from './policy/permission-gate';
+import type { MorpheusGrantStore } from './policy/grant-store';
+import type { AuditHealth } from './policy/policy-engine';
+import {
+  decisionCreatesGrant,
+  type PermissionDecisionKind,
+  type PermissionResolutionReason,
+  type PermissionScope,
+} from '@shared/morpheus/permission-types';
+import type { ExecutionOriginType } from '@shared/morpheus/execution-types';
 import type { MorpheusRootProvider } from './roots';
 import { collectMorpheusSystemInfo } from './capabilities/win32/system-report';
 
@@ -66,6 +75,7 @@ export class MorpheusRequestError extends Error {
 type PendingRun = {
   runId: string;
   actionId: MorpheusActionId;
+  scope: PermissionScope;
   target: MorpheusResolvedTarget;
   resolution: MorpheusResolution;
   auditParams: Record<string, string | number | boolean>;
@@ -78,6 +88,9 @@ export type MorpheusRuntimeOptions = {
   roots: MorpheusRootProvider;
   audit: MorpheusAuditSink;
   gate: MorpheusPermissionGate;
+  grants: MorpheusGrantStore;
+  /** Reports whether audit persistence is currently healthy. */
+  auditHealth?: () => AuditHealth;
   appVersion: string;
   emit: (event: MorpheusActionEvent) => void;
   platform?: string;
@@ -115,6 +128,36 @@ export function buildAuditParams(params: MorpheusActionParams): Record<string, s
   return out;
 }
 
+/**
+ * Resource scope for a grant, taken from the target Main RESOLVED.
+ *
+ * Never from the request: a grant must bind to a real, verified target so
+ * "always allow" cannot be attached to something the user was not shown.
+ */
+export function resourceScopeFor(target: MorpheusResolvedTarget): string {
+  if (target.kind === 'executable') return target.applicationKey;
+  // The containing approved root, not the individual file — otherwise every new
+  // filename would re-prompt and the grant would be useless.
+  if (target.kind === 'file') return target.path.slice(0, Math.max(0, target.path.lastIndexOf('\\')));
+  return 'runtime';
+}
+
+const DECISION_KINDS: readonly PermissionDecisionKind[] = [
+  'deny', 'deny-always', 'allow-once', 'allow-session', 'allow-always',
+];
+
+/**
+ * Accepts the five decision kinds, and maps the 0.1 wire values
+ * (`granted`/`denied`) onto them so older callers keep working.
+ */
+export function normalizeDecision(value: unknown): PermissionDecisionKind | null {
+  if (value === 'granted') return 'allow-once';
+  if (value === 'denied') return 'deny';
+  return DECISION_KINDS.includes(value as PermissionDecisionKind)
+    ? (value as PermissionDecisionKind)
+    : null;
+}
+
 export function createMorpheusRuntime(options: MorpheusRuntimeOptions): MorpheusRuntime {
   const now = options.now ?? (() => new Date());
   const platform = options.platform ?? process.platform;
@@ -147,6 +190,8 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       result?: MorpheusActionResult;
       error?: MorpheusError;
       decision?: MorpheusPermissionDecision;
+      reason?: PermissionResolutionReason;
+      grantId?: string;
       durationMs?: number;
       pid?: number | null;
     },
@@ -162,6 +207,8 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       actionId: input.actionId,
       phase: input.phase,
       decision: input.decision,
+      reason: input.reason,
+      grantId: input.grantId,
       params: input.auditParams,
       target: input.target,
       outcome: input.result,
@@ -247,7 +294,11 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
     });
   };
 
-  const execute = async (run: PendingRun): Promise<void> => {
+  const execute = async (
+    run: PendingRun,
+    reason?: PermissionResolutionReason,
+    grantId?: string,
+  ): Promise<void> => {
     executing.add(run.runId);
     try {
       await transition({
@@ -257,6 +308,8 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         auditParams: run.auditParams,
         target: run.target,
         decision: 'granted',
+        reason,
+        grantId,
       });
 
       let result: MorpheusActionResult;
@@ -320,6 +373,8 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       }
       const actionId = payload.actionId;
       const params: MorpheusActionParams = payload.params ?? {};
+      const originType: ExecutionOriginType = payload.originType ?? 'action-launcher';
+      const agentId = payload.agentId;
       const auditParams = buildAuditParams(params);
       const runId = createRunId();
       const startedAt = now().getTime();
@@ -371,14 +426,23 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         return { runId };
       }
 
-      const verdict = options.gate.evaluate({
-        runId,
-        actionId,
+      // Resource scope is derived from what Main RESOLVED, never from the
+      // request, so a grant can only ever bind to a real target.
+      const scope: PermissionScope = {
+        capabilityId: actionId,
+        platform,
+        resourceScope: resourceScopeFor(resolution.target),
         riskTier: getMorpheusActionDescriptor(actionId).riskTier,
-        target: resolution.target,
+        originType,
+        agentId,
+      };
+
+      const verdict = options.gate.evaluate({
+        scope,
+        auditHealth: (options.auditHealth ?? (() => 'healthy' as AuditHealth))(),
       });
 
-      if (verdict.kind === 'auto' && verdict.decision === 'denied') {
+      if (verdict.outcome === 'deny') {
         await transition({
           runId,
           actionId,
@@ -386,7 +450,13 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
           auditParams,
           target: resolution.target,
           decision: 'denied',
-          error: { code: 'permission-denied', message: 'Denied by policy' },
+          reason: verdict.reason,
+          error: {
+            code: verdict.reason === 'audit-degraded' ? 'internal' : 'permission-denied',
+            message: verdict.reason === 'audit-degraded'
+              ? 'Blocked: auditing is unavailable, so only read-only actions may run'
+              : 'Blocked by a saved decision for this exact scope',
+          },
           durationMs: now().getTime() - startedAt,
         });
         return { runId };
@@ -403,6 +473,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       const run: PendingRun = {
         runId,
         actionId,
+        scope,
         target: resolution.target,
         resolution,
         auditParams,
@@ -410,9 +481,10 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         timer,
       };
 
-      if (verdict.kind === 'auto') {
+      if (verdict.outcome === 'allow') {
         clearTimeout(timer);
-        await execute(run);
+        if (verdict.grantId) options.gate.recordGrantUse(verdict.grantId);
+        await execute(run, verdict.reason, verdict.grantId);
         return { runId };
       }
 
@@ -423,26 +495,38 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         phase: 'awaiting-permission',
         auditParams,
         target: resolution.target,
+        reason: verdict.reason,
       });
       return { runId };
     },
 
     async respondPermission(payload: MorpheusRespondPermissionPayload): Promise<MorpheusAcknowledgement> {
       const runId = typeof payload?.runId === 'string' ? payload.runId : '';
-      const decision = payload?.decision;
-      if (decision !== 'granted' && decision !== 'denied') {
-        throw new MorpheusRequestError('invalid-params', 'decision must be granted or denied');
+      const decision = normalizeDecision(payload?.decision);
+      if (!decision) {
+        throw new MorpheusRequestError('invalid-params', 'unsupported permission decision');
       }
 
       const run = consumePending(runId);
       if (!run) return { accepted: false };
 
-      if (decision === 'denied') {
+      // A remembered decision is stored BEFORE the action runs, so a crash
+      // mid-execution cannot lose the consent the user just gave.
+      if (decisionCreatesGrant(decision)) {
+        const grantType = decision === 'allow-session'
+          ? 'session'
+          : decision === 'allow-always'
+            ? 'persistent'
+            : 'denied-persistent';
+        options.grants.createGrant(run.scope, grantType);
+      }
+
+      if (decision === 'deny' || decision === 'deny-always') {
         await finishDenied(run, 'denied', 'permission-denied', 'Denied by the user');
         return { accepted: true };
       }
 
-      await execute(run);
+      await execute(run, 'prompt-required');
       return { accepted: true };
     },
 
