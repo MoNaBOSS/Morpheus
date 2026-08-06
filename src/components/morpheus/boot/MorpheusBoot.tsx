@@ -10,7 +10,7 @@
  * Because the overlay is the first paint, the existing `show:false` +
  * `ready-to-show` window flow needs no change at all.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
@@ -31,11 +31,23 @@ export function MorpheusBoot({ enabled }: MorpheusBootProps) {
   const [leaving, setLeaving] = useState(false);
   const [unmounted, setUnmounted] = useState(!enabled);
 
+  // Reaching READY naturally dwells briefly so the final real state is legible.
+  // An explicit skip must feel instant, so it bypasses the dwell entirely.
+  const skippedRef = useRef(false);
   const handleComplete = useCallback(() => {
-    const timer = setTimeout(() => setLeaving(true), READY_HOLD_MS);
-    return () => clearTimeout(timer);
+    if (skippedRef.current) {
+      setLeaving(true);
+      return;
+    }
+    setTimeout(() => setLeaving(true), READY_HOLD_MS);
   }, []);
+
   const { phase, progress, skip } = useBootPhases({ enabled, onComplete: handleComplete });
+
+  const skipNow = useCallback(() => {
+    skippedRef.current = true;
+    skip();
+  }, [skip]);
 
   useEffect(() => {
     if (!leaving) return undefined;
@@ -46,11 +58,11 @@ export function MorpheusBoot({ enabled }: MorpheusBootProps) {
   useEffect(() => {
     if (!enabled || unmounted) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') skip();
+      if (event.key === 'Escape') skipNow();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [enabled, unmounted, skip]);
+  }, [enabled, unmounted, skipNow]);
 
   if (!enabled || unmounted) return null;
 
@@ -61,7 +73,7 @@ export function MorpheusBoot({ enabled }: MorpheusBootProps) {
       data-phase={phase}
       role="status"
       aria-live="polite"
-      onClick={skip}
+      onClick={skipNow}
       className={cn(
         'morpheus-boot fixed inset-0 z-[9998] flex flex-col items-center justify-center overflow-hidden',
         leaving && 'morpheus-boot-leaving pointer-events-none',

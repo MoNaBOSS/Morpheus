@@ -25,7 +25,9 @@ const initialSettingsState = useSettingsStore.getState();
 const initialElectronPlatform = window.electron?.platform;
 const sidebarSessionKey = 'agent:main:session-sidebar-test';
 
-function renderSidebar(initialEntry = '/') {
+// Chat moved to /chat in 0.1.1; `/` is the Command Center, where no chat
+// session is current.
+function renderSidebar(initialEntry = '/chat') {
   return render(
     React.createElement(
       MemoryRouter,

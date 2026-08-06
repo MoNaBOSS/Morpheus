@@ -22,9 +22,9 @@ test.describe('Morpheus boot sequence', () => {
       // The overlay must never outlive its hard cap.
       await expect(boot).toHaveCount(0, { timeout: 10_000 });
 
-      // The app underneath is fully usable.
+      // Boot transitions naturally into the Command Center.
       await expect(page.getByTestId('main-layout')).toBeVisible();
-      await expect(page.getByTestId('chat-page')).toBeVisible();
+      await expect(page.getByTestId('command-center-page')).toBeVisible();
     } finally {
       await closeElectronApp(app);
     }
@@ -40,8 +40,9 @@ test.describe('Morpheus boot sequence', () => {
       const boot = page.getByTestId('morpheus-boot');
 
       // Phases advance off real signals: settings hydration, a host-bridge
-      // round-trip, and a gateway status report.
-      await expect(boot).toHaveAttribute('data-phase', /settings|bridge|runtime|ready/);
+      // round-trip, and a gateway status report — ending on a visible READY.
+      await expect(page.getByTestId('morpheus-boot-phase'))
+        .toHaveAttribute('data-ready', 'true', { timeout: 10_000 });
       await expect(boot).toHaveCount(0, { timeout: 10_000 });
     } finally {
       await closeElectronApp(app);

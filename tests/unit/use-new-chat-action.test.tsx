@@ -52,7 +52,8 @@ describe('useNewChatAction', () => {
 
     expect(settingsState.setChatWorkspacePath).not.toHaveBeenCalled();
     expect(chatState.newSession).toHaveBeenCalledTimes(1);
-    expect(navigateMock).toHaveBeenCalledWith('/');
+    // Chat moved to /chat in 0.1.1; `/` is now the Command Center.
+    expect(navigateMock).toHaveBeenCalledWith('/chat');
   });
 
   it('inherits the selected conversation workspace', async () => {
@@ -69,6 +70,7 @@ describe('useNewChatAction', () => {
 
     expect(settingsState.setChatWorkspacePath).toHaveBeenCalledWith('/Users/e2e/workspace/ClawX');
     expect(chatState.newSession).toHaveBeenCalledTimes(1);
-    expect(navigateMock).toHaveBeenCalledWith('/');
+    // Chat moved to /chat in 0.1.1; `/` is now the Command Center.
+    expect(navigateMock).toHaveBeenCalledWith('/chat');
   });
 });
