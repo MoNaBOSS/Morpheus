@@ -15,6 +15,8 @@ import { useSettingsStore } from '@/stores/settings';
 import { useGatewayStore } from '@/stores/gateway';
 import { useUpdateStore } from '@/stores/update';
 import { UpdateSettings } from '@/components/settings/UpdateSettings';
+import { PermissionCenter } from '@/components/morpheus/PermissionCenter';
+import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { toUserMessage } from '@/lib/error-message';
 import {
   clearUiTelemetry,
@@ -36,6 +38,12 @@ type ControlUiInfo = {
 
 export function Settings() {
   const { t, i18n } = useTranslation('settings');
+  const { t: tDashboard } = useTranslation('dashboard');
+  const loadPermissionCenter = useMorpheusCommandStore((state) => state.loadPermissionCenter);
+
+  useEffect(() => {
+    void loadPermissionCenter();
+  }, [loadPermissionCenter]);
   const {
     theme,
     setTheme,
@@ -631,6 +639,19 @@ export function Settings() {
                 <Switch checked={telemetryEnabled} onCheckedChange={setTelemetryEnabled} />
               </div>
             </div>
+          </div>
+
+          {/* Permission Center — full grant management. The Command Center
+              carries a compact summary of the same Main-owned state. */}
+          <Separator className="bg-black/5 dark:bg-white/5" />
+          <div data-testid="settings-permissions-section">
+            <h2
+              data-testid="settings-permissions-title"
+              className="text-3xl font-serif text-foreground mb-6 font-normal tracking-tight"
+            >
+              {tDashboard('morpheus.permission.centerTitle')}
+            </h2>
+            <PermissionCenter />
           </div>
 
           {/* Developer */}

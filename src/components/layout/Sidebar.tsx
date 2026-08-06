@@ -23,6 +23,7 @@ import {
   X,
   Cpu,
   LayoutDashboard,
+  MessagesSquare,
   ImagePlus,
   ChevronRight,
   ChevronsUpDown,
@@ -183,7 +184,7 @@ export function Sidebar() {
   }, [isMac, sidebarCollapsed]);
 
   const navigate = useNavigate();
-  const isOnChat = useLocation().pathname === '/';
+  const isOnChat = useLocation().pathname === '/chat';
 
   const openControlUi = async (label = 'OpenClaw Page') => {
     try {
@@ -411,10 +412,17 @@ export function Sidebar() {
 
   const coreNavItems = [
     {
-      to: '/dashboard',
+      // The Command Center is the product home; Chat is one interface into it.
+      to: '/',
       icon: <LayoutDashboard className="h-4 w-4" strokeWidth={2} />,
-      label: t('sidebar.dashboard'),
-      testId: 'sidebar-nav-dashboard',
+      label: t('sidebar.commandCenter'),
+      testId: 'sidebar-nav-command-center',
+    },
+    {
+      to: '/chat',
+      icon: <MessagesSquare className="h-4 w-4" strokeWidth={2} />,
+      label: t('sidebar.chat'),
+      testId: 'sidebar-nav-chat',
     },
     {
       to: '/models',

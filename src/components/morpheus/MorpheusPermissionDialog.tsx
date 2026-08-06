@@ -3,11 +3,11 @@
  *
  * SECURITY: this dialog shows the target Main RESOLVED, carried on the
  * `awaiting-permission` event — the absolute executable path or the absolute
- * file path. It never shows the requested parameters. A compromised Renderer
- * can therefore ask for a registered action, but it cannot make the
- * confirmation describe something other than what Main will actually do.
+ * file path. It never shows the requested parameters. A compromised renderer
+ * can ask for a registered action, but it cannot make the confirmation describe
+ * something other than what Main will actually do.
  *
- * Deny is the default focused control.
+ * Keyboard focus defaults to Deny, the safest non-execution option.
  */
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,8 +20,21 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useMorpheusActionsStore, selectPendingPermissionRun } from '@/stores/morpheus-actions';
+import type { PermissionDecisionKind } from '@shared/morpheus/permission-types';
 
 import { morpheusActionLabelKey } from './morpheus-phase';
+
+/**
+ * Ordered safest-first. Remembering a decision is offered, but never as the
+ * default and never as the visually dominant control.
+ */
+const DECISIONS: Array<{ kind: PermissionDecisionKind; variant: 'outline' | 'default' | 'destructive' }> = [
+  { kind: 'deny', variant: 'outline' },
+  { kind: 'deny-always', variant: 'outline' },
+  { kind: 'allow-once', variant: 'default' },
+  { kind: 'allow-session', variant: 'default' },
+  { kind: 'allow-always', variant: 'default' },
+];
 
 export function MorpheusPermissionDialog() {
   const { t } = useTranslation('dashboard');
@@ -33,14 +46,18 @@ export function MorpheusPermissionDialog() {
   const target = run?.target;
   const resolvedPath = target && target.kind !== 'none' ? target.path : null;
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    // Dismissing by Escape or an outside click is a denial, never an implicit
-    // grant. The Main-side timeout would deny it anyway; this is just faster.
-    if (!nextOpen && run) void respondPermission(run.runId, 'denied');
+  const decide = (decision: PermissionDecisionKind) => {
+    if (run) void respondPermission(run.runId, decision);
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        // Escape or an outside click is a denial, never an implicit grant.
+        if (!nextOpen) decide('deny');
+      }}
+    >
       <DialogContent
         data-testid="morpheus-permission-dialog"
         className="w-[calc(100%-2rem)] max-w-md rounded-lg border bg-surface-modal p-6 shadow-lg"
@@ -56,49 +73,51 @@ export function MorpheusPermissionDialog() {
           {run ? t('morpheus.permission.description', { action: t(morpheusActionLabelKey(run.actionId)) }) : ''}
         </DialogDescription>
 
-        {resolvedPath ? (
-          <div className="mt-4 rounded-md border bg-surface-input p-3">
-            <p className="text-2xs uppercase tracking-wide text-muted-foreground">
-              {target?.kind === 'executable'
-                ? t('morpheus.permission.executableLabel')
-                : t('morpheus.permission.fileLabel')}
-            </p>
-            <p
-              data-testid="morpheus-permission-target"
-              className="mt-1 break-all font-mono text-tiny"
-            >
-              {resolvedPath}
-            </p>
-            {target?.kind === 'file' ? (
-              <p className="mt-1 text-2xs text-muted-foreground">
-                {t('morpheus.permission.fileBytes', { bytes: target.bytes })}
+        <div className="mt-4 rounded-md border bg-surface-input p-3">
+          {resolvedPath ? (
+            <>
+              <p className="text-2xs uppercase tracking-wide text-muted-foreground">
+                {target?.kind === 'executable'
+                  ? t('morpheus.permission.executableLabel')
+                  : t('morpheus.permission.fileLabel')}
               </p>
-            ) : null}
-          </div>
-        ) : (
-          <div className="mt-4 rounded-md border bg-surface-input p-3">
+              <p
+                data-testid="morpheus-permission-target"
+                className="mt-1 break-all font-mono text-tiny"
+              >
+                {resolvedPath}
+              </p>
+              {target?.kind === 'file' ? (
+                <p className="mt-1 text-2xs text-muted-foreground">
+                  {t('morpheus.permission.fileBytes', { bytes: target.bytes })}
+                </p>
+              ) : null}
+            </>
+          ) : (
             <p data-testid="morpheus-permission-target" className="text-tiny text-muted-foreground">
               {t('morpheus.permission.noTarget')}
             </p>
-          </div>
-        )}
-
-        <div className="mt-6 flex justify-end gap-2">
-          <Button
-            data-testid="morpheus-permission-deny"
-            ref={denyRef}
-            variant="outline"
-            onClick={() => run && void respondPermission(run.runId, 'denied')}
-          >
-            {t('morpheus.permission.deny')}
-          </Button>
-          <Button
-            data-testid="morpheus-permission-allow"
-            onClick={() => run && void respondPermission(run.runId, 'granted')}
-          >
-            {t('morpheus.permission.allow')}
-          </Button>
+          )}
         </div>
+
+        <div className="mt-5 flex flex-col gap-2">
+          {DECISIONS.map(({ kind, variant }) => (
+            <Button
+              key={kind}
+              ref={kind === 'deny' ? denyRef : undefined}
+              data-testid={`morpheus-permission-${kind}`}
+              variant={variant}
+              onClick={() => decide(kind)}
+              className="justify-start"
+            >
+              {t(`morpheus.permission.decisions.${kind}`)}
+            </Button>
+          ))}
+        </div>
+
+        <p className="mt-3 text-2xs text-muted-foreground">
+          {t('morpheus.permission.scopeNote')}
+        </p>
       </DialogContent>
     </Dialog>
   );

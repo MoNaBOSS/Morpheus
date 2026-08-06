@@ -20,6 +20,7 @@ import { MORPHEUS_BOOT_PHASES, useBootPhases } from './use-boot-phases';
 
 /** Duration of the fade, kept in sync with `.morpheus-boot-leaving` in globals.css. */
 const LEAVE_MS = 320;
+const READY_HOLD_MS = 420;
 
 type MorpheusBootProps = {
   enabled: boolean;
@@ -30,7 +31,10 @@ export function MorpheusBoot({ enabled }: MorpheusBootProps) {
   const [leaving, setLeaving] = useState(false);
   const [unmounted, setUnmounted] = useState(!enabled);
 
-  const handleComplete = useCallback(() => setLeaving(true), []);
+  const handleComplete = useCallback(() => {
+    const timer = setTimeout(() => setLeaving(true), READY_HOLD_MS);
+    return () => clearTimeout(timer);
+  }, []);
   const { phase, progress, skip } = useBootPhases({ enabled, onComplete: handleComplete });
 
   useEffect(() => {
@@ -80,6 +84,7 @@ export function MorpheusBoot({ enabled }: MorpheusBootProps) {
           </div>
           <p
             data-testid="morpheus-boot-phase"
+            data-ready={phase === 'ready' ? 'true' : 'false'}
             className="morpheus-boot-phase mt-3 font-mono text-tiny uppercase tracking-[0.25em]"
           >
             {t(`morpheus.boot.phases.${phase}`)}

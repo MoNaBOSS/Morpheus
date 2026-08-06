@@ -7,135 +7,211 @@ import { closeElectronApp, expect, getStableWindow, test } from './fixtures/elec
 
 /**
  * The approved root is derived in Main from `app.getPath('userData')`. The
- * fixture pins userData via CLAWX_USER_DATA_DIR, so the test can assert on the
- * real filesystem rather than trusting the interface.
+ * fixture pins userData, so these tests assert against the real filesystem
+ * rather than trusting the interface.
  */
 function morpheusFilesDir(userDataDir: string): string {
   return join(userDataDir, 'morpheus', 'files');
 }
 
-async function openDashboard(page: Page): Promise<void> {
+async function openCommandCenter(page: Page): Promise<void> {
   await expect(page.getByTestId('main-layout')).toBeVisible();
-  await page.getByTestId('sidebar-nav-dashboard').click();
-  await expect(page.getByTestId('dashboard-page')).toBeVisible();
+  await expect(page.getByTestId('command-center-page')).toBeVisible();
 }
 
-test.describe('Morpheus native action permission gate', () => {
-  test('denying a file action writes nothing to disk', async ({ launchElectronApp, userDataDir }) => {
+async function runCommand(page: Page, objective: string): Promise<void> {
+  await page.getByTestId('morpheus-command-input').fill(objective);
+  await page.getByTestId('morpheus-command-submit').click();
+}
+
+const firstCard = (page: Page) => page.getByTestId('morpheus-run-card').first();
+
+test.describe('Morpheus permission engine', () => {
+  test('a privacy-safe read runs automatically under Balanced', async ({ launchElectronApp }) => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
-      await openDashboard(page);
+      await openCommandCenter(page);
 
-      await page.getByTestId('morpheus-file-name-input').fill('denied-run.txt');
-      await page.getByTestId('morpheus-file-content-input').fill('must not be written');
-      await page.getByTestId('morpheus-run-action-file.createText').click();
+      await runCommand(page, 'Show system information');
 
-      // The confirmation must name the target Main resolved, not the request.
-      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible();
-      const target = await page.getByTestId('morpheus-permission-target').innerText();
-      expect(target).toContain('denied-run.txt');
-      expect(target).toContain(join('morpheus', 'files'));
-
-      await page.getByTestId('morpheus-permission-deny').click();
-
-      await expect(page.getByTestId('morpheus-run-card').first()).toHaveAttribute('data-phase', 'denied');
-      expect(existsSync(join(morpheusFilesDir(userDataDir), 'denied-run.txt'))).toBe(false);
+      // Balanced auto-allows privacy-safe reads: no dialog should ever appear.
+      await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
+      await expect(page.getByTestId('morpheus-permission-dialog')).toHaveCount(0);
     } finally {
       await closeElectronApp(app);
     }
   });
 
-  test('allowing a file action creates exactly that file inside the approved root', async ({
+  test('a write asks the first time and writes nothing when denied', async ({
     launchElectronApp,
     userDataDir,
   }) => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
-      await openDashboard(page);
+      await openCommandCenter(page);
 
-      await page.getByTestId('morpheus-file-name-input').fill('allowed-run.txt');
-      await page.getByTestId('morpheus-file-content-input').fill('written by morpheus');
-      await page.getByTestId('morpheus-run-action-file.createText').click();
+      await runCommand(page, 'Create a text file named denied-run.txt');
 
-      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible();
-      await page.getByTestId('morpheus-permission-allow').click();
+      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
+      const target = await page.getByTestId('morpheus-permission-target').innerText();
+      expect(target).toContain('denied-run.txt');
+      expect(target).toContain(join('morpheus', 'files'));
 
-      await expect(page.getByTestId('morpheus-run-card').first())
-        .toHaveAttribute('data-phase', 'succeeded', { timeout: 15_000 });
+      await page.getByTestId('morpheus-permission-deny').click();
 
-      const dir = morpheusFilesDir(userDataDir);
-      expect(existsSync(join(dir, 'allowed-run.txt'))).toBe(true);
-      // Nothing outside the requested leaf was created.
-      expect(readdirSync(dir)).toEqual(['allowed-run.txt']);
+      await expect(firstCard(page)).toHaveAttribute('data-phase', 'denied');
+      expect(existsSync(join(morpheusFilesDir(userDataDir), 'denied-run.txt'))).toBe(false);
     } finally {
       await closeElectronApp(app);
     }
   });
 
-  test('a read-only action still requires confirmation and reports real values', async ({
+  test('allow once creates the file but is not remembered', async ({
+    launchElectronApp,
+    userDataDir,
+  }) => {
+    const app = await launchElectronApp({ skipSetup: true });
+    try {
+      const page = await getStableWindow(app);
+      await openCommandCenter(page);
+
+      await runCommand(page, 'Create a text file named once-a.txt');
+      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
+      await page.getByTestId('morpheus-permission-allow-once').click();
+      await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
+
+      const dir = morpheusFilesDir(userDataDir);
+      expect(existsSync(join(dir, 'once-a.txt'))).toBe(true);
+      expect(readdirSync(dir)).toEqual(['once-a.txt']);
+
+      // Same scope, second run: allow-once stored nothing, so it asks again.
+      await runCommand(page, 'Create a text file named once-b.txt');
+      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
+      await page.getByTestId('morpheus-permission-deny').click();
+    } finally {
+      await closeElectronApp(app);
+    }
+  });
+
+  test('allow for this session suppresses the next prompt for the same scope', async ({
     launchElectronApp,
   }) => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
-      await openDashboard(page);
+      await openCommandCenter(page);
 
-      await page.getByTestId('morpheus-run-action-system.report').click();
-      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible();
-      // No target: this action neither writes nor launches.
-      await expect(page.getByTestId('morpheus-permission-target')).toBeVisible();
+      await runCommand(page, 'Create a text file named session-a.txt');
+      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
+      await page.getByTestId('morpheus-permission-allow-session').click();
+      await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
 
-      await page.getByTestId('morpheus-permission-allow').click();
-      await expect(page.getByTestId('morpheus-run-card').first())
-        .toHaveAttribute('data-phase', 'succeeded', { timeout: 15_000 });
+      // A different file inside the SAME approved root is the same scope.
+      await runCommand(page, 'Create a text file named session-b.txt');
+      await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
+      await expect(page.getByTestId('morpheus-permission-dialog')).toHaveCount(0);
+
+      await expect(page.getByTestId('morpheus-session-grant-count')).toBeVisible();
     } finally {
       await closeElectronApp(app);
     }
   });
 
-  test('the timeline records the full real phase sequence', async ({ launchElectronApp }) => {
+  test('revoking the session grant makes the next run ask again', async ({ launchElectronApp }) => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
-      await openDashboard(page);
-      await expect(page.getByTestId('morpheus-timeline-empty')).toBeVisible();
+      await openCommandCenter(page);
 
-      await page.getByTestId('morpheus-run-action-system.report').click();
-      // Awaiting confirmation is a real emitted phase, visible before any input.
-      await expect(page.getByTestId('morpheus-run-card').first())
-        .toHaveAttribute('data-phase', 'awaiting-permission');
+      await runCommand(page, 'Create a text file named revoke-a.txt');
+      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
+      await page.getByTestId('morpheus-permission-allow-session').click();
+      await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
 
+      // Revoke from the Permission Center in Settings.
+      await page.getByTestId('sidebar-nav-settings').click();
+      await expect(page.getByTestId('settings-permissions-section')).toBeVisible();
+      await page.getByTestId('morpheus-revoke-all-session').click();
+
+      await page.getByTestId('sidebar-nav-command-center').click();
+      await runCommand(page, 'Create a text file named revoke-b.txt');
+
+      // Revocation takes effect on the next execution, without a restart.
+      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
       await page.getByTestId('morpheus-permission-deny').click();
-      await expect(page.getByTestId('morpheus-run-card').first())
-        .toHaveAttribute('data-phase', 'denied');
-      await expect(page.getByTestId('morpheus-run-card')).toHaveCount(1);
     } finally {
       await closeElectronApp(app);
     }
   });
 
-  test('launching an approved application is confirmed with the resolved executable path', async ({
+  test('a persistent grant survives a restart', async ({ launchElectronApp }) => {
+    const first = await launchElectronApp({ skipSetup: true });
+    try {
+      const page = await getStableWindow(first);
+      await openCommandCenter(page);
+
+      await runCommand(page, 'Create a text file named persist-a.txt');
+      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
+      await page.getByTestId('morpheus-permission-allow-always').click();
+      await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
+    } finally {
+      await closeElectronApp(first);
+    }
+
+    // Same isolated profile, new process.
+    const second = await launchElectronApp({ skipSetup: true });
+    try {
+      const page = await getStableWindow(second);
+      await openCommandCenter(page);
+
+      await runCommand(page, 'Create a text file named persist-b.txt');
+      await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
+      await expect(page.getByTestId('morpheus-permission-dialog')).toHaveCount(0);
+    } finally {
+      await closeElectronApp(second);
+    }
+  });
+
+  test('launching an approved application confirms the resolved executable', async ({
     launchElectronApp,
   }) => {
     test.skip(process.platform !== 'win32', 'app.launch ships a win32 capability only');
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
-      await openDashboard(page);
+      await openCommandCenter(page);
 
-      await page.getByTestId('morpheus-run-action-app.launch').click();
-      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible();
+      await runCommand(page, 'Open Notepad');
+      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
 
       const target = await page.getByTestId('morpheus-permission-target').innerText();
       expect(target.toLowerCase()).toContain('system32');
       expect(target.toLowerCase()).toContain('notepad.exe');
 
-      // Deny: the assertion under test is that the resolved path is shown, and
-      // leaving a GUI process running would leak into later specs.
+      // Deny: the assertion is that the resolved path is shown, and leaving a
+      // GUI process running would leak into later specs.
       await page.getByTestId('morpheus-permission-deny').click();
-      await expect(page.getByTestId('morpheus-run-card').first()).toHaveAttribute('data-phase', 'denied');
+      await expect(firstCard(page)).toHaveAttribute('data-phase', 'denied');
+    } finally {
+      await closeElectronApp(app);
+    }
+  });
+
+  test('an unsupported command is refused truthfully', async ({ launchElectronApp }) => {
+    const app = await launchElectronApp({ skipSetup: true });
+    try {
+      const page = await getStableWindow(app);
+      await openCommandCenter(page);
+
+      await runCommand(page, 'delete every file on this computer');
+
+      const refusal = page.getByTestId('morpheus-command-unsupported');
+      await expect(refusal).toBeVisible();
+      // Nothing ran, and no capability was invented.
+      await expect(page.getByTestId('morpheus-run-card')).toHaveCount(0);
+      await expect(page.getByTestId('morpheus-permission-dialog')).toHaveCount(0);
     } finally {
       await closeElectronApp(app);
     }

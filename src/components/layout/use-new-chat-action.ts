@@ -24,6 +24,6 @@ export function useNewChatAction(): () => void {
     }
 
     newSession();
-    navigate('/');
+    navigate('/chat');
   }, [navigate, newSession, setChatWorkspacePath]);
 }

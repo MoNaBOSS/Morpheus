@@ -95,7 +95,7 @@ export function createTray(mainWindow: BrowserWindow): Tray {
           click: () => {
             if (mainWindow.isDestroyed()) return;
             mainWindow.show();
-            mainWindow.webContents.send('navigate', '/');
+            mainWindow.webContents.send('navigate', '/chat');
           },
         },
         {

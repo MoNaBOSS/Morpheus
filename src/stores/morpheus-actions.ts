@@ -13,11 +13,11 @@ import { create } from 'zustand';
 
 import { hostApi } from '@/lib/host-api';
 import { hostEvents } from '@/lib/host-events';
+import type { PermissionDecisionKind } from '@shared/morpheus/permission-types';
 import type {
   MorpheusActionEvent,
   MorpheusActionSnapshot,
   MorpheusAuditEntry,
-  MorpheusPermissionDecision,
   MorpheusRun,
   MorpheusSystemInfo,
 } from '@shared/morpheus/action-types';
@@ -43,7 +43,7 @@ export type MorpheusActionsState = MorpheusActionSnapshot & {
   loadCapabilities: () => Promise<void>;
   loadAudit: (limit?: number) => Promise<void>;
   requestAction: (actionId: MorpheusActionId, params?: Record<string, string>) => Promise<string | null>;
-  respondPermission: (runId: string, decision: MorpheusPermissionDecision) => Promise<void>;
+  respondPermission: (runId: string, decision: PermissionDecisionKind) => Promise<void>;
   cancelAction: (runId: string) => Promise<void>;
   clearRequestError: () => void;
   reset: () => void;

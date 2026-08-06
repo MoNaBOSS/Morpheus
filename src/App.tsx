@@ -11,7 +11,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Models } from './pages/Models';
 import { Chat } from './pages/Chat';
-import { Dashboard } from './pages/Dashboard';
+import { CommandCenter } from './pages/CommandCenter';
 import { Agents } from './pages/Agents';
 import { Channels } from './pages/Channels';
 import { Skills } from './pages/Skills';
@@ -213,8 +213,11 @@ function App() {
 
           {/* Main application routes */}
           <Route element={<MainLayout />}>
-            <Route path="/" element={<Chat />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            {/* Command Center is the product home; Chat is one interface into it. */}
+            <Route path="/" element={<CommandCenter />} />
+            <Route path="/chat" element={<Chat />} />
+            {/* 0.1 shipped the command surface at /dashboard; keep that link alive. */}
+            <Route path="/dashboard" element={<Navigate to="/" replace />} />
             <Route path="/models" element={<Models />} />
             <Route path="/agents" element={<Agents />} />
             <Route path="/channels" element={<Channels />} />

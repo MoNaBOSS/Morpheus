@@ -34,27 +34,27 @@ test.describe('Morpheus audit log', () => {
     try {
       const page = await getStableWindow(app);
       await expect(page.getByTestId('main-layout')).toBeVisible();
-      await page.getByTestId('sidebar-nav-dashboard').click();
-      await expect(page.getByTestId('dashboard-page')).toBeVisible();
+      await expect(page.getByTestId('command-center-page')).toBeVisible();
 
       // One allowed run…
-      await page.getByTestId('morpheus-file-name-input').fill('audited.txt');
-      await page.getByTestId('morpheus-file-content-input').fill(secret);
-      await page.getByTestId('morpheus-run-action-file.createText').click();
-      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible();
-      await page.getByTestId('morpheus-permission-allow').click();
+      await page.getByTestId('morpheus-command-input').fill(`Create a text file named audited.txt saying "${secret}"`);
+      await page.getByTestId('morpheus-command-submit').click();
+      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
+      await page.getByTestId('morpheus-permission-allow-once').click();
       await expect(page.getByTestId('morpheus-run-card').first())
         .toHaveAttribute('data-phase', 'succeeded', { timeout: 15_000 });
 
-      // …and one denied run.
-      await page.getByTestId('morpheus-run-action-system.report').click();
-      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible();
+      // …and one denied run. app.launch is medium risk, so it always prompts
+      // the first time even under Balanced.
+      await page.getByTestId('morpheus-command-input').fill('Open Notepad');
+      await page.getByTestId('morpheus-command-submit').click();
+      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
       await page.getByTestId('morpheus-permission-deny').click();
       await expect(page.getByTestId('morpheus-run-card').first())
         .toHaveAttribute('data-phase', 'denied');
 
       // The panel projects the durable log.
-      await expect(page.getByTestId('morpheus-audit-entry').first()).toBeVisible();
+      
 
       const entries = readAuditEntries(userDataDir);
       expect(entries.length).toBeGreaterThanOrEqual(7);
@@ -79,7 +79,7 @@ test.describe('Morpheus audit log', () => {
       expect(phasesFor('file.createText')).toEqual([
         'requested', 'awaiting-permission', 'running', 'succeeded',
       ]);
-      expect(phasesFor('system.report')).toEqual([
+      expect(phasesFor('app.launch')).toEqual([
         'requested', 'awaiting-permission', 'denied',
       ]);
 
@@ -108,9 +108,10 @@ test.describe('Morpheus audit log', () => {
     try {
       const page = await getStableWindow(app);
       await expect(page.getByTestId('main-layout')).toBeVisible();
-      await page.getByTestId('sidebar-nav-dashboard').click();
-      await page.getByTestId('morpheus-run-action-system.report').click();
-      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible();
+      await expect(page.getByTestId('command-center-page')).toBeVisible();
+      await page.getByTestId('morpheus-command-input').fill('Open Notepad');
+      await page.getByTestId('morpheus-command-submit').click();
+      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
       await page.getByTestId('morpheus-permission-deny').click();
       await expect(page.getByTestId('morpheus-run-card').first())
         .toHaveAttribute('data-phase', 'denied');

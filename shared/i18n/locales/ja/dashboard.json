@@ -112,8 +112,8 @@
         }
     },
     "morpheus": {
-        "title": "Morpheus コマンドセンター",
-        "subtitle": "明示的な確認を伴うネイティブ操作と、追記専用の監査ログ。",
+        "title": "Morpheus",
+        "subtitle": "AI 実行プラットフォーム — 計画・許可・実行・監査。",
         "systemPanel": {
             "title": "システム",
             "description": "プライバシーに配慮したランタイム情報。",
@@ -174,7 +174,60 @@
             "noTarget": "この操作はランタイム情報を読み取るだけで、書き込みも起動も行いません。",
             "fileBytes": "{{bytes}} バイト",
             "allow": "許可",
-            "deny": "拒否"
+            "deny": "拒否",
+            "centerTitle": "権限",
+            "profileLabel": "権限プロファイル",
+            "loading": "権限ポリシーを読み込み中…",
+            "revoke": "取り消す",
+            "revokeAllSession": "セッション許可を取り消す",
+            "resetPolicy": "ポリシーをリセット",
+            "sessionCount": "セッション {{count}} 件",
+            "persistentCount": "保存済み {{count}} 件",
+            "deniedCount": "拒否 {{count}} 件",
+            "lastUsed": "{{time}} に使用",
+            "scopeNote": "保存された判断は、この操作とこの対象にのみ適用されます。",
+            "degradedExplanation": "監査が利用できないため、Morpheus は機能を制限して動作しています。監査が復旧するまで、プライバシーに配慮した読み取り専用の操作のみ実行できます。",
+            "profiles": {
+                "strict": {
+                    "name": "厳格",
+                    "description": "読み取り専用の確認は自動実行。書き込みや起動は毎回確認します。"
+                },
+                "balanced": {
+                    "name": "バランス",
+                    "description": "読み取り専用の確認は自動実行。その他は初回に確認し、正確な対象に対して判断を記憶できます。"
+                },
+                "autonomous": {
+                    "name": "自律",
+                    "description": "低リスクの操作は自動実行。その他は信頼済みの対象内でのみ実行。高リスクは常に確認します。"
+                }
+            },
+            "decisions": {
+                "deny": "拒否",
+                "deny-always": "この操作を常に拒否",
+                "allow-once": "今回のみ許可",
+                "allow-session": "このセッション中は許可",
+                "allow-always": "この操作を常に許可"
+            },
+            "grantTypes": {
+                "session": "このセッション",
+                "persistent": "保存済み",
+                "denied-persistent": "常に拒否"
+            },
+            "sections": {
+                "session": "セッション許可",
+                "persistent": "保存済み許可",
+                "denied": "拒否"
+            },
+            "reasons": {
+                "privacy-safe-auto": "自動実行：プライバシーに配慮した読み取り専用操作",
+                "profile-auto": "自動実行：現在のプロファイルで許可",
+                "session-grant": "自動実行：このセッションで許可済み",
+                "persistent-grant": "自動実行：この対象は承認済み",
+                "prompt-required": "確認が必要：新しい範囲",
+                "mandatory-confirmation": "このリスクレベルでは常に確認が必要",
+                "persistent-denial": "保存された拒否によりブロック",
+                "audit-degraded": "ブロック：監査利用不可"
+            }
         },
         "timeline": {
             "title": "実行タイムライン",
@@ -200,6 +253,34 @@
             },
             "skip": "Esc でスキップ",
             "title": "MORPHEUS"
+        },
+        "command": {
+            "label": "コマンド",
+            "placeholder": "目的を入力（例：「システム情報を表示」）",
+            "run": "実行",
+            "unsupportedTitle": "Morpheus はまだそれを実行できません",
+            "unsupportedBody": "そのコマンドは Morpheus が実際に持つ機能に対応していません。現在の対応："
+        },
+        "status": {
+            "runtimeReady": "ランタイム準備完了",
+            "runtimeStarting": "ランタイム起動中",
+            "runtimeStopped": "ランタイム停止",
+            "providerUnknown": "プロバイダー未設定",
+            "auditDegraded": "監査利用不可"
+        },
+        "artifacts": {
+            "title": "成果物",
+            "rootLabel": "承認済みファイルの場所",
+            "rootUnknown": "利用不可",
+            "open": "開く",
+            "empty": "成果物はまだありません。完了した操作がここに表示されます。"
+        },
+        "plan": {
+            "steps": {
+                "systemReport": "プライバシーに配慮したシステム情報を収集",
+                "fileCreateText": "承認済みフォルダに {{fileName}} を作成",
+                "appLaunch": "{{application}} を起動"
+            }
         }
     }
 }

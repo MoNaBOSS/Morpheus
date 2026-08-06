@@ -130,7 +130,7 @@ export async function createMenu(language?: string): Promise<void> {
           accelerator: 'CmdOrCtrl+1',
           click: () => {
             const win = getMenuTargetWindow();
-            win?.webContents.send('navigate', '/');
+            win?.webContents.send('navigate', '/chat');
           },
         },
         {
@@ -138,7 +138,7 @@ export async function createMenu(language?: string): Promise<void> {
           accelerator: 'CmdOrCtrl+2',
           click: () => {
             const win = getMenuTargetWindow();
-            win?.webContents.send('navigate', '/');
+            win?.webContents.send('navigate', '/chat');
           },
         },
         {

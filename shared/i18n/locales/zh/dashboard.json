@@ -112,8 +112,8 @@
         }
     },
     "morpheus": {
-        "title": "Morpheus 指挥中心",
-        "subtitle": "需要明确确认的本机系统操作，并附带只追加的审计记录。",
+        "title": "Morpheus",
+        "subtitle": "AI 执行平台 —— 规划、授权、执行、审计。",
         "systemPanel": {
             "title": "系统",
             "description": "不含隐私信息的运行时信息。",
@@ -174,7 +174,60 @@
             "noTarget": "此操作仅读取运行时信息，不会写入或启动任何内容。",
             "fileBytes": "{{bytes}} 字节",
             "allow": "允许",
-            "deny": "拒绝"
+            "deny": "拒绝",
+            "centerTitle": "权限",
+            "profileLabel": "权限模式",
+            "loading": "正在加载权限策略…",
+            "revoke": "撤销",
+            "revokeAllSession": "撤销会话授权",
+            "resetPolicy": "重置策略",
+            "sessionCount": "{{count}} 个会话",
+            "persistentCount": "{{count}} 个已保存",
+            "deniedCount": "{{count}} 个已拒绝",
+            "lastUsed": "使用于 {{time}}",
+            "scopeNote": "已保存的决定仅适用于该操作与该目标。",
+            "degradedExplanation": "审计不可用，Morpheus 正以受限状态运行。在审计恢复前，仅允许执行不涉及隐私的只读操作。",
+            "profiles": {
+                "strict": {
+                    "name": "严格",
+                    "description": "只读检查自动执行。所有写入或启动操作每次都会询问。"
+                },
+                "balanced": {
+                    "name": "平衡",
+                    "description": "只读检查自动执行。其他操作首次询问，可针对确切目标记住该决定。"
+                },
+                "autonomous": {
+                    "name": "自主",
+                    "description": "低风险操作自动执行。其他操作仅在已信任的目标内执行。高风险操作始终询问。"
+                }
+            },
+            "decisions": {
+                "deny": "拒绝",
+                "deny-always": "始终拒绝此确切操作",
+                "allow-once": "允许一次",
+                "allow-session": "本次会话内允许",
+                "allow-always": "始终允许此确切操作"
+            },
+            "grantTypes": {
+                "session": "本次会话",
+                "persistent": "已保存",
+                "denied-persistent": "始终拒绝"
+            },
+            "sections": {
+                "session": "会话授权",
+                "persistent": "已保存授权",
+                "denied": "已拒绝"
+            },
+            "reasons": {
+                "privacy-safe-auto": "自动执行：不涉及隐私的只读操作",
+                "profile-auto": "自动执行：当前模式允许",
+                "session-grant": "自动执行：本次会话已允许",
+                "persistent-grant": "自动执行：该确切目标已保存批准",
+                "prompt-required": "需要确认：新的范围",
+                "mandatory-confirmation": "该风险等级始终需要确认",
+                "persistent-denial": "被已保存的拒绝阻止",
+                "audit-degraded": "已阻止：审计不可用"
+            }
         },
         "timeline": {
             "title": "执行时间线",
@@ -200,6 +253,34 @@
             },
             "skip": "按 Esc 跳过",
             "title": "MORPHEUS"
+        },
+        "command": {
+            "label": "命令",
+            "placeholder": "描述一个目标，例如“显示系统信息”",
+            "run": "运行",
+            "unsupportedTitle": "Morpheus 暂时无法执行该操作",
+            "unsupportedBody": "该命令未映射到 Morpheus 实际具备的能力。当前支持："
+        },
+        "status": {
+            "runtimeReady": "运行时就绪",
+            "runtimeStarting": "运行时启动中",
+            "runtimeStopped": "运行时已停止",
+            "providerUnknown": "未配置提供方",
+            "auditDegraded": "审计不可用"
+        },
+        "artifacts": {
+            "title": "产物",
+            "rootLabel": "已批准的文件位置",
+            "rootUnknown": "不可用",
+            "open": "打开",
+            "empty": "暂无产物。完成的操作将显示在此处。"
+        },
+        "plan": {
+            "steps": {
+                "systemReport": "收集不涉及隐私的系统信息",
+                "fileCreateText": "在已批准的文件夹中创建 {{fileName}}",
+                "appLaunch": "启动 {{application}}"
+            }
         }
     }
 }

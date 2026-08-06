@@ -32,6 +32,7 @@ import {
   type ExecutionOriginType,
 } from '@shared/morpheus/execution-types';
 import {
+  PERMISSION_DECISION_KINDS,
   PERMISSION_PROFILES,
   type PermissionCenterSnapshot,
   type PermissionProfile,
@@ -77,7 +78,18 @@ function assertNoUnknownKeys(record: Record<string, unknown>, allowed: string[],
  */
 export function validateRequestActionPayload(payload: unknown): MorpheusRequestActionPayload {
   const record = requireRecord(payload, 'requestAction payload');
-  assertNoUnknownKeys(record, ['actionId', 'params'], 'requestAction payload');
+  assertNoUnknownKeys(record, ['actionId', 'params', 'originType', 'agentId'], 'requestAction payload');
+
+  // Origin and agent identity participate in grant scope, so they are validated
+  // as strictly as the action itself — an unrecognised origin is rejected, not
+  // silently coerced into a broader one.
+  if (record.originType !== undefined
+    && !EXECUTION_ORIGIN_TYPES.includes(record.originType as ExecutionOriginType)) {
+    throw new MorpheusValidationError('unsupported originType');
+  }
+  if (record.agentId !== undefined && typeof record.agentId !== 'string') {
+    throw new MorpheusValidationError('agentId must be a string');
+  }
 
   const actionId = requireNonEmptyString(record.actionId, 'actionId');
   if (!isMorpheusActionId(actionId)) {
@@ -87,12 +99,15 @@ export function validateRequestActionPayload(payload: unknown): MorpheusRequestA
   const descriptor = getMorpheusActionDescriptor(actionId);
   const allowedParamKeys = descriptor.params.map((param) => param.key);
 
+  const origin = record.originType as ExecutionOriginType | undefined;
+  const agentId = record.agentId as string | undefined;
+
   if (record.params === undefined) {
     const missing = descriptor.params.filter((param) => param.required);
     if (missing.length > 0) {
       throw new MorpheusValidationError(`Missing required parameters: ${missing.map((p) => p.key).join(', ')}`);
     }
-    return { actionId };
+    return { actionId, ...(origin ? { originType: origin } : {}), ...(agentId ? { agentId } : {}) };
   }
 
   const rawParams = requireRecord(record.params, 'params');
@@ -115,7 +130,7 @@ export function validateRequestActionPayload(payload: unknown): MorpheusRequestA
     params[descriptorParam.key as keyof MorpheusActionParams] = value;
   }
 
-  return { actionId, params };
+  return { actionId, params, ...(origin ? { originType: origin } : {}), ...(agentId ? { agentId } : {}) };
 }
 
 export function validateRespondPermissionPayload(payload: unknown): MorpheusRespondPermissionPayload {
@@ -123,10 +138,14 @@ export function validateRespondPermissionPayload(payload: unknown): MorpheusResp
   assertNoUnknownKeys(record, ['runId', 'decision'], 'respondPermission payload');
   const runId = requireNonEmptyString(record.runId, 'runId');
   const decision = record.decision;
-  if (decision !== 'granted' && decision !== 'denied') {
-    throw new MorpheusValidationError('decision must be "granted" or "denied"');
+  // The five decision kinds, plus the 0.1 wire values which Main normalises.
+  const accepted = [...PERMISSION_DECISION_KINDS, 'granted', 'denied'];
+  if (typeof decision !== 'string' || !accepted.includes(decision)) {
+    throw new MorpheusValidationError(
+      `decision must be one of: ${accepted.join(', ')}`,
+    );
   }
-  return { runId, decision };
+  return { runId, decision: decision as MorpheusRespondPermissionPayload['decision'] };
 }
 
 export function validateCancelActionPayload(payload: unknown): MorpheusCancelActionPayload {

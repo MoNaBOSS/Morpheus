@@ -122,7 +122,13 @@ describe('validateRequestActionPayload', () => {
 });
 
 describe('validateRespondPermissionPayload', () => {
-  it('accepts both decisions', () => {
+  it('accepts the five decision kinds and the legacy wire values', () => {
+    for (const decision of ['deny', 'deny-always', 'allow-once', 'allow-session', 'allow-always'] as const) {
+      expect(validateRespondPermissionPayload({ runId: 'r1', decision })).toEqual({ runId: 'r1', decision });
+    }
+  });
+
+  it('accepts both legacy decisions', () => {
     expect(validateRespondPermissionPayload({ runId: 'r1', decision: 'granted' }))
       .toEqual({ runId: 'r1', decision: 'granted' });
     expect(validateRespondPermissionPayload({ runId: 'r1', decision: 'denied' }))
@@ -130,9 +136,9 @@ describe('validateRespondPermissionPayload', () => {
   });
 
   it('rejects anything else', () => {
-    expect(() => validateRespondPermissionPayload({ runId: 'r1', decision: 'maybe' })).toThrow(/granted/);
+    expect(() => validateRespondPermissionPayload({ runId: 'r1', decision: 'maybe' })).toThrow(/decision must be one of/);
     expect(() => validateRespondPermissionPayload({ runId: '', decision: 'granted' })).toThrow(/non-empty/);
-    expect(() => validateRespondPermissionPayload({ runId: 'r1' })).toThrow(/granted/);
+    expect(() => validateRespondPermissionPayload({ runId: 'r1' })).toThrow(/decision must be one of/);
     expect(() => validateRespondPermissionPayload({ runId: 'r1', decision: 'granted', force: true }))
       .toThrow(/unsupported key: force/);
   });

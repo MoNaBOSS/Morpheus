@@ -112,8 +112,8 @@
         }
     },
     "morpheus": {
-        "title": "Morpheus Command Center",
-        "subtitle": "Native system actions with explicit confirmation and an append-only audit trail.",
+        "title": "Morpheus",
+        "subtitle": "AI execution platform — plan, permission, execute, audit.",
         "systemPanel": {
             "title": "System",
             "description": "Privacy-safe runtime information.",
@@ -174,7 +174,60 @@
             "noTarget": "This action reads runtime information only. Nothing is written or launched.",
             "fileBytes": "{{bytes}} bytes",
             "allow": "Allow",
-            "deny": "Deny"
+            "deny": "Deny",
+            "centerTitle": "Permissions",
+            "profileLabel": "Permission profile",
+            "loading": "Loading permission policy…",
+            "revoke": "Revoke",
+            "revokeAllSession": "Revoke session grants",
+            "resetPolicy": "Reset policy",
+            "sessionCount": "{{count}} session",
+            "persistentCount": "{{count}} saved",
+            "deniedCount": "{{count}} denied",
+            "lastUsed": "used {{time}}",
+            "scopeNote": "Saved decisions apply only to this exact action and target.",
+            "degradedExplanation": "Auditing is unavailable, so Morpheus is running in a reduced-capability state. Only privacy-safe read-only actions can run until auditing recovers.",
+            "profiles": {
+                "strict": {
+                    "name": "Strict",
+                    "description": "Read-only checks run automatically. Everything that writes or launches asks every time."
+                },
+                "balanced": {
+                    "name": "Balanced",
+                    "description": "Read-only checks run automatically. Other actions ask the first time, and you can remember that decision for an exact target."
+                },
+                "autonomous": {
+                    "name": "Autonomous",
+                    "description": "Low-risk actions run automatically. Other actions run only inside targets you have already trusted. High-risk actions always ask."
+                }
+            },
+            "decisions": {
+                "deny": "Deny",
+                "deny-always": "Always deny this exact action",
+                "allow-once": "Allow once",
+                "allow-session": "Allow for this session",
+                "allow-always": "Always allow this exact action"
+            },
+            "grantTypes": {
+                "session": "This session",
+                "persistent": "Saved",
+                "denied-persistent": "Always denied"
+            },
+            "sections": {
+                "session": "Session grants",
+                "persistent": "Saved grants",
+                "denied": "Denied"
+            },
+            "reasons": {
+                "privacy-safe-auto": "Ran automatically: privacy-safe read-only action",
+                "profile-auto": "Ran automatically: allowed by the current profile",
+                "session-grant": "Ran automatically: allowed for this session",
+                "persistent-grant": "Ran automatically: saved approval for this exact target",
+                "prompt-required": "Confirmation required: new scope",
+                "mandatory-confirmation": "Confirmation always required for this risk level",
+                "persistent-denial": "Blocked by a saved denial",
+                "audit-degraded": "Blocked: auditing unavailable"
+            }
         },
         "timeline": {
             "title": "Execution timeline",
@@ -200,6 +253,34 @@
             },
             "skip": "Press Esc to skip",
             "title": "MORPHEUS"
+        },
+        "command": {
+            "label": "Command",
+            "placeholder": "Describe an objective, e.g. \"Show system information\"",
+            "run": "Run",
+            "unsupportedTitle": "Morpheus cannot do that yet",
+            "unsupportedBody": "That command does not map to a capability Morpheus actually has. It supports:"
+        },
+        "status": {
+            "runtimeReady": "Runtime ready",
+            "runtimeStarting": "Runtime starting",
+            "runtimeStopped": "Runtime stopped",
+            "providerUnknown": "No provider configured",
+            "auditDegraded": "Audit unavailable"
+        },
+        "artifacts": {
+            "title": "Artifacts",
+            "rootLabel": "Approved files location",
+            "rootUnknown": "Not available",
+            "open": "Open",
+            "empty": "No artifacts yet. Completed actions appear here."
+        },
+        "plan": {
+            "steps": {
+                "systemReport": "Collect privacy-safe system information",
+                "fileCreateText": "Create {{fileName}} in the approved folder",
+                "appLaunch": "Launch {{application}}"
+            }
         }
     }
 }
