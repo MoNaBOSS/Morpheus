@@ -9,10 +9,30 @@
 Morpheus performs real operating-system work on behalf of a user who cannot audit
 every action personally. Two failure modes are equally unacceptable:
 
-- **Confirm everything** — trains users to click through prompts without reading.
+- **Confirm everything** — trains users to click through prompts without reading,
+  and makes the product feel like supervising a tool rather than delegating work.
 - **Trust everything** — hands an AI provider unrestricted machine authority.
 
-The answer is **narrow, remembered, revocable consent** graded by risk.
+The answer is **narrow, remembered, revocable consent** graded by risk, evaluated
+**per plan rather than per call**.
+
+### The interruption principle (0.5)
+
+> Ask when the trust boundary changes. Not every time a function executes.
+
+Morpheus analyses the user's whole intent, builds a complete plan, evaluates all
+of its scopes together against the active profile and existing grants, and asks
+**once** — only for boundaries that are genuinely new or materially wider than
+what was already authorized. A plan that stays inside existing trust runs with no
+interruption at all.
+
+Interruption is reserved for:
+
+- a command Morpheus did not understand well enough to plan safely
+- genuinely consequential trust changes (see `critical` below)
+- access materially broader than anything previously authorized
+
+Balanced should feel convenient. Autonomous should feel genuinely autonomous.
 
 ## Authority
 
@@ -30,10 +50,15 @@ Every capability descriptor declares a tier:
 
 | Tier | Meaning | Default treatment |
 | --- | --- | --- |
-| `low` | Privacy-safe, read-only, no side effects | May run automatically |
-| `medium` | Bounded side effect in an approved scope | Ask first time; grantable |
-| `high` | Significant or hard-to-reverse effect | Always confirm |
-| `critical` | Irreversible, financial, or security-affecting | Always confirm |
+| `low` | Privacy-safe, read-only, no side effects | Runs automatically |
+| `medium` | Bounded side effect in an approved scope | Asks once per new scope; grantable |
+| `high` | Sensitive or wide-reaching, but reversible | Asks once per new scope; **grantable**. Never auto-runs on an unseen scope. |
+| `critical` | Irreversible, financial, or security-affecting | **Unwaivable.** Always confirms. |
+
+`high` is deliberately grantable. Making sensitive-but-reversible work prompt
+forever produces prompt fatigue, which is itself a security failure: users stop
+reading. Screenshots, clipboard reads and broad directory listings sit here —
+visible and audited, but not a dialog every time.
 
 ### Current capabilities
 
@@ -43,22 +68,24 @@ Every capability descriptor declares a tier:
 | `app.launch` | `medium` | Starts a process, but only a compiled-in approved application |
 | `file.createText` | `medium` | Writes only inside the canonical root, exclusive-create, no overwrite |
 
-### Reserved — always confirm regardless of profile or grant
+### `critical` — always confirms, regardless of profile or grant
 
-Not implemented in this milestone. The policy invariants are encoded and tested now
-so they cannot later be weakened by accident:
+This is the only unwaivable tier. Nothing implements these yet; the invariants
+are encoded and tested so they cannot later be weakened by accident:
 
-- File deletion or overwrite
+- File deletion or overwrite of existing content
 - Financial or cryptocurrency transactions
 - Wallet signing
 - Credential or secret access
 - Privilege elevation
 - Software installation
 - Arbitrary shell / PowerShell execution
-- Broad filesystem access
-- External messages, publishing, social posting
 - Security-setting changes
 - Any irreversible action
+
+Note what is **no longer** on this list: broad filesystem *reads*, screenshots and
+external messaging are sensitive but reversible, so they are `high` and grantable
+rather than permanently interrupting.
 
 ## Permission profiles
 
@@ -71,18 +98,19 @@ so they cannot later be weakened by accident:
 ### Balanced — default
 
 - Privacy-safe read-only operations run automatically.
-- Medium-risk operations ask the **first time**.
+- Medium and high risk ask the **first time for a given scope**, then honour the grant.
 - The user may allow once, for the session, or permanently **for an exact scope**.
-- A matching grant executes without another prompt.
+- A plan whose scopes are all already granted runs with no prompt at all.
 
 ### Autonomous
 
 - Low-risk operations run automatically.
-- Medium-risk operations run automatically **only inside explicitly trusted scopes**.
-- High and critical risk still require confirmation.
+- Medium-risk operations run automatically **inside explicitly trusted scopes**.
+- High risk surfaces once for a scope the user has never seen, then follows the grant.
+- `critical` still confirms, always.
 
 > Autonomous is **not** arbitrary shell access. It widens where remembered trust
-> applies; it never removes the mandatory-confirmation floor.
+> applies; it never removes the `critical` floor.
 
 ## Decision options
 

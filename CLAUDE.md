@@ -22,7 +22,9 @@ Chat is one interface into Morpheus, not the product itself.
 | [`docs/product/MORPHEUS_VISION.md`](docs/product/MORPHEUS_VISION.md) | What Morpheus is; honesty requirements |
 | [`docs/product/PRODUCT_PRINCIPLES.md`](docs/product/PRODUCT_PRINCIPLES.md) | Operating rules and definition of done |
 | [`docs/product/EDITIONS_AND_PLATFORMS.md`](docs/product/EDITIONS_AND_PLATFORMS.md) | Free vs Unrestricted; platform targets |
-| [`docs/security/PERMISSION_MODEL.md`](docs/security/PERMISSION_MODEL.md) | Risk tiers, profiles, grant scopes |
+| [`docs/security/PERMISSION_MODEL.md`](docs/security/PERMISSION_MODEL.md) | Risk tiers, profiles, grant scopes, the interruption principle |
+| [`docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md`](docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md) | Plan executor, trust delta, 0.5 decisions |
+| [`docs/design/MORPHEUS_DESIGN_SYSTEM.md`](docs/design/MORPHEUS_DESIGN_SYSTEM.md) | Tokens, primitives, accent discipline |
 | [`docs/architecture/MORPHEUS_ARCHITECTURE.md`](docs/architecture/MORPHEUS_ARCHITECTURE.md) | Layers, boundaries, extension recipes |
 | [`docs/roadmap/MORPHEUS_ROADMAP.md`](docs/roadmap/MORPHEUS_ROADMAP.md) | Sequencing and what is not planned |
 | [`docs/releases/0.1.1-ACCEPTANCE.md`](docs/releases/0.1.1-ACCEPTANCE.md) | Current milestone criteria |
@@ -56,7 +58,8 @@ particular, all of these continue to hold:
    validated parameters — never an executable path, argv, environment, shell string
    or arbitrary filesystem path. Unknown payload keys are rejected, not ignored.
 2. **Grants are narrow and revocable.** Exact capability + platform + resource. No
-   wildcards. High and critical risk always confirm.
+   wildcards. Permissions are evaluated **per plan**, asked once for genuinely new
+   boundaries, and only `critical` is unwaivable.
 3. **Record before you report.** Audit is written and awaited before a phase reaches
    the renderer. When auditing is unhealthy, degrade — do not proceed.
 4. **No fakery.** No simulated events, fabricated capabilities, invented diagnostics
