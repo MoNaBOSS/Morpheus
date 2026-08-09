@@ -37,12 +37,23 @@ export const PERMISSION_DECISION_KINDS: readonly PermissionDecisionKind[] = Obje
   'allow-always',
 ]);
 
-/** Decisions that create a stored grant. `allow-once` deliberately does not. */
-export function decisionCreatesGrant(decision: PermissionDecisionKind): boolean {
-  return decision === 'allow-session' || decision === 'allow-always' || decision === 'deny-always';
-}
-
 export type GrantType = 'session' | 'persistent' | 'denied-persistent';
+
+/**
+ * The grant a decision creates, or `null` for a one-time answer.
+ *
+ * One definition rather than an inline ternary at each call site: a second copy
+ * that mapped `allow-always` to a session grant (or worse, the reverse) would
+ * silently widen or narrow trust, and the two paths would drift apart.
+ */
+export function grantTypeForDecision(decision: PermissionDecisionKind): GrantType | null {
+  switch (decision) {
+    case 'allow-session': return 'session';
+    case 'allow-always': return 'persistent';
+    case 'deny-always': return 'denied-persistent';
+    default: return null;
+  }
+}
 
 /**
  * The exact scope a grant binds to.

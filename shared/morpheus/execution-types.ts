@@ -69,6 +69,35 @@ export type ExecutionStep = {
   dependsOn: readonly string[];
 };
 
+/**
+ * Outcome of one step.
+ *
+ * `skipped` is deliberately distinct from `failed`: a skipped step never ran,
+ * because something it depended on failed first. Collapsing the two would
+ * misrepresent what the machine actually did, and history is the main thing a
+ * user has to reason about after the fact.
+ */
+export type ExecutionStepStatus =
+  | 'pending'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'skipped'
+  | 'denied'
+  | 'cancelled';
+
+export type ExecutionStepResult = {
+  stepId: string;
+  status: ExecutionStepStatus;
+  startedAt?: string;
+  durationMs?: number;
+  /** Present when `failed` or `denied`. */
+  error?: { code: string; message: string };
+  /** Step id whose failure caused this one to be skipped. */
+  skippedBecauseOf?: string;
+  artifact?: ExecutionArtifact;
+};
+
 export type ExecutionPlanStatus =
   | 'draft'
   | 'awaiting-permission'

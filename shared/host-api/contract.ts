@@ -21,7 +21,12 @@ import type {
   MorpheusRespondPermissionPayload,
   MorpheusSystemInfo,
 } from '../morpheus/action-types';
-import type { ExecutionOriginType, InterpretationResult } from '../morpheus/execution-types';
+import type {
+  ExecutionOriginType,
+  ExecutionPlanStatus,
+  ExecutionStepResult,
+  InterpretationResult,
+} from '../morpheus/execution-types';
 import type {
   PermissionAcknowledgement,
   PermissionCenterSnapshot,
@@ -830,6 +835,25 @@ export type MorpheusInterpretPayload = {
 };
 export type MorpheusFilesRootResult = { path: string };
 
+export type MorpheusExecutePlanPayload = {
+  /** A plan id Main issued. A plan object is never accepted from the renderer. */
+  planId: string;
+};
+
+export type MorpheusPlanDecisionsPayload = {
+  planId: string;
+  /** Boundary id to decision. A boundary left out counts as a refusal. */
+  decisions: Record<string, string>;
+};
+
+export type MorpheusPlanExecutionResult = {
+  planId: string;
+  status: ExecutionPlanStatus;
+  steps: readonly ExecutionStepResult[];
+  /** Present when the plan never started. */
+  rejection?: { code: string; message: string };
+};
+
 export type HostApiContract = {
   app: {
     openClawDoctor: (payload: OpenClawDoctorPayload) => Omit<OpenClawDoctorResult, 'mode'>;
@@ -1048,8 +1072,20 @@ export type HostApiContract = {
     respondPermission: (payload: MorpheusRespondPermissionPayload) => MorpheusAcknowledgement;
     cancelAction: (payload: MorpheusCancelActionPayload) => MorpheusAcknowledgement;
     auditRecent: (payload?: MorpheusAuditRecentPayload) => MorpheusAuditRecentResult;
-    /** Turns a natural-language objective into a typed execution plan. */
+    /**
+     * Turns a natural-language objective into a typed execution plan and stores
+     * it in Main. The renderer previews the returned plan and later names it by
+     * id — it never submits a plan of its own construction.
+     */
     interpretCommand: (payload: MorpheusInterpretPayload) => InterpretationResult;
+    /**
+     * Executes a Main-held plan. Trust is evaluated across the whole plan first,
+     * so a plan inside existing grants runs with no prompt at all and one that
+     * needs consent asks once for the deduplicated set of new boundaries.
+     */
+    executePlan: (payload: MorpheusExecutePlanPayload) => MorpheusPlanExecutionResult;
+    /** Answers the batched consent request for a plan. */
+    respondPlanPermission: (payload: MorpheusPlanDecisionsPayload) => MorpheusAcknowledgement;
     permissionCenter: () => PermissionCenterSnapshot;
     setPermissionProfile: (payload: SetPermissionProfilePayload) => PermissionAcknowledgement;
     revokeGrant: (payload: RevokeGrantPayload) => PermissionAcknowledgement;

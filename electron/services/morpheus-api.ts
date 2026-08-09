@@ -184,6 +184,40 @@ export function validateSetProfilePayload(payload: unknown): { profile: Permissi
   return { profile: record.profile as PermissionProfile };
 }
 
+export function validateExecutePlanPayload(payload: unknown): { planId: string } {
+  const record = requireRecord(payload, 'executePlan payload');
+  assertNoUnknownKeys(record, ['planId'], 'executePlan payload');
+  return { planId: requireNonEmptyString(record.planId, 'planId') };
+}
+
+/**
+ * Validates a batched consent response.
+ *
+ * Decision VALUES are checked here; boundary IDS are not, because Main matches
+ * them against the boundaries it issued — an id it does not recognise is simply
+ * absent from the decision map, which the executor already treats as a refusal.
+ */
+export function validatePlanDecisionsPayload(payload: unknown): {
+  planId: string;
+  decisions: Record<string, string>;
+} {
+  const record = requireRecord(payload, 'respondPlanPermission payload');
+  assertNoUnknownKeys(record, ['planId', 'decisions'], 'respondPlanPermission payload');
+  const planId = requireNonEmptyString(record.planId, 'planId');
+  const raw = requireRecord(record.decisions ?? {}, 'decisions');
+
+  const decisions: Record<string, string> = {};
+  for (const [boundaryId, value] of Object.entries(raw)) {
+    if (typeof value !== 'string' || !PERMISSION_DECISION_KINDS.includes(value as never)) {
+      throw new MorpheusValidationError(
+        `decision for ${boundaryId} must be one of: ${PERMISSION_DECISION_KINDS.join(', ')}`,
+      );
+    }
+    decisions[boundaryId] = value;
+  }
+  return { planId, decisions };
+}
+
 export function validateRevokePayload(payload: unknown): { grantId: string } {
   const record = requireRecord(payload, 'revokeGrant payload');
   assertNoUnknownKeys(record, ['grantId'], 'revokeGrant payload');
@@ -195,7 +229,7 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
   return {
     interpretCommand: (payload) => {
       const { objective, originType } = validateInterpretPayload(payload);
-      return interpretCommand({
+      const result = interpretCommand({
         objective,
         origin: originType === 'command-bar'
           ? { type: 'command-bar', commandText: objective }
@@ -203,7 +237,17 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
         platform: process.platform,
         filesRoot,
       });
+      // Main keeps the plan it authored. The renderer gets a copy to preview and
+      // an id to execute — it can never hand back a plan of its own making.
+      if (result.ok) runtime.registerPlan(result.plan);
+      return result;
     },
+
+    executePlan: (payload) => runtime.executePlan(validateExecutePlanPayload(payload)),
+
+    respondPlanPermission: (payload) => (
+      runtime.respondPlanPermission(validatePlanDecisionsPayload(payload))
+    ),
 
     permissionCenter: (): PermissionCenterSnapshot => ({
       profile: grants.getProfile(),

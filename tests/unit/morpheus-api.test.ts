@@ -43,6 +43,9 @@ function stubRuntime(): MorpheusRuntime {
     respondPermission: vi.fn(async () => ({ accepted: true })),
     cancelAction: vi.fn(async () => ({ accepted: true })),
     auditRecent: vi.fn(async () => ({ entries: [], truncated: false })),
+    registerPlan: vi.fn((plan) => plan),
+    executePlan: vi.fn(async () => ({ planId: 'plan-1', status: 'completed' as const, steps: [] })),
+    respondPlanPermission: vi.fn(async () => ({ accepted: true })),
     dispose: vi.fn(),
   };
 }
@@ -174,6 +177,7 @@ describe('createMorpheusApi', () => {
       'auditRecent',
       'cancelAction',
       'describeActions',
+      'executePlan',
       'filesRoot',
       'interpretCommand',
       'openFilesRoot',
@@ -181,6 +185,7 @@ describe('createMorpheusApi', () => {
       'requestAction',
       'resetPermissionPolicy',
       'respondPermission',
+      'respondPlanPermission',
       'revokeAllSessionGrants',
       'revokeGrant',
       'setPermissionProfile',

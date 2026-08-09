@@ -426,6 +426,14 @@ export const hostApi = {
     interpretCommand: (objective: string, originType?: ExecutionOriginType) => (
       invokeHost('morpheus', 'interpretCommand', { objective, originType })
     ),
+    /**
+     * Executes a plan Main authored, by id. Trust is evaluated across the whole
+     * plan in Main, so a plan inside existing grants runs without any prompt.
+     */
+    executePlan: (planId: string) => invokeHost('morpheus', 'executePlan', { planId }),
+    respondPlanPermission: (planId: string, decisions: Record<string, string>) => (
+      invokeHost('morpheus', 'respondPlanPermission', { planId, decisions })
+    ),
     permissionCenter: () => invokeHost('morpheus', 'permissionCenter'),
     setPermissionProfile: (profile: PermissionProfile) => (
       invokeHost('morpheus', 'setPermissionProfile', { profile })

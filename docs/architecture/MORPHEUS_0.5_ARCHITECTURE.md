@@ -14,6 +14,11 @@ was the de-facto orchestrator.
 
 The contract was right. The layer under it was missing. 0.5 supplies it.
 
+**Status: implemented.** `shared/morpheus/plan/graph.ts` orders the DAG,
+`electron/services/morpheus/plan/trust.ts` evaluates trust across a whole plan,
+`.../plan/executor.ts` runs it, and `.../plan/plan-store.ts` holds Main-authored
+plans so the renderer names a plan by id rather than submitting one.
+
 ## 1. Plan execution moves into Main
 
 ```

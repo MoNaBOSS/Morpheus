@@ -58,12 +58,24 @@ import type { MorpheusPermissionGate } from './policy/permission-gate';
 import type { MorpheusGrantStore } from './policy/grant-store';
 import type { AuditHealth } from './policy/policy-engine';
 import {
-  decisionCreatesGrant,
+  grantTypeForDecision,
   type PermissionDecisionKind,
   type PermissionResolutionReason,
   type PermissionScope,
 } from '@shared/morpheus/permission-types';
-import type { ExecutionOriginType } from '@shared/morpheus/execution-types';
+import type {
+  ExecutionOriginType,
+  ExecutionPlan,
+  ExecutionStep,
+} from '@shared/morpheus/execution-types';
+import {
+  executePlan as runPlanGraph,
+  type PlanStepRunner,
+  type PrepareResult,
+  type RunResult,
+} from './plan/executor';
+import type { TrustBoundary } from './plan/trust';
+import { createMorpheusPlanStore, type MorpheusPlanStore } from './plan/plan-store';
 import type { MorpheusRootProvider } from './roots';
 import { collectMorpheusSystemInfo } from './capabilities/win32/system-report';
 
@@ -100,6 +112,37 @@ export type MorpheusRuntimeOptions = {
   now?: () => Date;
   createRunId?: () => string;
   permissionTimeoutMs?: number;
+  /** Main-held plans. Supplied in tests; created here otherwise. */
+  planStore?: MorpheusPlanStore;
+  /** Emits the batched consent request for a plan. */
+  emitPlanConsent?: (request: MorpheusPlanConsentRequest) => void;
+};
+
+/**
+ * One consent request covering a whole plan.
+ *
+ * Deduplicated by `evaluatePlanTrust`, so five steps writing into the same
+ * folder arrive as one boundary rather than five prompts.
+ */
+export type MorpheusPlanConsentRequest = {
+  planId: string;
+  objective: string;
+  boundaries: readonly TrustBoundary[];
+};
+
+export type MorpheusExecutePlanPayload = {
+  /** A plan id Main issued. A plan object is never accepted from the renderer. */
+  planId: string;
+};
+
+export type MorpheusPlanDecisionsPayload = {
+  planId: string;
+  /**
+   * Boundary id to decision. Typed as `string` because this is wire data; the
+   * runtime normalises each value and drops anything unrecognised, and a
+   * boundary left out counts as a refusal.
+   */
+  decisions: Record<string, string>;
 };
 
 export interface MorpheusRuntime {
@@ -109,8 +152,21 @@ export interface MorpheusRuntime {
   respondPermission(payload: MorpheusRespondPermissionPayload): Promise<MorpheusAcknowledgement>;
   cancelAction(payload: MorpheusCancelActionPayload): Promise<MorpheusAcknowledgement>;
   auditRecent(payload?: MorpheusAuditRecentPayload): Promise<MorpheusAuditRecentResult>;
+  /** Stores a Main-authored plan and returns it, so the renderer can preview it. */
+  registerPlan(plan: ExecutionPlan): ExecutionPlan;
+  /** Executes a stored plan by id, evaluating trust across the whole plan first. */
+  executePlan(payload: MorpheusExecutePlanPayload): Promise<MorpheusPlanExecutionResult>;
+  /** Answers a batched consent request. */
+  respondPlanPermission(payload: MorpheusPlanDecisionsPayload): Promise<MorpheusAcknowledgement>;
   dispose(): void;
 }
+
+export type MorpheusPlanExecutionResult = {
+  planId: string;
+  status: ExecutionPlan['status'];
+  steps: readonly import('@shared/morpheus/execution-types').ExecutionStepResult[];
+  rejection?: { code: string; message: string };
+};
 
 /**
  * Builds the audit view of the request parameters.
@@ -179,6 +235,12 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
 
   const pending = new Map<string, PendingRun>();
   const executing = new Set<string>();
+  const planStore = options.planStore ?? createMorpheusPlanStore({ now });
+  /** Parked consent requests, one per in-flight plan. */
+  const planConsent = new Map<string, {
+    resolve: (decisions: ReadonlyMap<string, PermissionDecisionKind>) => void;
+    timer: NodeJS.Timeout;
+  }>();
   let recentRequests: number[] = [];
   let seq = 0;
 
@@ -306,11 +368,18 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
     });
   };
 
+  /**
+   * Runs a prepared step and records its outcome.
+   *
+   * Returns the failure, or `null` on success, so a caller (the plan executor)
+   * learns what happened from the same code path that audited it. A separate
+   * success/failure signal could drift from the recorded phase.
+   */
   const execute = async (
     run: PendingRun,
     reason?: PermissionResolutionReason,
     grantId?: string,
-  ): Promise<void> => {
+  ): Promise<MorpheusError | null> => {
     executing.add(run.runId);
     try {
       await transition({
@@ -328,16 +397,17 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       try {
         result = await run.resolution.execute();
       } catch (error) {
+        const failure = toError(error, 'execution-failed');
         await transition({
           runId: run.runId,
           actionId: run.actionId,
           phase: 'failed',
           auditParams: run.auditParams,
           target: run.target,
-          error: toError(error, 'execution-failed'),
+          error: failure,
           durationMs: now().getTime() - run.startedAt,
         });
-        return;
+        return failure;
       }
 
       await transition({
@@ -350,10 +420,104 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         durationMs: now().getTime() - run.startedAt,
         pid: result.kind === 'launch' ? result.pid : undefined,
       });
+      return null;
     } finally {
       executing.delete(run.runId);
     }
   };
+
+  /**
+   * Adapts one plan step onto the existing per-step machinery.
+   *
+   * `prepare` resolves the real target and derives the scope but executes
+   * nothing, which is what lets the whole plan be assessed before the user is
+   * asked anything. `run` reuses `execute`, so plan steps inherit the same
+   * audit-before-emit ordering and the same failure handling as a direct
+   * action — there is no second, weaker execution path.
+   */
+  const planStepRunner = (originType: ExecutionOriginType, agentId?: string): PlanStepRunner => ({
+    async prepare(step: ExecutionStep): Promise<PrepareResult> {
+      const actionId = step.capabilityId;
+      if (!isMorpheusActionId(actionId)) {
+        return { ok: false, error: { code: 'unknown-action', message: `Unknown action: ${String(actionId)}` } };
+      }
+      const capability = options.registry.resolve(actionId, platform);
+      if (!capability) {
+        return {
+          ok: false,
+          error: { code: 'unsupported-platform', message: `${actionId} is not available on ${platform}` },
+        };
+      }
+
+      let resolution: MorpheusResolution;
+      try {
+        resolution = await capability.resolve(step.params as MorpheusParamsFor<MorpheusActionId>, {
+          roots: options.roots,
+          appVersion: options.appVersion,
+          env,
+        });
+      } catch (error) {
+        return { ok: false, error: toError(error, 'resolution-failed') };
+      }
+
+      // Scope comes from what Main RESOLVED, never from the step's declared
+      // permission block — otherwise a plan could name a narrower scope than
+      // the one it actually touches.
+      const scope: PermissionScope = {
+        capabilityId: actionId,
+        platform,
+        resourceScope: resourceScopeFor(resolution.target),
+        riskTier: getMorpheusActionDescriptor(actionId).riskTier,
+        originType,
+        agentId,
+      };
+      return { ok: true, prepared: { stepId: step.stepId, scope, handle: { resolution, actionId } } };
+    },
+
+    async run(step, prepared, reason): Promise<RunResult> {
+      const { resolution, actionId } = prepared.handle as {
+        resolution: MorpheusResolution;
+        actionId: MorpheusActionId;
+      };
+      const runId = createRunId();
+      const startedAt = now().getTime();
+      const auditParams = buildAuditParams(actionId, step.params as MorpheusParamRecord);
+
+      await transition({ runId, actionId, phase: 'requested', auditParams });
+
+      const run: PendingRun = {
+        runId,
+        actionId,
+        scope: prepared.scope,
+        target: resolution.target,
+        resolution,
+        auditParams,
+        startedAt,
+        timer: setTimeout(() => undefined, 0),
+      };
+      clearTimeout(run.timer);
+
+      // `execute` records the outcome and returns it, so the plan's view and
+      // the audit trail come from the same place and cannot disagree.
+      const failure = await execute(run, reason as PermissionResolutionReason);
+      const durationMs = now().getTime() - startedAt;
+      return failure
+        ? { status: 'failed', error: failure, durationMs }
+        : { status: 'succeeded', durationMs };
+    },
+
+    async skip(step, because): Promise<void> {
+      const actionId = step.capabilityId;
+      if (!isMorpheusActionId(actionId)) return;
+      await transition({
+        runId: createRunId(),
+        actionId,
+        phase: 'cancelled',
+        auditParams: buildAuditParams(actionId, step.params as MorpheusParamRecord),
+        error: { code: 'cancelled', message: `Skipped because ${because} failed` },
+      });
+    },
+  });
 
   return {
     describeActions(): MorpheusDescribeActionsResult {
@@ -527,14 +691,8 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
 
       // A remembered decision is stored BEFORE the action runs, so a crash
       // mid-execution cannot lose the consent the user just gave.
-      if (decisionCreatesGrant(decision)) {
-        const grantType = decision === 'allow-session'
-          ? 'session'
-          : decision === 'allow-always'
-            ? 'persistent'
-            : 'denied-persistent';
-        options.grants.createGrant(run.scope, grantType);
-      }
+      const grantType = grantTypeForDecision(decision);
+      if (grantType) options.grants.createGrant(run.scope, grantType);
 
       if (decision === 'deny' || decision === 'deny-always') {
         await finishDenied(run, 'denied', 'permission-denied', 'Denied by the user');
@@ -553,12 +711,101 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       return { accepted: true };
     },
 
+    /**
+     * Stores a Main-authored plan so the renderer can preview it and later name
+     * it by id. A plan object never travels back inbound.
+     */
+    registerPlan(plan: ExecutionPlan): ExecutionPlan {
+      planStore.put(plan);
+      return plan;
+    },
+
+    async executePlan(payload: MorpheusExecutePlanPayload): Promise<MorpheusPlanExecutionResult> {
+      const planId = typeof payload?.planId === 'string' ? payload.planId : '';
+      // `take` rather than `get`: a plan executes once. Leaving it retrievable
+      // would let an already-approved plan be replayed without a fresh decision.
+      const plan = planStore.take(planId);
+      if (!plan) {
+        return {
+          planId,
+          status: 'rejected',
+          steps: [],
+          rejection: { code: 'unknown-action', message: 'Unknown or expired plan' },
+        };
+      }
+
+      if (!withinRateLimit() || inFlight() >= MORPHEUS_MAX_CONCURRENT_RUNS) {
+        return {
+          planId,
+          status: 'rejected',
+          steps: [],
+          rejection: { code: 'rate-limited', message: 'Another action is already in progress' },
+        };
+      }
+      recentRequests.push(now().getTime());
+
+      const result = await runPlanGraph({
+        plan,
+        runner: planStepRunner(plan.origin.type),
+        policy: options.gate,
+        auditHealth: (options.auditHealth ?? (() => 'healthy' as AuditHealth))(),
+        now,
+
+        /**
+         * Parks ONE request for the whole plan and waits. A timeout resolves
+         * EMPTY rather than allowing, and the executor treats a missing
+         * decision as a refusal — so an unanswered prompt can never become
+         * silent authority.
+         */
+        requestConsent: (boundaries) => new Promise((resolve) => {
+          const timer = setTimeout(() => {
+            planConsent.delete(planId);
+            resolve(new Map());
+          }, permissionTimeoutMs);
+          timer.unref?.();
+          planConsent.set(planId, { resolve, timer });
+          options.emitPlanConsent?.({ planId, objective: plan.objective, boundaries });
+        }),
+
+        persistDecision: (scope, decision) => {
+          const grantType = grantTypeForDecision(decision);
+          if (grantType) options.grants.createGrant(scope, grantType);
+        },
+      });
+
+      return { planId, status: result.status, steps: result.steps, rejection: result.rejection };
+    },
+
+    async respondPlanPermission(payload: MorpheusPlanDecisionsPayload): Promise<MorpheusAcknowledgement> {
+      const planId = typeof payload?.planId === 'string' ? payload.planId : '';
+      const parked = planConsent.get(planId);
+      if (!parked) return { accepted: false };
+      // Deleted before resolving, so a repeated or racing response is a no-op
+      // rather than a second chance to change a decision already acted on.
+      planConsent.delete(planId);
+      clearTimeout(parked.timer);
+
+      const decisions = new Map<string, PermissionDecisionKind>();
+      for (const [boundaryId, value] of Object.entries(payload?.decisions ?? {})) {
+        const decision = normalizeDecision(value);
+        if (decision) decisions.set(boundaryId, decision);
+      }
+      parked.resolve(decisions);
+      return { accepted: true };
+    },
+
     auditRecent(payload?: MorpheusAuditRecentPayload): Promise<MorpheusAuditRecentResult> {
       const requested = typeof payload?.limit === 'number' ? payload.limit : MORPHEUS_MAX_AUDIT_PAGE;
       return options.audit.recent(requested);
     },
 
     dispose(): void {
+      // A parked plan resolves empty, which the executor reads as a refusal.
+      for (const parked of planConsent.values()) {
+        clearTimeout(parked.timer);
+        parked.resolve(new Map());
+      }
+      planConsent.clear();
       for (const run of pending.values()) clearTimeout(run.timer);
       pending.clear();
       executing.clear();
