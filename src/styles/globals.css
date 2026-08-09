@@ -686,12 +686,33 @@
   --morpheus-accent: 142 71% 45%;
   --morpheus-glow: 142 71% 45% / 0.25;
   --morpheus-grid: 142 30% 40% / 0.12;
+
+  /* Accent means LIVE or VERIFIED, never risk. See docs/design/MORPHEUS_DESIGN_SYSTEM.md. */
+  --morpheus-accent-dim: 142 40% 40% / 0.45;
+
+  /* Three-level elevation ramp. More than three reads as noise. */
+  --morpheus-surface-1: 0 0% 100%;
+  --morpheus-surface-2: 220 14% 98%;
+  --morpheus-surface-3: 220 14% 95%;
+
+  /* Risk is never green. */
+  --morpheus-warn: 38 92% 45%;
+  --morpheus-danger: 0 72% 45%;
 }
 
 .dark [data-morpheus] {
   --morpheus-accent: 142 71% 55%;
   --morpheus-glow: 142 71% 55% / 0.35;
   --morpheus-grid: 142 40% 60% / 0.14;
+  --morpheus-accent-dim: 142 45% 45% / 0.5;
+
+  /* Layered near-black rather than flat grey slabs. */
+  --morpheus-surface-1: 220 16% 7%;
+  --morpheus-surface-2: 220 15% 10%;
+  --morpheus-surface-3: 220 14% 13%;
+
+  --morpheus-warn: 38 92% 58%;
+  --morpheus-danger: 0 72% 60%;
 }
 
 /* Boot sequence overlay */
