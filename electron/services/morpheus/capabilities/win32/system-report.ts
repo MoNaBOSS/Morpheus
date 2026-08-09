@@ -7,7 +7,8 @@
  */
 import { arch, cpus, freemem, platform, release, totalmem, uptime } from 'node:os';
 
-import type { MorpheusActionParams, MorpheusActionResult, MorpheusSystemInfo } from '@shared/morpheus/action-types';
+import type { MorpheusActionResult, MorpheusSystemInfo } from '@shared/morpheus/action-types';
+import type { MorpheusParamsFor } from '@shared/morpheus/actions/registry';
 
 import type {
   MorpheusCapability,
@@ -31,11 +32,14 @@ export function collectMorpheusSystemInfo(appVersion: string): MorpheusSystemInf
   };
 }
 
-export const win32SystemReportCapability: MorpheusCapability = {
+export const win32SystemReportCapability: MorpheusCapability<'system.report'> = {
   actionId: 'system.report',
   platform: 'win32',
 
-  async resolve(_params: MorpheusActionParams, context: MorpheusCapabilityContext): Promise<MorpheusResolution> {
+  async resolve(
+    _params: MorpheusParamsFor<'system.report'>,
+    context: MorpheusCapabilityContext,
+  ): Promise<MorpheusResolution> {
     return {
       target: { kind: 'none' },
       execute: async (): Promise<MorpheusActionResult> => ({

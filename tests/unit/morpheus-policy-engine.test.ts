@@ -7,6 +7,10 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { createMorpheusGrantStore, type MorpheusGrantStore } from '@electron/services/morpheus/policy/grant-store';
 import { createMorpheusPolicyEngine } from '@electron/services/morpheus/policy/policy-engine';
 import type { PermissionScope } from '@shared/morpheus/permission-types';
+import {
+  MORPHEUS_MANDATORY_CONFIRMATION_TIERS,
+  requiresMandatoryConfirmation,
+} from '@shared/morpheus/actions/registry';
 
 const scratch = mkdtempSync(join(tmpdir(), 'morpheus-policy-'));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
@@ -97,19 +101,15 @@ describe('permission profiles', () => {
 });
 
 describe('mandatory confirmation floor', () => {
-  const HIGH: PermissionScope = { ...MEDIUM_APP, riskTier: 'high' };
   const CRITICAL: PermissionScope = { ...MEDIUM_APP, riskTier: 'critical' };
 
-  it('cannot be bypassed by a persistent grant under any profile', () => {
+  it('critical cannot be bypassed by a persistent grant under any profile', () => {
     for (const profile of ['strict', 'balanced', 'autonomous'] as const) {
       const local = freshStore();
       local.setProfile(profile);
-      local.createGrant(HIGH, 'persistent');
       local.createGrant(CRITICAL, 'persistent');
       const engine = createMorpheusPolicyEngine(local);
 
-      expect(engine.evaluate({ scope: HIGH, auditHealth: 'healthy' }))
-        .toEqual({ outcome: 'prompt', reason: 'mandatory-confirmation' });
       expect(engine.evaluate({ scope: CRITICAL, auditHealth: 'healthy' }))
         .toEqual({ outcome: 'prompt', reason: 'mandatory-confirmation' });
     }
@@ -119,6 +119,55 @@ describe('mandatory confirmation floor', () => {
     store.setProfile('autonomous');
     store.createGrant(CRITICAL, 'session');
     expect(evaluate(CRITICAL).reason).toBe('mandatory-confirmation');
+  });
+
+  it('critical is the ONLY unwaivable tier', () => {
+    // Guards the 0.5 narrowing in both directions: widening this list again
+    // would reintroduce prompt fatigue, and emptying it would remove the floor.
+    expect([...MORPHEUS_MANDATORY_CONFIRMATION_TIERS]).toEqual(['critical']);
+    expect(requiresMandatoryConfirmation('critical')).toBe(true);
+    for (const tier of ['low', 'medium', 'high'] as const) {
+      expect(requiresMandatoryConfirmation(tier)).toBe(false);
+    }
+  });
+});
+
+describe('high risk is grantable, never silently automatic', () => {
+  const HIGH: PermissionScope = { ...MEDIUM_APP, riskTier: 'high' };
+
+  it('prompts the first time a scope is seen, under every profile', () => {
+    for (const profile of ['strict', 'balanced', 'autonomous'] as const) {
+      const local = freshStore();
+      local.setProfile(profile);
+      expect(createMorpheusPolicyEngine(local).evaluate({ scope: HIGH, auditHealth: 'healthy' }).outcome)
+        .toBe('prompt');
+    }
+  });
+
+  it('honours a grant afterwards, so it does not interrupt repeatedly', () => {
+    for (const profile of ['balanced', 'autonomous'] as const) {
+      const local = freshStore();
+      local.setProfile(profile);
+      local.createGrant(HIGH, 'persistent');
+      expect(createMorpheusPolicyEngine(local).evaluate({ scope: HIGH, auditHealth: 'healthy' }))
+        .toMatchObject({ outcome: 'allow', reason: 'persistent-grant' });
+    }
+  });
+
+  it('Strict still ignores the grant and asks every time', () => {
+    store.setProfile('strict');
+    store.createGrant(HIGH, 'persistent');
+    expect(evaluate(HIGH).outcome).toBe('prompt');
+  });
+
+  it('a grant for a different resource does not carry over', () => {
+    store.createGrant(HIGH, 'persistent');
+    expect(evaluate({ ...HIGH, resourceScope: 'calculator' }).outcome).toBe('prompt');
+  });
+
+  it('never runs under a degraded audit', () => {
+    store.createGrant(HIGH, 'persistent');
+    expect(evaluate(HIGH, 'degraded')).toEqual({ outcome: 'deny', reason: 'audit-degraded' });
   });
 });
 

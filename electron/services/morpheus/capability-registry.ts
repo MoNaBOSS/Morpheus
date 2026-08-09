@@ -8,10 +8,10 @@
  */
 import type {
   MorpheusActionId,
+  MorpheusParamsFor,
   MorpheusPlatform,
 } from '@shared/morpheus/actions/registry';
 import type {
-  MorpheusActionParams,
   MorpheusActionResult,
   MorpheusFailureCode,
   MorpheusResolvedTarget,
@@ -43,15 +43,31 @@ export type MorpheusResolution = {
   execute: () => Promise<MorpheusActionResult>;
 };
 
-export interface MorpheusCapability {
-  readonly actionId: MorpheusActionId;
+/**
+ * A capability implementation, parameterised by the action it implements.
+ *
+ * The type argument is what makes `resolve` receive that capability's OWN
+ * parameters rather than the union of every capability's. An adapter declaring
+ * `MorpheusCapability<'app.launch'>` cannot read `fileName`, and cannot be
+ * registered under a different action id.
+ */
+export interface MorpheusCapability<K extends MorpheusActionId = MorpheusActionId> {
+  readonly actionId: K;
   readonly platform: MorpheusPlatform;
-  resolve(params: MorpheusActionParams, context: MorpheusCapabilityContext): Promise<MorpheusResolution>;
+  resolve(params: MorpheusParamsFor<K>, context: MorpheusCapabilityContext): Promise<MorpheusResolution>;
 }
 
+/**
+ * Storage erases the type argument: the registry dispatches on a runtime id, so
+ * it cannot know statically which capability a lookup returns. The parameters it
+ * hands over were validated against that action's descriptors before reaching
+ * here — see `validateParams` in `shared/morpheus/capabilities/params.ts`.
+ */
+export type AnyMorpheusCapability = MorpheusCapability<MorpheusActionId>;
+
 export interface MorpheusCapabilityRegistry {
-  register(capability: MorpheusCapability): void;
-  resolve(actionId: MorpheusActionId, platform: string): MorpheusCapability | undefined;
+  register(capability: AnyMorpheusCapability): void;
+  resolve(actionId: MorpheusActionId, platform: string): AnyMorpheusCapability | undefined;
   supportedActions(platform: string): MorpheusActionId[];
 }
 
@@ -69,10 +85,10 @@ function key(actionId: string, platform: string): string {
 }
 
 export function createMorpheusCapabilityRegistry(): MorpheusCapabilityRegistry {
-  const capabilities = new Map<string, MorpheusCapability>();
+  const capabilities = new Map<string, AnyMorpheusCapability>();
 
   return {
-    register(capability: MorpheusCapability): void {
+    register(capability: AnyMorpheusCapability): void {
       const mapKey = key(capability.actionId, capability.platform);
       if (capabilities.has(mapKey)) {
         throw new Error(`Morpheus capability already registered: ${capability.actionId} on ${capability.platform}`);
@@ -80,7 +96,7 @@ export function createMorpheusCapabilityRegistry(): MorpheusCapabilityRegistry {
       capabilities.set(mapKey, capability);
     },
 
-    resolve(actionId: MorpheusActionId, platform: string): MorpheusCapability | undefined {
+    resolve(actionId: MorpheusActionId, platform: string): AnyMorpheusCapability | undefined {
       return capabilities.get(key(actionId, platform));
     },
 

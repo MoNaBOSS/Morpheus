@@ -21,14 +21,16 @@ import {
   isMorpheusActionId,
   listMorpheusActionIds,
   listMorpheusApplicationKeys,
+  type MorpheusActionId,
+  type MorpheusParamsFor,
 } from '@shared/morpheus/actions/registry';
-import type { MorpheusActionId } from '@shared/morpheus/actions/registry';
 import {
   MORPHEUS_AUDIT_VERSION,
   MORPHEUS_EVENT_VERSION,
   type MorpheusAcknowledgement,
   type MorpheusActionEvent,
   type MorpheusActionParams,
+  type MorpheusParamRecord,
   type MorpheusActionResult,
   type MorpheusAuditEntry,
   type MorpheusAuditRecentPayload,
@@ -113,17 +115,27 @@ export interface MorpheusRuntime {
 /**
  * Builds the audit view of the request parameters.
  *
- * Text file content is never carried through. It is represented by a byte count
- * and a truncated digest, which is enough to prove what was written without
- * retaining it.
+ * Driven by the capability's declared parameter KINDS rather than a hardcoded
+ * key list, so a capability added later cannot accidentally leak a payload the
+ * audit was never taught about: anything declared `textContent` is replaced by a
+ * byte count and a truncated digest — enough to prove what was written without
+ * retaining it — and a key absent from the descriptors is dropped entirely.
  */
-export function buildAuditParams(params: MorpheusActionParams): Record<string, string | number | boolean> {
+export function buildAuditParams(
+  actionId: MorpheusActionId,
+  params: MorpheusParamRecord,
+): Record<string, string | number | boolean> {
   const out: Record<string, string | number | boolean> = {};
-  if (typeof params.applicationKey === 'string') out.applicationKey = params.applicationKey;
-  if (typeof params.fileName === 'string') out.fileName = params.fileName;
-  if (typeof params.content === 'string') {
-    out.contentBytes = Buffer.byteLength(params.content, 'utf8');
-    out.contentSha256 = morpheusContentDigest(params.content);
+  for (const descriptor of getMorpheusActionDescriptor(actionId).params) {
+    const value = params[descriptor.key];
+    if (value === undefined) continue;
+    if (descriptor.kind === 'textContent') {
+      const text = String(value);
+      out[`${descriptor.key}Bytes`] = Buffer.byteLength(text, 'utf8');
+      out[`${descriptor.key}Sha256`] = morpheusContentDigest(text);
+      continue;
+    }
+    out[descriptor.key] = value;
   }
   return out;
 }
@@ -375,7 +387,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       const params: MorpheusActionParams = payload.params ?? {};
       const originType: ExecutionOriginType = payload.originType ?? 'action-launcher';
       const agentId = payload.agentId;
-      const auditParams = buildAuditParams(params);
+      const auditParams = buildAuditParams(payload.actionId, params);
       const runId = createRunId();
       const startedAt = now().getTime();
 
@@ -409,7 +421,10 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
 
       let resolution: MorpheusResolution;
       try {
-        resolution = await capability.resolve(params, {
+        // The registry dispatches on a runtime id, so the static type argument
+        // is erased at the lookup. `params` was validated against THIS action's
+        // descriptors in `validateRequestActionPayload` before reaching here.
+        resolution = await capability.resolve(params as MorpheusParamsFor<MorpheusActionId>, {
           roots: options.roots,
           appVersion: options.appVersion,
           env,

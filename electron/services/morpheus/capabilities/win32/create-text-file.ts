@@ -14,7 +14,8 @@ import {
   MORPHEUS_MAX_TEXT_BYTES,
   getMorpheusActionDescriptor,
 } from '@shared/morpheus/actions/registry';
-import type { MorpheusActionParams, MorpheusActionResult } from '@shared/morpheus/action-types';
+import type { MorpheusActionResult } from '@shared/morpheus/action-types';
+import type { MorpheusParamsFor } from '@shared/morpheus/actions/registry';
 
 import {
   MorpheusCapabilityError,
@@ -25,11 +26,14 @@ import {
 import { assertSafeTextFileName, resolveWithinRoot } from '../../../../utils/morpheus-path-guard';
 import { morpheusContentDigest } from '../../audit';
 
-export const win32CreateTextFileCapability: MorpheusCapability = {
+export const win32CreateTextFileCapability: MorpheusCapability<'file.createText'> = {
   actionId: 'file.createText',
   platform: 'win32',
 
-  async resolve(params: MorpheusActionParams, context: MorpheusCapabilityContext): Promise<MorpheusResolution> {
+  async resolve(
+    params: MorpheusParamsFor<'file.createText'>,
+    context: MorpheusCapabilityContext,
+  ): Promise<MorpheusResolution> {
     let fileName: string;
     try {
       fileName = assertSafeTextFileName(params.fileName);

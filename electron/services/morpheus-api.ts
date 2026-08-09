@@ -38,6 +38,7 @@ import {
   type PermissionProfile,
 } from '@shared/morpheus/permission-types';
 import { interpretCommand } from '@shared/morpheus/interpreter/deterministic';
+import { validateParams } from '@shared/morpheus/capabilities/params';
 
 import type { CompleteHostServiceRegistry } from '../main/ipc/host-contract';
 import type { MorpheusRuntime, MorpheusGrantStore } from './morpheus';
@@ -97,40 +98,24 @@ export function validateRequestActionPayload(payload: unknown): MorpheusRequestA
   }
 
   const descriptor = getMorpheusActionDescriptor(actionId);
-  const allowedParamKeys = descriptor.params.map((param) => param.key);
-
   const origin = record.originType as ExecutionOriginType | undefined;
   const agentId = record.agentId as string | undefined;
 
-  if (record.params === undefined) {
-    const missing = descriptor.params.filter((param) => param.required);
-    if (missing.length > 0) {
-      throw new MorpheusValidationError(`Missing required parameters: ${missing.map((p) => p.key).join(', ')}`);
-    }
-    return { actionId, ...(origin ? { originType: origin } : {}), ...(agentId ? { agentId } : {}) };
+  // One generic validator drives every capability from its declared parameter
+  // kinds. Adding a capability adds descriptors, not validation code — which is
+  // what keeps this trust boundary reviewable as the set grows.
+  const validation = validateParams(descriptor.params, record.params);
+  if (!validation.ok) {
+    const detail = validation.errors.map((e) => `${e.key} ${e.reason}`).join('; ');
+    throw new MorpheusValidationError(`Invalid parameters: ${detail}`);
   }
 
-  const rawParams = requireRecord(record.params, 'params');
-  assertNoUnknownKeys(rawParams, allowedParamKeys, 'params');
-
-  const params: MorpheusActionParams = {};
-  for (const descriptorParam of descriptor.params) {
-    const value = rawParams[descriptorParam.key];
-    if (value === undefined) {
-      if (descriptorParam.required) {
-        throw new MorpheusValidationError(`Missing required parameter: ${descriptorParam.key}`);
-      }
-      continue;
-    }
-    if (typeof value !== 'string') {
-      throw new MorpheusValidationError(`Parameter ${descriptorParam.key} must be a string`);
-    }
-    // Deeper semantic validation (grammar, size, registry membership) belongs to
-    // the capability, which owns the meaning of its own parameters.
-    params[descriptorParam.key as keyof MorpheusActionParams] = value;
-  }
-
-  return { actionId, params, ...(origin ? { originType: origin } : {}), ...(agentId ? { agentId } : {}) };
+  return {
+    actionId,
+    params: validation.params as MorpheusActionParams,
+    ...(origin ? { originType: origin } : {}),
+    ...(agentId ? { agentId } : {}),
+  };
 }
 
 export function validateRespondPermissionPayload(payload: unknown): MorpheusRespondPermissionPayload {

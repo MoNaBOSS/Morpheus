@@ -49,7 +49,10 @@ function stubRuntime(): MorpheusRuntime {
 
 describe('validateRequestActionPayload', () => {
   it('accepts a well-formed request', () => {
-    expect(validateRequestActionPayload({ actionId: 'system.report' })).toEqual({ actionId: 'system.report' });
+    // A parameterless action still normalises to an empty params object, so
+    // downstream code never has to distinguish "absent" from "empty".
+    expect(validateRequestActionPayload({ actionId: 'system.report' }))
+      .toEqual({ actionId: 'system.report', params: {} });
     expect(validateRequestActionPayload({
       actionId: 'file.createText',
       params: { fileName: 'a.txt', content: 'hi' },
@@ -85,7 +88,7 @@ describe('validateRequestActionPayload', () => {
       expect(() => validateRequestActionPayload({
         actionId: 'file.createText',
         params: { fileName: 'a.txt', content: 'hi', [smuggled]: 'x' },
-      })).toThrow(new RegExp(`unsupported key: ${smuggled}`));
+      })).toThrow(new RegExp(`${smuggled} is not a parameter of this capability`));
     }
   });
 
@@ -94,14 +97,14 @@ describe('validateRequestActionPayload', () => {
     expect(() => validateRequestActionPayload({
       actionId: 'file.createText',
       params: { fileName: 'a.txt', content: 'hi', applicationKey: 'notepad' },
-    })).toThrow(/unsupported key: applicationKey/);
+    })).toThrow(/applicationKey is not a parameter of this capability/);
   });
 
   it('requires declared required parameters', () => {
     expect(() => validateRequestActionPayload({ actionId: 'app.launch' }))
-      .toThrow(/Missing required parameters: applicationKey/);
+      .toThrow(/applicationKey is required/);
     expect(() => validateRequestActionPayload({ actionId: 'file.createText', params: { fileName: 'a.txt' } }))
-      .toThrow(/Missing required parameter: content/);
+      .toThrow(/content is required/);
   });
 
   it('rejects non-string parameter values', () => {
@@ -115,9 +118,9 @@ describe('validateRequestActionPayload', () => {
 
   it('rejects a non-object params field', () => {
     expect(() => validateRequestActionPayload({ actionId: 'system.report', params: 'x' }))
-      .toThrow(/params must be an object/);
+      .toThrow(/must be an object/);
     expect(() => validateRequestActionPayload({ actionId: 'system.report', params: [] }))
-      .toThrow(/params must be an object/);
+      .toThrow(/must be an object/);
   });
 });
 
@@ -190,7 +193,7 @@ describe('createMorpheusApi', () => {
     const api = createMorpheusApi(stubOptions(runtime));
 
     await api.requestAction({ actionId: 'system.report' });
-    expect(runtime.requestAction).toHaveBeenCalledWith({ actionId: 'system.report' });
+    expect(runtime.requestAction).toHaveBeenCalledWith({ actionId: 'system.report', params: {} });
 
     await api.respondPermission({ runId: 'r1', decision: 'granted' });
     expect(runtime.respondPermission).toHaveBeenCalledWith({ runId: 'r1', decision: 'granted' });
@@ -204,7 +207,7 @@ describe('createMorpheusApi', () => {
     await expect(async () => api.requestAction({
       actionId: 'app.launch',
       params: { applicationKey: 'notepad', args: ['/c', 'del'] },
-    } as never)).rejects.toThrow(/unsupported key: args/);
+    } as never)).rejects.toThrow(/args is not a parameter of this capability/);
 
     expect(runtime.requestAction).not.toHaveBeenCalled();
   });

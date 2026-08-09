@@ -21,6 +21,7 @@ import type { MorpheusPermissionGate } from '@electron/services/morpheus/policy/
 import { createMorpheusGrantStore } from '@electron/services/morpheus/policy/grant-store';
 import type { MorpheusRootProvider } from '@electron/services/morpheus/roots';
 import type { MorpheusActionEvent, MorpheusAuditEntry } from '@shared/morpheus/action-types';
+import { getMorpheusActionDescriptor } from '@shared/morpheus/actions/registry';
 
 const roots: MorpheusRootProvider = { resolve: () => 'C:\\root' };
 
@@ -370,7 +371,7 @@ describe('morpheus runtime — surface', () => {
 
 describe('buildAuditParams', () => {
   it('replaces content with a byte count and digest', () => {
-    expect(buildAuditParams({ fileName: 'a.txt', content: 'hello' })).toEqual({
+    expect(buildAuditParams('file.createText', { fileName: 'a.txt', content: 'hello' })).toEqual({
       fileName: 'a.txt',
       contentBytes: 5,
       contentSha256: '2cf24dba5fb0a30e',
@@ -378,16 +379,35 @@ describe('buildAuditParams', () => {
   });
 
   it('never carries the content itself', () => {
-    const params = buildAuditParams({ fileName: 'a.txt', content: 'SECRET' });
+    const params = buildAuditParams('file.createText', { fileName: 'a.txt', content: 'SECRET' });
     expect(JSON.stringify(params)).not.toContain('SECRET');
   });
 
   it('passes through the application key and omits absent fields', () => {
-    expect(buildAuditParams({ applicationKey: 'notepad' })).toEqual({ applicationKey: 'notepad' });
-    expect(buildAuditParams({})).toEqual({});
+    expect(buildAuditParams('app.launch', { applicationKey: 'notepad' })).toEqual({ applicationKey: 'notepad' });
+    expect(buildAuditParams('app.launch', {})).toEqual({});
+    expect(buildAuditParams('system.report', {})).toEqual({});
   });
 
   it('counts bytes rather than code units for multi-byte content', () => {
-    expect(buildAuditParams({ content: '😀' }).contentBytes).toBe(4);
+    expect(buildAuditParams('file.createText', { content: '😀' }).contentBytes).toBe(4);
+  });
+
+  it('drops a key the action does not declare, so a stray payload cannot reach the audit', () => {
+    // Defence in depth: the API validator already rejects unknown keys. If a
+    // future caller bypasses it, the audit still records only declared params.
+    expect(buildAuditParams('app.launch', { applicationKey: 'notepad', token: 'sk-live-secret' }))
+      .toEqual({ applicationKey: 'notepad' });
+  });
+
+  it('digests any textContent parameter, not a hardcoded key named "content"', () => {
+    // The rule is driven by the descriptor KIND, so a capability added later
+    // gets redaction without anyone remembering to update this function.
+    for (const descriptor of getMorpheusActionDescriptor('file.createText').params) {
+      if (descriptor.kind !== 'textContent') continue;
+      const audited = buildAuditParams('file.createText', { [descriptor.key]: 'SECRET' });
+      expect(audited[`${descriptor.key}Bytes`]).toBe(6);
+      expect(JSON.stringify(audited)).not.toContain('SECRET');
+    }
   });
 });

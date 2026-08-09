@@ -9,7 +9,7 @@
  * Imported by BOTH processes: no `electron` and no Node built-in imports.
  */
 
-import type { MorpheusActionId, MorpheusApplicationKey } from './actions/registry';
+import type { MorpheusActionId, MorpheusApplicationKey, MorpheusParamsFor } from './actions/registry';
 
 export const MORPHEUS_EVENT_VERSION = 1 as const;
 export const MORPHEUS_AUDIT_VERSION = 1 as const;
@@ -109,11 +109,25 @@ export type MorpheusActionResult =
   | MorpheusSystemResult;
 
 /** Renderer-supplied parameters. Validated in Main against a key whitelist. */
+/**
+ * Any capability's validated parameters.
+ *
+ * 0.1.1 declared this as a flat bag of optionals shared by every capability. At
+ * three that was tolerable; at ~18 it becomes forty optionals with no way to
+ * express which combination is valid, and no way for a type error to catch a
+ * parameter handed to the wrong capability.
+ *
+ * It is now the union of the per-capability shapes DERIVED from the registry
+ * descriptors. Code handling an arbitrary action (audit, transport, storage)
+ * uses this; a capability adapter uses `MorpheusParamsFor<'its.id'>` and gets
+ * exactly its own keys.
+ */
 export type MorpheusActionParams = {
-  applicationKey?: string;
-  fileName?: string;
-  content?: string;
-};
+  [K in MorpheusActionId]: MorpheusParamsFor<K>;
+}[MorpheusActionId];
+
+/** Parameters as they travel and are stored: kind-checked, capability-agnostic. */
+export type MorpheusParamRecord = Readonly<Record<string, string | number | boolean>>;
 
 /** The single envelope carried on `morpheus:action-event`. */
 export type MorpheusActionEvent = {

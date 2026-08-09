@@ -15,7 +15,8 @@ import {
   getMorpheusApplicationEntry,
   isMorpheusApplicationKey,
 } from '@shared/morpheus/actions/registry';
-import type { MorpheusActionParams, MorpheusActionResult } from '@shared/morpheus/action-types';
+import type { MorpheusActionResult } from '@shared/morpheus/action-types';
+import type { MorpheusParamsFor } from '@shared/morpheus/actions/registry';
 
 import {
   MorpheusCapabilityError,
@@ -101,11 +102,14 @@ function launch(executablePath: string, args: readonly string[]): Promise<number
   });
 }
 
-export const win32AppLaunchCapability: MorpheusCapability = {
+export const win32AppLaunchCapability: MorpheusCapability<'app.launch'> = {
   actionId: 'app.launch',
   platform: 'win32',
 
-  async resolve(params: MorpheusActionParams, context: MorpheusCapabilityContext): Promise<MorpheusResolution> {
+  async resolve(
+    params: MorpheusParamsFor<'app.launch'>,
+    context: MorpheusCapabilityContext,
+  ): Promise<MorpheusResolution> {
     const applicationKey = params.applicationKey;
     if (!isMorpheusApplicationKey(applicationKey)) {
       throw new MorpheusCapabilityError('invalid-params', 'Unknown application key');

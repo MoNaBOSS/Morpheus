@@ -18,6 +18,9 @@
  * settings store or from any other Renderer-writable state.
  */
 
+import { PARAM_LIMITS } from '../capabilities/params';
+import type { MorpheusParamDescriptor, ParamsFromDescriptors } from '../capabilities/params';
+
 export type MorpheusPlatform = 'win32' | 'darwin' | 'linux';
 
 export type MorpheusActionKind = 'process' | 'filesystem' | 'introspection';
@@ -25,17 +28,35 @@ export type MorpheusActionKind = 'process' | 'filesystem' | 'introspection';
 /**
  * Risk classification driving the permission engine.
  *
- * `high` and `critical` always require explicit confirmation regardless of the
- * active profile or any stored grant. See docs/security/PERMISSION_MODEL.md.
+ * `critical` always requires explicit confirmation regardless of the active
+ * profile or any stored grant. `high` asks once per new scope and is then
+ * grantable. See docs/security/PERMISSION_MODEL.md.
  */
 export type MorpheusRiskTier = 'low' | 'medium' | 'high' | 'critical';
 
-/** Tiers whose confirmation can never be waived by a profile or a grant. */
+/**
+ * Tiers whose confirmation can never be waived by a profile or a grant.
+ *
+ * 0.5 narrowed this to `critical` alone. Treating `high` as permanently
+ * interrupting produced prompt fatigue — users stop reading dialogs they see
+ * constantly, which is itself a security failure. `high` is now grantable but
+ * never auto-runs on a scope the user has not already seen.
+ * See docs/security/PERMISSION_MODEL.md.
+ */
 export const MORPHEUS_MANDATORY_CONFIRMATION_TIERS: readonly MorpheusRiskTier[] =
-  Object.freeze(['high', 'critical']);
+  Object.freeze(['critical']);
 
 export function requiresMandatoryConfirmation(tier: MorpheusRiskTier): boolean {
   return MORPHEUS_MANDATORY_CONFIRMATION_TIERS.includes(tier);
+}
+
+/**
+ * Tiers that must be explicitly approved at least once per scope before they
+ * may ever run automatically. Distinct from mandatory confirmation: a grant
+ * DOES satisfy this, a profile default alone does not.
+ */
+export function requiresExplicitFirstApproval(tier: MorpheusRiskTier): boolean {
+  return tier === 'medium' || tier === 'high';
 }
 
 export type MorpheusActionId = 'app.launch' | 'file.createText' | 'system.report';
@@ -43,13 +64,7 @@ export type MorpheusActionId = 'app.launch' | 'file.createText' | 'system.report
 /** Logical name of a Main-canonicalized approved directory. */
 export type MorpheusRootKey = 'morpheusFiles';
 
-export type MorpheusParamKind = 'applicationKey' | 'textFileName' | 'textContent';
-
-export type MorpheusParamDescriptor = {
-  readonly key: string;
-  readonly kind: MorpheusParamKind;
-  readonly required: boolean;
-};
+export type { MorpheusParamKind, MorpheusParamDescriptor } from '../capabilities/params';
 
 export type MorpheusActionDescriptor = {
   readonly id: MorpheusActionId;
@@ -89,7 +104,7 @@ export type MorpheusApplicationEntry = {
   readonly args: readonly string[];
 };
 
-export const MORPHEUS_ACTIONS: Readonly<Record<MorpheusActionId, MorpheusActionDescriptor>> = Object.freeze({
+export const MORPHEUS_ACTIONS = Object.freeze({
   'app.launch': Object.freeze({
     id: 'app.launch',
     kind: 'process',
@@ -126,7 +141,15 @@ export const MORPHEUS_ACTIONS: Readonly<Record<MorpheusActionId, MorpheusActionD
     platforms: Object.freeze(['win32'] as const),
     params: Object.freeze([] as const),
   } as const),
-} as const);
+} as const) satisfies Readonly<Record<MorpheusActionId, MorpheusActionDescriptor>>;
+
+/**
+ * The exact parameter object a given capability accepts, derived from its own
+ * descriptors. Capability adapters annotate with this instead of a shared bag of
+ * optionals, so a parameter belonging to a different capability is a type error.
+ */
+export type MorpheusParamsFor<K extends MorpheusActionId> =
+  ParamsFromDescriptors<(typeof MORPHEUS_ACTIONS)[K]['params']>;
 
 export const MORPHEUS_APPLICATIONS: Readonly<Record<MorpheusApplicationKey, MorpheusApplicationEntry>> = Object.freeze({
   notepad: Object.freeze({
@@ -141,14 +164,14 @@ export const MORPHEUS_APPLICATIONS: Readonly<Record<MorpheusApplicationKey, Morp
 } as const);
 
 /**
- * Permitted text file names. Rejects parent traversal, path separators and
- * alternate data stream separators by construction. Reserved Windows device
- * names are rejected separately in Main; see `electron/utils/morpheus-path-guard.ts`.
+ * Re-exported from the parameter layer, which owns them. Keeping one definition
+ * means the validator that rejects at the transport boundary and the capability
+ * that enforces at the filesystem boundary can never disagree.
  */
-export const MORPHEUS_TEXT_FILE_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\.txt$/;
+export { MORPHEUS_TEXT_FILE_NAME_PATTERN } from '../capabilities/params';
 
 /** Upper bound on text file payload size. */
-export const MORPHEUS_MAX_TEXT_BYTES = 64 * 1024;
+export const MORPHEUS_MAX_TEXT_BYTES = PARAM_LIMITS.textContentBytes;
 
 /** Seconds a permission request may stay unanswered before it auto-denies. */
 export const MORPHEUS_PERMISSION_TIMEOUT_MS = 60_000;
