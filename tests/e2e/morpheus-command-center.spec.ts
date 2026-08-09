@@ -105,11 +105,19 @@ test.describe('Morpheus Command Center', () => {
 
       await page.getByTestId('morpheus-command-input').fill('Create a text file named artifact.txt');
       await page.getByTestId('morpheus-command-submit').click();
-      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
-      await page.getByTestId('morpheus-permission-allow-once').click();
+
+      // A command-bar objective becomes a PLAN, so consent is requested once for
+      // the whole plan rather than once per capability run.
+      await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });
+      await expect(page.getByTestId('morpheus-plan-consent-boundary-file.createText')).toBeVisible();
+      await page.getByTestId('morpheus-plan-consent-allow-once').click();
 
       await expect(page.getByTestId('morpheus-run-card').first())
         .toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
+
+      // The plan panel reports the step outcome, not just the raw event stream.
+      await expect(page.getByTestId('plan-timeline').locator('li').first())
+        .toHaveAttribute('data-status', 'succeeded', { timeout: 20_000 });
 
       const artifact = page.getByTestId('morpheus-artifact').first();
       await expect(artifact).toBeVisible();

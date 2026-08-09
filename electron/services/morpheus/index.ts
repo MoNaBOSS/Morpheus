@@ -8,6 +8,7 @@
 import { join } from 'node:path';
 
 import type { MorpheusActionEvent } from '@shared/morpheus/action-types';
+import type { MorpheusPlanConsentEvent } from '@shared/host-events/contract';
 
 import { createMorpheusAuditSink } from './audit';
 import { createMorpheusCapabilityRegistry } from './capability-registry';
@@ -24,6 +25,8 @@ export type CreateMorpheusServiceOptions = {
   userDataDir: string;
   appVersion: string;
   emit: (event: MorpheusActionEvent) => void;
+  /** Delivers the one batched consent request a plan may raise. */
+  emitPlanConsent?: (event: MorpheusPlanConsentEvent) => void;
 };
 
 export type MorpheusService = {
@@ -62,6 +65,28 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     auditHealth,
     appVersion: options.appVersion,
     emit: options.emit,
+
+    /**
+     * Flattens the plan's trust boundaries into wire shape.
+     *
+     * Only the fields the user must SEE to decide cross the boundary. The
+     * internal `PermissionScope` is not sent: the renderer answers with a
+     * boundary id, and Main re-derives the scope from the request it issued —
+     * so a response can never widen the scope it applies to.
+     */
+    emitPlanConsent: (request) => options.emitPlanConsent?.({
+      planId: request.planId,
+      objective: request.objective,
+      boundaries: request.boundaries.map((boundary) => ({
+        boundaryId: boundary.boundaryId,
+        capabilityId: boundary.scope.capabilityId,
+        resourceScope: boundary.scope.resourceScope,
+        riskTier: boundary.scope.riskTier,
+        stepIds: boundary.stepIds,
+        targets: boundary.targets,
+        mandatoryConfirmation: boundary.mandatoryConfirmation,
+      })),
+    }),
   });
 
   return { runtime, grants, filesRoot: roots.resolve('morpheusFiles'), auditHealth };

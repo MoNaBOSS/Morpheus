@@ -39,8 +39,8 @@ test.describe('Morpheus audit log', () => {
       // One allowed run…
       await page.getByTestId('morpheus-command-input').fill(`Create a text file named audited.txt saying "${secret}"`);
       await page.getByTestId('morpheus-command-submit').click();
-      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
-      await page.getByTestId('morpheus-permission-allow-once').click();
+      await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });
+      await page.getByTestId('morpheus-plan-consent-allow-once').click();
       await expect(page.getByTestId('morpheus-run-card').first())
         .toHaveAttribute('data-phase', 'succeeded', { timeout: 15_000 });
 
@@ -48,8 +48,8 @@ test.describe('Morpheus audit log', () => {
       // the first time even under Balanced.
       await page.getByTestId('morpheus-command-input').fill('Open Notepad');
       await page.getByTestId('morpheus-command-submit').click();
-      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
-      await page.getByTestId('morpheus-permission-deny').click();
+      await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });
+      await page.getByTestId('morpheus-plan-consent-deny').click();
       await expect(page.getByTestId('morpheus-run-card').first())
         .toHaveAttribute('data-phase', 'denied');
 
@@ -57,7 +57,7 @@ test.describe('Morpheus audit log', () => {
       
 
       const entries = readAuditEntries(userDataDir);
-      expect(entries.length).toBeGreaterThanOrEqual(7);
+      expect(entries.length).toBeGreaterThanOrEqual(6);
 
       // Schema.
       for (const entry of entries) {
@@ -73,14 +73,19 @@ test.describe('Morpheus audit log', () => {
       expect([...sequences].sort((a, b) => a - b)).toEqual(sequences);
 
       // Both lifecycles are present, in full.
+      //
+      // `awaiting-permission` now comes FIRST: a command-bar objective becomes a
+      // plan, and consent is sought for the whole plan before any run exists. A
+      // refused step therefore never becomes a `requested` run at all — it is
+      // recorded as `denied` and nothing executes.
       const phasesFor = (actionId: string) => entries
         .filter((entry) => entry.actionId === actionId)
         .map((entry) => entry.phase);
       expect(phasesFor('file.createText')).toEqual([
-        'requested', 'awaiting-permission', 'running', 'succeeded',
+        'awaiting-permission', 'requested', 'running', 'succeeded',
       ]);
       expect(phasesFor('app.launch')).toEqual([
-        'requested', 'awaiting-permission', 'denied',
+        'awaiting-permission', 'denied',
       ]);
 
       // Decisions are recorded.
@@ -111,8 +116,8 @@ test.describe('Morpheus audit log', () => {
       await expect(page.getByTestId('command-center-page')).toBeVisible();
       await page.getByTestId('morpheus-command-input').fill('Open Notepad');
       await page.getByTestId('morpheus-command-submit').click();
-      await expect(page.getByTestId('morpheus-permission-dialog')).toBeVisible({ timeout: 20_000 });
-      await page.getByTestId('morpheus-permission-deny').click();
+      await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });
+      await page.getByTestId('morpheus-plan-consent-deny').click();
       await expect(page.getByTestId('morpheus-run-card').first())
         .toHaveAttribute('data-phase', 'denied');
 

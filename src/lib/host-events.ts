@@ -126,6 +126,9 @@ export const hostEvents = {
   onOpenClawCliInstalled: (
     handler: HostEventHandler<'app', 'openClawCliInstalled'>,
   ) => onAppEvent('openClawCliInstalled', handler),
+  onMorpheusPlanConsent: (handler: HostEventHandler<'morpheus', 'planConsent'>) => (
+    onMorpheusEvent('planConsent', handler)
+  ),
   onMorpheusActionEvent: (handler: HostEventHandler<'morpheus', 'actionEvent'>) => (
     onMorpheusEvent('actionEvent', handler)
   ),

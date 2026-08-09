@@ -18,12 +18,14 @@ import { Card } from '@/components/ui/card';
 import morpheusLogo from '@/assets/morpheus-logo.svg';
 import { MorpheusActionTimeline } from '@/components/morpheus/MorpheusActionTimeline';
 import { MorpheusPermissionDialog } from '@/components/morpheus/MorpheusPermissionDialog';
+import { MorpheusPlanConsentDialog } from '@/components/morpheus/MorpheusPlanConsentDialog';
 import { PermissionCenter } from '@/components/morpheus/PermissionCenter';
 import { useMorpheusActionsStore } from '@/stores/morpheus-actions';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 
 import { ArtifactsPanel } from './ArtifactsPanel';
 import { CommandBar } from './CommandBar';
+import { PlanPanel } from './PlanPanel';
 import { RuntimeStatusBar } from './RuntimeStatusBar';
 import { SupportedActions } from './SupportedActions';
 
@@ -36,16 +38,21 @@ export function CommandCenter() {
   const runsById = useMorpheusActionsStore((state) => state.runsById);
 
   const loadPermissionCenter = useMorpheusCommandStore((state) => state.loadPermissionCenter);
+  const subscribeConsent = useMorpheusCommandStore((state) => state.subscribeConsent);
   const loadFilesRoot = useMorpheusCommandStore((state) => state.loadFilesRoot);
   const captureArtifact = useMorpheusCommandStore((state) => state.captureArtifact);
 
   useEffect(() => {
     const unsubscribe = subscribe();
+    const unsubscribeConsent = subscribeConsent();
     void loadCapabilities();
     void loadPermissionCenter();
     void loadFilesRoot();
-    return unsubscribe;
-  }, [subscribe, loadCapabilities, loadPermissionCenter, loadFilesRoot]);
+    return () => {
+      unsubscribe();
+      unsubscribeConsent();
+    };
+  }, [subscribe, subscribeConsent, loadCapabilities, loadPermissionCenter, loadFilesRoot]);
 
   // Artifacts and grant state are derived from real terminal runs. Refreshing
   // the permission summary here is what makes a newly created grant visible
@@ -90,13 +97,19 @@ export function CommandCenter() {
       </header>
 
       <div className="grid flex-1 grid-cols-1 gap-4 p-4 xl:grid-cols-3">
-        <Card data-testid="command-center-execution" className="flex flex-col gap-2 p-3 xl:col-span-2">
-          <h2 className="font-serif text-sm font-normal tracking-tight">
-            {t('morpheus.timeline.title')}
-          </h2>
-          <p className="text-2xs text-muted-foreground">{t('morpheus.timeline.description')}</p>
-          <MorpheusActionTimeline />
-        </Card>
+        {/* Plan above timeline: the plan is what Morpheus intends, the timeline
+            is the raw event record. Intent first, evidence under it. */}
+        <div className="flex flex-col gap-4 xl:col-span-2">
+          <PlanPanel />
+
+          <Card data-testid="command-center-execution" className="flex flex-col gap-2 p-3">
+            <h2 className="font-serif text-sm font-normal tracking-tight">
+              {t('morpheus.timeline.title')}
+            </h2>
+            <p className="text-2xs text-muted-foreground">{t('morpheus.timeline.description')}</p>
+            <MorpheusActionTimeline />
+          </Card>
+        </div>
 
         <div className="flex flex-col gap-4">
           <Card data-testid="command-center-permission" className="flex flex-col gap-2 p-3">
@@ -122,6 +135,9 @@ export function CommandCenter() {
         </div>
       </div>
 
+      {/* Two dialogs, one at a time: the plan-level batch for command-bar work,
+          the per-run dialog for a single action launched directly. */}
+      <MorpheusPlanConsentDialog />
       <MorpheusPermissionDialog />
     </div>
   );

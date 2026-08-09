@@ -42,6 +42,12 @@ import { evaluatePlanTrust, type TrustBoundary } from './trust';
 export type PreparedStep = {
   stepId: string;
   scope: PermissionScope;
+  /**
+   * The concrete thing this step will act on, as Main resolved it — shown in
+   * the consent prompt so the user approves what will happen, not what was
+   * requested.
+   */
+  target?: string;
   /** Opaque to the executor; handed back to `run` unchanged. */
   handle: unknown;
 };
@@ -69,6 +75,14 @@ export interface PlanStepRunner {
   run(step: ExecutionStep, prepared: PreparedStep, reason: string): Promise<RunResult>;
   /** Record that a step will not run, so history is complete. */
   skip?(step: ExecutionStep, because: string): Promise<void>;
+  /**
+   * Record that a step was refused.
+   *
+   * A refusal is exactly the kind of event an audit trail exists for, and it
+   * never reaches `run` — so without this hook a denied plan would leave no
+   * record at all, which the permission model forbids.
+   */
+  deny?(step: ExecutionStep, prepared: PreparedStep | undefined, reason: string): Promise<void>;
 }
 
 /** Consent for the batched boundaries. One call, however many steps. */
@@ -123,6 +137,7 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
   //    the user would otherwise approve a plan whose later steps cannot run.
   const preparedByStep = new Map<string, PreparedStep>();
   const scopesByStep = new Map<string, PermissionScope>();
+  const targetsByStep = new Map<string, string>();
   for (const stepId of graph.order) {
     const step = byId.get(stepId) as ExecutionStep;
     const outcome = await runner.prepare(step);
@@ -136,10 +151,13 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
     }
     preparedByStep.set(stepId, outcome.prepared);
     scopesByStep.set(stepId, outcome.prepared.scope);
+    if (outcome.prepared.target) targetsByStep.set(stepId, outcome.prepared.target);
   }
 
   // 3. One assessment for the whole plan.
-  const trust = evaluatePlanTrust({ scopesByStep, order: graph.order, policy, auditHealth, now: now() });
+  const trust = evaluatePlanTrust({
+    scopesByStep, targetsByStep, order: graph.order, policy, auditHealth, now: now(),
+  });
 
   if (trust.outcome === 'rejected') {
     for (const denial of trust.denied) {
@@ -148,6 +166,11 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
         status: 'denied',
         error: { code: 'permission-denied', message: denial.reason },
       });
+      await runner.deny?.(
+        byId.get(denial.stepId) as ExecutionStep,
+        preparedByStep.get(denial.stepId),
+        denial.reason,
+      );
     }
     for (const stepId of graph.order) {
       if (results.get(stepId)?.status === 'pending') results.set(stepId, { stepId, status: 'skipped' });
@@ -178,6 +201,11 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
             status: 'denied',
             error: { code: 'permission-denied', message: decision ?? 'no-response' },
           });
+          await runner.deny?.(
+            byId.get(stepId) as ExecutionStep,
+            preparedByStep.get(stepId),
+            decision ?? 'no-response',
+          );
         }
         if (decision && REMEMBERED_DECISIONS.includes(decision)) persistDecision?.(boundary.scope, decision);
         continue;

@@ -165,6 +165,10 @@ function registerTypedHostHandlers(
       if (mainWindow.isDestroyed()) return;
       mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.actionEvent, event);
     },
+    emitPlanConsent: (event) => {
+      if (mainWindow.isDestroyed()) return;
+      mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.planConsent, event);
+    },
   });
   hostApiRegistry.registerCoreServices({
     app: createAppApi(),

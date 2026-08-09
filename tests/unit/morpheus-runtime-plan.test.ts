@@ -345,3 +345,64 @@ describe('runtime plan execution', () => {
     runtime.dispose();
   });
 });
+
+describe('audit evidence for refusals', () => {
+  it('records a denied phase when consent is refused', async () => {
+    // A refusal is exactly what an audit trail exists for. Under the plan path
+    // a refused step never reaches execution, so without an explicit record it
+    // would leave no evidence at all.
+    const runtime = makeRuntime({
+      autoDecide: (request, getRuntime) => {
+        void getRuntime().respondPlanPermission({
+          planId: request.planId,
+          decisions: Object.fromEntries(request.boundaries.map((b) => [b.boundaryId, 'deny'])),
+        });
+      },
+    });
+    runtime.registerPlan(plan([step('a'), step('b')]));
+
+    await runtime.executePlan({ planId: 'plan-1' });
+
+    const denied = audited.filter((entry) => entry.phase === 'denied');
+    expect(denied).toHaveLength(2);
+    expect(denied[0].decision).toBe('denied');
+    expect(events.filter((event) => event.phase === 'denied')).toHaveLength(2);
+    expect(executed).toEqual([]);
+    runtime.dispose();
+  });
+
+  it('records a denied phase when policy refuses before any prompt', async () => {
+    const runtime = makeRuntime();
+    store.createGrant(GRANT_SCOPE, 'denied-persistent');
+    runtime.registerPlan(plan([step('a')]));
+
+    await runtime.executePlan({ planId: 'plan-1' });
+
+    expect(audited.filter((entry) => entry.phase === 'denied')).toHaveLength(1);
+    expect(consentRequests).toEqual([]);
+    runtime.dispose();
+  });
+});
+
+describe('the consent request is recorded but is not a run', () => {
+  it('audits awaiting-permission without emitting a phantom run event', async () => {
+    // Emitting these as run events would fabricate pending runs in the
+    // interface and open the per-run dialog on top of the plan's own.
+    const runtime = makeRuntime({
+      autoDecide: (request, getRuntime) => {
+        void getRuntime().respondPlanPermission({
+          planId: request.planId,
+          decisions: Object.fromEntries(request.boundaries.map((b) => [b.boundaryId, 'allow-once'])),
+        });
+      },
+    });
+    runtime.registerPlan(plan([step('a'), step('b')]));
+
+    await runtime.executePlan({ planId: 'plan-1' });
+
+    expect(audited.filter((entry) => entry.phase === 'awaiting-permission')).toHaveLength(2);
+    expect(events.filter((event) => event.phase === 'awaiting-permission')).toHaveLength(0);
+    expect(executed).toEqual(['a.txt', 'b.txt']);
+    runtime.dispose();
+  });
+});

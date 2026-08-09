@@ -202,6 +202,16 @@ export function buildAuditParams(
  * Never from the request: a grant must bind to a real, verified target so
  * "always allow" cannot be attached to something the user was not shown.
  */
+/**
+ * The concrete thing an action will act on, for display in a prompt.
+ *
+ * Deliberately the FULL path, not the grant scope: the user is approving this
+ * specific file or executable now, and a folder alone would hide which file.
+ */
+export function describeTarget(target: MorpheusResolvedTarget): string | undefined {
+  return target.kind === 'none' ? undefined : target.path;
+}
+
 export function resourceScopeFor(target: MorpheusResolvedTarget): string {
   if (target.kind === 'executable') return target.applicationKey;
   // The containing approved root, not the individual file — otherwise every new
@@ -314,6 +324,29 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       durationMs: input.durationMs,
     };
     options.emit(event);
+  };
+
+  /**
+   * Writes an audit record WITHOUT emitting a run event.
+   *
+   * Used for plan-level facts that are not phases of any single run — asking
+   * for consent is the case today. Emitting these as run events would
+   * fabricate pending runs in the interface, which is both untrue and would
+   * open the per-run permission dialog for a plan that has its own.
+   */
+  const recordOnly = async (entry: Omit<MorpheusAuditEntry, 'v' | 'seq' | 'ts' | 'appVersion'>): Promise<void> => {
+    try {
+      await options.audit.record({
+        v: MORPHEUS_AUDIT_VERSION,
+        seq: nextSeq(),
+        ts: now().toISOString(),
+        appVersion: options.appVersion,
+        ...entry,
+      });
+    } catch {
+      // Same posture as `transition`: a failing sink is not silently upgraded
+      // into a success, but it does not abort the surrounding decision either.
+    }
   };
 
   const withinRateLimit = (): boolean => {
@@ -471,7 +504,15 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         originType,
         agentId,
       };
-      return { ok: true, prepared: { stepId: step.stepId, scope, handle: { resolution, actionId } } };
+      return {
+        ok: true,
+        prepared: {
+          stepId: step.stepId,
+          scope,
+          target: describeTarget(resolution.target),
+          handle: { resolution, actionId },
+        },
+      };
     },
 
     async run(step, prepared, reason): Promise<RunResult> {
@@ -504,6 +545,25 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       return failure
         ? { status: 'failed', error: failure, durationMs }
         : { status: 'succeeded', durationMs };
+    },
+
+    /**
+     * Records a refusal as a real `denied` phase, so a denied plan leaves the
+     * same audit evidence a denied single action does.
+     */
+    async deny(step, prepared, reason): Promise<void> {
+      const actionId = step.capabilityId;
+      if (!isMorpheusActionId(actionId)) return;
+      const handle = prepared?.handle as { resolution?: MorpheusResolution } | undefined;
+      await transition({
+        runId: createRunId(),
+        actionId,
+        phase: 'denied',
+        auditParams: buildAuditParams(actionId, step.params as MorpheusParamRecord),
+        target: handle?.resolution?.target,
+        decision: 'denied',
+        error: { code: 'permission-denied', message: `Refused: ${reason}` },
+      });
     },
 
     async skip(step, because): Promise<void> {
@@ -757,15 +817,36 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
          * decision as a refusal — so an unanswered prompt can never become
          * silent authority.
          */
-        requestConsent: (boundaries) => new Promise((resolve) => {
-          const timer = setTimeout(() => {
-            planConsent.delete(planId);
-            resolve(new Map());
-          }, permissionTimeoutMs);
-          timer.unref?.();
-          planConsent.set(planId, { resolve, timer });
-          options.emitPlanConsent?.({ planId, objective: plan.objective, boundaries });
-        }),
+        requestConsent: async (boundaries) => {
+          // Record that the user WAS ASKED, before asking. Without this the
+          // audit could show an execution with no evidence that consent was
+          // ever sought — and the same ordering guarantee applies here as
+          // everywhere else: persisted first, then surfaced.
+          const stepsById = new Map(plan.steps.map((entry) => [entry.stepId, entry]));
+          for (const boundary of boundaries) {
+            for (const stepId of boundary.stepIds) {
+              const step = stepsById.get(stepId);
+              if (!step || !isMorpheusActionId(step.capabilityId)) continue;
+              await recordOnly({
+                runId: `${planId}:${stepId}`,
+                actionId: step.capabilityId,
+                phase: 'awaiting-permission',
+                params: buildAuditParams(step.capabilityId, step.params as MorpheusParamRecord),
+                reason: 'prompt-required',
+              });
+            }
+          }
+
+          return new Promise((resolve) => {
+            const timer = setTimeout(() => {
+              planConsent.delete(planId);
+              resolve(new Map());
+            }, permissionTimeoutMs);
+            timer.unref?.();
+            planConsent.set(planId, { resolve, timer });
+            options.emitPlanConsent?.({ planId, objective: plan.objective, boundaries });
+          });
+        },
 
         persistDecision: (scope, decision) => {
           const grantType = grantTypeForDecision(decision);

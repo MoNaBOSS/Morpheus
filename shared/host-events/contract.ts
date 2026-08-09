@@ -5,6 +5,7 @@ import type {
 import type { UpdateStatusSnapshot } from '../host-api/contract';
 import type { ChatRuntimeEvent } from '../chat-runtime-events';
 import type { MorpheusActionEvent } from '../morpheus/action-types';
+import type { MorpheusRiskTier } from '../morpheus/actions/registry';
 import type {
   GatewayNotification,
   GatewayRuntimePayload,
@@ -109,7 +110,37 @@ export type HostEventContract = {
    */
   morpheus: {
     actionEvent: (payload: MorpheusActionEvent) => void;
+    /**
+     * ONE batched consent request per plan, carrying only the trust boundaries
+     * that are genuinely new. Separate from the run lifecycle because it is a
+     * plan-level question, not a phase of any single run.
+     */
+    planConsent: (payload: MorpheusPlanConsentEvent) => void;
   };
+};
+
+/** A trust boundary as presented to the user. */
+export type MorpheusConsentBoundary = {
+  boundaryId: string;
+  capabilityId: string;
+  /** Exact resource — an application key or a canonical directory. */
+  resourceScope: string;
+  riskTier: MorpheusRiskTier;
+  /** Steps this single approval covers. */
+  stepIds: readonly string[];
+  /**
+   * Concrete targets Main resolved — the specific file or executable. The
+   * scope is what a remembered grant covers; this is what happens now.
+   */
+  targets: readonly string[];
+  /** When true, the decision may not be remembered. */
+  mandatoryConfirmation: boolean;
+};
+
+export type MorpheusPlanConsentEvent = {
+  planId: string;
+  objective: string;
+  boundaries: readonly MorpheusConsentBoundary[];
 };
 
 export type HostEventModule = keyof HostEventContract;
@@ -156,6 +187,7 @@ export const HOST_EVENT_CHANNELS = {
   },
   morpheus: {
     actionEvent: 'morpheus:action-event',
+    planConsent: 'morpheus:plan-consent',
   },
 } as const satisfies {
   [M in Exclude<HostEventModule, 'channel'>]: {

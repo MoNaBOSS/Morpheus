@@ -1,286 +1,318 @@
 {
-    "gateway": "网关",
-    "channels": "频道",
-    "skills": "技能",
-    "uptime": "运行时间",
-    "port": "端口: {{port}}",
-    "pid": "PID: {{pid}}",
-    "connectedOf": "{{connected}} / {{total}} 已连接",
-    "enabledOf": "{{enabled}} / {{total}} 已启用",
-    "sinceRestart": "自上次重启",
-    "gatewayNotRunning": "网关未运行",
-    "models": {
-        "title": "模型",
-        "subtitle": "管理您的 AI 提供商并监控 Token 用量"
+  "gateway": "网关",
+  "channels": "频道",
+  "skills": "技能",
+  "uptime": "运行时间",
+  "port": "端口: {{port}}",
+  "pid": "PID: {{pid}}",
+  "connectedOf": "{{connected}} / {{total}} 已连接",
+  "enabledOf": "{{enabled}} / {{total}} 已启用",
+  "sinceRestart": "自上次重启",
+  "gatewayNotRunning": "网关未运行",
+  "models": {
+    "title": "模型",
+    "subtitle": "管理您的 AI 提供商并监控 Token 用量"
+  },
+  "quickActions": {
+    "title": "快捷操作",
+    "description": "常用任务和快捷方式",
+    "addProvider": "添加模型供应商",
+    "addChannel": "添加频道",
+    "createCron": "创建定时任务",
+    "installSkill": "安装技能",
+    "openChat": "打开聊天",
+    "settings": "设置",
+    "devConsole": "开发者控制台"
+  },
+  "connectedChannels": "已连接频道",
+  "noChannels": "未配置频道",
+  "addFirst": "添加你的第一个频道",
+  "activeSkills": "已启用技能",
+  "noSkills": "未启用技能",
+  "enableSome": "启用一些技能",
+  "more": "+{{count}} 更多",
+  "recentTokenHistory": {
+    "title": "最近 Token 消耗",
+    "description": "展示最近的助手回复与工具结果中的模型/提供商用量记录。",
+    "loading": "正在加载 token 消耗历史...",
+    "empty": "还没有 token 消耗历史",
+    "groupByModel": "按模型",
+    "groupByTime": "按时间",
+    "last7Days": "7 天",
+    "last30Days": "30 天",
+    "allTime": "全部",
+    "showingLast": "共 {{count}} 条记录",
+    "totalTokens": "总 token",
+    "inputShort": "输入",
+    "outputShort": "输出",
+    "cacheShort": "缓存",
+    "page": "第 {{current}} / {{total}} 页",
+    "prev": "上一页",
+    "next": "下一页",
+    "unknownModel": "未知模型",
+    "emptyForWindow": "当前时间范围内没有 token 消耗历史",
+    "input": "输入 {{value}}",
+    "output": "输出 {{value}}",
+    "cacheRead": "缓存读取 {{value}}",
+    "cacheWrite": "缓存写入 {{value}}",
+    "cost": "费用 ${{amount}}",
+    "viewContent": "查看内容",
+    "contentDialogTitle": "用量明细内容",
+    "close": "关闭",
+    "noUsage": "无用量数据",
+    "usageParseError": "用量解析失败"
+  },
+  "imageGeneration": {
+    "title": "图像生成",
+    "description": "为 image_generate 工具配置一个自定义 OpenAI Images 兼容端点。它与聊天 Provider 完全独立。",
+    "timeout": "超时（毫秒）",
+    "agentAuthTitle": "各 Agent 鉴权",
+    "agentAuthDesc": "图像生成使用各 Agent 的 auth-profiles.json 中为此自定义生图端点保存的 API Key。",
+    "agentColumn": "Agent",
+    "authColumn": "自定义生图端点鉴权",
+    "defaultAgent": "默认",
+    "authConfigured": "已配置",
+    "authMissing": "缺少密钥",
+    "testAgent": "测试使用的 Agent",
+    "testButton": "测试生成",
+    "testing": "生成中…",
+    "save": "保存",
+    "saving": "保存中…",
+    "clear": "清除配置",
+    "clearing": "清除中…",
+    "clearConfirmTitle": "清除图像生成配置？",
+    "clearConfirmMessage": "将移除自定义生图端点、模型设置和已保存的 API Key，不会影响聊天 Provider。",
+    "clearConfirmAction": "清除",
+    "testPrompt": "白色背景上的小红圆，极简扁平插画。",
+    "toast": {
+      "saved": "图像生成设置已保存",
+      "cleared": "图像生成配置已清除",
+      "saveBeforeTest": "请先保存设置再运行测试",
+      "testSuccess": "测试图像已生成（{{ms}} ms）",
+      "testSuccessWithPath": "测试图像已生成（{{ms}} ms）：{{path}}",
+      "testFailed": "图像生成测试失败"
     },
-    "quickActions": {
-        "title": "快捷操作",
-        "description": "常用任务和快捷方式",
-        "addProvider": "添加模型供应商",
-        "addChannel": "添加频道",
-        "createCron": "创建定时任务",
-        "installSkill": "安装技能",
-        "openChat": "打开聊天",
-        "settings": "设置",
-        "devConsole": "开发者控制台"
+    "openAiRelay": {
+      "title": "自定义生图端点",
+      "description": "将生图请求发往独立的 OpenAI Images 兼容端点（/v1/images/generations），不会改变任何聊天 Provider。",
+      "baseUrl": "生图 Base URL",
+      "baseUrlHint": "例如 https://api.example.com/v1；未带 /v1 时会自动补全。",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "sk-...",
+      "apiKeyPlaceholderConfigured": "已配置，留空则不修改",
+      "model": "模型名",
+      "modelHint": "只填写模型 ID，例如 gpt-image-2；不要填写 provider/model。"
     },
-    "connectedChannels": "已连接频道",
-    "noChannels": "未配置频道",
-    "addFirst": "添加你的第一个频道",
-    "activeSkills": "已启用技能",
-    "noSkills": "未启用技能",
-    "enableSome": "启用一些技能",
-    "more": "+{{count}} 更多",
-    "recentTokenHistory": {
-        "title": "最近 Token 消耗",
-        "description": "展示最近的助手回复与工具结果中的模型/提供商用量记录。",
-        "loading": "正在加载 token 消耗历史...",
-        "empty": "还没有 token 消耗历史",
-        "groupByModel": "按模型",
-        "groupByTime": "按时间",
-        "last7Days": "7 天",
-        "last30Days": "30 天",
-        "allTime": "全部",
-        "showingLast": "共 {{count}} 条记录",
-        "totalTokens": "总 token",
-        "inputShort": "输入",
-        "outputShort": "输出",
-        "cacheShort": "缓存",
-        "page": "第 {{current}} / {{total}} 页",
-        "prev": "上一页",
-        "next": "下一页",
-        "unknownModel": "未知模型",
-        "emptyForWindow": "当前时间范围内没有 token 消耗历史",
-        "input": "输入 {{value}}",
-        "output": "输出 {{value}}",
-        "cacheRead": "缓存读取 {{value}}",
-        "cacheWrite": "缓存写入 {{value}}",
-        "cost": "费用 ${{amount}}",
-        "viewContent": "查看内容",
-        "contentDialogTitle": "用量明细内容",
-        "close": "关闭",
-        "noUsage": "无用量数据",
-        "usageParseError": "用量解析失败"
-    },
-    "imageGeneration": {
-        "title": "图像生成",
-        "description": "为 image_generate 工具配置一个自定义 OpenAI Images 兼容端点。它与聊天 Provider 完全独立。",
-        "timeout": "超时（毫秒）",
-        "agentAuthTitle": "各 Agent 鉴权",
-        "agentAuthDesc": "图像生成使用各 Agent 的 auth-profiles.json 中为此自定义生图端点保存的 API Key。",
-        "agentColumn": "Agent",
-        "authColumn": "自定义生图端点鉴权",
-        "defaultAgent": "默认",
-        "authConfigured": "已配置",
-        "authMissing": "缺少密钥",
-        "testAgent": "测试使用的 Agent",
-        "testButton": "测试生成",
-        "testing": "生成中…",
-        "save": "保存",
-        "saving": "保存中…",
-        "clear": "清除配置",
-        "clearing": "清除中…",
-        "clearConfirmTitle": "清除图像生成配置？",
-        "clearConfirmMessage": "将移除自定义生图端点、模型设置和已保存的 API Key，不会影响聊天 Provider。",
-        "clearConfirmAction": "清除",
-        "testPrompt": "白色背景上的小红圆，极简扁平插画。",
-        "toast": {
-            "saved": "图像生成设置已保存",
-            "cleared": "图像生成配置已清除",
-            "saveBeforeTest": "请先保存设置再运行测试",
-            "testSuccess": "测试图像已生成（{{ms}} ms）",
-            "testSuccessWithPath": "测试图像已生成（{{ms}} ms）：{{path}}",
-            "testFailed": "图像生成测试失败"
-        },
-        "openAiRelay": {
-            "title": "自定义生图端点",
-            "description": "将生图请求发往独立的 OpenAI Images 兼容端点（/v1/images/generations），不会改变任何聊天 Provider。",
-            "baseUrl": "生图 Base URL",
-            "baseUrlHint": "例如 https://api.example.com/v1；未带 /v1 时会自动补全。",
-            "apiKey": "API Key",
-            "apiKeyPlaceholder": "sk-...",
-            "apiKeyPlaceholderConfigured": "已配置，留空则不修改",
-            "model": "模型名",
-            "modelHint": "只填写模型 ID，例如 gpt-image-2；不要填写 provider/model。"
-        },
-        "errors": {
-            "invalidTimeout": "超时必须为正数",
-            "relayBaseUrlRequired": "请填写生图 Base URL",
-            "relayApiKeyRequired": "请填写 API Key",
-            "relayModelRequired": "请填写模型名",
-            "relayModelInvalid": "请只填写模型名，例如 gpt-image-2；不要填写 provider/model。"
-        }
-    },
-    "morpheus": {
-        "title": "Morpheus",
-        "subtitle": "AI 执行平台 —— 规划、授权、执行、审计。",
-        "systemPanel": {
-            "title": "系统",
-            "description": "不含隐私信息的运行时信息。",
-            "unavailable": "系统信息不可用。",
-            "platform": "平台",
-            "arch": "架构",
-            "cpu": "处理器",
-            "memory": "内存",
-            "uptime": "运行时间",
-            "appVersion": "应用版本",
-            "runtime": "运行时",
-            "memoryValue": "{{total}} 中可用 {{free}}"
-        },
-        "launcher": {
-            "title": "操作",
-            "description": "每个操作在执行前都会请求确认。",
-            "run": "运行",
-            "unsupported": "此平台不支持",
-            "fileNameLabel": "文件名",
-            "fileNamePlaceholder": "notes.txt",
-            "contentLabel": "内容",
-            "contentPlaceholder": "要写入的文本",
-            "applicationLabel": "应用程序"
-        },
-        "applications": {
-            "notepad": "记事本"
-        },
-        "actions": {
-            "appLaunch": {
-                "label": "启动已批准的应用程序",
-                "description": "从内置批准列表中启动一个应用程序。"
-            },
-            "fileCreateText": {
-                "label": "创建文本文件",
-                "description": "在已批准的 Morpheus 文件夹中写入新的文本文件。"
-            },
-            "systemReport": {
-                "label": "报告系统信息",
-                "description": "收集本机运行时的非隐私信息。"
-            }
-        },
-        "phases": {
-            "requested": "已请求",
-            "awaiting-permission": "等待确认",
-            "denied": "已拒绝",
-            "running": "执行中",
-            "succeeded": "已成功",
-            "failed": "已失败",
-            "cancelled": "已取消",
-            "timed-out": "已超时",
-            "unsupported-platform": "不支持"
-        },
-        "permission": {
-            "title": "确认此操作",
-            "description": "Morpheus 即将执行：{{action}}",
-            "executableLabel": "将启动的应用程序",
-            "fileLabel": "将创建的文件",
-            "noTarget": "此操作仅读取运行时信息，不会写入或启动任何内容。",
-            "fileBytes": "{{bytes}} 字节",
-            "allow": "允许",
-            "deny": "拒绝",
-            "centerTitle": "权限",
-            "profileLabel": "权限模式",
-            "loading": "正在加载权限策略…",
-            "revoke": "撤销",
-            "revokeAllSession": "撤销会话授权",
-            "resetPolicy": "重置策略",
-            "sessionCount": "{{count}} 个会话",
-            "persistentCount": "{{count}} 个已保存",
-            "deniedCount": "{{count}} 个已拒绝",
-            "lastUsed": "使用于 {{time}}",
-            "scopeNote": "已保存的决定仅适用于该操作与该目标。",
-            "degradedExplanation": "审计不可用，Morpheus 正以受限状态运行。在审计恢复前，仅允许执行不涉及隐私的只读操作。",
-            "profiles": {
-                "strict": {
-                    "name": "严格",
-                    "description": "只读检查自动执行。所有写入或启动操作每次都会询问。"
-                },
-                "balanced": {
-                    "name": "平衡",
-                    "description": "只读检查自动执行。其他操作首次询问，可针对确切目标记住该决定。"
-                },
-                "autonomous": {
-                    "name": "自主",
-                    "description": "低风险操作自动执行。其他操作仅在已信任的目标内执行。高风险操作始终询问。"
-                }
-            },
-            "decisions": {
-                "deny": "拒绝",
-                "deny-always": "始终拒绝此确切操作",
-                "allow-once": "允许一次",
-                "allow-session": "本次会话内允许",
-                "allow-always": "始终允许此确切操作"
-            },
-            "grantTypes": {
-                "session": "本次会话",
-                "persistent": "已保存",
-                "denied-persistent": "始终拒绝"
-            },
-            "sections": {
-                "session": "会话授权",
-                "persistent": "已保存授权",
-                "denied": "已拒绝"
-            },
-            "reasons": {
-                "privacy-safe-auto": "自动执行：不涉及隐私的只读操作",
-                "profile-auto": "自动执行：当前模式允许",
-                "session-grant": "自动执行：本次会话已允许",
-                "persistent-grant": "自动执行：该确切目标已保存批准",
-                "prompt-required": "需要确认：新的范围",
-                "mandatory-confirmation": "该风险等级始终需要确认",
-                "persistent-denial": "被已保存的拒绝阻止",
-                "audit-degraded": "已阻止：审计不可用"
-            }
-        },
-        "timeline": {
-            "title": "执行时间线",
-            "description": "由主进程上报的实时阶段。",
-            "emptyTitle": "暂无操作",
-            "emptyDescription": "运行一个操作即可在此查看其真实执行阶段。",
-            "systemSummary": "{{platform}} {{release}}（{{arch}}）"
-        },
-        "audit": {
-            "title": "审计日志",
-            "description": "只追加记录，绝不保存文件内容。",
-            "loading": "正在加载审计记录…",
-            "emptyTitle": "暂无审计记录",
-            "emptyDescription": "每一次确认或拒绝的操作都会记录在此。"
-        },
-        "boot": {
-            "phases": {
-                "init": "正在初始化界面",
-                "settings": "正在加载偏好设置",
-                "bridge": "正在验证宿主桥接",
-                "runtime": "正在检查 Agent 运行时",
-                "ready": "就绪"
-            },
-            "skip": "按 Esc 跳过",
-            "title": "MORPHEUS"
-        },
-        "command": {
-            "label": "命令",
-            "placeholder": "描述一个目标，例如“显示系统信息”",
-            "run": "运行",
-            "unsupportedTitle": "Morpheus 暂时无法执行该操作",
-            "unsupportedBody": "该命令未映射到 Morpheus 实际具备的能力。当前支持："
-        },
-        "status": {
-            "runtimeReady": "运行时就绪",
-            "runtimeStarting": "运行时启动中",
-            "runtimeStopped": "运行时已停止",
-            "providerUnknown": "未配置提供方",
-            "auditDegraded": "审计不可用"
-        },
-        "artifacts": {
-            "title": "产物",
-            "rootLabel": "已批准的文件位置",
-            "rootUnknown": "不可用",
-            "open": "打开",
-            "empty": "暂无产物。完成的操作将显示在此处。"
-        },
-        "plan": {
-            "steps": {
-                "systemReport": "收集不涉及隐私的系统信息",
-                "fileCreateText": "在已批准的文件夹中创建 {{fileName}}",
-                "appLaunch": "启动 {{application}}"
-            }
-        }
+    "errors": {
+      "invalidTimeout": "超时必须为正数",
+      "relayBaseUrlRequired": "请填写生图 Base URL",
+      "relayApiKeyRequired": "请填写 API Key",
+      "relayModelRequired": "请填写模型名",
+      "relayModelInvalid": "请只填写模型名，例如 gpt-image-2；不要填写 provider/model。"
     }
+  },
+  "morpheus": {
+    "title": "Morpheus",
+    "subtitle": "AI 执行平台 —— 规划、授权、执行、审计。",
+    "systemPanel": {
+      "title": "系统",
+      "description": "不含隐私信息的运行时信息。",
+      "unavailable": "系统信息不可用。",
+      "platform": "平台",
+      "arch": "架构",
+      "cpu": "处理器",
+      "memory": "内存",
+      "uptime": "运行时间",
+      "appVersion": "应用版本",
+      "runtime": "运行时",
+      "memoryValue": "{{total}} 中可用 {{free}}"
+    },
+    "launcher": {
+      "title": "操作",
+      "description": "每个操作在执行前都会请求确认。",
+      "run": "运行",
+      "unsupported": "此平台不支持",
+      "fileNameLabel": "文件名",
+      "fileNamePlaceholder": "notes.txt",
+      "contentLabel": "内容",
+      "contentPlaceholder": "要写入的文本",
+      "applicationLabel": "应用程序"
+    },
+    "applications": {
+      "notepad": "记事本"
+    },
+    "actions": {
+      "appLaunch": {
+        "label": "启动已批准的应用程序",
+        "description": "从内置批准列表中启动一个应用程序。"
+      },
+      "fileCreateText": {
+        "label": "创建文本文件",
+        "description": "在已批准的 Morpheus 文件夹中写入新的文本文件。"
+      },
+      "systemReport": {
+        "label": "报告系统信息",
+        "description": "收集本机运行时的非隐私信息。"
+      }
+    },
+    "phases": {
+      "requested": "已请求",
+      "awaiting-permission": "等待确认",
+      "denied": "已拒绝",
+      "running": "执行中",
+      "succeeded": "已成功",
+      "failed": "已失败",
+      "cancelled": "已取消",
+      "timed-out": "已超时",
+      "unsupported-platform": "不支持"
+    },
+    "permission": {
+      "title": "确认此操作",
+      "description": "Morpheus 即将执行：{{action}}",
+      "executableLabel": "将启动的应用程序",
+      "fileLabel": "将创建的文件",
+      "noTarget": "此操作仅读取运行时信息，不会写入或启动任何内容。",
+      "fileBytes": "{{bytes}} 字节",
+      "allow": "允许",
+      "deny": "拒绝",
+      "centerTitle": "权限",
+      "profileLabel": "权限模式",
+      "loading": "正在加载权限策略…",
+      "revoke": "撤销",
+      "revokeAllSession": "撤销会话授权",
+      "resetPolicy": "重置策略",
+      "sessionCount": "{{count}} 个会话",
+      "persistentCount": "{{count}} 个已保存",
+      "deniedCount": "{{count}} 个已拒绝",
+      "lastUsed": "使用于 {{time}}",
+      "scopeNote": "已保存的决定仅适用于该操作与该目标。",
+      "degradedExplanation": "审计不可用，Morpheus 正以受限状态运行。在审计恢复前，仅允许执行不涉及隐私的只读操作。",
+      "profiles": {
+        "strict": {
+          "name": "严格",
+          "description": "只读检查自动执行。所有写入或启动操作每次都会询问。"
+        },
+        "balanced": {
+          "name": "平衡",
+          "description": "只读检查自动执行。其他操作首次询问，可针对确切目标记住该决定。"
+        },
+        "autonomous": {
+          "name": "自主",
+          "description": "低风险操作自动执行。其他操作仅在已信任的目标内执行。高风险操作始终询问。"
+        }
+      },
+      "decisions": {
+        "deny": "拒绝",
+        "deny-always": "始终拒绝此确切操作",
+        "allow-once": "允许一次",
+        "allow-session": "本次会话内允许",
+        "allow-always": "始终允许此确切操作"
+      },
+      "grantTypes": {
+        "session": "本次会话",
+        "persistent": "已保存",
+        "denied-persistent": "始终拒绝"
+      },
+      "sections": {
+        "session": "会话授权",
+        "persistent": "已保存授权",
+        "denied": "已拒绝"
+      },
+      "reasons": {
+        "privacy-safe-auto": "自动执行：不涉及隐私的只读操作",
+        "profile-auto": "自动执行：当前模式允许",
+        "session-grant": "自动执行：本次会话已允许",
+        "persistent-grant": "自动执行：该确切目标已保存批准",
+        "prompt-required": "需要确认：新的范围",
+        "mandatory-confirmation": "该风险等级始终需要确认",
+        "persistent-denial": "被已保存的拒绝阻止",
+        "audit-degraded": "已阻止：审计不可用"
+      },
+      "plan": {
+        "title": "批准此计划",
+        "description": "运行“{{objective}}”前，Morpheus 需要你授权 {{count}} 项新的权限范围。",
+        "coversSteps": "涵盖 {{count}} 个步骤",
+        "mandatoryNote": "此项无法被记住，下次仍会询问。",
+        "note": "此计划中的其他操作已在你现有的授权范围内。"
+      }
+    },
+    "timeline": {
+      "title": "执行时间线",
+      "description": "由主进程上报的实时阶段。",
+      "emptyTitle": "暂无操作",
+      "emptyDescription": "运行一个操作即可在此查看其真实执行阶段。",
+      "systemSummary": "{{platform}} {{release}}（{{arch}}）"
+    },
+    "audit": {
+      "title": "审计日志",
+      "description": "只追加记录，绝不保存文件内容。",
+      "loading": "正在加载审计记录…",
+      "emptyTitle": "暂无审计记录",
+      "emptyDescription": "每一次确认或拒绝的操作都会记录在此。"
+    },
+    "boot": {
+      "phases": {
+        "init": "正在初始化界面",
+        "settings": "正在加载偏好设置",
+        "bridge": "正在验证宿主桥接",
+        "runtime": "正在检查 Agent 运行时",
+        "ready": "就绪"
+      },
+      "skip": "按 Esc 跳过",
+      "title": "MORPHEUS"
+    },
+    "command": {
+      "label": "命令",
+      "placeholder": "描述一个目标，例如“显示系统信息”",
+      "run": "运行",
+      "unsupportedTitle": "Morpheus 暂时无法执行该操作",
+      "unsupportedBody": "该命令未映射到 Morpheus 实际具备的能力。当前支持："
+    },
+    "status": {
+      "runtimeReady": "运行时就绪",
+      "runtimeStarting": "运行时启动中",
+      "runtimeStopped": "运行时已停止",
+      "providerUnknown": "未配置提供方",
+      "auditDegraded": "审计不可用"
+    },
+    "artifacts": {
+      "title": "产物",
+      "rootLabel": "已批准的文件位置",
+      "rootUnknown": "不可用",
+      "open": "打开",
+      "empty": "暂无产物。完成的操作将显示在此处。"
+    },
+    "plan": {
+      "steps": {
+        "systemReport": "收集不涉及隐私的系统信息",
+        "fileCreateText": "在已批准的文件夹中创建 {{fileName}}",
+        "appLaunch": "启动 {{application}}"
+      },
+      "title": "执行计划",
+      "description": "Morpheus 将按顺序执行的操作。",
+      "empty": "暂无计划。请在命令栏中描述你的需求。",
+      "executing": "正在执行…",
+      "statusLabel": "计划",
+      "status": {
+        "draft": "草稿",
+        "awaiting-permission": "等待确认",
+        "executing": "执行中",
+        "completed": "已完成",
+        "partially-completed": "部分完成",
+        "failed": "失败",
+        "rejected": "未开始",
+        "cancelled": "已取消"
+      },
+      "stepStatus": {
+        "pending": "待执行",
+        "running": "执行中",
+        "succeeded": "完成",
+        "failed": "失败",
+        "skipped": "已跳过",
+        "denied": "未获授权",
+        "cancelled": "已取消"
+      },
+      "skippedBecause": "因 {{stepId}} 失败而跳过"
+    }
+  }
 }

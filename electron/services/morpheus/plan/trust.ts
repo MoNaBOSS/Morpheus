@@ -36,6 +36,16 @@ export type TrustBoundary = {
   scope: PermissionScope;
   /** Steps this single approval covers. */
   stepIds: readonly string[];
+  /**
+   * The concrete targets Main resolved, deduplicated.
+   *
+   * Distinct from `scope.resourceScope` on purpose: the scope is what a
+   * remembered grant binds to (a folder, an application key), while these are
+   * what will actually happen NOW (a specific file, a specific executable).
+   * Showing only the scope would hide the filename; showing only the target
+   * would misstate what "always allow" would cover.
+   */
+  targets: readonly string[];
   /** True when no grant may waive the confirmation, whatever the user picks. */
   mandatoryConfirmation: boolean;
 };
@@ -66,6 +76,8 @@ export type EvaluatePlanTrustInput = {
   scopesByStep: ReadonlyMap<string, PermissionScope>;
   /** Execution order, so boundaries are presented in the order they arise. */
   order: readonly string[];
+  /** Concrete resolved target per step, for disclosure in the prompt. */
+  targetsByStep?: ReadonlyMap<string, string>;
   policy: MorpheusPolicyEngine;
   auditHealth: AuditHealth;
   now?: Date;
@@ -80,11 +92,11 @@ export type EvaluatePlanTrustInput = {
  * reconstruct what did and did not happen.
  */
 export function evaluatePlanTrust(input: EvaluatePlanTrustInput): PlanTrustAssessment {
-  const { scopesByStep, order, policy, auditHealth, now = new Date() } = input;
+  const { scopesByStep, order, policy, auditHealth, targetsByStep, now = new Date() } = input;
 
   const autoAllowed: string[] = [];
   const denied: DeniedStep[] = [];
-  const boundaries = new Map<string, { scope: PermissionScope; stepIds: string[] }>();
+  const boundaries = new Map<string, { scope: PermissionScope; stepIds: string[]; targets: Set<string> }>();
 
   for (const stepId of order) {
     const scope = scopesByStep.get(stepId);
@@ -110,15 +122,25 @@ export function evaluatePlanTrust(input: EvaluatePlanTrustInput): PlanTrustAsses
     }
 
     const boundaryId = permissionScopeKey(scope);
+    const target = targetsByStep?.get(stepId);
     const existing = boundaries.get(boundaryId);
-    if (existing) existing.stepIds.push(stepId);
-    else boundaries.set(boundaryId, { scope, stepIds: [stepId] });
+    if (existing) {
+      existing.stepIds.push(stepId);
+      if (target) existing.targets.add(target);
+    } else {
+      boundaries.set(boundaryId, {
+        scope,
+        stepIds: [stepId],
+        targets: new Set(target ? [target] : []),
+      });
+    }
   }
 
   const consentRequired: TrustBoundary[] = [...boundaries.entries()].map(([boundaryId, entry]) => ({
     boundaryId,
     scope: entry.scope,
     stepIds: entry.stepIds,
+    targets: [...entry.targets],
     mandatoryConfirmation: requiresMandatoryConfirmation(entry.scope.riskTier),
   }));
 

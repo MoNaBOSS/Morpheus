@@ -8,11 +8,14 @@
 import { create } from 'zustand';
 
 import { hostApi } from '@/lib/host-api';
+import { hostEvents } from '@/lib/host-events';
+import type { MorpheusPlanConsentEvent } from '@shared/host-events/contract';
 import type {
   ExecutionArtifact,
   ExecutionPlan,
   UnsupportedCommand,
 } from '@shared/morpheus/execution-types';
+import type { MorpheusPlanExecutionResult } from '@shared/host-api/contract';
 import type {
   PermissionCenterSnapshot,
   PermissionProfile,
@@ -29,6 +32,17 @@ export type MorpheusCommandState = {
   /** Truthful refusal for the last unsupported command. */
   unsupported: UnsupportedCommand | null;
   interpreting: boolean;
+  /** True while Main is executing the plan. */
+  executing: boolean;
+  /** Per-step outcome of the last execution. Empty until one finishes. */
+  planResult: MorpheusPlanExecutionResult | null;
+  /**
+   * The single outstanding consent request, or null.
+   *
+   * At most one: Main allows one plan in flight, and a second dialog would let
+   * a user approve boundaries for a plan they are no longer looking at.
+   */
+  consent: MorpheusPlanConsentEvent | null;
   artifacts: ExecutionArtifact[];
   filesRoot: string | null;
   permission: PermissionCenterSnapshot | null;
@@ -36,6 +50,12 @@ export type MorpheusCommandState = {
   setInput: (input: string) => void;
   submit: () => Promise<void>;
   clearPlan: () => void;
+  /** Subscribes to plan consent requests. Returns the unsubscribe function. */
+  subscribeConsent: () => () => void;
+  /** Answers every boundary in the outstanding request with one decision. */
+  answerConsent: (decision: string) => Promise<void>;
+  /** Answers each boundary individually. */
+  answerConsentPerBoundary: (decisions: Record<string, string>) => Promise<void>;
   loadPermissionCenter: () => Promise<void>;
   setProfile: (profile: PermissionProfile) => Promise<void>;
   revokeGrant: (grantId: string) => Promise<void>;
@@ -89,6 +109,9 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
   plan: null,
   unsupported: null,
   interpreting: false,
+  executing: false,
+  planResult: null,
+  consent: null,
   artifacts: [],
   filesRoot: null,
   permission: null,
@@ -99,36 +122,60 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
     const objective = get().input.trim();
     if (!objective) return;
 
-    set({ interpreting: true, plan: null, unsupported: null });
+    set({ interpreting: true, plan: null, unsupported: null, planResult: null });
     try {
       // Interpretation happens in Main so the plan's resource scope is the
       // canonical approved root rather than anything the renderer chose.
       const result = await hostApi.morpheus.interpretCommand(objective, 'command-bar');
-      if (result.ok) {
-        set({ plan: result.plan, unsupported: null, interpreting: false, input: '' });
-        // The plan's single step is dispatched immediately; the policy engine
-        // decides whether it runs or prompts.
-        const step = result.plan.steps[0];
-        if (step) {
-          await hostApi.morpheus.requestAction({
-            actionId: step.capabilityId,
-            params: step.params,
-            originType: 'command-bar',
-          });
-        }
-      } else {
+      if (!result.ok) {
         set({ unsupported: result.unsupported, plan: null, interpreting: false });
+        return;
       }
+
+      set({ plan: result.plan, unsupported: null, interpreting: false, executing: true, input: '' });
+
+      // The renderer names the plan Main authored; it does not orchestrate it.
+      // Ordering, trust evaluation and execution all happen in Main, so the
+      // whole plan runs — not just its first step, as in 0.1.1.
+      const execution = await hostApi.morpheus.executePlan(result.plan.planId);
+      set({ planResult: execution, executing: false });
     } catch (error) {
       set({
         interpreting: false,
+        executing: false,
         unsupported: { objective, reason: 'not-understood', supportedCapabilities: [] },
       });
       console.error('[morpheus] command failed', error);
     }
   },
 
-  clearPlan: () => set({ plan: null, unsupported: null }),
+  clearPlan: () => set({ plan: null, unsupported: null, planResult: null }),
+
+  subscribeConsent: () => hostEvents.onMorpheusPlanConsent((event) => {
+    set({ consent: event });
+  }),
+
+  answerConsent: async (decision) => {
+    const request = get().consent;
+    if (!request) return;
+    await get().answerConsentPerBoundary(
+      Object.fromEntries(request.boundaries.map((boundary) => [boundary.boundaryId, decision])),
+    );
+  },
+
+  answerConsentPerBoundary: async (decisions) => {
+    const request = get().consent;
+    if (!request) return;
+    // Cleared before the round-trip so a second click cannot answer twice; Main
+    // also treats a repeated response as a no-op.
+    set({ consent: null });
+    try {
+      await hostApi.morpheus.respondPlanPermission(request.planId, decisions);
+    } catch (error) {
+      console.error('[morpheus] consent response failed', error);
+    }
+    await get().loadPermissionCenter();
+  },
 
   loadPermissionCenter: async () => {
     try {

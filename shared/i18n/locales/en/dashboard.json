@@ -1,286 +1,318 @@
 {
-    "gateway": "Gateway",
-    "channels": "Channels",
-    "skills": "Skills",
-    "uptime": "Uptime",
-    "port": "Port: {{port}}",
-    "pid": "PID: {{pid}}",
-    "connectedOf": "{{connected}} of {{total}} connected",
-    "enabledOf": "{{enabled}} of {{total}} enabled",
-    "sinceRestart": "Since last restart",
-    "gatewayNotRunning": "Gateway not running",
-    "models": {
-        "title": "Models",
-        "subtitle": "Manage your AI providers and monitor token usage."
+  "gateway": "Gateway",
+  "channels": "Channels",
+  "skills": "Skills",
+  "uptime": "Uptime",
+  "port": "Port: {{port}}",
+  "pid": "PID: {{pid}}",
+  "connectedOf": "{{connected}} of {{total}} connected",
+  "enabledOf": "{{enabled}} of {{total}} enabled",
+  "sinceRestart": "Since last restart",
+  "gatewayNotRunning": "Gateway not running",
+  "models": {
+    "title": "Models",
+    "subtitle": "Manage your AI providers and monitor token usage."
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "description": "Common tasks and shortcuts",
+    "addProvider": "Add Provider",
+    "addChannel": "Add Channel",
+    "createCron": "Create Cron",
+    "installSkill": "Install Skill",
+    "openChat": "Open Chat",
+    "settings": "Settings",
+    "devConsole": "Dev Console"
+  },
+  "connectedChannels": "Connected Channels",
+  "noChannels": "No channels configured",
+  "addFirst": "Add your first channel",
+  "activeSkills": "Active Skills",
+  "noSkills": "No skills enabled",
+  "enableSome": "Enable some skills",
+  "more": "+{{count}} more",
+  "recentTokenHistory": {
+    "title": "Recent Token Usage",
+    "description": "Recent assistant responses and tool results with model/provider usage data.",
+    "loading": "Loading token usage history...",
+    "empty": "No token usage history yet",
+    "groupByModel": "By model",
+    "groupByTime": "By time",
+    "last7Days": "7 days",
+    "last30Days": "30 days",
+    "allTime": "All",
+    "showingLast": "{{count}} records",
+    "totalTokens": "total tokens",
+    "inputShort": "Input",
+    "outputShort": "Output",
+    "cacheShort": "Cache",
+    "page": "Page {{current}} / {{total}}",
+    "prev": "Previous",
+    "next": "Next",
+    "unknownModel": "Unknown model",
+    "emptyForWindow": "No token usage history in this time range",
+    "input": "Input {{value}}",
+    "output": "Output {{value}}",
+    "cacheRead": "Cache read {{value}}",
+    "cacheWrite": "Cache write {{value}}",
+    "cost": "Cost ${{amount}}",
+    "viewContent": "View content",
+    "contentDialogTitle": "Usage detail content",
+    "close": "Close",
+    "noUsage": "No usage",
+    "usageParseError": "Usage parse error"
+  },
+  "imageGeneration": {
+    "title": "Image Generation",
+    "description": "Configure one custom OpenAI Images-compatible endpoint for the image_generate tool. It is independent from chat providers.",
+    "timeout": "Timeout (ms)",
+    "agentAuthTitle": "Per-agent authentication",
+    "agentAuthDesc": "Image generation uses the API key saved for this custom image endpoint in each agent's auth-profiles.json.",
+    "agentColumn": "Agent",
+    "authColumn": "Custom image endpoint auth",
+    "defaultAgent": "default",
+    "authConfigured": "Ready",
+    "authMissing": "Missing key",
+    "testAgent": "Test as agent",
+    "testButton": "Test generate",
+    "testing": "Generating…",
+    "save": "Save",
+    "saving": "Saving…",
+    "clear": "Clear configuration",
+    "clearing": "Clearing…",
+    "clearConfirmTitle": "Clear image generation configuration?",
+    "clearConfirmMessage": "This removes the custom image endpoint, model selection, and stored API key. Chat providers are not affected.",
+    "clearConfirmAction": "Clear",
+    "testPrompt": "A small red circle on a white background, minimal flat illustration.",
+    "toast": {
+      "saved": "Image generation settings saved",
+      "cleared": "Image generation configuration cleared",
+      "saveBeforeTest": "Save settings before running a test",
+      "testSuccess": "Test image generated ({{ms}} ms)",
+      "testSuccessWithPath": "Test image generated ({{ms}} ms): {{path}}",
+      "testFailed": "Image generation test failed"
     },
-    "quickActions": {
-        "title": "Quick Actions",
-        "description": "Common tasks and shortcuts",
-        "addProvider": "Add Provider",
-        "addChannel": "Add Channel",
-        "createCron": "Create Cron",
-        "installSkill": "Install Skill",
-        "openChat": "Open Chat",
-        "settings": "Settings",
-        "devConsole": "Dev Console"
+    "openAiRelay": {
+      "title": "Custom image endpoint",
+      "description": "Send image generation to a dedicated OpenAI Images-compatible endpoint (/v1/images/generations). This does not change any chat provider.",
+      "baseUrl": "Image Base URL",
+      "baseUrlHint": "e.g. https://api.example.com/v1 — /v1 is appended automatically when omitted.",
+      "apiKey": "API key",
+      "apiKeyPlaceholder": "sk-...",
+      "apiKeyPlaceholderConfigured": "Already configured — leave blank to keep",
+      "model": "Model name",
+      "modelHint": "Enter only the model id, for example gpt-image-2. Do not include provider/model."
     },
-    "connectedChannels": "Connected Channels",
-    "noChannels": "No channels configured",
-    "addFirst": "Add your first channel",
-    "activeSkills": "Active Skills",
-    "noSkills": "No skills enabled",
-    "enableSome": "Enable some skills",
-    "more": "+{{count}} more",
-    "recentTokenHistory": {
-        "title": "Recent Token Usage",
-        "description": "Recent assistant responses and tool results with model/provider usage data.",
-        "loading": "Loading token usage history...",
-        "empty": "No token usage history yet",
-        "groupByModel": "By model",
-        "groupByTime": "By time",
-        "last7Days": "7 days",
-        "last30Days": "30 days",
-        "allTime": "All",
-        "showingLast": "{{count}} records",
-        "totalTokens": "total tokens",
-        "inputShort": "Input",
-        "outputShort": "Output",
-        "cacheShort": "Cache",
-        "page": "Page {{current}} / {{total}}",
-        "prev": "Previous",
-        "next": "Next",
-        "unknownModel": "Unknown model",
-        "emptyForWindow": "No token usage history in this time range",
-        "input": "Input {{value}}",
-        "output": "Output {{value}}",
-        "cacheRead": "Cache read {{value}}",
-        "cacheWrite": "Cache write {{value}}",
-        "cost": "Cost ${{amount}}",
-        "viewContent": "View content",
-        "contentDialogTitle": "Usage detail content",
-        "close": "Close",
-        "noUsage": "No usage",
-        "usageParseError": "Usage parse error"
-    },
-    "imageGeneration": {
-        "title": "Image Generation",
-        "description": "Configure one custom OpenAI Images-compatible endpoint for the image_generate tool. It is independent from chat providers.",
-        "timeout": "Timeout (ms)",
-        "agentAuthTitle": "Per-agent authentication",
-        "agentAuthDesc": "Image generation uses the API key saved for this custom image endpoint in each agent's auth-profiles.json.",
-        "agentColumn": "Agent",
-        "authColumn": "Custom image endpoint auth",
-        "defaultAgent": "default",
-        "authConfigured": "Ready",
-        "authMissing": "Missing key",
-        "testAgent": "Test as agent",
-        "testButton": "Test generate",
-        "testing": "Generating…",
-        "save": "Save",
-        "saving": "Saving…",
-        "clear": "Clear configuration",
-        "clearing": "Clearing…",
-        "clearConfirmTitle": "Clear image generation configuration?",
-        "clearConfirmMessage": "This removes the custom image endpoint, model selection, and stored API key. Chat providers are not affected.",
-        "clearConfirmAction": "Clear",
-        "testPrompt": "A small red circle on a white background, minimal flat illustration.",
-        "toast": {
-            "saved": "Image generation settings saved",
-            "cleared": "Image generation configuration cleared",
-            "saveBeforeTest": "Save settings before running a test",
-            "testSuccess": "Test image generated ({{ms}} ms)",
-            "testSuccessWithPath": "Test image generated ({{ms}} ms): {{path}}",
-            "testFailed": "Image generation test failed"
-        },
-        "openAiRelay": {
-            "title": "Custom image endpoint",
-            "description": "Send image generation to a dedicated OpenAI Images-compatible endpoint (/v1/images/generations). This does not change any chat provider.",
-            "baseUrl": "Image Base URL",
-            "baseUrlHint": "e.g. https://api.example.com/v1 — /v1 is appended automatically when omitted.",
-            "apiKey": "API key",
-            "apiKeyPlaceholder": "sk-...",
-            "apiKeyPlaceholderConfigured": "Already configured — leave blank to keep",
-            "model": "Model name",
-            "modelHint": "Enter only the model id, for example gpt-image-2. Do not include provider/model."
-        },
-        "errors": {
-            "invalidTimeout": "Timeout must be a positive number",
-            "relayBaseUrlRequired": "Image Base URL is required",
-            "relayApiKeyRequired": "API key is required",
-            "relayModelRequired": "Model name is required",
-            "relayModelInvalid": "Enter only the model name, for example gpt-image-2. Do not include provider/model."
-        }
-    },
-    "morpheus": {
-        "title": "Morpheus",
-        "subtitle": "AI execution platform — plan, permission, execute, audit.",
-        "systemPanel": {
-            "title": "System",
-            "description": "Privacy-safe runtime information.",
-            "unavailable": "System information is unavailable.",
-            "platform": "Platform",
-            "arch": "Architecture",
-            "cpu": "Processors",
-            "memory": "Memory",
-            "uptime": "Uptime",
-            "appVersion": "App version",
-            "runtime": "Runtime",
-            "memoryValue": "{{free}} free of {{total}}"
-        },
-        "launcher": {
-            "title": "Actions",
-            "description": "Every action asks for confirmation before it runs.",
-            "run": "Run",
-            "unsupported": "Not available on this platform",
-            "fileNameLabel": "File name",
-            "fileNamePlaceholder": "notes.txt",
-            "contentLabel": "Content",
-            "contentPlaceholder": "Text to write",
-            "applicationLabel": "Application"
-        },
-        "applications": {
-            "notepad": "Notepad"
-        },
-        "actions": {
-            "appLaunch": {
-                "label": "Launch an approved application",
-                "description": "Starts an application from the built-in approved list."
-            },
-            "fileCreateText": {
-                "label": "Create a text file",
-                "description": "Writes a new text file inside the approved Morpheus folder."
-            },
-            "systemReport": {
-                "label": "Report system information",
-                "description": "Collects privacy-safe details about this machine's runtime."
-            }
-        },
-        "phases": {
-            "requested": "Requested",
-            "awaiting-permission": "Awaiting confirmation",
-            "denied": "Denied",
-            "running": "Running",
-            "succeeded": "Succeeded",
-            "failed": "Failed",
-            "cancelled": "Cancelled",
-            "timed-out": "Timed out",
-            "unsupported-platform": "Unsupported"
-        },
-        "permission": {
-            "title": "Confirm this action",
-            "description": "Morpheus is about to run: {{action}}",
-            "executableLabel": "Application to launch",
-            "fileLabel": "File to create",
-            "noTarget": "This action reads runtime information only. Nothing is written or launched.",
-            "fileBytes": "{{bytes}} bytes",
-            "allow": "Allow",
-            "deny": "Deny",
-            "centerTitle": "Permissions",
-            "profileLabel": "Permission profile",
-            "loading": "Loading permission policy…",
-            "revoke": "Revoke",
-            "revokeAllSession": "Revoke session grants",
-            "resetPolicy": "Reset policy",
-            "sessionCount": "{{count}} session",
-            "persistentCount": "{{count}} saved",
-            "deniedCount": "{{count}} denied",
-            "lastUsed": "used {{time}}",
-            "scopeNote": "Saved decisions apply only to this exact action and target.",
-            "degradedExplanation": "Auditing is unavailable, so Morpheus is running in a reduced-capability state. Only privacy-safe read-only actions can run until auditing recovers.",
-            "profiles": {
-                "strict": {
-                    "name": "Strict",
-                    "description": "Read-only checks run automatically. Everything that writes or launches asks every time."
-                },
-                "balanced": {
-                    "name": "Balanced",
-                    "description": "Read-only checks run automatically. Other actions ask the first time, and you can remember that decision for an exact target."
-                },
-                "autonomous": {
-                    "name": "Autonomous",
-                    "description": "Low-risk actions run automatically. Other actions run only inside targets you have already trusted. High-risk actions always ask."
-                }
-            },
-            "decisions": {
-                "deny": "Deny",
-                "deny-always": "Always deny this exact action",
-                "allow-once": "Allow once",
-                "allow-session": "Allow for this session",
-                "allow-always": "Always allow this exact action"
-            },
-            "grantTypes": {
-                "session": "This session",
-                "persistent": "Saved",
-                "denied-persistent": "Always denied"
-            },
-            "sections": {
-                "session": "Session grants",
-                "persistent": "Saved grants",
-                "denied": "Denied"
-            },
-            "reasons": {
-                "privacy-safe-auto": "Ran automatically: privacy-safe read-only action",
-                "profile-auto": "Ran automatically: allowed by the current profile",
-                "session-grant": "Ran automatically: allowed for this session",
-                "persistent-grant": "Ran automatically: saved approval for this exact target",
-                "prompt-required": "Confirmation required: new scope",
-                "mandatory-confirmation": "Confirmation always required for this risk level",
-                "persistent-denial": "Blocked by a saved denial",
-                "audit-degraded": "Blocked: auditing unavailable"
-            }
-        },
-        "timeline": {
-            "title": "Execution timeline",
-            "description": "Live phases reported by the main process.",
-            "emptyTitle": "No actions yet",
-            "emptyDescription": "Run an action to see its real execution phases here.",
-            "systemSummary": "{{platform}} {{release}} ({{arch}})"
-        },
-        "audit": {
-            "title": "Audit log",
-            "description": "Append-only record. File content is never stored.",
-            "loading": "Loading audit records…",
-            "emptyTitle": "No audit records yet",
-            "emptyDescription": "Every confirmed or denied action is recorded here."
-        },
-        "boot": {
-            "phases": {
-                "init": "Initialising interface",
-                "settings": "Loading preferences",
-                "bridge": "Verifying host bridge",
-                "runtime": "Checking agent runtime",
-                "ready": "Ready"
-            },
-            "skip": "Press Esc to skip",
-            "title": "MORPHEUS"
-        },
-        "command": {
-            "label": "Command",
-            "placeholder": "Describe an objective, e.g. \"Show system information\"",
-            "run": "Run",
-            "unsupportedTitle": "Morpheus cannot do that yet",
-            "unsupportedBody": "That command does not map to a capability Morpheus actually has. It supports:"
-        },
-        "status": {
-            "runtimeReady": "Runtime ready",
-            "runtimeStarting": "Runtime starting",
-            "runtimeStopped": "Runtime stopped",
-            "providerUnknown": "No provider configured",
-            "auditDegraded": "Audit unavailable"
-        },
-        "artifacts": {
-            "title": "Artifacts",
-            "rootLabel": "Approved files location",
-            "rootUnknown": "Not available",
-            "open": "Open",
-            "empty": "No artifacts yet. Completed actions appear here."
-        },
-        "plan": {
-            "steps": {
-                "systemReport": "Collect privacy-safe system information",
-                "fileCreateText": "Create {{fileName}} in the approved folder",
-                "appLaunch": "Launch {{application}}"
-            }
-        }
+    "errors": {
+      "invalidTimeout": "Timeout must be a positive number",
+      "relayBaseUrlRequired": "Image Base URL is required",
+      "relayApiKeyRequired": "API key is required",
+      "relayModelRequired": "Model name is required",
+      "relayModelInvalid": "Enter only the model name, for example gpt-image-2. Do not include provider/model."
     }
+  },
+  "morpheus": {
+    "title": "Morpheus",
+    "subtitle": "AI execution platform — plan, permission, execute, audit.",
+    "systemPanel": {
+      "title": "System",
+      "description": "Privacy-safe runtime information.",
+      "unavailable": "System information is unavailable.",
+      "platform": "Platform",
+      "arch": "Architecture",
+      "cpu": "Processors",
+      "memory": "Memory",
+      "uptime": "Uptime",
+      "appVersion": "App version",
+      "runtime": "Runtime",
+      "memoryValue": "{{free}} free of {{total}}"
+    },
+    "launcher": {
+      "title": "Actions",
+      "description": "Every action asks for confirmation before it runs.",
+      "run": "Run",
+      "unsupported": "Not available on this platform",
+      "fileNameLabel": "File name",
+      "fileNamePlaceholder": "notes.txt",
+      "contentLabel": "Content",
+      "contentPlaceholder": "Text to write",
+      "applicationLabel": "Application"
+    },
+    "applications": {
+      "notepad": "Notepad"
+    },
+    "actions": {
+      "appLaunch": {
+        "label": "Launch an approved application",
+        "description": "Starts an application from the built-in approved list."
+      },
+      "fileCreateText": {
+        "label": "Create a text file",
+        "description": "Writes a new text file inside the approved Morpheus folder."
+      },
+      "systemReport": {
+        "label": "Report system information",
+        "description": "Collects privacy-safe details about this machine's runtime."
+      }
+    },
+    "phases": {
+      "requested": "Requested",
+      "awaiting-permission": "Awaiting confirmation",
+      "denied": "Denied",
+      "running": "Running",
+      "succeeded": "Succeeded",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "timed-out": "Timed out",
+      "unsupported-platform": "Unsupported"
+    },
+    "permission": {
+      "title": "Confirm this action",
+      "description": "Morpheus is about to run: {{action}}",
+      "executableLabel": "Application to launch",
+      "fileLabel": "File to create",
+      "noTarget": "This action reads runtime information only. Nothing is written or launched.",
+      "fileBytes": "{{bytes}} bytes",
+      "allow": "Allow",
+      "deny": "Deny",
+      "centerTitle": "Permissions",
+      "profileLabel": "Permission profile",
+      "loading": "Loading permission policy…",
+      "revoke": "Revoke",
+      "revokeAllSession": "Revoke session grants",
+      "resetPolicy": "Reset policy",
+      "sessionCount": "{{count}} session",
+      "persistentCount": "{{count}} saved",
+      "deniedCount": "{{count}} denied",
+      "lastUsed": "used {{time}}",
+      "scopeNote": "Saved decisions apply only to this exact action and target.",
+      "degradedExplanation": "Auditing is unavailable, so Morpheus is running in a reduced-capability state. Only privacy-safe read-only actions can run until auditing recovers.",
+      "profiles": {
+        "strict": {
+          "name": "Strict",
+          "description": "Read-only checks run automatically. Everything that writes or launches asks every time."
+        },
+        "balanced": {
+          "name": "Balanced",
+          "description": "Read-only checks run automatically. Other actions ask the first time, and you can remember that decision for an exact target."
+        },
+        "autonomous": {
+          "name": "Autonomous",
+          "description": "Low-risk actions run automatically. Other actions run only inside targets you have already trusted. High-risk actions always ask."
+        }
+      },
+      "decisions": {
+        "deny": "Deny",
+        "deny-always": "Always deny this exact action",
+        "allow-once": "Allow once",
+        "allow-session": "Allow for this session",
+        "allow-always": "Always allow this exact action"
+      },
+      "grantTypes": {
+        "session": "This session",
+        "persistent": "Saved",
+        "denied-persistent": "Always denied"
+      },
+      "sections": {
+        "session": "Session grants",
+        "persistent": "Saved grants",
+        "denied": "Denied"
+      },
+      "reasons": {
+        "privacy-safe-auto": "Ran automatically: privacy-safe read-only action",
+        "profile-auto": "Ran automatically: allowed by the current profile",
+        "session-grant": "Ran automatically: allowed for this session",
+        "persistent-grant": "Ran automatically: saved approval for this exact target",
+        "prompt-required": "Confirmation required: new scope",
+        "mandatory-confirmation": "Confirmation always required for this risk level",
+        "persistent-denial": "Blocked by a saved denial",
+        "audit-degraded": "Blocked: auditing unavailable"
+      },
+      "plan": {
+        "title": "Approve this plan",
+        "description": "Morpheus needs your permission for {{count}} new trust boundary(s) before running “{{objective}}”.",
+        "coversSteps": "covers {{count}} step(s)",
+        "mandatoryNote": "This cannot be remembered and will be asked again next time.",
+        "note": "Everything else in this plan is already covered by your existing permissions."
+      }
+    },
+    "timeline": {
+      "title": "Execution timeline",
+      "description": "Live phases reported by the main process.",
+      "emptyTitle": "No actions yet",
+      "emptyDescription": "Run an action to see its real execution phases here.",
+      "systemSummary": "{{platform}} {{release}} ({{arch}})"
+    },
+    "audit": {
+      "title": "Audit log",
+      "description": "Append-only record. File content is never stored.",
+      "loading": "Loading audit records…",
+      "emptyTitle": "No audit records yet",
+      "emptyDescription": "Every confirmed or denied action is recorded here."
+    },
+    "boot": {
+      "phases": {
+        "init": "Initialising interface",
+        "settings": "Loading preferences",
+        "bridge": "Verifying host bridge",
+        "runtime": "Checking agent runtime",
+        "ready": "Ready"
+      },
+      "skip": "Press Esc to skip",
+      "title": "MORPHEUS"
+    },
+    "command": {
+      "label": "Command",
+      "placeholder": "Describe an objective, e.g. \"Show system information\"",
+      "run": "Run",
+      "unsupportedTitle": "Morpheus cannot do that yet",
+      "unsupportedBody": "That command does not map to a capability Morpheus actually has. It supports:"
+    },
+    "status": {
+      "runtimeReady": "Runtime ready",
+      "runtimeStarting": "Runtime starting",
+      "runtimeStopped": "Runtime stopped",
+      "providerUnknown": "No provider configured",
+      "auditDegraded": "Audit unavailable"
+    },
+    "artifacts": {
+      "title": "Artifacts",
+      "rootLabel": "Approved files location",
+      "rootUnknown": "Not available",
+      "open": "Open",
+      "empty": "No artifacts yet. Completed actions appear here."
+    },
+    "plan": {
+      "steps": {
+        "systemReport": "Collect privacy-safe system information",
+        "fileCreateText": "Create {{fileName}} in the approved folder",
+        "appLaunch": "Launch {{application}}"
+      },
+      "title": "Execution plan",
+      "description": "What Morpheus will do, in order.",
+      "empty": "No plan yet. Describe what you want in the command bar.",
+      "executing": "Executing…",
+      "statusLabel": "Plan",
+      "status": {
+        "draft": "Draft",
+        "awaiting-permission": "Awaiting confirmation",
+        "executing": "Executing",
+        "completed": "Completed",
+        "partially-completed": "Partly completed",
+        "failed": "Failed",
+        "rejected": "Not started",
+        "cancelled": "Cancelled"
+      },
+      "stepStatus": {
+        "pending": "Pending",
+        "running": "Running",
+        "succeeded": "Done",
+        "failed": "Failed",
+        "skipped": "Skipped",
+        "denied": "Not permitted",
+        "cancelled": "Cancelled"
+      },
+      "skippedBecause": "Skipped because {{stepId}} failed"
+    }
+  }
 }
