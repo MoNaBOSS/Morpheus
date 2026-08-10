@@ -255,6 +255,10 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
     timer: NodeJS.Timeout;
   }>();
   let recentRequests: number[] = [];
+  // Shared across Command Center, workflow, schedule and Quick Command. The
+  // 0.5 executor is deliberately sequential, so no entry point can race a
+  // second plan between two steps of the first.
+  let activePlans = 0;
   let seq = 0;
 
   const nextSeq = (): number => {
@@ -358,7 +362,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
     return recentRequests.length < MORPHEUS_MAX_RUNS_PER_MINUTE;
   };
 
-  const inFlight = (): number => pending.size + executing.size;
+  const inFlight = (): number => pending.size + executing.size + activePlans;
 
   const toError = (error: unknown, fallback: MorpheusFailureCode): MorpheusError => {
     if (error instanceof MorpheusCapabilityError) {
@@ -817,15 +821,17 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       }
       recentRequests.push(now().getTime());
 
-      const result = await runPlanGraph({
-        plan,
-        runner: planStepRunner(
-          plan.origin.type,
-          'agentProfileId' in plan.origin ? plan.origin.agentProfileId : undefined,
-        ),
-        policy: options.gate,
-        auditHealth: (options.auditHealth ?? (() => 'healthy' as AuditHealth))(),
-        now,
+      activePlans += 1;
+      try {
+        const result = await runPlanGraph({
+          plan,
+          runner: planStepRunner(
+            plan.origin.type,
+            'agentProfileId' in plan.origin ? plan.origin.agentProfileId : undefined,
+          ),
+          policy: options.gate,
+          auditHealth: (options.auditHealth ?? (() => 'healthy' as AuditHealth))(),
+          now,
 
         /**
          * Parks ONE request for the whole plan and waits. A timeout resolves
@@ -833,7 +839,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
          * decision as a refusal — so an unanswered prompt can never become
          * silent authority.
          */
-        requestConsent: async (boundaries) => {
+          requestConsent: async (boundaries) => {
           // Record that the user WAS ASKED, before asking. Without this the
           // audit could show an execution with no evidence that consent was
           // ever sought — and the same ordering guarantee applies here as
@@ -862,15 +868,18 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
             planConsent.set(planId, { resolve, timer });
             options.emitPlanConsent?.({ planId, objective: plan.objective, boundaries });
           });
-        },
+          },
 
-        persistDecision: (scope, decision) => {
-          const grantType = grantTypeForDecision(decision);
-          if (grantType) options.grants.createGrant(scope, grantType);
-        },
-      });
+          persistDecision: (scope, decision) => {
+            const grantType = grantTypeForDecision(decision);
+            if (grantType) options.grants.createGrant(scope, grantType);
+          },
+        });
 
-      return { planId, status: result.status, steps: result.steps, rejection: result.rejection };
+        return { planId, status: result.status, steps: result.steps, rejection: result.rejection };
+      } finally {
+        activePlans -= 1;
+      }
     },
 
     async respondPlanPermission(payload: MorpheusPlanDecisionsPayload): Promise<MorpheusAcknowledgement> {

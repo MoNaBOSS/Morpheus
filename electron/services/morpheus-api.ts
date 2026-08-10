@@ -46,7 +46,9 @@ import type {
   MorpheusGrantStore,
   MorpheusAgentProfileStore,
   MorpheusWorkflowService,
+  MorpheusScheduler,
 } from './morpheus';
+import type { MorpheusScheduleDraft, MorpheusScheduleTrigger } from '@shared/morpheus/schedule-types';
 
 export class MorpheusValidationError extends Error {
   constructor(message: string) {
@@ -160,6 +162,7 @@ export type CreateMorpheusApiOptions = {
   grants: MorpheusGrantStore;
   agentProfiles: MorpheusAgentProfileStore;
   workflows: MorpheusWorkflowService;
+  scheduler: MorpheusScheduler;
   filesRoot: string;
   auditHealth: () => 'healthy' | 'degraded';
 };
@@ -178,6 +181,47 @@ function validatePrepareWorkflowPayload(payload: unknown): { workflowId: string 
   const workflowId = requireNonEmptyString(record.workflowId, 'workflowId');
   if (!/^[a-z][a-z0-9-]{1,63}$/.test(workflowId)) throw new MorpheusValidationError('invalid workflow id');
   return { workflowId };
+}
+
+function validateScheduleTrigger(value: unknown): MorpheusScheduleTrigger {
+  const trigger = requireRecord(value, 'schedule trigger');
+  if (trigger.type === 'once') {
+    assertNoUnknownKeys(trigger, ['type', 'runAt'], 'schedule trigger');
+    const runAt = requireNonEmptyString(trigger.runAt, 'runAt');
+    if (!Number.isFinite(Date.parse(runAt))) throw new MorpheusValidationError('runAt must be an ISO date');
+    return { type: 'once', runAt: new Date(runAt).toISOString() };
+  }
+  if (trigger.type === 'interval') {
+    assertNoUnknownKeys(trigger, ['type', 'everyMinutes'], 'schedule trigger');
+    if (typeof trigger.everyMinutes !== 'number' || !Number.isInteger(trigger.everyMinutes)
+      || trigger.everyMinutes < 1 || trigger.everyMinutes > 43_200) {
+      throw new MorpheusValidationError('everyMinutes must be an integer between 1 and 43200');
+    }
+    return { type: 'interval', everyMinutes: trigger.everyMinutes };
+  }
+  if (trigger.type === 'daily') {
+    assertNoUnknownKeys(trigger, ['type', 'localTime'], 'schedule trigger');
+    const localTime = requireNonEmptyString(trigger.localTime, 'localTime');
+    if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(localTime)) throw new MorpheusValidationError('localTime must be HH:MM');
+    return { type: 'daily', localTime };
+  }
+  if (trigger.type === 'app-startup') {
+    assertNoUnknownKeys(trigger, ['type'], 'schedule trigger');
+    return { type: 'app-startup' };
+  }
+  throw new MorpheusValidationError('unknown schedule trigger');
+}
+
+export function validateScheduleDraft(payload: unknown): MorpheusScheduleDraft {
+  const record = requireRecord(payload, 'saveSchedule payload');
+  assertNoUnknownKeys(record, ['scheduleId', 'name', 'workflowId', 'enabled', 'trigger'], 'saveSchedule payload');
+  const name = requireNonEmptyString(record.name, 'name').trim();
+  if (name.length > 100) throw new MorpheusValidationError('name is too long');
+  const workflowId = requireNonEmptyString(record.workflowId, 'workflowId');
+  if (!/^[a-z][a-z0-9-]{1,63}$/.test(workflowId)) throw new MorpheusValidationError('invalid workflowId');
+  if (typeof record.enabled !== 'boolean') throw new MorpheusValidationError('enabled must be a boolean');
+  const scheduleId = record.scheduleId === undefined ? undefined : requireNonEmptyString(record.scheduleId, 'scheduleId');
+  return { ...(scheduleId ? { scheduleId } : {}), name, workflowId, enabled: record.enabled, trigger: validateScheduleTrigger(record.trigger) };
 }
 
 /**
@@ -248,7 +292,7 @@ export function validateRevokePayload(payload: unknown): { grantId: string } {
 }
 
 export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHostServiceRegistry['morpheus'] {
-  const { runtime, grants, agentProfiles, workflows, filesRoot, auditHealth } = options;
+  const { runtime, grants, agentProfiles, workflows, scheduler, filesRoot, auditHealth } = options;
   return {
     interpretCommand: (payload) => {
       const { objective, originType } = validateInterpretPayload(payload);
@@ -331,6 +375,14 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
         },
       });
     },
+    schedules: () => scheduler.list(),
+    saveSchedule: (payload) => {
+      const draft = validateScheduleDraft(payload);
+      if (!workflows.get(draft.workflowId)) throw new MorpheusValidationError('Unknown Morpheus workflow');
+      return scheduler.save(draft);
+    },
+    removeSchedule: (payload) => ({ ok: scheduler.remove(validateIdPayload(payload, 'schedule').id) }),
+    runSchedule: (payload) => scheduler.runNow(validateIdPayload(payload, 'schedule').id),
 
     describeActions: (): MorpheusDescribeActionsResult => runtime.describeActions(),
     systemInfo: (): MorpheusSystemInfo => runtime.systemInfo(),

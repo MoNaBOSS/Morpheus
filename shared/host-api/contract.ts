@@ -37,6 +37,12 @@ import type {
   WorkflowsSnapshot,
 } from '../morpheus/workflow-types';
 import type {
+  MorpheusSchedule,
+  MorpheusScheduleDraft,
+  MorpheusScheduleRunResult,
+  SchedulesSnapshot,
+} from '../morpheus/schedule-types';
+import type {
   PermissionAcknowledgement,
   PermissionCenterSnapshot,
   RevokeGrantPayload,
@@ -1114,6 +1120,10 @@ export type HostApiContract = {
     workflow: (payload: MorpheusIdPayload) => MorpheusWorkflowResult;
     /** Compiles a reusable workflow into a Main-held typed plan. */
     prepareWorkflow: (payload: MorpheusPrepareWorkflowPayload) => ExecutionPlan;
+    schedules: () => SchedulesSnapshot;
+    saveSchedule: (payload: MorpheusScheduleDraft) => MorpheusSchedule;
+    removeSchedule: (payload: MorpheusIdPayload) => PermissionAcknowledgement;
+    runSchedule: (payload: MorpheusIdPayload) => MorpheusScheduleRunResult;
   };
 };
 

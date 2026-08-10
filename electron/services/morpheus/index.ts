@@ -34,6 +34,8 @@ import { win32LaunchProjectCapability } from './capabilities/win32/launch-projec
 import { createMorpheusAgentProfileStore, type MorpheusAgentProfileStore } from './agents/profile-store';
 import { createMorpheusWorkflowStore, type MorpheusWorkflowStore } from './workflows/workflow-store';
 import { createMorpheusWorkflowService, type MorpheusWorkflowService } from './workflows/workflow-service';
+import { createMorpheusScheduleStore, type MorpheusScheduleStore } from './schedules/schedule-store';
+import { createMorpheusScheduler, type MorpheusScheduler } from './schedules/scheduler';
 
 export type CreateMorpheusServiceOptions = {
   userDataDir: string;
@@ -49,6 +51,8 @@ export type MorpheusService = {
   agentProfiles: MorpheusAgentProfileStore;
   workflowStore: MorpheusWorkflowStore;
   workflows: MorpheusWorkflowService;
+  scheduleStore: MorpheusScheduleStore;
+  scheduler: MorpheusScheduler;
   /** Current approved files root, for the Command Center's artifacts panel. */
   filesRoot: string;
   auditHealth: () => AuditHealth;
@@ -124,6 +128,8 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     runtime,
     filesRoot: roots.resolve('morpheusFiles'),
   });
+  const scheduleStore = createMorpheusScheduleStore({ userDataDir: options.userDataDir });
+  const scheduler = createMorpheusScheduler({ store: scheduleStore, workflows, runtime });
 
   return {
     runtime,
@@ -131,6 +137,8 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     agentProfiles,
     workflowStore,
     workflows,
+    scheduleStore,
+    scheduler,
     filesRoot: roots.resolve('morpheusFiles'),
     auditHealth,
   };
@@ -141,3 +149,5 @@ export type { MorpheusGrantStore } from './policy/grant-store';
 export type { MorpheusAgentProfileStore } from './agents/profile-store';
 export type { MorpheusWorkflowStore } from './workflows/workflow-store';
 export type { MorpheusWorkflowService } from './workflows/workflow-service';
+export type { MorpheusScheduleStore } from './schedules/schedule-store';
+export type { MorpheusScheduler } from './schedules/scheduler';

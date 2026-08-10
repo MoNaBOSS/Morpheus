@@ -144,6 +144,27 @@ beforeEach(() => {
 });
 
 describe('runtime plan execution', () => {
+  it('keeps plans sequential across independent entry points', async () => {
+    const runtime = makeRuntime();
+    runtime.registerPlan(plan([step('first')], 'plan-first'));
+    runtime.registerPlan(plan([step('second')], 'plan-second'));
+
+    const firstExecution = runtime.executePlan({ planId: 'plan-first' });
+    await vi.waitFor(() => expect(consentRequests).toHaveLength(1));
+
+    const second = await runtime.executePlan({ planId: 'plan-second' });
+    expect(second.status).toBe('rejected');
+    expect(second.rejection?.code).toBe('rate-limited');
+
+    await runtime.respondPlanPermission({
+      planId: 'plan-first',
+      decisions: Object.fromEntries(consentRequests[0].boundaries.map((boundary) => [boundary.boundaryId, 'deny'])),
+    });
+    await firstExecution;
+    expect(executed).toEqual([]);
+    runtime.dispose();
+  });
+
   it('executes a multi-step plan in dependency order', async () => {
     const runtime = makeRuntime();
     store.createGrant(GRANT_SCOPE, 'persistent');

@@ -448,6 +448,12 @@ export const hostApi = {
     workflows: () => invokeHost('morpheus', 'workflows'),
     workflow: (id: string) => invokeHost('morpheus', 'workflow', { id }),
     prepareWorkflow: (workflowId: string) => invokeHost('morpheus', 'prepareWorkflow', { workflowId }),
+    schedules: () => invokeHost('morpheus', 'schedules'),
+    saveSchedule: (draft: import('@shared/morpheus/schedule-types').MorpheusScheduleDraft) => (
+      invokeHost('morpheus', 'saveSchedule', draft)
+    ),
+    removeSchedule: (id: string) => invokeHost('morpheus', 'removeSchedule', { id }),
+    runSchedule: (id: string) => invokeHost('morpheus', 'runSchedule', { id }),
   },
 };
 

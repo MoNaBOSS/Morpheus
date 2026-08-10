@@ -201,10 +201,16 @@ function registerTypedHostHandlers(
       grants: morpheusService.grants,
       agentProfiles: morpheusService.agentProfiles,
       workflows: morpheusService.workflows,
+      scheduler: morpheusService.scheduler,
       filesRoot: morpheusService.filesRoot,
       auditHealth: morpheusService.auditHealth,
     }),
   });
+  // Start only after the renderer can receive a batched consent request. An
+  // app-startup schedule must never begin before the UI exists and then time
+  // out invisibly.
+  mainWindow.webContents.once('did-finish-load', () => morpheusService.scheduler.start());
+  app.once('before-quit', () => morpheusService.scheduler.stop());
   registerHostInvokeHandler(hostApiRegistry);
 }
 
