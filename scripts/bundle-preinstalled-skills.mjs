@@ -43,12 +43,6 @@ function createRepoDirName(repo, ref) {
   return `${repo.replace(/[\\/]/g, '__')}__${ref.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
 }
 
-function toGitPath(inputPath) {
-  if (process.platform !== 'win32') return inputPath;
-  // Git on Windows accepts forward slashes and avoids backslash escape quirks.
-  return inputPath.replace(/\\/g, '/');
-}
-
 function normalizeRepoPath(repoPath) {
   return repoPath.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '');
 }
@@ -83,25 +77,28 @@ async function extractArchive(archiveFileName, cwd) {
 async function fetchSparseRepo(repo, ref, paths, checkoutDir) {
   const remote = `https://github.com/${repo}.git`;
   mkdirSync(checkoutDir, { recursive: true });
-  const gitCheckoutDir = toGitPath(checkoutDir);
   const archiveFileName = '.subset.tar';
   const archivePath = join(checkoutDir, archiveFileName);
   const archivePaths = [...new Set(paths.map(normalizeRepoPath))];
+  const prevCwd = $.cwd;
+  $.cwd = checkoutDir;
+  try {
+    // Run Git from the checkout itself and use relative paths. zx may use a
+    // POSIX shell on Windows; interpolating `C:/...` into that shell turns the
+    // drive path into a relative `C:` directory under the repository.
+    await $`git init .`;
+    await $`git remote add origin ${remote}`;
+    await $`git fetch --depth 1 origin ${ref}`;
+    // Do not checkout the working tree on Windows: upstream repositories may
+    // contain Windows-invalid paths. Export only the requested directories.
+    await $`git archive --format=tar --output ${archiveFileName} FETCH_HEAD ${archivePaths}`;
+    await extractArchive(archiveFileName, checkoutDir);
+    rmSync(archivePath, { force: true });
 
-  await $`git init ${gitCheckoutDir}`;
-  await $`git -C ${gitCheckoutDir} remote add origin ${remote}`;
-  await $`git -C ${gitCheckoutDir} fetch --depth 1 origin ${ref}`;
-  // Do not checkout working tree on Windows: upstream repos may contain
-  // Windows-invalid paths. Export only requested directories via git archive.
-  // The archive is extracted from the temporary checkout. Use an absolute
-  // output path so Windows does not write it relative to the repository root
-  // while the extractor looks relative to `checkoutDir`.
-  await $`git -C ${gitCheckoutDir} archive --format=tar --output ${toGitPath(archivePath)} FETCH_HEAD ${archivePaths}`;
-  await extractArchive(archiveFileName, checkoutDir);
-  rmSync(archivePath, { force: true });
-
-  const commit = (await $`git -C ${gitCheckoutDir} rev-parse FETCH_HEAD`).stdout.trim();
-  return commit;
+    return (await $`git rev-parse FETCH_HEAD`).stdout.trim();
+  } finally {
+    $.cwd = prevCwd;
+  }
 }
 
 echo`Bundling preinstalled skills...`;
