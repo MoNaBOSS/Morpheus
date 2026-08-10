@@ -93,7 +93,10 @@ async function fetchSparseRepo(repo, ref, paths, checkoutDir) {
   await $`git -C ${gitCheckoutDir} fetch --depth 1 origin ${ref}`;
   // Do not checkout working tree on Windows: upstream repos may contain
   // Windows-invalid paths. Export only requested directories via git archive.
-  await $`git -C ${gitCheckoutDir} archive --format=tar --output ${archiveFileName} FETCH_HEAD ${archivePaths}`;
+  // The archive is extracted from the temporary checkout. Use an absolute
+  // output path so Windows does not write it relative to the repository root
+  // while the extractor looks relative to `checkoutDir`.
+  await $`git -C ${gitCheckoutDir} archive --format=tar --output ${toGitPath(archivePath)} FETCH_HEAD ${archivePaths}`;
   await extractArchive(archiveFileName, checkoutDir);
   rmSync(archivePath, { force: true });
 
