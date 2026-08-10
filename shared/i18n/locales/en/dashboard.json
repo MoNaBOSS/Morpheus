@@ -143,6 +143,9 @@
       "calculator": "Calculator",
       "paint": "Paint"
     },
+    "developerTemplates": {
+      "vscode": "Visual Studio Code"
+    },
     "actions": {
       "appLaunch": {
         "label": "Launch an approved application",
@@ -203,6 +206,22 @@
       "screenCapture": {
         "label": "Take a screenshot",
         "description": "Captures the screen and saves it in the approved workspace. Every capture is shown and recorded."
+      },
+      "systemStorage": {
+        "label": "Inspect storage",
+        "description": "Reports aggregate storage capacity for the approved Morpheus files location."
+      },
+      "systemProcesses": {
+        "label": "Inspect running processes",
+        "description": "Lists running Windows processes. Asks before the first use."
+      },
+      "webOpenUrl": {
+        "label": "Open an approved web URL",
+        "description": "Opens an explicit http or https URL in the system browser."
+      },
+      "devLaunchProject": {
+        "label": "Open a project in VS Code",
+        "description": "Opens an existing folder inside the approved workspace in the installed VS Code."
       }
     },
     "phases": {
@@ -356,7 +375,11 @@
         "clipboardReadText": "Read the clipboard",
         "clipboardWriteText": "Copy text to the clipboard",
         "systemNotify": "Show a notification",
-        "screenCapture": "Capture the screen"
+        "screenCapture": "Capture the screen",
+        "systemStorage": "Inspect approved storage",
+        "systemProcesses": "Inspect running processes",
+        "webOpenUrl": "Open {{url}}",
+        "devLaunchProject": "Open {{path}} in VS Code"
       },
       "title": "Execution plan",
       "description": "What Morpheus will do, in order.",

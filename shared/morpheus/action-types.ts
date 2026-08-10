@@ -114,6 +114,33 @@ export type MorpheusSystemResult = {
   info: MorpheusSystemInfo;
 };
 
+export type MorpheusStorageResult = {
+  kind: 'storage';
+  root: string;
+  totalBytes: number;
+  freeBytes: number;
+  usedBytes: number;
+};
+
+export type MorpheusProcessResult = {
+  kind: 'processes';
+  processes: ReadonlyArray<{ pid: number; name: string; memoryBytes?: number }>;
+  truncated: boolean;
+};
+
+export type MorpheusUrlResult = {
+  kind: 'url';
+  url: string;
+};
+
+export type MorpheusProjectLaunchResult = {
+  kind: 'project-launch';
+  templateKey: 'vscode';
+  path: string;
+  executablePath: string;
+  pid: number | null;
+};
+
 /** Contents of a file read from the workspace. */
 export type MorpheusTextResult = {
   kind: 'text';
@@ -156,6 +183,10 @@ export type MorpheusNotificationResult = {
 
 export type MorpheusActionResult =
   | MorpheusNotificationResult
+  | MorpheusStorageResult
+  | MorpheusProcessResult
+  | MorpheusUrlResult
+  | MorpheusProjectLaunchResult
   | MorpheusLaunchResult
   | MorpheusFileResult
   | MorpheusSystemResult

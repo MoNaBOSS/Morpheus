@@ -275,3 +275,30 @@ describe('filesystem intents', () => {
     }
   });
 });
+
+describe('task 25 intents', () => {
+  it('maps storage, process, URL and project requests to bounded capabilities', () => {
+    const cases = [
+      ['show disk space', 'system.storage'],
+      ['show running processes', 'system.processes'],
+      ['open https://example.com/docs', 'web.openUrl'],
+      ['open project named project', 'dev.launchProject'],
+    ] as const;
+    for (const [objective, capabilityId] of cases) {
+      const result = interpret(objective);
+      expect(result.ok, objective).toBe(true);
+      if (!result.ok) continue;
+      expect(result.plan.steps[0].capabilityId, objective).toBe(capabilityId);
+    }
+  });
+
+  it('scopes URLs to their origin and projects to the approved workspace', () => {
+    const url = interpret('open https://example.com/docs');
+    expect(url.ok).toBe(true);
+    if (url.ok) expect(url.plan.steps[0].permission.resourceScope).toBe('https://example.com');
+
+    const project = interpret('open project named src');
+    expect(project.ok).toBe(true);
+    if (project.ok) expect(project.plan.steps[0].permission.resourceScope).toBe(FILES_ROOT);
+  });
+});

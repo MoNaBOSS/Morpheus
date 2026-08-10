@@ -143,6 +143,9 @@
       "calculator": "電卓",
       "paint": "ペイント"
     },
+    "developerTemplates": {
+      "vscode": "Visual Studio Code"
+    },
     "actions": {
       "appLaunch": {
         "label": "承認済みアプリケーションを起動",
@@ -203,6 +206,22 @@
       "screenCapture": {
         "label": "スクリーンショットを撮る",
         "description": "画面をキャプチャし、承認済みワークスペースに保存します。すべてのキャプチャは表示・記録されます。"
+      },
+      "systemStorage": {
+        "label": "ストレージを確認",
+        "description": "承認済みの Morpheus ファイル場所の容量を集計します。"
+      },
+      "systemProcesses": {
+        "label": "実行中のプロセスを確認",
+        "description": "実行中の Windows プロセスを一覧表示します。初回は確認が必要です。"
+      },
+      "webOpenUrl": {
+        "label": "承認済み URL を開く",
+        "description": "明示された http または https URL をシステムブラウザーで開きます。"
+      },
+      "devLaunchProject": {
+        "label": "VS Code でプロジェクトを開く",
+        "description": "承認済みワークスペース内の既存フォルダーを VS Code で開きます。"
       }
     },
     "phases": {
@@ -356,7 +375,11 @@
         "clipboardReadText": "クリップボードを読む",
         "clipboardWriteText": "テキストをクリップボードにコピー",
         "systemNotify": "通知を表示",
-        "screenCapture": "画面をキャプチャ"
+        "screenCapture": "画面をキャプチャ",
+        "systemStorage": "承認済みストレージを確認",
+        "systemProcesses": "実行中のプロセスを確認",
+        "webOpenUrl": "{{url}} を開く",
+        "devLaunchProject": "{{path}} を VS Code で開く"
       },
       "title": "実行プラン",
       "description": "Morpheus が順に実行する内容です。",

@@ -81,6 +81,10 @@ describe('launcher example commands', () => {
       ['file.search', 'file.search'],
       ['folder.create', 'folder.create'],
       ['file.delete', 'file.delete'],
+      ['system.storage', 'system.storage'],
+      ['system.processes', 'system.processes'],
+      ['web.openUrl', 'web.openUrl'],
+      ['dev.launchProject', 'dev.launchProject'],
     ];
 
     for (const [actionId, expected] of exact) {

@@ -36,6 +36,10 @@ export const EXAMPLE_COMMAND: Record<string, string> = {
   'clipboard.writeText': 'Copy "Morpheus" to the clipboard',
   'system.notify': 'Notify me "Morpheus is ready"',
   'screen.capture': 'Take a screenshot',
+  'system.storage': 'Show disk space',
+  'system.processes': 'Show running processes',
+  'web.openUrl': 'Open https://example.com',
+  'dev.launchProject': 'Open project named project',
 };
 
 export function SupportedActions() {

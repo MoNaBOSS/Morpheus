@@ -46,6 +46,21 @@ const SYSTEM_REPORT_PATTERNS = [
   /\bmachine\s+info(rmation)?\b/i,
 ];
 
+const STORAGE_PATTERNS = [
+  /\b(storage|disk|drive)\s+(information|info|space|usage|status)\b/i,
+  /\b(show|report|get|check)\b.*\b(storage|disk|drive)\b/i,
+];
+
+const PROCESS_PATTERNS = [
+  /\b(running\s+)?process(es)?\b/i,
+  /\b(task|application)\s+list\b/i,
+];
+
+const URL_PATTERN = /\bhttps?:\/\/[^\s<>"']+/i;
+const PROJECT_PATTERNS = [
+  /\b(open|launch)\b.*\b(vscode|visual\s+studio\s+code|project|workspace)\b/i,
+];
+
 /**
  * Approved applications, matched by name.
  *
@@ -141,6 +156,16 @@ export function extractQuery(objective: string): string | null {
   if (quoted?.[1]?.trim()) return quoted[1].trim();
   const matching = /(?:named|called|matching|containing|for)\s+"?([\w.-]{1,64})"?/i.exec(objective);
   return matching?.[1] ?? null;
+}
+
+export function extractHttpUrl(objective: string): string | null {
+  const match = URL_PATTERN.exec(objective);
+  return match?.[0]?.replace(/[),.;!?]+$/, '') ?? null;
+}
+
+export function extractProjectPath(objective: string): string | null {
+  const match = /\b(?:project|workspace|folder)\s+(?:at|named|in)?\s*["']?([A-Za-z0-9._\\/-]+)["']?/i.exec(objective);
+  return match?.[1] ?? null;
 }
 
 /** Extracts an explicit `name.txt`, or derives a safe default. */
@@ -350,6 +375,49 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
     };
   }
 
+  const url = URL_PATTERN.test(text) ? extractHttpUrl(text) : null;
+  if (url) {
+    let origin: string;
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return { ok: false, unsupported: { objective: text, reason: 'not-understood', supportedCapabilities } };
+      origin = parsed.origin;
+    } catch {
+      return { ok: false, unsupported: { objective: text, reason: 'not-understood', supportedCapabilities } };
+    }
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'web.openUrl',
+          { url },
+          buildPermission('web.openUrl', platform, origin),
+          'morpheus.plan.steps.webOpenUrl',
+          { url },
+        ),
+      ]),
+    };
+  }
+
+  if (PROJECT_PATTERNS.some((pattern) => pattern.test(text))) {
+    const path = extractProjectPath(text);
+    if (!path) return { ok: false, unsupported: { objective: text, reason: 'not-understood', supportedCapabilities } };
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'dev.launchProject',
+          { path, templateKey: 'vscode' },
+          buildPermission('dev.launchProject', platform, filesRoot),
+          'morpheus.plan.steps.devLaunchProject',
+          { path },
+        ),
+      ]),
+    };
+  }
+
   // Reading is checked before writing: "show me the clipboard" must never be
   // resolved as a write, which would both do the wrong thing and evaluate the
   // lower-risk of the two scopes.
@@ -435,6 +503,36 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
           {},
           buildPermission('system.report', platform, 'runtime'),
           'morpheus.plan.steps.systemReport',
+        ),
+      ]),
+    };
+  }
+
+  if (STORAGE_PATTERNS.some((pattern) => pattern.test(text))) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'system.storage',
+          {},
+          buildPermission('system.storage', platform, filesRoot),
+          'morpheus.plan.steps.systemStorage',
+        ),
+      ]),
+    };
+  }
+
+  if (PROCESS_PATTERNS.some((pattern) => pattern.test(text))) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'system.processes',
+          {},
+          buildPermission('system.processes', platform, 'process-inventory'),
+          'morpheus.plan.steps.systemProcesses',
         ),
       ]),
     };

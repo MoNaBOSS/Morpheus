@@ -143,6 +143,9 @@
       "calculator": "计算器",
       "paint": "画图"
     },
+    "developerTemplates": {
+      "vscode": "Visual Studio Code"
+    },
     "actions": {
       "appLaunch": {
         "label": "启动已批准的应用程序",
@@ -203,6 +206,22 @@
       "screenCapture": {
         "label": "截取屏幕",
         "description": "截取屏幕并保存到已批准的工作区。每次截图都会显示并记录。"
+      },
+      "systemStorage": {
+        "label": "检查存储空间",
+        "description": "报告 Morpheus 批准文件位置的汇总存储容量。"
+      },
+      "systemProcesses": {
+        "label": "检查运行中的进程",
+        "description": "列出正在运行的 Windows 进程。首次使用前会询问。"
+      },
+      "webOpenUrl": {
+        "label": "打开批准的网页地址",
+        "description": "在系统浏览器中打开明确的 http 或 https 地址。"
+      },
+      "devLaunchProject": {
+        "label": "在 VS Code 中打开项目",
+        "description": "在已安装的 VS Code 中打开批准工作区内的现有文件夹。"
       }
     },
     "phases": {
@@ -356,7 +375,11 @@
         "clipboardReadText": "读取剪贴板",
         "clipboardWriteText": "将文本复制到剪贴板",
         "systemNotify": "显示通知",
-        "screenCapture": "截取屏幕"
+        "screenCapture": "截取屏幕",
+        "systemStorage": "检查批准的存储空间",
+        "systemProcesses": "检查运行中的进程",
+        "webOpenUrl": "打开 {{url}}",
+        "devLaunchProject": "在 VS Code 中打开 {{path}}"
       },
       "title": "执行计划",
       "description": "Morpheus 将按顺序执行的操作。",

@@ -80,7 +80,12 @@ export type MorpheusActionId =
   | 'clipboard.readText'
   | 'clipboard.writeText'
   | 'system.notify'
-  | 'screen.capture';
+  | 'screen.capture'
+  | 'system.storage'
+  | 'system.processes'
+  | 'web.openUrl'
+  | 'dev.launchProject';
+
 
 /**
  * Named bundles of capabilities that share ONE trust decision for one exact
@@ -159,6 +164,16 @@ export type MorpheusActionDescriptor = {
 export type MorpheusApplicationBase = 'systemRoot';
 
 export type MorpheusApplicationKey = 'notepad' | 'calculator' | 'paint';
+
+export type MorpheusDeveloperTemplateKey = 'vscode';
+
+export const MORPHEUS_DEVELOPER_TEMPLATES: Readonly<Record<MorpheusDeveloperTemplateKey, { readonly key: MorpheusDeveloperTemplateKey; readonly labelKey: string }>> = Object.freeze({
+  vscode: Object.freeze({ key: 'vscode', labelKey: 'dashboard:morpheus.developerTemplates.vscode' }),
+} as const);
+
+export function isMorpheusDeveloperTemplateKey(value: unknown): value is MorpheusDeveloperTemplateKey {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(MORPHEUS_DEVELOPER_TEMPLATES, value);
+}
 
 export type MorpheusApplicationEntry = {
   readonly key: MorpheusApplicationKey;
@@ -373,6 +388,53 @@ export const MORPHEUS_ACTIONS = Object.freeze({
     rootKey: 'morpheusFiles',
     params: Object.freeze([] as const),
   } as const),
+  'system.storage': Object.freeze({
+    id: 'system.storage',
+    kind: 'introspection',
+    riskTier: 'low',
+    privacySafe: true,
+    labelKey: 'dashboard:morpheus.actions.systemStorage.label',
+    descriptionKey: 'dashboard:morpheus.actions.systemStorage.description',
+    platforms: Object.freeze(['win32'] as const),
+    rootKey: 'morpheusFiles',
+    params: Object.freeze([] as const),
+  } as const),
+  'system.processes': Object.freeze({
+    id: 'system.processes',
+    kind: 'introspection',
+    riskTier: 'high',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.systemProcesses.label',
+    descriptionKey: 'dashboard:morpheus.actions.systemProcesses.description',
+    platforms: Object.freeze(['win32'] as const),
+    params: Object.freeze([] as const),
+  } as const),
+  'web.openUrl': Object.freeze({
+    id: 'web.openUrl',
+    kind: 'process',
+    riskTier: 'medium',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.webOpenUrl.label',
+    descriptionKey: 'dashboard:morpheus.actions.webOpenUrl.description',
+    platforms: Object.freeze(['win32'] as const),
+    params: Object.freeze([
+      Object.freeze({ key: 'url', kind: 'httpUrl', required: true } as const),
+    ] as const),
+  } as const),
+  'dev.launchProject': Object.freeze({
+    id: 'dev.launchProject',
+    kind: 'process',
+    riskTier: 'medium',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.devLaunchProject.label',
+    descriptionKey: 'dashboard:morpheus.actions.devLaunchProject.description',
+    platforms: Object.freeze(['win32'] as const),
+    rootKey: 'morpheusFiles',
+    params: Object.freeze([
+      Object.freeze({ key: 'path', kind: 'relativePath', required: true } as const),
+      Object.freeze({ key: 'templateKey', kind: 'devTemplateKey', required: true } as const),
+    ] as const),
+  } as const),
   'system.report': Object.freeze({
     id: 'system.report',
     kind: 'introspection',

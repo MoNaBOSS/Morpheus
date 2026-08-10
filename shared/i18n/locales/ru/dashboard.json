@@ -143,6 +143,9 @@
       "calculator": "Калькулятор",
       "paint": "Paint"
     },
+    "developerTemplates": {
+      "vscode": "Visual Studio Code"
+    },
     "actions": {
       "appLaunch": {
         "label": "Запустить одобренное приложение",
@@ -203,6 +206,22 @@
       "screenCapture": {
         "label": "Сделать снимок экрана",
         "description": "Снимает экран и сохраняет в одобренном рабочем пространстве. Каждый снимок показывается и записывается."
+      },
+      "systemStorage": {
+        "label": "Проверить хранилище",
+        "description": "Показывает общий объём хранилища для одобренного расположения файлов Morpheus."
+      },
+      "systemProcesses": {
+        "label": "Проверить процессы",
+        "description": "Показывает запущенные процессы Windows. При первом использовании требуется подтверждение."
+      },
+      "webOpenUrl": {
+        "label": "Открыть одобренный веб-адрес",
+        "description": "Открывает явно указанный http или https URL в системном браузере."
+      },
+      "devLaunchProject": {
+        "label": "Открыть проект в VS Code",
+        "description": "Открывает существующую папку из одобренной рабочей области в установленном VS Code."
       }
     },
     "phases": {
@@ -356,7 +375,11 @@
         "clipboardReadText": "Прочитать буфер обмена",
         "clipboardWriteText": "Скопировать текст в буфер обмена",
         "systemNotify": "Показать уведомление",
-        "screenCapture": "Снять экран"
+        "screenCapture": "Снять экран",
+        "systemStorage": "Проверить одобренное хранилище",
+        "systemProcesses": "Проверить запущенные процессы",
+        "webOpenUrl": "Открыть {{url}}",
+        "devLaunchProject": "Открыть {{path}} в VS Code"
       },
       "title": "План выполнения",
       "description": "Что Morpheus сделает и в каком порядке.",
