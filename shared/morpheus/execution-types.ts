@@ -27,8 +27,8 @@ export type ExecutionOrigin =
   | { type: 'command-bar'; commandText: string }
   | { type: 'action-launcher' }
   | { type: 'chat'; sessionKey?: string }
-  | { type: 'workflow'; workflowId: string }
-  | { type: 'schedule'; scheduleId: string };
+  | { type: 'workflow'; workflowId: string; agentProfileId?: string }
+  | { type: 'schedule'; scheduleId: string; workflowId: string; agentProfileId?: string };
 
 export type ExecutionOriginType = ExecutionOrigin['type'];
 

@@ -31,6 +31,9 @@ import { win32SystemStorageCapability } from './capabilities/win32/system-storag
 import { win32SystemProcessesCapability } from './capabilities/win32/system-processes';
 import { win32OpenUrlCapability } from './capabilities/win32/open-url';
 import { win32LaunchProjectCapability } from './capabilities/win32/launch-project';
+import { createMorpheusAgentProfileStore, type MorpheusAgentProfileStore } from './agents/profile-store';
+import { createMorpheusWorkflowStore, type MorpheusWorkflowStore } from './workflows/workflow-store';
+import { createMorpheusWorkflowService, type MorpheusWorkflowService } from './workflows/workflow-service';
 
 export type CreateMorpheusServiceOptions = {
   userDataDir: string;
@@ -43,6 +46,9 @@ export type CreateMorpheusServiceOptions = {
 export type MorpheusService = {
   runtime: MorpheusRuntime;
   grants: MorpheusGrantStore;
+  agentProfiles: MorpheusAgentProfileStore;
+  workflowStore: MorpheusWorkflowStore;
+  workflows: MorpheusWorkflowService;
   /** Current approved files root, for the Command Center's artifacts panel. */
   filesRoot: string;
   auditHealth: () => AuditHealth;
@@ -110,8 +116,28 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     }),
   });
 
-  return { runtime, grants, filesRoot: roots.resolve('morpheusFiles'), auditHealth };
+  const agentProfiles = createMorpheusAgentProfileStore({ userDataDir: options.userDataDir });
+  const workflowStore = createMorpheusWorkflowStore({ userDataDir: options.userDataDir });
+  const workflows = createMorpheusWorkflowService({
+    store: workflowStore,
+    profiles: agentProfiles,
+    runtime,
+    filesRoot: roots.resolve('morpheusFiles'),
+  });
+
+  return {
+    runtime,
+    grants,
+    agentProfiles,
+    workflowStore,
+    workflows,
+    filesRoot: roots.resolve('morpheusFiles'),
+    auditHealth,
+  };
 }
 
 export type { MorpheusRuntime } from './runtime';
 export type { MorpheusGrantStore } from './policy/grant-store';
+export type { MorpheusAgentProfileStore } from './agents/profile-store';
+export type { MorpheusWorkflowStore } from './workflows/workflow-store';
+export type { MorpheusWorkflowService } from './workflows/workflow-service';

@@ -199,6 +199,8 @@ function registerTypedHostHandlers(
     morpheus: createMorpheusApi({
       runtime: morpheusService.runtime,
       grants: morpheusService.grants,
+      agentProfiles: morpheusService.agentProfiles,
+      workflows: morpheusService.workflows,
       filesRoot: morpheusService.filesRoot,
       auditHealth: morpheusService.auditHealth,
     }),

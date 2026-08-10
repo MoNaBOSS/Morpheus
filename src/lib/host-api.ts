@@ -443,6 +443,11 @@ export const hostApi = {
     resetPermissionPolicy: () => invokeHost('morpheus', 'resetPermissionPolicy'),
     filesRoot: () => invokeHost('morpheus', 'filesRoot'),
     openFilesRoot: () => invokeHost('morpheus', 'openFilesRoot'),
+    agentProfiles: () => invokeHost('morpheus', 'agentProfiles'),
+    agentProfile: (id: string) => invokeHost('morpheus', 'agentProfile', { id }),
+    workflows: () => invokeHost('morpheus', 'workflows'),
+    workflow: (id: string) => invokeHost('morpheus', 'workflow', { id }),
+    prepareWorkflow: (workflowId: string) => invokeHost('morpheus', 'prepareWorkflow', { workflowId }),
   },
 };
 

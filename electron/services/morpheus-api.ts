@@ -41,7 +41,12 @@ import { interpretCommand } from '@shared/morpheus/interpreter/deterministic';
 import { validateParams } from '@shared/morpheus/capabilities/params';
 
 import type { CompleteHostServiceRegistry } from '../main/ipc/host-contract';
-import type { MorpheusRuntime, MorpheusGrantStore } from './morpheus';
+import type {
+  MorpheusRuntime,
+  MorpheusGrantStore,
+  MorpheusAgentProfileStore,
+  MorpheusWorkflowService,
+} from './morpheus';
 
 export class MorpheusValidationError extends Error {
   constructor(message: string) {
@@ -153,9 +158,27 @@ export function validateAuditRecentPayload(payload: unknown): MorpheusAuditRecen
 export type CreateMorpheusApiOptions = {
   runtime: MorpheusRuntime;
   grants: MorpheusGrantStore;
+  agentProfiles: MorpheusAgentProfileStore;
+  workflows: MorpheusWorkflowService;
   filesRoot: string;
   auditHealth: () => 'healthy' | 'degraded';
 };
+
+function validateIdPayload(payload: unknown, label: string): { id: string } {
+  const record = requireRecord(payload, `${label} payload`);
+  assertNoUnknownKeys(record, ['id'], `${label} payload`);
+  const id = requireNonEmptyString(record.id, 'id');
+  if (!/^[a-z][a-z0-9-]{1,63}$/.test(id)) throw new MorpheusValidationError(`invalid ${label} id`);
+  return { id };
+}
+
+function validatePrepareWorkflowPayload(payload: unknown): { workflowId: string } {
+  const record = requireRecord(payload, 'prepareWorkflow payload');
+  assertNoUnknownKeys(record, ['workflowId'], 'prepareWorkflow payload');
+  const workflowId = requireNonEmptyString(record.workflowId, 'workflowId');
+  if (!/^[a-z][a-z0-9-]{1,63}$/.test(workflowId)) throw new MorpheusValidationError('invalid workflow id');
+  return { workflowId };
+}
 
 /**
  * Interprets a command into a typed plan.
@@ -225,7 +248,7 @@ export function validateRevokePayload(payload: unknown): { grantId: string } {
 }
 
 export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHostServiceRegistry['morpheus'] {
-  const { runtime, grants, filesRoot, auditHealth } = options;
+  const { runtime, grants, agentProfiles, workflows, filesRoot, auditHealth } = options;
   return {
     interpretCommand: (payload) => {
       const { objective, originType } = validateInterpretPayload(payload);
@@ -284,6 +307,29 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     openFilesRoot: async () => {
       await shell.openPath(filesRoot);
       return { ok: true };
+    },
+
+    agentProfiles: () => agentProfiles.list(),
+    agentProfile: (payload) => ({
+      profile: agentProfiles.get(validateIdPayload(payload, 'Agent Profile').id) ?? null,
+    }),
+    workflows: () => workflows.list(),
+    workflow: (payload) => ({
+      workflow: workflows.get(validateIdPayload(payload, 'workflow').id) ?? null,
+    }),
+    prepareWorkflow: (payload) => {
+      const { workflowId } = validatePrepareWorkflowPayload(payload);
+      const workflow = workflows.get(workflowId);
+      if (!workflow) throw new MorpheusValidationError('Unknown Morpheus workflow');
+      return workflows.prepare({
+        workflowId,
+        trigger: 'manual',
+        origin: {
+          type: 'workflow',
+          workflowId,
+          agentProfileId: workflow.agentProfileId,
+        },
+      });
     },
 
     describeActions: (): MorpheusDescribeActionsResult => runtime.describeActions(),

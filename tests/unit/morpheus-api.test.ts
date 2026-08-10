@@ -30,6 +30,17 @@ function stubOptions(runtime = stubRuntime()) {
   return {
     runtime,
     grants: stubGrants() as never,
+    agentProfiles: {
+      list: vi.fn(() => ({ profiles: [] })),
+      get: vi.fn(),
+      save: vi.fn(),
+      resetBuiltIns: vi.fn(() => ({ profiles: [] })),
+    } as never,
+    workflows: {
+      list: vi.fn(() => ({ workflows: [] })),
+      get: vi.fn(),
+      prepare: vi.fn(),
+    } as never,
     filesRoot: 'C:\\Morpheus\\files',
     auditHealth: () => 'healthy' as const,
   };
@@ -174,6 +185,8 @@ describe('validateAuditRecentPayload', () => {
 describe('createMorpheusApi', () => {
   it('exposes exactly the contract surface', () => {
     expect(Object.keys(createMorpheusApi(stubOptions())).sort()).toEqual([
+      'agentProfile',
+      'agentProfiles',
       'auditRecent',
       'cancelAction',
       'describeActions',
@@ -182,6 +195,7 @@ describe('createMorpheusApi', () => {
       'interpretCommand',
       'openFilesRoot',
       'permissionCenter',
+      'prepareWorkflow',
       'requestAction',
       'resetPermissionPolicy',
       'respondPermission',
@@ -190,6 +204,8 @@ describe('createMorpheusApi', () => {
       'revokeGrant',
       'setPermissionProfile',
       'systemInfo',
+      'workflow',
+      'workflows',
     ]);
   });
 

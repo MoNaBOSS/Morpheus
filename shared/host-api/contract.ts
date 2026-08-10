@@ -22,11 +22,20 @@ import type {
   MorpheusSystemInfo,
 } from '../morpheus/action-types';
 import type {
+  ExecutionPlan,
   ExecutionOriginType,
   ExecutionPlanStatus,
   ExecutionStepResult,
   InterpretationResult,
 } from '../morpheus/execution-types';
+import type {
+  AgentProfilesSnapshot,
+  MorpheusAgentProfile,
+} from '../morpheus/agent-profile-types';
+import type {
+  MorpheusWorkflow,
+  WorkflowsSnapshot,
+} from '../morpheus/workflow-types';
 import type {
   PermissionAcknowledgement,
   PermissionCenterSnapshot,
@@ -854,6 +863,11 @@ export type MorpheusPlanExecutionResult = {
   rejection?: { code: string; message: string };
 };
 
+export type MorpheusIdPayload = { id: string };
+export type MorpheusAgentProfileResult = { profile: MorpheusAgentProfile | null };
+export type MorpheusWorkflowResult = { workflow: MorpheusWorkflow | null };
+export type MorpheusPrepareWorkflowPayload = { workflowId: string };
+
 export type HostApiContract = {
   app: {
     openClawDoctor: (payload: OpenClawDoctorPayload) => Omit<OpenClawDoctorResult, 'mode'>;
@@ -1094,6 +1108,12 @@ export type HostApiContract = {
     filesRoot: () => MorpheusFilesRootResult;
     /** Opens the approved folder via a typed capability, not renderer shell access. */
     openFilesRoot: () => PermissionAcknowledgement;
+    agentProfiles: () => AgentProfilesSnapshot;
+    agentProfile: (payload: MorpheusIdPayload) => MorpheusAgentProfileResult;
+    workflows: () => WorkflowsSnapshot;
+    workflow: (payload: MorpheusIdPayload) => MorpheusWorkflowResult;
+    /** Compiles a reusable workflow into a Main-held typed plan. */
+    prepareWorkflow: (payload: MorpheusPrepareWorkflowPayload) => ExecutionPlan;
   };
 };
 

@@ -819,7 +819,10 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
 
       const result = await runPlanGraph({
         plan,
-        runner: planStepRunner(plan.origin.type),
+        runner: planStepRunner(
+          plan.origin.type,
+          'agentProfileId' in plan.origin ? plan.origin.agentProfileId : undefined,
+        ),
         policy: options.gate,
         auditHealth: (options.auditHealth ?? (() => 'healthy' as AuditHealth))(),
         now,
