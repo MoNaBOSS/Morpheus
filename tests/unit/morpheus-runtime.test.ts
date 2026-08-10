@@ -21,7 +21,11 @@ import type { MorpheusPermissionGate } from '@electron/services/morpheus/policy/
 import { createMorpheusGrantStore } from '@electron/services/morpheus/policy/grant-store';
 import type { MorpheusRootProvider } from '@electron/services/morpheus/roots';
 import type { MorpheusActionEvent, MorpheusAuditEntry } from '@shared/morpheus/action-types';
-import { getMorpheusActionDescriptor, listMorpheusActionIds } from '@shared/morpheus/actions/registry';
+import {
+  getMorpheusActionDescriptor,
+  listMorpheusActionIds,
+  listMorpheusApplicationKeys,
+} from '@shared/morpheus/actions/registry';
 
 const roots: MorpheusRootProvider = { resolve: () => 'C:\\root' };
 
@@ -337,7 +341,8 @@ describe('morpheus runtime — surface', () => {
     const described = makeHarness().runtime.describeActions();
 
     expect(described.platform).toBe('win32');
-    expect(described.applicationKeys).toEqual(['notepad']);
+    expect([...described.applicationKeys].sort())
+      .toEqual([...listMorpheusApplicationKeys()].sort());
     // Every registry action is described, so a capability can never be missing
     // from the launcher just because nobody updated a list.
     expect(described.actions.map((action) => action.actionId).sort())

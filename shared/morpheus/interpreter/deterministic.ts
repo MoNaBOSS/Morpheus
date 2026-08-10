@@ -17,6 +17,7 @@ import {
   listMorpheusActionIds,
   requiresMandatoryConfirmation,
   type MorpheusActionId,
+  type MorpheusApplicationKey,
 } from '../actions/registry';
 import {
   MORPHEUS_PLAN_VERSION,
@@ -45,10 +46,46 @@ const SYSTEM_REPORT_PATTERNS = [
   /\bmachine\s+info(rmation)?\b/i,
 ];
 
-const APP_LAUNCH_PATTERNS = [
-  /\b(open|launch|start|run)\b[^.]*\bnotepad\b/i,
-  /\bnotepad\b/i,
+/**
+ * Approved applications, matched by name.
+ *
+ * Only compiled-in keys appear here. There is no branch that turns a
+ * user-supplied word into an executable — an application Morpheus does not
+ * already know is a truthful refusal, not a path lookup.
+ */
+const APP_LAUNCH_ALIASES: ReadonlyArray<[RegExp, MorpheusApplicationKey]> = [
+  [/\bnotepad\b/i, 'notepad'],
+  [/\b(calculator|calc)\b/i, 'calculator'],
+  [/\b(paint|mspaint)\b/i, 'paint'],
 ];
+
+const APP_LAUNCH_VERBS = /\b(open|launch|start|run)\b/i;
+
+const CLIPBOARD_READ_PATTERNS = [
+  /\b(read|get|show|what(?:'s|\s+is))\b[^.]*\bclipboard\b/i,
+  /\bclipboard\s+contents?\b/i,
+];
+
+const CLIPBOARD_WRITE_PATTERNS = [
+  /\b(copy|put|write|set|place)\b[^.]*\b(to|on|into)\b[^.]*\bclipboard\b/i,
+  /\bcopy\b[^.]*\bclipboard\b/i,
+];
+
+const NOTIFY_PATTERNS = [
+  /\b(notify|notification|remind|alert)\b/i,
+  /\bshow\b[^.]*\bmessage\b/i,
+];
+
+const SCREEN_CAPTURE_PATTERNS = [
+  /\b(screenshot|screen\s*shot|screen\s*grab)\b/i,
+  /\b(capture|take)\b[^.]*\bscreen\b/i,
+];
+
+/** Quoted text, or text after a leading verb — for clipboard and notifications. */
+export function extractQuoted(objective: string): string | null {
+  const quoted = /["“]([^"”]{1,400})["”]/.exec(objective);
+  return quoted?.[1]?.trim() || null;
+}
 
 const FILE_CREATE_PATTERNS = [
   /\b(create|make|write|new)\b[^.]*\b(text\s+)?file\b/i,
@@ -295,17 +332,94 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
     };
   }
 
-  if (APP_LAUNCH_PATTERNS.some((pattern) => pattern.test(text))) {
+  // Screen capture is checked before the clipboard and notification verbs:
+  // "take a screenshot and copy it" mentions both, and the capture is the
+  // higher-risk half.
+  if (SCREEN_CAPTURE_PATTERNS.some((pattern) => pattern.test(text))) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'screen.capture',
+          {},
+          buildPermission('screen.capture', platform, filesRoot),
+          'morpheus.plan.steps.screenCapture',
+        ),
+      ]),
+    };
+  }
+
+  // Reading is checked before writing: "show me the clipboard" must never be
+  // resolved as a write, which would both do the wrong thing and evaluate the
+  // lower-risk of the two scopes.
+  if (CLIPBOARD_READ_PATTERNS.some((pattern) => pattern.test(text))) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'clipboard.readText',
+          {},
+          buildPermission('clipboard.readText', platform, 'clipboard'),
+          'morpheus.plan.steps.clipboardReadText',
+        ),
+      ]),
+    };
+  }
+
+  const clipboardText = CLIPBOARD_WRITE_PATTERNS.some((pattern) => pattern.test(text))
+    ? extractQuoted(text)
+    : null;
+  if (clipboardText) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'clipboard.writeText',
+          { content: clipboardText },
+          buildPermission('clipboard.writeText', platform, 'clipboard'),
+          'morpheus.plan.steps.clipboardWriteText',
+        ),
+      ]),
+    };
+  }
+
+  const notifyText = NOTIFY_PATTERNS.some((pattern) => pattern.test(text))
+    ? extractQuoted(text)
+    : null;
+  if (notifyText) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'system.notify',
+          { title: 'Morpheus', body: notifyText },
+          buildPermission('system.notify', platform, 'notification'),
+          'morpheus.plan.steps.systemNotify',
+        ),
+      ]),
+    };
+  }
+
+  const application = APP_LAUNCH_VERBS.test(text) || APP_LAUNCH_ALIASES.some(([p]) => p.test(text))
+    ? APP_LAUNCH_ALIASES.find(([pattern]) => pattern.test(text))?.[1]
+    : undefined;
+  if (application) {
     return {
       ok: true,
       plan: basePlan([
         makeStep(
           'step-1',
           'app.launch',
-          { applicationKey: 'notepad' },
-          buildPermission('app.launch', platform, 'notepad'),
+          { applicationKey: application },
+          // Scope is the application KEY, so a grant for one approved app never
+          // extends to another.
+          buildPermission('app.launch', platform, application),
           'morpheus.plan.steps.appLaunch',
-          { application: 'Notepad' },
+          { application },
         ),
       ]),
     };

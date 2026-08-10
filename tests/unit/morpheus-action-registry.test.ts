@@ -90,7 +90,9 @@ describe('morpheus action registry', () => {
     expect(listMorpheusActionIds()).toContain('app.launch');
     expect(listMorpheusActionIds()).toContain('file.createText');
     expect(listMorpheusActionIds()).toContain('system.report');
-    expect(listMorpheusApplicationKeys()).toEqual(['notepad']);
+    expect([...listMorpheusApplicationKeys()].sort())
+      .toEqual(Object.keys(MORPHEUS_APPLICATIONS).sort());
+    expect(listMorpheusApplicationKeys()).toContain('notepad');
   });
 
   it('declares required parameters for the parameterised actions', () => {

@@ -50,23 +50,91 @@ Every capability descriptor declares a tier:
 
 | Tier | Meaning | Default treatment |
 | --- | --- | --- |
-| `low` | Privacy-safe, read-only, no side effects | Runs automatically |
+| `low` | No disclosure, no durable state, nothing to undo | Runs automatically outside Strict |
 | `medium` | Bounded side effect in an approved scope | Asks once per new scope; grantable |
 | `high` | Sensitive or wide-reaching, but reversible | Asks once per new scope; **grantable**. Never auto-runs on an unseen scope. |
 | `critical` | Irreversible, financial, or security-affecting | **Unwaivable.** Always confirms. |
 
 `high` is deliberately grantable. Making sensitive-but-reversible work prompt
 forever produces prompt fatigue, which is itself a security failure: users stop
-reading. Screenshots, clipboard reads and broad directory listings sit here —
-visible and audited, but not a dialog every time.
+reading. Screenshots and clipboard reads sit here — visible and audited, but not
+a dialog every time.
+
+### Screen capture
+
+The most sensitive capability in 0.5, and the one where the user may not be
+looking at Morpheus when it runs. Its guarantees:
+
+- Asks the first time for a scope; grantable for a session or persistently.
+  Never automatic on a scope the user has not seen, under any profile.
+- The image is written **inside the approved workspace root** (`captures/`).
+  The filename is Main-generated from a timestamp, so no caller-supplied string
+  reaches a filesystem path. The capability takes **no parameters at all**.
+- Every capture is audited by path, size and digest — never by content.
+- Capture is **visible**. The Command Center shows a live indicator derived from
+  the same audited event stream that records the run, so it cannot announce a
+  capture that did not happen or miss one that did. A failed, denied or
+  cancelled capture never announces success.
+- Blocked entirely when auditing is degraded: a capture that cannot be recorded
+  does not happen.
+
+### Clipboard
+
+Read and write are separate capabilities with separate scopes, and neither
+belongs to a group. The clipboard routinely holds passwords and tokens copied
+for an unrelated purpose, so "Morpheus may put text on my clipboard" must never
+imply "Morpheus may read what is already there". Both are grantable.
+
+### Capability groups — workspace-shaped trust
+
+Trust is workspace-shaped in practice. A user who has approved a workspace
+expects Morpheus to read, list and search inside it without a fresh dialog for
+each verb; asking separately for `file.readText`, `file.list` and `file.search`
+over one directory is three prompts describing one decision already made.
+
+`MORPHEUS_CAPABILITY_GROUPS` is a **frozen, enumerated** list of member
+capability ids per group. A grant against a group still binds to one canonical
+root, one platform and one origin — every other field matches by exact
+equality, and "allow every file operation everywhere" remains impossible to
+express. The consent prompt names the **group**, never a single member verb.
+
+| Group | Members |
+| --- | --- |
+| `workspace.read` | `file.readText`, `file.list`, `file.search` |
+| `workspace.write` | `file.createText`, `file.appendText`, `file.move`, `file.copy`, `folder.create` |
+
+Rules that keep grouping from becoming a wildcard:
+
+- No `critical` capability may belong to a group. A workspace decision must
+  never reach something the mandatory floor governs.
+- Read and write are **separate** groups. Approving "look at my files" is not
+  approving "change them".
+- Anything sensitive-but-unrelated is ungrouped: clipboard reads, clipboard
+  writes, screen capture and application launches are each their own scope.
+
+The grant scope for a filesystem target is the **workspace root**, never the
+file's parent directory — otherwise every subfolder would be a new boundary and
+a user who approved a workspace would be re-prompted as work nested deeper.
 
 ### Current capabilities
 
-| Capability | Tier | Rationale |
-| --- | --- | --- |
-| `system.report` | `low` | Read-only; excludes username, hostname, network interfaces, machine id |
-| `app.launch` | `medium` | Starts a process, but only a compiled-in approved application |
-| `file.createText` | `medium` | Writes only inside the canonical root, exclusive-create, no overwrite |
+| Capability | Tier | Group | Rationale |
+| --- | --- | --- | --- |
+| `system.report` | `low` | — | Read-only; excludes username, hostname, network interfaces, machine id |
+| `system.notify` | `low` | — | Transient OS notification; reads nothing, leaves nothing |
+| `file.readText` | `medium` | `workspace.read` | Reads one file inside the canonical root |
+| `file.list` | `medium` | `workspace.read` | Lists a directory inside the canonical root |
+| `file.search` | `medium` | `workspace.read` | Matches file NAMES only, never contents |
+| `file.createText` | `medium` | `workspace.write` | Exclusive-create, no overwrite |
+| `file.appendText` | `medium` | `workspace.write` | Additive; cannot overwrite |
+| `file.move` | `medium` | `workspace.write` | Refuses an existing destination |
+| `file.copy` | `medium` | `workspace.write` | `COPYFILE_EXCL`; refuses an existing destination |
+| `folder.create` | `medium` | `workspace.write` | Creates a directory inside the canonical root |
+| `app.launch` | `medium` | — | Compiled-in approved application, fixed argv, per-application scope |
+| `clipboard.writeText` | `medium` | — | Replaces clipboard contents; discloses nothing |
+| `clipboard.readText` | `high` | — | Reads what the user copied, which routinely includes secrets |
+| `screen.capture` | `high` | — | Records the screen, including other applications |
+| `file.delete` | `critical` | — | Irreversible |
 
 ### `critical` — always confirms, regardless of profile or grant
 
@@ -92,12 +160,13 @@ rather than permanently interrupting.
 ### Strict
 
 - Privacy-safe read-only operations run automatically.
-- Writes, launches and external actions **ask every time**.
+- Everything else — including low-risk notifications — **asks every time**.
 - Grants are not consulted for medium and above.
 
 ### Balanced — default
 
 - Privacy-safe read-only operations run automatically.
+- Low-risk operations run automatically.
 - Medium and high risk ask the **first time for a given scope**, then honour the grant.
 - The user may allow once, for the session, or permanently **for an exact scope**.
 - A plan whose scopes are all already granted runs with no prompt at all.

@@ -20,6 +20,12 @@ import { createMorpheusRuntime, type MorpheusRuntime } from './runtime';
 import { win32AppLaunchCapability } from './capabilities/win32/app-launch';
 import { win32CreateTextFileCapability } from './capabilities/win32/create-text-file';
 import { win32FilesystemCapabilities } from './capabilities/win32/filesystem';
+import {
+  win32ClipboardReadCapability,
+  win32ClipboardWriteCapability,
+} from './capabilities/win32/clipboard';
+import { win32NotifyCapability } from './capabilities/win32/notify';
+import { win32ScreenCaptureCapability } from './capabilities/win32/screen-capture';
 import { win32SystemReportCapability } from './capabilities/win32/system-report';
 
 export type CreateMorpheusServiceOptions = {
@@ -44,6 +50,10 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   registry.register(win32CreateTextFileCapability);
   registry.register(win32SystemReportCapability);
   for (const capability of win32FilesystemCapabilities) registry.register(capability);
+  registry.register(win32ClipboardReadCapability);
+  registry.register(win32ClipboardWriteCapability);
+  registry.register(win32NotifyCapability);
+  registry.register(win32ScreenCaptureCapability);
 
   const roots = createMorpheusRootProvider({ userDataDir: options.userDataDir });
   const audit = createMorpheusAuditSink({

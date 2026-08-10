@@ -147,7 +147,15 @@ export type MorpheusDeletionResult = {
   relativePath: string;
 };
 
+/** A transient OS notification that was actually shown. */
+export type MorpheusNotificationResult = {
+  kind: 'notification';
+  title: string;
+  body: string;
+};
+
 export type MorpheusActionResult =
+  | MorpheusNotificationResult
   | MorpheusLaunchResult
   | MorpheusFileResult
   | MorpheusSystemResult

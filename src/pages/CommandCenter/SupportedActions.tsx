@@ -32,6 +32,10 @@ export const EXAMPLE_COMMAND: Record<string, string> = {
   'file.copy': 'Create a text file named copied.txt',
   'folder.create': 'Create a folder named reports',
   'file.delete': 'Delete the file notes.txt',
+  'clipboard.readText': 'Show the clipboard contents',
+  'clipboard.writeText': 'Copy "Morpheus" to the clipboard',
+  'system.notify': 'Notify me "Morpheus is ready"',
+  'screen.capture': 'Take a screenshot',
 };
 
 export function SupportedActions() {

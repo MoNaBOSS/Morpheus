@@ -19,6 +19,7 @@ import morpheusLogo from '@/assets/morpheus-logo.svg';
 import { MorpheusActionTimeline } from '@/components/morpheus/MorpheusActionTimeline';
 import { MorpheusPermissionDialog } from '@/components/morpheus/MorpheusPermissionDialog';
 import { MorpheusPlanConsentDialog } from '@/components/morpheus/MorpheusPlanConsentDialog';
+import { MorpheusCaptureIndicator } from '@/components/morpheus/MorpheusCaptureIndicator';
 import { PermissionCenter } from '@/components/morpheus/PermissionCenter';
 import { useMorpheusActionsStore } from '@/stores/morpheus-actions';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
@@ -93,6 +94,13 @@ export function CommandCenter() {
 
         <div className="mt-3">
           <CommandBar />
+        </div>
+
+        {/* Sits in the header, above the fold: a capture must announce itself
+            where the user is already looking, not in a panel they may have
+            scrolled past. Renders nothing when no capture is happening. */}
+        <div className="mt-2 empty:mt-0">
+          <MorpheusCaptureIndicator />
         </div>
       </header>
 

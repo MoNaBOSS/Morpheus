@@ -139,7 +139,9 @@
       "applicationLabel": "Application"
     },
     "applications": {
-      "notepad": "Notepad"
+      "notepad": "Notepad",
+      "calculator": "Calculator",
+      "paint": "Paint"
     },
     "actions": {
       "appLaunch": {
@@ -185,6 +187,22 @@
       "fileDelete": {
         "label": "Delete permanently",
         "description": "Permanently removes a file or folder. This cannot be undone."
+      },
+      "clipboardReadText": {
+        "label": "Read the clipboard",
+        "description": "Reads whatever is currently on the clipboard. Asks before the first use."
+      },
+      "clipboardWriteText": {
+        "label": "Copy to the clipboard",
+        "description": "Replaces the clipboard contents with text you provide."
+      },
+      "systemNotify": {
+        "label": "Show a notification",
+        "description": "Shows a desktop notification. Reads nothing and leaves nothing behind."
+      },
+      "screenCapture": {
+        "label": "Take a screenshot",
+        "description": "Captures the screen and saves it in the approved workspace. Every capture is shown and recorded."
       }
     },
     "phases": {
@@ -334,7 +352,11 @@
         "fileList": "List the workspace",
         "fileSearch": "Find files matching “{{query}}”",
         "fileDelete": "Permanently delete {{path}}",
-        "folderCreate": "Create the folder {{path}}"
+        "folderCreate": "Create the folder {{path}}",
+        "clipboardReadText": "Read the clipboard",
+        "clipboardWriteText": "Copy text to the clipboard",
+        "systemNotify": "Show a notification",
+        "screenCapture": "Capture the screen"
       },
       "title": "Execution plan",
       "description": "What Morpheus will do, in order.",
@@ -361,6 +383,12 @@
         "cancelled": "Cancelled"
       },
       "skippedBecause": "Skipped because {{stepId}} failed"
+    },
+    "capture": {
+      "title": "Screen capture",
+      "active": "Capturing the screen",
+      "recent": "Screen captured just now",
+      "savedTo": "Saved to"
     }
   }
 }

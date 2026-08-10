@@ -23,7 +23,13 @@ import type { MorpheusParamDescriptor, ParamsFromDescriptors } from '../capabili
 
 export type MorpheusPlatform = 'win32' | 'darwin' | 'linux';
 
-export type MorpheusActionKind = 'process' | 'filesystem' | 'introspection';
+export type MorpheusActionKind =
+  | 'process'
+  | 'filesystem'
+  | 'introspection'
+  | 'clipboard'
+  | 'notification'
+  | 'capture';
 
 /**
  * Risk classification driving the permission engine.
@@ -70,7 +76,11 @@ export type MorpheusActionId =
   | 'file.move'
   | 'file.copy'
   | 'file.delete'
-  | 'folder.create';
+  | 'folder.create'
+  | 'clipboard.readText'
+  | 'clipboard.writeText'
+  | 'system.notify'
+  | 'screen.capture';
 
 /**
  * Named bundles of capabilities that share ONE trust decision for one exact
@@ -148,7 +158,7 @@ export type MorpheusActionDescriptor = {
  */
 export type MorpheusApplicationBase = 'systemRoot';
 
-export type MorpheusApplicationKey = 'notepad';
+export type MorpheusApplicationKey = 'notepad' | 'calculator' | 'paint';
 
 export type MorpheusApplicationEntry = {
   readonly key: MorpheusApplicationKey;
@@ -303,6 +313,66 @@ export const MORPHEUS_ACTIONS = Object.freeze({
       Object.freeze({ key: 'path', kind: 'relativePath', required: true } as const),
     ] as const),
   } as const),
+  'clipboard.readText': Object.freeze({
+    id: 'clipboard.readText',
+    kind: 'clipboard',
+    // Reads whatever the user last copied, which routinely includes passwords
+    // and tokens. Sensitive but reversible, so it is grantable rather than
+    // permanently interrupting — and deliberately in NO group, so trusting a
+    // workspace or clipboard WRITES never implies trusting reads.
+    riskTier: 'high',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.clipboardReadText.label',
+    descriptionKey: 'dashboard:morpheus.actions.clipboardReadText.description',
+    platforms: Object.freeze(['win32'] as const),
+    params: Object.freeze([] as const),
+  } as const),
+  'clipboard.writeText': Object.freeze({
+    id: 'clipboard.writeText',
+    kind: 'clipboard',
+    // Replaces clipboard contents: a bounded, visible side effect that
+    // discloses nothing. Separate scope from reads, by design.
+    riskTier: 'medium',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.clipboardWriteText.label',
+    descriptionKey: 'dashboard:morpheus.actions.clipboardWriteText.description',
+    platforms: Object.freeze(['win32'] as const),
+    params: Object.freeze([
+      Object.freeze({ key: 'content', kind: 'textContent', required: true } as const),
+    ] as const),
+  } as const),
+  'system.notify': Object.freeze({
+    id: 'system.notify',
+    kind: 'notification',
+    // Draws a transient OS notification. Discloses nothing, reads nothing and
+    // leaves no durable state, so it runs without a prompt under every profile
+    // except Strict.
+    riskTier: 'low',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.systemNotify.label',
+    descriptionKey: 'dashboard:morpheus.actions.systemNotify.description',
+    platforms: Object.freeze(['win32'] as const),
+    params: Object.freeze([
+      Object.freeze({ key: 'title', kind: 'shortText', required: true } as const),
+      Object.freeze({ key: 'body', kind: 'shortText', required: false } as const),
+    ] as const),
+  } as const),
+  'screen.capture': Object.freeze({
+    id: 'screen.capture',
+    kind: 'capture',
+    // Captures whatever is on screen, including other applications. Sensitive
+    // but reversible: it asks the first time for a scope and is then grantable,
+    // never silently automatic on a scope the user has not seen. Every capture
+    // is audited and shown live. In NO group — no other trust implies it.
+    riskTier: 'high',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.screenCapture.label',
+    descriptionKey: 'dashboard:morpheus.actions.screenCapture.description',
+    platforms: Object.freeze(['win32'] as const),
+    // Written into the approved workspace like any other artifact.
+    rootKey: 'morpheusFiles',
+    params: Object.freeze([] as const),
+  } as const),
   'system.report': Object.freeze({
     id: 'system.report',
     kind: 'introspection',
@@ -331,6 +401,27 @@ export const MORPHEUS_APPLICATIONS: Readonly<Record<MorpheusApplicationKey, Morp
     base: 'systemRoot',
     relativeDir: 'System32',
     fileName: 'notepad.exe',
+    // Always empty. An argument vector is the difference between "launch an
+    // approved application" and "run an arbitrary command", and the renderer
+    // can never supply one.
+    args: Object.freeze([] as const),
+  } as const),
+  calculator: Object.freeze({
+    key: 'calculator',
+    labelKey: 'dashboard:morpheus.applications.calculator',
+    platform: 'win32',
+    base: 'systemRoot',
+    relativeDir: 'System32',
+    fileName: 'calc.exe',
+    args: Object.freeze([] as const),
+  } as const),
+  paint: Object.freeze({
+    key: 'paint',
+    labelKey: 'dashboard:morpheus.applications.paint',
+    platform: 'win32',
+    base: 'systemRoot',
+    relativeDir: 'System32',
+    fileName: 'mspaint.exe',
     args: Object.freeze([] as const),
   } as const),
 } as const);

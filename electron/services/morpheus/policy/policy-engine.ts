@@ -9,10 +9,10 @@
  *
  *   1. Audit health      — never execute privileged work that cannot be recorded.
  *   2. Persistent denial — an explicit "never" outranks every allow.
- *   3. Mandatory tier    — high/critical always confirm, whatever the grant says.
+ *   3. Mandatory tier    — `critical` always confirms, whatever the grant says.
  *   4. Privacy-safe read — harmless under every profile.
  *   5. Stored grant      — exact-scope session or persistent allow.
- *   6. Profile default   — Autonomous may auto-run low risk; others prompt.
+ *   6. Profile default   — low risk auto-runs outside Strict; higher prompts.
  *
  * See docs/security/PERMISSION_MODEL.md.
  */
@@ -90,10 +90,16 @@ export function createMorpheusPolicyEngine(store: MorpheusGrantStore): MorpheusP
       }
 
       // 6. Profile defaults.
-      //    Autonomous widens automatic execution to low risk generally, but
-      //    medium risk still needs an explicit trusted scope — that is what
-      //    keeps Autonomous from meaning arbitrary shell access.
-      if (profile === 'autonomous' && effectiveTier === 'low') {
+      //    `low` means no disclosure, no durable state and nothing to undo — a
+      //    notification is the archetype. Interrupting for it would train users
+      //    to dismiss dialogs without reading, which is the failure mode this
+      //    whole model exists to avoid. Strict is excluded because its contract
+      //    is that anything beyond a privacy-safe READ asks every time.
+      //
+      //    Medium and above still need an explicit trusted scope even under
+      //    Autonomous — that is what keeps Autonomous from meaning arbitrary
+      //    machine authority.
+      if (effectiveTier === 'low' && profile !== 'strict') {
         return { outcome: 'allow', reason: 'profile-auto' };
       }
 

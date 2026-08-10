@@ -139,7 +139,9 @@
       "applicationLabel": "アプリケーション"
     },
     "applications": {
-      "notepad": "メモ帳"
+      "notepad": "メモ帳",
+      "calculator": "電卓",
+      "paint": "ペイント"
     },
     "actions": {
       "appLaunch": {
@@ -185,6 +187,22 @@
       "fileDelete": {
         "label": "完全に削除",
         "description": "ファイルまたはフォルダを完全に削除します。元に戻せません。"
+      },
+      "clipboardReadText": {
+        "label": "クリップボードを読む",
+        "description": "クリップボードの現在の内容を読み取ります。初回使用前に確認します。"
+      },
+      "clipboardWriteText": {
+        "label": "クリップボードにコピー",
+        "description": "指定したテキストでクリップボードの内容を置き換えます。"
+      },
+      "systemNotify": {
+        "label": "通知を表示",
+        "description": "デスクトップ通知を表示します。何も読み取らず、何も残しません。"
+      },
+      "screenCapture": {
+        "label": "スクリーンショットを撮る",
+        "description": "画面をキャプチャし、承認済みワークスペースに保存します。すべてのキャプチャは表示・記録されます。"
       }
     },
     "phases": {
@@ -334,7 +352,11 @@
         "fileList": "ワークスペースを一覧表示",
         "fileSearch": "「{{query}}」に一致するファイルを検索",
         "fileDelete": "{{path}} を完全に削除",
-        "folderCreate": "フォルダ {{path}} を作成"
+        "folderCreate": "フォルダ {{path}} を作成",
+        "clipboardReadText": "クリップボードを読む",
+        "clipboardWriteText": "テキストをクリップボードにコピー",
+        "systemNotify": "通知を表示",
+        "screenCapture": "画面をキャプチャ"
       },
       "title": "実行プラン",
       "description": "Morpheus が順に実行する内容です。",
@@ -361,6 +383,12 @@
         "cancelled": "キャンセル済み"
       },
       "skippedBecause": "{{stepId}} が失敗したためスキップしました"
+    },
+    "capture": {
+      "title": "画面キャプチャ",
+      "active": "画面をキャプチャ中",
+      "recent": "画面をキャプチャしました",
+      "savedTo": "保存先"
     }
   }
 }

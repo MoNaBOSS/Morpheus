@@ -139,7 +139,9 @@
       "applicationLabel": "应用程序"
     },
     "applications": {
-      "notepad": "记事本"
+      "notepad": "记事本",
+      "calculator": "计算器",
+      "paint": "画图"
     },
     "actions": {
       "appLaunch": {
@@ -185,6 +187,22 @@
       "fileDelete": {
         "label": "永久删除",
         "description": "永久删除文件或文件夹，此操作无法撤销。"
+      },
+      "clipboardReadText": {
+        "label": "读取剪贴板",
+        "description": "读取剪贴板中的当前内容。首次使用前会询问。"
+      },
+      "clipboardWriteText": {
+        "label": "复制到剪贴板",
+        "description": "用你提供的文本替换剪贴板内容。"
+      },
+      "systemNotify": {
+        "label": "显示通知",
+        "description": "显示桌面通知。不读取任何内容，也不留下任何痕迹。"
+      },
+      "screenCapture": {
+        "label": "截取屏幕",
+        "description": "截取屏幕并保存到已批准的工作区。每次截图都会显示并记录。"
       }
     },
     "phases": {
@@ -334,7 +352,11 @@
         "fileList": "列出工作区",
         "fileSearch": "查找匹配“{{query}}”的文件",
         "fileDelete": "永久删除 {{path}}",
-        "folderCreate": "创建文件夹 {{path}}"
+        "folderCreate": "创建文件夹 {{path}}",
+        "clipboardReadText": "读取剪贴板",
+        "clipboardWriteText": "将文本复制到剪贴板",
+        "systemNotify": "显示通知",
+        "screenCapture": "截取屏幕"
       },
       "title": "执行计划",
       "description": "Morpheus 将按顺序执行的操作。",
@@ -361,6 +383,12 @@
         "cancelled": "已取消"
       },
       "skippedBecause": "因 {{stepId}} 失败而跳过"
+    },
+    "capture": {
+      "title": "屏幕截图",
+      "active": "正在截取屏幕",
+      "recent": "刚刚截取了屏幕",
+      "savedTo": "保存至"
     }
   }
 }
