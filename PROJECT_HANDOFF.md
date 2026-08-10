@@ -1,185 +1,217 @@
-# Morpheus — Project Handoff
+# Morpheus 0.5 Foundation — Project Handoff
 
-Written at the end of a Windows session, for continuing on macOS. Snapshot as
-of the commit below — re-read [`CLAUDE.md`](CLAUDE.md) and the docs it points
-to before making changes; they are canonical, this file is a status snapshot.
+This is a status snapshot for continuing development on another machine. Read
+[`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md), and the canonical product,
+architecture, design, security, roadmap, and release documents before changing
+the runtime.
 
-## 1. Current status
+## Current project status
 
-**Milestone 0.1.1 (productization) is complete and verified on Windows.**
-Concept Build 0.1 (native action framework: registry, capability adapters,
-permission gate, audit, boot, command surface) shipped first as its own
-checkpoint commit; 0.1.1 converted the product from ClawX to Morpheus and
-added the execution-plan and risk-based permission layers on top of it.
+**Morpheus 0.5.0 Foundation is implemented, committed, packaged, and verified on
+Windows.** It is one product foundation, not a demo or an edition fork.
 
-Working tree was clean at handoff. **Not yet pushed to `origin`** — see
-§9, this needs your action.
+The product now includes:
 
-## 2. Branch
+- a permanent Matrix-accented Morpheus design system and real-signal boot;
+- Command Center at `/`, OpenClaw Chat at `/chat`, and global Quick Command;
+- Main-owned, sequential multi-step `ExecutionPlan` execution with dependencies,
+  results, errors, durations, artifacts, and provider-neutral planner boundary;
+- plan-level trust-delta evaluation with Strict, Balanced, and Autonomous
+  profiles, batched consent, exact session/persistent grants, and immediate
+  revocation;
+- 19 typed Windows capabilities with no arbitrary shell, PowerShell, executable
+  path, argv, environment, or unrestricted filesystem surface;
+- three starter Agent Profiles, two reusable workflows, Morpheus-owned schedules,
+  durable artifacts, and a cross-day append-only Activity ledger;
+- preserved OpenClaw Gateway, Chat, Models, Agents, Channels, Skills, and Cron.
 
-```
+The working tree was clean before this handoff update. Release artifacts and
+verification screenshots are intentionally outside Git.
+
+## Branch and commits
+
+Current branch:
+
+```text
 feat/morpheus-productization-0.1.1
 ```
 
-Base: `df37560` (`feat(morpheus): implement concept build 0.1`, the Concept
-Build 0.1 checkpoint, tested and packaged on its own before productization
-began). 10 commits ahead of that checkpoint; do not rewrite the checkpoint.
+Verified 0.1 checkpoint:
 
-## 3. Current commit
-
-```
-56d4b0f  spec(morpheus): update harness task spec for the 0.1.1 milestone
+```text
+df37560357fb367eef7fe59ccbd588feb4328667
 ```
 
-Full log back to the checkpoint (`git log --oneline df37560..HEAD`):
+Morpheus 0.5 implementation head before this handoff documentation commit:
 
-```
-56d4b0f spec(morpheus): update harness task spec for the 0.1.1 milestone
-88a0c5a docs(morpheus): sync README set to the 0.1.1 surface
-aefcf75 test(morpheus): update inherited navigation specs for the route move
-4c55ea1 test(morpheus): verify productization and permission behaviour
-b5c3b4e feat(morpheus): productize command center and boot experience
-5e25caa fix(morpheus): correct escaped path literal in api test fixture
-6780562 feat(morpheus): wire policy engine into runtime and host API
-2443d46 feat(morpheus): add scoped permission policy and execution plans
-93c4b17 feat(morpheus): establish desktop identity and profile migration
-2ffb8bb docs(morpheus): define product doctrine and permission model
+```text
+917639a8c95e2911cedafe777229ac6436863d4b
 ```
 
-## 4. Latest installer
+The 0.5 commit range is `d01c43c..917639a` (20 coherent commits). Do not rewrite
+or remove `df37560`. Use `git rev-parse HEAD` after checkout for the final
+documentation commit hash.
 
-Built locally, **not committed** (`release/` is gitignored — rebuild it
-yourself, don't expect it to appear after `git clone`):
+Remote status at handoff:
 
-| | |
-|---|---|
-| File | `Morpheus-0.1.1-win-x64.exe` |
-| Size | 263,542,288 bytes (251.33 MB) |
-| SHA-256 | `DFE2E069DA589CC5C43BB51E2465914503EAA2CFB2E019BD8166A8B8D50D4D10` |
-| Authenticode | **Not signed** — expected; `electron-builder.yml` has no certificate, production signing is CI-only via SignPath |
+- `origin`: `https://github.com/MoNaBOSS/Morpheus.git`
+- `upstream`: `https://github.com/ValueCell-ai/ClawX.git`
+- `origin/feat/morpheus-productization-0.1.1` currently ends at `6f59afa`.
+- The 0.5 commits are intentionally local-only because the milestone instruction
+  was **do not push**. Push this branch explicitly before moving to another
+  machine.
 
-Windows-only. On macOS you'd run `pnpm package:mac` for a `.dmg`/`.zip`
-instead — untested this session, no mac-specific work has been done.
+## Latest Windows installer
 
-## 5. Test status (Windows, this session)
+The build output is ignored by Git and must be copied separately or rebuilt.
 
-| Suite | Result |
-|---|---|
-| `git diff --check` | clean |
-| `pnpm run typecheck` | pass |
-| `pnpm run lint` | 0 errors, 7 pre-existing warnings |
-| Morpheus unit tests | 290/290 pass (16 files) |
-| Morpheus E2E | 27/27 pass (routing, command center, permissions, audit, boot) |
-| Regression canaries (app-smoke, main-navigation, developer-mode, light-neutral-theme) | 8/8 pass |
-| Packaged smoke (14-point checklist) | 15/15 pass |
+| Field | Verified value |
+| --- | --- |
+| Installer | `C:\Morpheus\morpheus-core\release\Morpheus-0.5.0-win-x64.exe` |
+| Size | 263,572,139 bytes (251.36 MiB) |
+| SHA-256 | `DE9C0642CB30ECC28784D5DC65A851D8CE058B90B737E29CCA9E8E36F66C598F` |
+| Authenticode | Not signed locally; expected because production signing is CI/SignPath-owned |
+| Unpacked executable | `C:\Morpheus\morpheus-core\release\win-unpacked\Morpheus.exe` |
 
-**Known pre-existing failures — 26 tests, all in files this milestone never
-touched, all present before this work started:**
-- `harness-specs` (7) / `harness-runner` (1) — `core.autocrlf=true` gives CRLF
-  markdown; the harness frontmatter parser (`harness/src/specs.mjs`) only
-  accepts LF. Environment artifact, not a code bug.
-- `openclaw-cli` (9), `plugin-install` (6), `openclaw-auth`,
-  `openclaw-upgrade-snapshot`, `host-api-facade` — a `${cwd}/` path join that
-  never matches backslash paths on Windows.
-- `patch-nsis-extract`, `patch-nsis-install-section` — two suites fail to
-  parse under this Node/Vitest combo on Windows.
+The installer was built from committed source at `917639a`; no generated release
+file is tracked.
 
-**On macOS, re-run the full suite before trusting this list** — some of these
-are Windows-path-specific and may simply not reproduce; others might surface
-differently. Don't assume the counts carry over unchanged.
+## Test and verification status
 
-## 6. Known limitations (genuine, not TODOs)
+Windows validation completed for this checkpoint:
 
-- Deterministic command interpreter handles a small, fixed phrase set
-  (system report / create text file / open Notepad). Temporary by design,
-  behind the permanent `ExecutionPlan` contract — see
-  `docs/architecture/MORPHEUS_ARCHITECTURE.md`.
-- Windows only. Capability adapters exist under
-  `electron/services/morpheus/capabilities/win32/`; contracts are
-  platform-neutral and `unsupported-platform` is already a normal typed
-  outcome, but no macOS/Linux adapter exists yet. **This is your next
-  natural piece of work on a Mac** — see §10.
-- Plans are single-step only; `ExecutionStep.dependsOn` is modelled and
-  unused.
-- No update feed configured (`electron/main/updater-policy.ts` —
-  `MORPHEUS_UPDATE_FEED = null`). Updates report `not-configured`, by
-  design, until a real endpoint exists.
-- Local Authenticode signing unavailable; CI-only via SignPath.
-- Pre-existing, unrelated-to-this-milestone app-wide gaps, documented not
-  fixed: `sandbox: false`, no CSP, `gateway.rpc` forwards arbitrary method
-  strings, `file:read*` is unrestricted despite a comment claiming
-  otherwise. Flagged in `docs/security/PERMISSION_MODEL.md` context but out
-  of scope for 0.1.1.
-- **`resources/icons/icon.icns` is still the OLD ClawX icon.**
-  `scripts/generate-morpheus-icons.mjs` regenerates `.ico`, the PNG set and
-  `.svg` from `resources/branding/morpheus-mark.svg`, but has no `.icns`
-  encoder — Apple's format needs a `.iconset` bundle run through
-  `iconutil`, which only exists on macOS. `electron-builder.yml` references
-  `resources/icons/icon.icns` for both `mac.icon` (line 75) and `dmg.icon`
-  (line 101), so **a `pnpm package:mac` build today ships the wrong icon.**
-  Fix on the Mac: build an `.iconset` from the same source SVG (e.g. via
-  `sips`/`iconutil`, or extend the generator script to shell out to
-  `iconutil` when `process.platform === 'darwin'`) and regenerate
-  `icon.icns` before packaging. Do this before or alongside the macOS
-  capability-adapter work in §11.
+| Validation | Result |
+| --- | --- |
+| `git diff --check` | Pass |
+| `pnpm run typecheck` | Pass |
+| `pnpm run lint` | 0 errors; 12 inherited Fast Refresh warnings |
+| Targeted Morpheus unit tests | 489/489 pass (36 files) |
+| Targeted Morpheus E2E | 42/42 pass |
+| Full Electron E2E | 175 pass, 3 skipped; one load-related worker crash passed 1/1 in isolation |
+| Comms replay and regression comparison | Pass |
+| Harness boundary validation | Pass with LF-normalized real validator |
+| Windows NSIS packaging | Pass |
+| Packaged normal-production smoke | Pass, including restart persistence and process cleanup |
 
-## 7. Architecture summary
+The full Vitest run reported 2,407 passing and 2 skipped tests plus 26 known
+pre-existing Windows failures. Those failures are outside Morpheus 0.5 changes:
 
-Canonical docs (read these, this is just a pointer):
-[`docs/product/MORPHEUS_VISION.md`](docs/product/MORPHEUS_VISION.md) ·
-[`PRODUCT_PRINCIPLES.md`](docs/product/PRODUCT_PRINCIPLES.md) ·
-[`EDITIONS_AND_PLATFORMS.md`](docs/product/EDITIONS_AND_PLATFORMS.md) ·
-[`docs/security/PERMISSION_MODEL.md`](docs/security/PERMISSION_MODEL.md) ·
-[`docs/architecture/MORPHEUS_ARCHITECTURE.md`](docs/architecture/MORPHEUS_ARCHITECTURE.md) ·
-[`docs/roadmap/MORPHEUS_ROADMAP.md`](docs/roadmap/MORPHEUS_ROADMAP.md)
+- the harness frontmatter parser accepts LF only while this checkout uses CRLF;
+- inherited POSIX path-separator assertions fail on Windows;
+- two inherited NSIS patch-parser suites fail under the current Windows
+  Node/Vitest combination.
 
-One-paragraph version: Electron shell + OpenClaw as the embedded agent
-runtime. Morpheus owns identity, execution planning, permissions,
-capabilities and audit. A command becomes a typed `ExecutionPlan`
-(`shared/morpheus/execution-types.ts`), is evaluated by a risk-based policy
-engine (`electron/services/morpheus/policy/`) against Strict/Balanced/
-Autonomous profiles and exact-scope grants, executes through a capability
-registry keyed by `(actionId, platform)`, and every phase is written to an
-append-only audit log **before** it reaches the renderer. `/` is the Command
-Center; `/chat` is the OpenClaw chat interface — both first-class, chat is
-not the product.
+Packaged smoke proved the real boot READY state, Gateway startup, ACP Chat load,
+automatic privacy-safe system report, workspace trust reuse, Notepad session
+grant reuse, revocation, persistent exact-app grant across restart, Quick Command
+registration, Activity/audit ordering, updater isolation, and clean shutdown.
+The private file payload used in smoke testing was absent from the audit ledger.
 
-Renderer talks to Main only through `src/lib/host-api.ts` →
-`window.clawx.hostInvoke` → `HostApiRegistry`. `shared/**` has zero
-`electron`/`node:*` imports — it's shared by both processes.
+## Known limitations
 
-## 8. Required software
+- The deterministic command interpreter is intentionally narrow. The durable
+  `MorpheusPlanner` boundary is ready for a provider/OpenClaw planner that emits
+  the same typed plans without receiving OS authority.
+- Agent Profiles and workflows are real and reusable, but authoring is a
+  foundation surface rather than a full visual builder.
+- Plan execution is sequential in 0.5. Concurrency needs a separate resource and
+  scheduling design; do not add it casually.
+- Capability adapters are Windows-only. Shared contracts remain platform-neutral.
+- Morpheus updates report `not-configured` until a real Morpheus endpoint exists.
+- Local Windows binaries are unsigned. Production Authenticode remains a CI
+  credential/signing task.
+- `resources/icons/icon.icns` still needs regeneration from the Morpheus source
+  artwork on macOS before a credible Mac distribution build.
+- New Morpheus product surfaces use the permanent design system; some inherited
+  OpenClaw runtime pages still retain their older component styling internally,
+  although normal visible product branding is Morpheus.
+- The inherited app still has broader security debt outside the Morpheus action
+  authority (for example legacy Electron sandbox/CSP and unrelated file APIs).
+  Do not treat those paths as Morpheus capabilities or use them to bypass policy.
 
-- **Node.js** — this session used v24.15.0. No `engines` pin in
-  `package.json`; match the major version if possible.
-- **pnpm 10.33.4**, pinned via `packageManager` in `package.json`. Use
-  Corepack: `corepack enable && corepack prepare` picks it up automatically.
-- **Git**.
-- For packaging on macOS: Xcode Command Line Tools (`xcode-select --install`)
-  for native module builds; a valid Apple ID / app-specific password / team
-  ID only if you intend to notarize (see env vars below) — not required for
-  an unsigned local build.
+## Architecture summary
 
-## 9. Setup commands
+Canonical references:
+
+- [`docs/product/MORPHEUS_VISION.md`](docs/product/MORPHEUS_VISION.md)
+- [`docs/product/PRODUCT_PRINCIPLES.md`](docs/product/PRODUCT_PRINCIPLES.md)
+- [`docs/architecture/MORPHEUS_ARCHITECTURE.md`](docs/architecture/MORPHEUS_ARCHITECTURE.md)
+- [`docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md`](docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md)
+- [`docs/design/MORPHEUS_DESIGN_SYSTEM.md`](docs/design/MORPHEUS_DESIGN_SYSTEM.md)
+- [`docs/security/PERMISSION_MODEL.md`](docs/security/PERMISSION_MODEL.md)
+- [`docs/releases/0.5.0-ACCEPTANCE.md`](docs/releases/0.5.0-ACCEPTANCE.md)
+
+Morpheus owns product identity, planning, policy, deterministic capabilities,
+Agent Profiles, workflows, schedules, artifacts, Activity, and audit. OpenClaw is
+the embedded Gateway/Chat/agent runtime. Providers propose typed plans through
+replaceable planner adapters; they never receive unrestricted OS authority.
+
+All command origins converge on a Main-owned pipeline:
+
+```text
+objective
+  -> Main-authored typed plan
+  -> dependency validation and sequential order
+  -> whole-plan trust-delta evaluation
+  -> one batched consent only for new boundaries
+  -> capability resolution and execution in Electron Main
+  -> audit persistence before live event emission
+  -> results, artifacts, timeline, and Activity
+```
+
+Renderer calls Main through `src/lib/host-api.ts` -> typed `host:invoke` ->
+`HostApiRegistry`. Renderer code never supplies executable paths, shell strings,
+environment variables, or unrestricted filesystem roots.
+
+## Required software
+
+- Git
+- Node.js 24.x (this checkpoint used 24.15.0)
+- Corepack
+- pnpm 10.33.4 (pinned in `package.json`)
+- Windows 10/11 for current native capabilities and NSIS packaging
+- Windows Developer Mode for electron-builder dependency extraction where
+  symbolic-link creation is required
+- Optional signing credentials only in an authorized CI/signing environment
+
+## Setup commands
 
 ```bash
-git clone https://github.com/ValueCell-ai/ClawX.git morpheus-core
+git clone https://github.com/MoNaBOSS/Morpheus.git morpheus-core
 cd morpheus-core
 git checkout feat/morpheus-productization-0.1.1
 corepack enable
 corepack prepare pnpm@10.33.4 --activate
 pnpm run init
+pnpm dev
 ```
 
-`pnpm run init` = `pnpm install` + `pnpm run uv:download`. See §12 for the
-`git clone` caveat — the branch isn't on `origin` yet.
+If the 0.5 branch has not been pushed yet, push it from the Windows checkout
+first; cloning `origin` currently retrieves only the 0.1.1 handoff state.
 
-## 10. Environment variable names (never values)
+Useful validation commands:
 
-From `.env.example` — copy to `.env` and fill in locally, never commit real
-values:
-
+```bash
+pnpm run typecheck
+pnpm run lint:check
+pnpm test
+pnpm run test:e2e
+pnpm run comms:replay
+pnpm run comms:compare
+pnpm harness validate --spec harness/specs/tasks/morpheus-0.5-foundation.md
 ```
+
+Windows packaging:
+
+```bash
+pnpm package:win
+```
+
+## Environment variable names
+
+Names from `.env.example` (never commit values):
+
+```text
 OPENCLAW_GATEWAY_PORT
 VITE_DEV_SERVER_PORT
 APPLE_ID
@@ -190,50 +222,38 @@ CSC_KEY_PASSWORD
 GH_TOKEN
 ```
 
-The `APPLE_*` and `CSC_*` vars are for macOS notarization / code signing —
-you'll likely want these set on the Mac if you plan to build a signed
-`.dmg`. None are required for an unsigned dev build or `pnpm dev`.
+Optional development/diagnostic controls used by the repository include:
 
-## 11. Next recommended task
-
-**macOS capability adapters.** The architecture was built for this
-specifically:
-
-1. Add `electron/services/morpheus/capabilities/darwin/` mirroring the
-   `win32/` structure (`app-launch.ts`, `create-text-file.ts`,
-   `system-report.ts`).
-2. Register them in `electron/services/morpheus/index.ts` alongside the
-   win32 ones.
-3. Add `'darwin'` to the `platforms` array on the relevant descriptors in
-   `shared/morpheus/actions/registry.ts`.
-4. Nothing else changes — runtime, host contract, event channel, audit sink
-   and UI are all platform-neutral already. That's the point of the
-   `(actionId, platform)` capability-registry design; see
-   `docs/architecture/MORPHEUS_ARCHITECTURE.md` "Extension recipes".
-
-Second candidate: fix `icon.icns` (§6 — it's stale, not a maybe), then run
-`pnpm package:mac` and fix whatever else is mac-specific in packaging
-(entitlements in `entitlements.mac.plist`, DMG background), to get a first
-unsigned `.dmg` building.
-
-## 12. MacBook Setup — quick reference
-
-```bash
-git clone https://github.com/ValueCell-ai/ClawX.git morpheus-core
+```text
+OPENCLAW_STATE_DIR
+CLAWX_GATEWAY_WS_TRACE
+CLAWX_REMOTE_DEBUGGING_PORT
+CLAWX_SKIP_PREINSTALLED_SKILLS_PREPARE
+SKIP_PREINSTALLED_SKILLS
+SKIP_RELEASE_FETCH
+SKIP_RELEASE_REMOTE_CHECK
 ```
 
-> **This will not have the branch yet** — `feat/morpheus-productization-0.1.1`
-> is local-only on the Windows machine as of this handoff (see §9 in the
-> main report / the push blocker below). Either pull it after the Windows
-> side resolves push access, or add the Windows checkout as a second remote
-> and fetch directly:
-> ```bash
-> git remote add windows-box <path-or-url-to-windows-checkout>
-> git fetch windows-box feat/morpheus-productization-0.1.1
-> git checkout -b feat/morpheus-productization-0.1.1 windows-box/feat/morpheus-productization-0.1.1
-> ```
+`CLAWX_E2E`, `CLAWX_E2E_SKIP_SETUP`, and `CLAWX_USER_DATA_DIR` are test-harness
+controls only and must not be used to claim a normal-production smoke result.
+
+## Next recommended task
+
+First, run user-acceptance testing of the packaged Windows build with a real
+Morpheus profile and record workflow/permission/UI feedback. After that, the
+cleanest next engineering milestone is a provider-backed planner adapter that
+emits the existing `ExecutionPlan` contract, with planner validation and policy
+remaining in Main. Do not expand OS authority or add unrestricted shell access
+to make planning appear more capable.
+
+## MacBook Setup
+
+The application can be developed and tested on macOS, but the 19 native action
+adapters remain Windows-only and `icon.icns` must be regenerated before Mac
+distribution.
 
 ```bash
+git clone https://github.com/MoNaBOSS/Morpheus.git morpheus-core
 cd morpheus-core
 git checkout feat/morpheus-productization-0.1.1
 corepack enable
@@ -242,18 +262,14 @@ pnpm run init
 pnpm dev
 ```
 
-Test commands:
+Tests:
 
 ```bash
 pnpm run typecheck
-pnpm run lint
+pnpm run lint:check
 pnpm test
-pnpm run build:vite && pnpm run test:e2e
-pnpm harness validate --spec harness/specs/tasks/morpheus-concept-build.md
+pnpm run test:e2e
 ```
 
-Packaging (macOS):
-
-```bash
-pnpm package:mac
-```
+Do not run `pnpm package:mac` as a release build until the Morpheus `.icns` issue
+above is resolved and macOS-specific behavior has been verified.
