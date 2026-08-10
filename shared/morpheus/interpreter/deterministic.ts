@@ -55,6 +55,57 @@ const FILE_CREATE_PATTERNS = [
   /\b(create|make|write|save)\b[^.]*\.txt\b/i,
 ];
 
+/**
+ * Filesystem intents.
+ *
+ * Deliberately narrow. A pattern that matched loosely would turn an
+ * unrecognised command into a confident wrong plan, and this interpreter's
+ * contract is a truthful refusal when it does not understand.
+ *
+ * Deletion is matched so Morpheus can state what it WOULD do and let the
+ * `critical` tier confirm it — not so deleting becomes quietly convenient.
+ */
+const FILE_DELETE_PATTERNS = [
+  /\b(delete|remove|erase)\b[^.]*\b(file|folder|directory)\b/i,
+  /\b(delete|remove)\s+[\w-]+\.\w{1,6}\b/i,
+];
+
+const FOLDER_CREATE_PATTERNS = [
+  /\b(create|make|add|new)\b[^.]*\b(folder|directory)\b/i,
+  /\bmkdir\b/i,
+];
+
+const FILE_SEARCH_PATTERNS = [
+  /\b(find|search|locate)\b[^.]*\b(files?|folders?)\b/i,
+  /\bfiles?\s+(named|called|matching)\b/i,
+];
+
+const FILE_READ_PATTERNS = [
+  /\b(read|open|show|print)\b[^.]*\b(file|contents?)\b/i,
+  /\bwhat(?:'s|\s+is)\s+in\b/i,
+];
+
+const FILE_LIST_PATTERNS = [
+  /\b(list|show)\b[^.]*\b(files?|folders?|directory|directories|workspace)\b/i,
+  /\bwhat\s+files\b/i,
+];
+
+/** An explicit `named X` / `called X`, or a bare path-looking token. */
+export function extractPath(objective: string): string | null {
+  const named = /(?:named|called)\s+"?([\w./\\-]+)"?/i.exec(objective);
+  if (named?.[1]) return named[1];
+  const bare = /\b([\w-]+(?:[/\\][\w.-]+)+|[\w-]+\.\w{1,6})\b/.exec(objective);
+  return bare?.[1] ?? null;
+}
+
+/** The term a search should match names against. */
+export function extractQuery(objective: string): string | null {
+  const quoted = /"([^"]{1,64})"/.exec(objective);
+  if (quoted?.[1]?.trim()) return quoted[1].trim();
+  const matching = /(?:named|called|matching|containing|for)\s+"?([\w.-]{1,64})"?/i.exec(objective);
+  return matching?.[1] ?? null;
+}
+
 /** Extracts an explicit `name.txt`, or derives a safe default. */
 export function extractFileName(objective: string): string {
   const explicit = objective.match(/\b([A-Za-z0-9][A-Za-z0-9._-]{0,63}\.txt)\b/);
@@ -145,6 +196,100 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
           buildPermission('file.createText', platform, filesRoot),
           'morpheus.plan.steps.fileCreateText',
           { fileName },
+        ),
+      ]),
+    };
+  }
+
+  // Deletion is checked BEFORE the other filesystem verbs: "delete the report
+  // file" also matches the read patterns, and resolving it as a read would
+  // silently downgrade a `critical` intent into a `medium` one.
+  const deletePath = FILE_DELETE_PATTERNS.some((pattern) => pattern.test(text))
+    ? extractPath(text)
+    : null;
+  if (deletePath) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'file.delete',
+          { path: deletePath },
+          buildPermission('file.delete', platform, filesRoot),
+          'morpheus.plan.steps.fileDelete',
+          { path: deletePath },
+        ),
+      ]),
+    };
+  }
+
+  const folderPath = FOLDER_CREATE_PATTERNS.some((pattern) => pattern.test(text))
+    ? extractPath(text)
+    : null;
+  if (folderPath) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'folder.create',
+          { path: folderPath },
+          buildPermission('folder.create', platform, filesRoot),
+          'morpheus.plan.steps.folderCreate',
+          { path: folderPath },
+        ),
+      ]),
+    };
+  }
+
+  const searchQuery = FILE_SEARCH_PATTERNS.some((pattern) => pattern.test(text))
+    ? extractQuery(text)
+    : null;
+  if (searchQuery) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'file.search',
+          { query: searchQuery },
+          buildPermission('file.search', platform, filesRoot),
+          'morpheus.plan.steps.fileSearch',
+          { query: searchQuery },
+        ),
+      ]),
+    };
+  }
+
+  const readPath = FILE_READ_PATTERNS.some((pattern) => pattern.test(text))
+    ? extractPath(text)
+    : null;
+  if (readPath) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'file.readText',
+          { path: readPath },
+          buildPermission('file.readText', platform, filesRoot),
+          'morpheus.plan.steps.fileReadText',
+          { path: readPath },
+        ),
+      ]),
+    };
+  }
+
+  if (FILE_LIST_PATTERNS.some((pattern) => pattern.test(text))) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'file.list',
+          {},
+          buildPermission('file.list', platform, filesRoot),
+          'morpheus.plan.steps.fileList',
         ),
       ]),
     };

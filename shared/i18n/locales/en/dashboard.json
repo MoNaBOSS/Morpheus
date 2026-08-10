@@ -153,6 +153,38 @@
       "systemReport": {
         "label": "Report system information",
         "description": "Collects privacy-safe details about this machine's runtime."
+      },
+      "fileReadText": {
+        "label": "Read a file",
+        "description": "Reads a text file from the approved workspace."
+      },
+      "fileList": {
+        "label": "List folder contents",
+        "description": "Lists the files and folders in the approved workspace."
+      },
+      "fileSearch": {
+        "label": "Find files by name",
+        "description": "Searches file and folder names in the approved workspace."
+      },
+      "fileAppendText": {
+        "label": "Append to a file",
+        "description": "Adds text to the end of an existing file. Nothing is overwritten."
+      },
+      "fileMove": {
+        "label": "Move or rename",
+        "description": "Moves a file within the workspace. Refuses to overwrite anything."
+      },
+      "fileCopy": {
+        "label": "Copy a file",
+        "description": "Copies a file within the workspace. Refuses to overwrite anything."
+      },
+      "folderCreate": {
+        "label": "Create a folder",
+        "description": "Creates a folder in the approved workspace."
+      },
+      "fileDelete": {
+        "label": "Delete permanently",
+        "description": "Permanently removes a file or folder. This cannot be undone."
       }
     },
     "phases": {
@@ -234,6 +266,10 @@
         "coversSteps": "covers {{count}} step(s)",
         "mandatoryNote": "This cannot be remembered and will be asked again next time.",
         "note": "Everything else in this plan is already covered by your existing permissions."
+      },
+      "groups": {
+        "workspace.read": "Read files in this workspace",
+        "workspace.write": "Create and change files in this workspace"
       }
     },
     "timeline": {
@@ -286,7 +322,12 @@
       "steps": {
         "systemReport": "Collect privacy-safe system information",
         "fileCreateText": "Create {{fileName}} in the approved folder",
-        "appLaunch": "Launch {{application}}"
+        "appLaunch": "Launch {{application}}",
+        "fileReadText": "Read {{path}}",
+        "fileList": "List the workspace",
+        "fileSearch": "Find files matching “{{query}}”",
+        "fileDelete": "Permanently delete {{path}}",
+        "folderCreate": "Create the folder {{path}}"
       },
       "title": "Execution plan",
       "description": "What Morpheus will do, in order.",

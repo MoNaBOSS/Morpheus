@@ -83,7 +83,13 @@ describe('morpheus action registry', () => {
   });
 
   it('enumerates ids and keys', () => {
-    expect(listMorpheusActionIds()).toEqual(['app.launch', 'file.createText', 'system.report']);
+    // Asserts the INVARIANT rather than a frozen list: the enumeration must
+    // cover the registry exactly. Pinning the literal set would break on every
+    // capability addition without catching anything a mismatch would not.
+    expect([...listMorpheusActionIds()].sort()).toEqual(Object.keys(MORPHEUS_ACTIONS).sort());
+    expect(listMorpheusActionIds()).toContain('app.launch');
+    expect(listMorpheusActionIds()).toContain('file.createText');
+    expect(listMorpheusActionIds()).toContain('system.report');
     expect(listMorpheusApplicationKeys()).toEqual(['notepad']);
   });
 

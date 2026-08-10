@@ -64,9 +64,20 @@ export type MorpheusError = {
  * What Main resolved the request to. Surfaced in the confirmation so the user
  * approves the real target rather than the requested one.
  */
+/**
+ * What Main resolved an action to act on.
+ *
+ * File and folder targets carry `workspaceRoot`: the canonical approved root
+ * they live under. Trust is workspace-oriented, so the grant scope is that
+ * root — NOT the immediate parent directory. Deriving the scope by slicing the
+ * parent would make every subfolder a new trust boundary, and a user who
+ * approved a workspace would be re-prompted the moment work nested one level
+ * deeper. That is exactly the prompt fatigue the permission model rejects.
+ */
 export type MorpheusResolvedTarget =
   | { kind: 'executable'; path: string; applicationKey: MorpheusApplicationKey }
-  | { kind: 'file'; path: string; bytes: number }
+  | { kind: 'file'; path: string; bytes: number; workspaceRoot: string }
+  | { kind: 'folder'; path: string; entryCount?: number; workspaceRoot: string }
   | { kind: 'none' };
 
 export type MorpheusSystemInfo = {
@@ -103,10 +114,46 @@ export type MorpheusSystemResult = {
   info: MorpheusSystemInfo;
 };
 
+/** Contents of a file read from the workspace. */
+export type MorpheusTextResult = {
+  kind: 'text';
+  path: string;
+  bytes: number;
+  contentSha256: string;
+  /**
+   * The text itself, for display in the interface.
+   *
+   * Carried on the RESULT, never into the audit record — `buildAuditParams`
+   * reduces anything of kind `textContent` to a byte count and a digest, and
+   * results are not audited verbatim.
+   */
+  text: string;
+};
+
+/** A directory listing or a name search. */
+export type MorpheusListingResult = {
+  kind: 'listing';
+  path: string;
+  entries: ReadonlyArray<{ name: string; kind: 'file' | 'folder' }>;
+  /** True when the result was cut off at the capability's bound. */
+  truncated: boolean;
+};
+
+/** An irreversible removal. Recorded so history shows what is gone. */
+export type MorpheusDeletionResult = {
+  kind: 'deletion';
+  path: string;
+  wasFolder: boolean;
+  relativePath: string;
+};
+
 export type MorpheusActionResult =
   | MorpheusLaunchResult
   | MorpheusFileResult
-  | MorpheusSystemResult;
+  | MorpheusSystemResult
+  | MorpheusTextResult
+  | MorpheusListingResult
+  | MorpheusDeletionResult;
 
 /** Renderer-supplied parameters. Validated in Main against a key whitelist. */
 /**

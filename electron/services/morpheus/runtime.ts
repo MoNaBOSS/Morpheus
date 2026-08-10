@@ -214,9 +214,12 @@ export function describeTarget(target: MorpheusResolvedTarget): string | undefin
 
 export function resourceScopeFor(target: MorpheusResolvedTarget): string {
   if (target.kind === 'executable') return target.applicationKey;
-  // The containing approved root, not the individual file — otherwise every new
-  // filename would re-prompt and the grant would be useless.
-  if (target.kind === 'file') return target.path.slice(0, Math.max(0, target.path.lastIndexOf('\\')));
+  // The WORKSPACE root, not the file and not its parent directory. Trust is
+  // workspace-oriented: approving a workspace covers work anywhere inside it,
+  // however deeply nested, so routine operations do not re-prompt as folders
+  // grow. Narrowing to the parent directory would make every subfolder its own
+  // boundary, which is the prompt fatigue the permission model rejects.
+  if (target.kind === 'file' || target.kind === 'folder') return target.workspaceRoot;
   return 'runtime';
 }
 
@@ -496,11 +499,16 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       // Scope comes from what Main RESOLVED, never from the step's declared
       // permission block — otherwise a plan could name a narrower scope than
       // the one it actually touches.
+      const descriptor = getMorpheusActionDescriptor(actionId);
       const scope: PermissionScope = {
         capabilityId: actionId,
+        // Grouped capabilities share ONE workspace decision, so the grant binds
+        // to the group rather than the verb. Audit still records the exact
+        // capability, so history stays precise while trust stays workspace-shaped.
+        capabilityGroup: descriptor.group,
         platform,
         resourceScope: resourceScopeFor(resolution.target),
-        riskTier: getMorpheusActionDescriptor(actionId).riskTier,
+        riskTier: descriptor.riskTier,
         originType,
         agentId,
       };
@@ -667,11 +675,16 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
 
       // Resource scope is derived from what Main RESOLVED, never from the
       // request, so a grant can only ever bind to a real target.
+      const singleDescriptor = getMorpheusActionDescriptor(actionId);
       const scope: PermissionScope = {
         capabilityId: actionId,
+        // Grouped capabilities share ONE workspace decision, so the grant binds
+        // to the group rather than the verb. Audit still records the exact
+        // capability, so history stays precise while trust stays workspace-shaped.
+        capabilityGroup: singleDescriptor.group,
         platform,
         resourceScope: resourceScopeFor(resolution.target),
-        riskTier: getMorpheusActionDescriptor(actionId).riskTier,
+        riskTier: singleDescriptor.riskTier,
         originType,
         agentId,
       };

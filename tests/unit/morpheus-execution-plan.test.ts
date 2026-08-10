@@ -192,3 +192,86 @@ describe('plan status', () => {
     }
   });
 });
+
+describe('filesystem intents', () => {
+  const interpret = (objective: string) => interpretCommand({
+    objective,
+    origin: { type: 'command-bar', commandText: objective },
+    platform: 'win32',
+    filesRoot: 'C:\\Morpheus\\files',
+  });
+
+  function capabilityOf(objective: string): string | null {
+    const result = interpret(objective);
+    return result.ok ? result.plan.steps[0].capabilityId : null;
+  }
+
+  it('plans a delete, and does NOT misread it as a read', () => {
+    // "delete the report file" matches the read patterns too. Resolving it as a
+    // read would silently downgrade a critical intent into a medium one.
+    expect(capabilityOf('delete the file report.txt')).toBe('file.delete');
+    expect(capabilityOf('remove notes.txt')).toBe('file.delete');
+  });
+
+  it('marks a delete as mandatory confirmation in the plan itself', () => {
+    const result = interpret('delete the file report.txt');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.steps[0].permission.riskTier).toBe('critical');
+    expect(result.plan.steps[0].permission.mandatoryConfirmation).toBe(true);
+  });
+
+  it('plans folder creation', () => {
+    expect(capabilityOf('create a folder named reports')).toBe('folder.create');
+    expect(capabilityOf('make a directory called archive')).toBe('folder.create');
+  });
+
+  it('plans a search with the extracted term', () => {
+    const result = interpret('find files named budget');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.steps[0].capabilityId).toBe('file.search');
+    expect(result.plan.steps[0].params).toEqual({ query: 'budget' });
+  });
+
+  it('plans a read with the extracted path', () => {
+    const result = interpret('read the file notes.txt');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.steps[0].capabilityId).toBe('file.readText');
+    expect(result.plan.steps[0].params).toEqual({ path: 'notes.txt' });
+  });
+
+  it('plans a listing with no parameters', () => {
+    const result = interpret('list the files in my workspace');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.steps[0].capabilityId).toBe('file.list');
+    expect(result.plan.steps[0].params).toEqual({});
+  });
+
+  it('still refuses truthfully when it cannot extract a target', () => {
+    // A pattern that matched without a usable path would produce a confident
+    // wrong plan. Refusing is the honest outcome.
+    const result = interpret('delete something');
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.unsupported.reason).toBe('not-understood');
+  });
+
+  it('does not mistake file creation for folder creation', () => {
+    expect(capabilityOf('create a text file called notes.txt')).toBe('file.createText');
+  });
+
+  it('every planned capability is a real registry entry', () => {
+    for (const objective of [
+      'delete the file a.txt', 'create a folder named x', 'find files named y',
+      'read the file z.txt', 'list files', 'open notepad', 'system information',
+      'create a text file called n.txt',
+    ]) {
+      const capabilityId = capabilityOf(objective);
+      expect(capabilityId, objective).not.toBeNull();
+      expect(listMorpheusActionIds(), objective).toContain(capabilityId);
+    }
+  });
+});

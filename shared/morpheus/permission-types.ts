@@ -9,7 +9,11 @@
  * Canonical prose: docs/security/PERMISSION_MODEL.md
  */
 
-import type { MorpheusActionId, MorpheusRiskTier } from './actions/registry';
+import type {
+  MorpheusActionId,
+  MorpheusCapabilityGroup,
+  MorpheusRiskTier,
+} from './actions/registry';
 import type { ExecutionOriginType } from './execution-types';
 
 export const MORPHEUS_POLICY_VERSION = 1 as const;
@@ -64,6 +68,15 @@ export function grantTypeForDecision(decision: PermissionDecisionKind): GrantTyp
  */
 export type PermissionScope = {
   capabilityId: MorpheusActionId;
+  /**
+   * Trust group this capability shares, when it has one.
+   *
+   * Present on the scope so a grant can bind to the workspace-shaped decision
+   * the user actually made, while audit records keep the exact capability. It
+   * is not a wildcard: `MORPHEUS_CAPABILITY_GROUPS` enumerates the members, and
+   * every other field still matches by exact equality.
+   */
+  capabilityGroup?: MorpheusCapabilityGroup;
   platform: string;
   /** Application key, canonical directory — never a raw user-supplied path. */
   resourceScope: string;
@@ -135,7 +148,12 @@ export type PermissionAcknowledgement = { ok: boolean };
  */
 export function permissionScopeKey(scope: PermissionScope): string {
   return JSON.stringify([
-    scope.capabilityId,
+    // A grouped capability keys on its GROUP, so one workspace decision covers
+    // the whole enumerated bundle rather than producing a dialog per verb. The
+    // exact capability is still recorded in audit; only trust matching
+    // collapses. Ungrouped capabilities — everything destructive — key on
+    // themselves and are granted individually.
+    scope.capabilityGroup ?? scope.capabilityId,
     scope.platform,
     scope.resourceScope,
     scope.riskTier,

@@ -123,6 +123,15 @@ export type HostEventContract = {
 export type MorpheusConsentBoundary = {
   boundaryId: string;
   capabilityId: string;
+  /**
+   * Trust group this decision actually covers, when there is one.
+   *
+   * The prompt must name the GROUP, not the single verb that triggered it —
+   * approving "read this file" when the decision really grants reading,
+   * listing and searching the whole workspace would understate what the user
+   * is agreeing to.
+   */
+  capabilityGroup?: string;
   /** Exact resource — an application key or a canonical directory. */
   resourceScope: string;
   riskTier: MorpheusRiskTier;

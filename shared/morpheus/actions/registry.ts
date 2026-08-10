@@ -59,7 +59,55 @@ export function requiresExplicitFirstApproval(tier: MorpheusRiskTier): boolean {
   return tier === 'medium' || tier === 'high';
 }
 
-export type MorpheusActionId = 'app.launch' | 'file.createText' | 'system.report';
+export type MorpheusActionId =
+  | 'app.launch'
+  | 'system.report'
+  | 'file.createText'
+  | 'file.readText'
+  | 'file.appendText'
+  | 'file.list'
+  | 'file.search'
+  | 'file.move'
+  | 'file.copy'
+  | 'file.delete'
+  | 'folder.create';
+
+/**
+ * Named bundles of capabilities that share ONE trust decision for one exact
+ * workspace.
+ *
+ * This is deliberately NOT a wildcard. A group is a frozen, enumerated list of
+ * capability ids, and a grant made against it still binds to one canonical
+ * root, one platform and one origin. "Allow every file operation everywhere"
+ * remains impossible to express.
+ *
+ * It exists because trust is workspace-shaped in practice. A user who has
+ * approved a workspace expects Morpheus to read, list and search inside it
+ * without a fresh dialog for each distinct verb; asking separately for
+ * `file.readText`, `file.list` and `file.search` over the same directory is
+ * six prompts describing one decision the user already made.
+ *
+ * Destructive and irreversible operations are deliberately absent from every
+ * group — `file.delete` is `critical` and always confirms on its own.
+ */
+export type MorpheusCapabilityGroup = 'workspace.read' | 'workspace.write';
+
+export const MORPHEUS_CAPABILITY_GROUPS: Readonly<Record<MorpheusCapabilityGroup, readonly MorpheusActionId[]>> =
+  Object.freeze({
+    /** Non-mutating inspection of an approved workspace. */
+    'workspace.read': Object.freeze([
+      'file.readText', 'file.list', 'file.search',
+    ] as const),
+    /** Additive and reversible changes inside an approved workspace. */
+    'workspace.write': Object.freeze([
+      'file.createText', 'file.appendText', 'file.move', 'file.copy', 'folder.create',
+    ] as const),
+  } as const);
+
+export function isMorpheusCapabilityGroup(value: unknown): value is MorpheusCapabilityGroup {
+  return typeof value === 'string'
+    && Object.prototype.hasOwnProperty.call(MORPHEUS_CAPABILITY_GROUPS, value);
+}
 
 /** Logical name of a Main-canonicalized approved directory. */
 export type MorpheusRootKey = 'morpheusFiles';
@@ -80,8 +128,16 @@ export type MorpheusActionDescriptor = {
   /** Platforms with a shipped capability implementation. */
   readonly platforms: readonly MorpheusPlatform[];
   readonly params: readonly MorpheusParamDescriptor[];
-  /** Approved root this action writes into, when it writes at all. */
+  /** Approved root this action operates in, when it touches the filesystem. */
   readonly rootKey?: MorpheusRootKey;
+  /**
+   * Trust group this capability belongs to, if any.
+   *
+   * A grant for a grouped capability binds to the GROUP and the workspace, so
+   * approving a workspace once covers the whole enumerated bundle. Ungrouped
+   * capabilities — anything destructive — are always granted individually.
+   */
+  readonly group?: MorpheusCapabilityGroup;
 };
 
 /**
@@ -126,11 +182,127 @@ export const MORPHEUS_ACTIONS = Object.freeze({
     descriptionKey: 'dashboard:morpheus.actions.fileCreateText.description',
     platforms: Object.freeze(['win32'] as const),
     rootKey: 'morpheusFiles',
+    group: 'workspace.write',
     params: Object.freeze([
       Object.freeze({ key: 'fileName', kind: 'textFileName', required: true } as const),
       Object.freeze({ key: 'content', kind: 'textContent', required: true } as const),
     ] as const),
   } as const),
+  'file.readText': Object.freeze({
+    id: 'file.readText',
+    kind: 'filesystem',
+    riskTier: 'medium',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.fileReadText.label',
+    descriptionKey: 'dashboard:morpheus.actions.fileReadText.description',
+    platforms: Object.freeze(['win32'] as const),
+    rootKey: 'morpheusFiles',
+    group: 'workspace.read',
+    params: Object.freeze([
+      Object.freeze({ key: 'path', kind: 'relativePath', required: true } as const),
+    ] as const),
+  } as const),
+  'file.list': Object.freeze({
+    id: 'file.list',
+    kind: 'filesystem',
+    riskTier: 'medium',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.fileList.label',
+    descriptionKey: 'dashboard:morpheus.actions.fileList.description',
+    platforms: Object.freeze(['win32'] as const),
+    rootKey: 'morpheusFiles',
+    group: 'workspace.read',
+    params: Object.freeze([
+      Object.freeze({ key: 'path', kind: 'relativePath', required: false } as const),
+    ] as const),
+  } as const),
+  'file.search': Object.freeze({
+    id: 'file.search',
+    kind: 'filesystem',
+    riskTier: 'medium',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.fileSearch.label',
+    descriptionKey: 'dashboard:morpheus.actions.fileSearch.description',
+    platforms: Object.freeze(['win32'] as const),
+    rootKey: 'morpheusFiles',
+    group: 'workspace.read',
+    params: Object.freeze([
+      Object.freeze({ key: 'query', kind: 'query', required: true } as const),
+      Object.freeze({ key: 'limit', kind: 'count', required: false } as const),
+    ] as const),
+  } as const),
+  'file.appendText': Object.freeze({
+    id: 'file.appendText',
+    kind: 'filesystem',
+    riskTier: 'medium',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.fileAppendText.label',
+    descriptionKey: 'dashboard:morpheus.actions.fileAppendText.description',
+    platforms: Object.freeze(['win32'] as const),
+    rootKey: 'morpheusFiles',
+    group: 'workspace.write',
+    params: Object.freeze([
+      Object.freeze({ key: 'path', kind: 'relativePath', required: true } as const),
+      Object.freeze({ key: 'content', kind: 'textContent', required: true } as const),
+    ] as const),
+  } as const),
+  'file.move': Object.freeze({
+    id: 'file.move',
+    kind: 'filesystem',
+    riskTier: 'medium',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.fileMove.label',
+    descriptionKey: 'dashboard:morpheus.actions.fileMove.description',
+    platforms: Object.freeze(['win32'] as const),
+    rootKey: 'morpheusFiles',
+    group: 'workspace.write',
+    params: Object.freeze([
+      Object.freeze({ key: 'path', kind: 'relativePath', required: true } as const),
+      Object.freeze({ key: 'destination', kind: 'relativePath', required: true } as const),
+    ] as const),
+  } as const),
+  'file.copy': Object.freeze({
+    id: 'file.copy',
+    kind: 'filesystem',
+    riskTier: 'medium',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.fileCopy.label',
+    descriptionKey: 'dashboard:morpheus.actions.fileCopy.description',
+    platforms: Object.freeze(['win32'] as const),
+    rootKey: 'morpheusFiles',
+    group: 'workspace.write',
+    params: Object.freeze([
+      Object.freeze({ key: 'path', kind: 'relativePath', required: true } as const),
+      Object.freeze({ key: 'destination', kind: 'relativePath', required: true } as const),
+    ] as const),
+  } as const),
+  'folder.create': Object.freeze({
+    id: 'folder.create',
+    kind: 'filesystem',
+    riskTier: 'medium',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.folderCreate.label',
+    descriptionKey: 'dashboard:morpheus.actions.folderCreate.description',
+    platforms: Object.freeze(['win32'] as const),
+    rootKey: 'morpheusFiles',
+    group: 'workspace.write',
+    params: Object.freeze([
+      Object.freeze({ key: 'path', kind: 'relativePath', required: true } as const),
+    ] as const),
+  } as const),
+  'file.delete': Object.freeze({
+    id: 'file.delete',
+    kind: 'filesystem',
+    riskTier: 'critical',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.fileDelete.label',
+    descriptionKey: 'dashboard:morpheus.actions.fileDelete.description',
+    platforms: Object.freeze(['win32'] as const),
+    rootKey: 'morpheusFiles',
+    params: Object.freeze([
+      Object.freeze({ key: 'path', kind: 'relativePath', required: true } as const),
+    ] as const),
+  } as const),
   'system.report': Object.freeze({
     id: 'system.report',
     kind: 'introspection',

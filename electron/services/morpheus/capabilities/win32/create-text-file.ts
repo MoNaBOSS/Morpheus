@@ -72,7 +72,7 @@ export const win32CreateTextFileCapability: MorpheusCapability<'file.createText'
     }
 
     return {
-      target: { kind: 'file', path: filePath, bytes },
+      target: { kind: 'file', path: filePath, bytes, workspaceRoot: root },
       execute: async (): Promise<MorpheusActionResult> => {
         let handle;
         try {

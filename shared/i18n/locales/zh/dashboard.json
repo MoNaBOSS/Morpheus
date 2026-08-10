@@ -153,6 +153,38 @@
       "systemReport": {
         "label": "报告系统信息",
         "description": "收集本机运行时的非隐私信息。"
+      },
+      "fileReadText": {
+        "label": "读取文件",
+        "description": "读取已批准工作区中的文本文件。"
+      },
+      "fileList": {
+        "label": "列出文件夹内容",
+        "description": "列出已批准工作区中的文件和文件夹。"
+      },
+      "fileSearch": {
+        "label": "按名称查找文件",
+        "description": "在已批准工作区中搜索文件和文件夹名称。"
+      },
+      "fileAppendText": {
+        "label": "追加到文件",
+        "description": "在现有文件末尾添加文本，不会覆盖内容。"
+      },
+      "fileMove": {
+        "label": "移动或重命名",
+        "description": "在工作区内移动文件，拒绝覆盖任何内容。"
+      },
+      "fileCopy": {
+        "label": "复制文件",
+        "description": "在工作区内复制文件，拒绝覆盖任何内容。"
+      },
+      "folderCreate": {
+        "label": "创建文件夹",
+        "description": "在已批准工作区中创建文件夹。"
+      },
+      "fileDelete": {
+        "label": "永久删除",
+        "description": "永久删除文件或文件夹，此操作无法撤销。"
       }
     },
     "phases": {
@@ -234,6 +266,10 @@
         "coversSteps": "涵盖 {{count}} 个步骤",
         "mandatoryNote": "此项无法被记住，下次仍会询问。",
         "note": "此计划中的其他操作已在你现有的授权范围内。"
+      },
+      "groups": {
+        "workspace.read": "读取此工作区中的文件",
+        "workspace.write": "在此工作区中创建和修改文件"
       }
     },
     "timeline": {
@@ -286,7 +322,12 @@
       "steps": {
         "systemReport": "收集不涉及隐私的系统信息",
         "fileCreateText": "在已批准的文件夹中创建 {{fileName}}",
-        "appLaunch": "启动 {{application}}"
+        "appLaunch": "启动 {{application}}",
+        "fileReadText": "读取 {{path}}",
+        "fileList": "列出工作区",
+        "fileSearch": "查找匹配“{{query}}”的文件",
+        "fileDelete": "永久删除 {{path}}",
+        "folderCreate": "创建文件夹 {{path}}"
       },
       "title": "执行计划",
       "description": "Morpheus 将按顺序执行的操作。",

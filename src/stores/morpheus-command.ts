@@ -91,17 +91,52 @@ export function artifactFromRun(run: MorpheusRun): ExecutionArtifact | null {
       createdAt,
     };
   }
-  return {
-    kind: 'report',
-    artifactId: run.runId,
-    createdAt,
-    data: {
-      platform: run.result.info.platform,
-      release: run.result.info.release,
-      arch: run.result.info.arch,
-      cpuCount: run.result.info.cpuCount,
-    },
-  };
+  if (run.result.kind === 'system') {
+    return {
+      kind: 'report',
+      artifactId: run.runId,
+      createdAt,
+      data: {
+        platform: run.result.info.platform,
+        release: run.result.info.release,
+        arch: run.result.info.arch,
+        cpuCount: run.result.info.cpuCount,
+      },
+    };
+  }
+
+  if (run.result.kind === 'text') {
+    return {
+      kind: 'report',
+      artifactId: run.runId,
+      createdAt,
+      // The text itself is NOT carried into the artifact list: it is a
+      // transient result for display, not a durable record of file contents.
+      data: { path: run.result.path, bytes: run.result.bytes },
+    };
+  }
+
+  if (run.result.kind === 'listing') {
+    return {
+      kind: 'report',
+      artifactId: run.runId,
+      createdAt,
+      data: { path: run.result.path, entries: run.result.entries.length },
+    };
+  }
+
+  if (run.result.kind === 'deletion') {
+    // A deletion is a durable, irreversible change, so it belongs in history
+    // even though nothing was produced.
+    return {
+      kind: 'report',
+      artifactId: run.runId,
+      createdAt,
+      data: { deleted: run.result.relativePath, folder: run.result.wasFolder ? 1 : 0 },
+    };
+  }
+
+  return null;
 }
 
 export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) => ({

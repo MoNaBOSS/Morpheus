@@ -91,10 +91,17 @@ export function MorpheusPlanConsentDialog() {
               className="rounded-md border bg-surface-input p-3"
             >
               <div className="flex items-start justify-between gap-2">
+                {/* Name the whole decision. A grouped boundary grants every
+                    verb in its group over this workspace, so showing only the
+                    verb that triggered it would understate the grant. */}
                 <p className="text-tiny text-foreground">
-                  {t(`morpheus.actions.${toLabelKey(boundary.capabilityId)}.label`, {
-                    defaultValue: boundary.capabilityId,
-                  })}
+                  {boundary.capabilityGroup
+                    ? t(`morpheus.permission.groups.${boundary.capabilityGroup}`, {
+                      defaultValue: boundary.capabilityGroup,
+                    })
+                    : t(`morpheus.actions.${toLabelKey(boundary.capabilityId)}.label`, {
+                      defaultValue: boundary.capabilityId,
+                    })}
                 </p>
                 <RiskBadge tier={boundary.riskTier} />
               </div>

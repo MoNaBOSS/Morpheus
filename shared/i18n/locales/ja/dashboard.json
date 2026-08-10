@@ -153,6 +153,38 @@
       "systemReport": {
         "label": "システム情報を取得",
         "description": "このマシンのランタイムに関する非個人情報を収集します。"
+      },
+      "fileReadText": {
+        "label": "ファイルを読む",
+        "description": "承認済みワークスペース内のテキストファイルを読み取ります。"
+      },
+      "fileList": {
+        "label": "フォルダの内容を一覧表示",
+        "description": "承認済みワークスペース内のファイルとフォルダを一覧表示します。"
+      },
+      "fileSearch": {
+        "label": "名前でファイルを検索",
+        "description": "承認済みワークスペース内のファイル名とフォルダ名を検索します。"
+      },
+      "fileAppendText": {
+        "label": "ファイルに追記",
+        "description": "既存ファイルの末尾にテキストを追加します。上書きはしません。"
+      },
+      "fileMove": {
+        "label": "移動または名前変更",
+        "description": "ワークスペース内でファイルを移動します。上書きは拒否します。"
+      },
+      "fileCopy": {
+        "label": "ファイルをコピー",
+        "description": "ワークスペース内でファイルをコピーします。上書きは拒否します。"
+      },
+      "folderCreate": {
+        "label": "フォルダを作成",
+        "description": "承認済みワークスペースにフォルダを作成します。"
+      },
+      "fileDelete": {
+        "label": "完全に削除",
+        "description": "ファイルまたはフォルダを完全に削除します。元に戻せません。"
       }
     },
     "phases": {
@@ -234,6 +266,10 @@
         "coversSteps": "{{count}} 個のステップに適用",
         "mandatoryNote": "この判断は記憶されず、次回も確認します。",
         "note": "このプランの他の操作は、既存の許可の範囲内です。"
+      },
+      "groups": {
+        "workspace.read": "このワークスペースのファイルを読む",
+        "workspace.write": "このワークスペースでファイルを作成・変更する"
       }
     },
     "timeline": {
@@ -286,7 +322,12 @@
       "steps": {
         "systemReport": "プライバシーに配慮したシステム情報を収集",
         "fileCreateText": "承認済みフォルダに {{fileName}} を作成",
-        "appLaunch": "{{application}} を起動"
+        "appLaunch": "{{application}} を起動",
+        "fileReadText": "{{path}} を読み取る",
+        "fileList": "ワークスペースを一覧表示",
+        "fileSearch": "「{{query}}」に一致するファイルを検索",
+        "fileDelete": "{{path}} を完全に削除",
+        "folderCreate": "フォルダ {{path}} を作成"
       },
       "title": "実行プラン",
       "description": "Morpheus が順に実行する内容です。",

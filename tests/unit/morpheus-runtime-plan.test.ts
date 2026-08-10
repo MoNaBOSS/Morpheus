@@ -18,6 +18,7 @@ import type { MorpheusRootProvider } from '@electron/services/morpheus/roots';
 import type { MorpheusActionEvent, MorpheusAuditEntry } from '@shared/morpheus/action-types';
 import type { ExecutionPlan, ExecutionStep } from '@shared/morpheus/execution-types';
 import type { PermissionScope } from '@shared/morpheus/permission-types';
+import { getMorpheusActionDescriptor } from '@shared/morpheus/actions/registry';
 
 const scratch = mkdtempSync(join(tmpdir(), 'morpheus-rt-plan-'));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
@@ -35,7 +36,7 @@ function registryWithFakeCapability(fail = new Set<string>()) {
     async resolve(params) {
       const fileName = String((params as { fileName: string }).fileName);
       return {
-        target: { kind: 'file', path: `${FILES_ROOT}\\${fileName}`, bytes: 1 },
+        target: { kind: 'file', path: `${FILES_ROOT}\\${fileName}`, bytes: 1, workspaceRoot: FILES_ROOT },
         execute: async () => {
           executed.push(fileName);
           if (fail.has(fileName)) throw new Error(`boom: ${fileName}`);
@@ -119,8 +120,16 @@ function plan(steps: ExecutionStep[], planId = 'plan-1'): ExecutionPlan {
   };
 }
 
+/**
+ * Trust as the runtime derives it.
+ *
+ * `file.createText` is a grouped capability, so its grant binds to the
+ * workspace group rather than the single verb — one decision covers the whole
+ * enumerated bundle for this exact root.
+ */
 const GRANT_SCOPE: PermissionScope = {
   capabilityId: 'file.createText',
+  capabilityGroup: getMorpheusActionDescriptor('file.createText').group,
   platform: 'win32',
   resourceScope: FILES_ROOT,
   riskTier: 'medium',
@@ -142,6 +151,7 @@ describe('runtime plan execution', () => {
 
     const result = await runtime.executePlan({ planId: 'plan-1' });
 
+    expect(result.rejection).toBeUndefined();
     expect(result.status).toBe('completed');
     expect(executed).toEqual(['a.txt', 'b.txt', 'c.txt']);
     expect(consentRequests).toEqual([]);
