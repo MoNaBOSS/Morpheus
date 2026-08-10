@@ -39,7 +39,8 @@ import {
   type PermissionCenterSnapshot,
   type PermissionProfile,
 } from '@shared/morpheus/permission-types';
-import { interpretCommand } from '@shared/morpheus/interpreter/deterministic';
+import { createDeterministicMorpheusPlanner } from '@shared/morpheus/interpreter/deterministic-planner';
+import type { MorpheusPlanner } from '@shared/morpheus/planner';
 import { validateParams } from '@shared/morpheus/capabilities/params';
 
 import type { CompleteHostServiceRegistry } from '../main/ipc/host-contract';
@@ -170,6 +171,8 @@ export type CreateMorpheusApiOptions = {
   filesRoot: string;
   appVersion: string;
   auditHealth: () => 'healthy' | 'degraded';
+  /** Main-owned adapter boundary; raw provider output never enters here directly. */
+  planner?: MorpheusPlanner;
 };
 
 function validateIdPayload(payload: unknown, label: string): { id: string } {
@@ -342,10 +345,11 @@ export function validateRevokePayload(payload: unknown): { grantId: string } {
 
 export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHostServiceRegistry['morpheus'] {
   const { runtime, grants, agentProfiles, workflows, scheduler, audit, filesRoot, appVersion, auditHealth } = options;
+  const planner = options.planner ?? createDeterministicMorpheusPlanner();
   return {
-    interpretCommand: (payload) => {
+    interpretCommand: async (payload) => {
       const { objective, originType } = validateInterpretPayload(payload);
-      const result = interpretCommand({
+      const result = await planner.plan({
         objective,
         origin: originType === 'command-bar'
           ? { type: 'command-bar', commandText: objective }

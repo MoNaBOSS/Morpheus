@@ -239,6 +239,39 @@ describe('createMorpheusApi', () => {
     expect(runtime.respondPermission).toHaveBeenCalledWith({ runId: 'r1', decision: 'granted' });
   });
 
+  it('routes objectives through the selected Main-owned planner adapter', async () => {
+    const runtime = stubRuntime();
+    const plan = {
+      v: 1 as const,
+      planId: 'plan-provider-boundary',
+      createdAt: '2026-08-10T00:00:00.000Z',
+      origin: { type: 'quick-command' as const, commandText: 'Show system information' },
+      objective: 'Show system information',
+      status: 'draft' as const,
+      steps: [],
+      plannedBy: 'provider' as const,
+    };
+    const planner = {
+      plannerId: 'test-provider-adapter',
+      plannedBy: 'provider' as const,
+      plan: vi.fn(async () => ({ ok: true as const, plan })),
+    };
+    const api = createMorpheusApi({ ...stubOptions(runtime), planner });
+
+    await expect(api.interpretCommand({
+      objective: 'Show system information',
+      originType: 'quick-command',
+    })).resolves.toEqual({ ok: true, plan });
+
+    expect(planner.plan).toHaveBeenCalledWith({
+      objective: 'Show system information',
+      origin: { type: 'quick-command', commandText: 'Show system information' },
+      platform: process.platform,
+      filesRoot: 'C:\\Morpheus\\files',
+    });
+    expect(runtime.registerPlan).toHaveBeenCalledWith(plan);
+  });
+
   it('never reaches the runtime with an invalid payload', async () => {
     const runtime = stubRuntime();
     const api = createMorpheusApi(stubOptions(runtime));
