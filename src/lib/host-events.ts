@@ -132,4 +132,7 @@ export const hostEvents = {
   onMorpheusActionEvent: (handler: HostEventHandler<'morpheus', 'actionEvent'>) => (
     onMorpheusEvent('actionEvent', handler)
   ),
+  onMorpheusQuickCommand: (handler: HostEventHandler<'morpheus', 'quickCommand'>) => (
+    onMorpheusEvent('quickCommand', handler)
+  ),
 };

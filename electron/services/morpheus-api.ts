@@ -236,7 +236,7 @@ export function validateInterpretPayload(payload: unknown): { objective: string;
   const objective = requireNonEmptyString(record.objective, 'objective');
   if (objective.length > 2000) throw new MorpheusValidationError('objective is too long');
   const originType = record.originType === undefined ? 'command-bar' : record.originType;
-  if (!EXECUTION_ORIGIN_TYPES.includes(originType as ExecutionOriginType)) {
+  if (!(['command-bar', 'quick-command', 'action-launcher', 'chat'] as const).includes(originType as never)) {
     throw new MorpheusValidationError('unsupported originType');
   }
   return { objective, originType: originType as ExecutionOriginType };
@@ -300,7 +300,11 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
         objective,
         origin: originType === 'command-bar'
           ? { type: 'command-bar', commandText: objective }
-          : { type: 'action-launcher' },
+          : originType === 'quick-command'
+            ? { type: 'quick-command', commandText: objective }
+            : originType === 'chat'
+              ? { type: 'chat' }
+              : { type: 'action-launcher' },
         platform: process.platform,
         filesRoot,
       });

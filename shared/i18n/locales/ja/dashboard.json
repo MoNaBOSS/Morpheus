@@ -407,6 +407,16 @@
       },
       "skippedBecause": "{{stepId}} が失敗したためスキップしました"
     },
+    "quickCommand": {
+      "title": "クイックコマンド",
+      "close": "クイックコマンドを閉じる",
+      "placeholder": "Morpheus に任せる内容を入力…",
+      "planning": "型付きプランを作成中…",
+      "executing": "実行中：{{objective}}",
+      "finished": "実行結果：{{status}}。",
+      "unsupported": "その目的はまだサポートされていません。",
+      "hint": "Enter で実行。信頼境界が変わる場合のみ確認します。"
+    },
     "capture": {
       "title": "画面キャプチャ",
       "active": "画面をキャプチャ中",

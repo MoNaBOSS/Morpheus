@@ -407,6 +407,16 @@
       },
       "skippedBecause": "Skipped because {{stepId}} failed"
     },
+    "quickCommand": {
+      "title": "Quick Command",
+      "close": "Close Quick Command",
+      "placeholder": "Tell Morpheus what to handle…",
+      "planning": "Building a typed plan…",
+      "executing": "Executing: {{objective}}",
+      "finished": "Execution {{status}}.",
+      "unsupported": "That objective is not supported yet.",
+      "hint": "Enter runs the objective. Morpheus asks only when trust changes."
+    },
     "capture": {
       "title": "Screen capture",
       "active": "Capturing the screen",

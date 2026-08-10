@@ -11,6 +11,7 @@ import { hostApi } from '@/lib/host-api';
 import { hostEvents } from '@/lib/host-events';
 import type { MorpheusPlanConsentEvent } from '@shared/host-events/contract';
 import type {
+  ExecutionOriginType,
   ExecutionArtifact,
   ExecutionPlan,
   UnsupportedCommand,
@@ -49,6 +50,8 @@ export type MorpheusCommandState = {
 
   setInput: (input: string) => void;
   submit: () => Promise<void>;
+  runObjective: (objective: string, originType?: ExecutionOriginType) => Promise<void>;
+  executePreparedPlan: (plan: ExecutionPlan) => Promise<void>;
   clearPlan: () => void;
   /** Subscribes to plan consent requests. Returns the unsubscribe function. */
   subscribeConsent: () => () => void;
@@ -156,24 +159,25 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
   submit: async () => {
     const objective = get().input.trim();
     if (!objective) return;
+    await get().runObjective(objective, 'command-bar');
+  },
+
+  runObjective: async (objectiveInput, originType = 'command-bar') => {
+    const objective = objectiveInput.trim();
+    if (!objective) return;
 
     set({ interpreting: true, plan: null, unsupported: null, planResult: null });
     try {
       // Interpretation happens in Main so the plan's resource scope is the
       // canonical approved root rather than anything the renderer chose.
-      const result = await hostApi.morpheus.interpretCommand(objective, 'command-bar');
+      const result = await hostApi.morpheus.interpretCommand(objective, originType);
       if (!result.ok) {
         set({ unsupported: result.unsupported, plan: null, interpreting: false });
         return;
       }
 
-      set({ plan: result.plan, unsupported: null, interpreting: false, executing: true, input: '' });
-
-      // The renderer names the plan Main authored; it does not orchestrate it.
-      // Ordering, trust evaluation and execution all happen in Main, so the
-      // whole plan runs — not just its first step, as in 0.1.1.
-      const execution = await hostApi.morpheus.executePlan(result.plan.planId);
-      set({ planResult: execution, executing: false });
+      set({ input: '' });
+      await get().executePreparedPlan(result.plan);
     } catch (error) {
       set({
         interpreting: false,
@@ -181,6 +185,18 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
         unsupported: { objective, reason: 'not-understood', supportedCapabilities: [] },
       });
       console.error('[morpheus] command failed', error);
+    }
+  },
+
+  executePreparedPlan: async (plan) => {
+    set({ plan, unsupported: null, interpreting: false, executing: true, planResult: null });
+    try {
+      // The renderer names the plan Main authored; it does not orchestrate it.
+      const execution = await hostApi.morpheus.executePlan(plan.planId);
+      set({ planResult: execution, executing: false });
+    } catch (error) {
+      set({ executing: false });
+      console.error('[morpheus] plan execution failed', error);
     }
   },
 

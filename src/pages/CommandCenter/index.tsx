@@ -11,18 +11,12 @@
  * navigation destination, but it is one interface into Morpheus, not the
  * product itself.
  */
-import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Card } from '@/components/ui/card';
 import morpheusLogo from '@/assets/morpheus-logo.svg';
 import { MorpheusActionTimeline } from '@/components/morpheus/MorpheusActionTimeline';
-import { MorpheusPermissionDialog } from '@/components/morpheus/MorpheusPermissionDialog';
-import { MorpheusPlanConsentDialog } from '@/components/morpheus/MorpheusPlanConsentDialog';
-import { MorpheusCaptureIndicator } from '@/components/morpheus/MorpheusCaptureIndicator';
 import { PermissionCenter } from '@/components/morpheus/PermissionCenter';
-import { useMorpheusActionsStore } from '@/stores/morpheus-actions';
-import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 
 import { ArtifactsPanel } from './ArtifactsPanel';
 import { CommandBar } from './CommandBar';
@@ -32,40 +26,6 @@ import { SupportedActions } from './SupportedActions';
 
 export function CommandCenter() {
   const { t } = useTranslation('dashboard');
-
-  const subscribe = useMorpheusActionsStore((state) => state.subscribe);
-  const loadCapabilities = useMorpheusActionsStore((state) => state.loadCapabilities);
-  const runOrder = useMorpheusActionsStore((state) => state.runOrder);
-  const runsById = useMorpheusActionsStore((state) => state.runsById);
-
-  const loadPermissionCenter = useMorpheusCommandStore((state) => state.loadPermissionCenter);
-  const subscribeConsent = useMorpheusCommandStore((state) => state.subscribeConsent);
-  const loadFilesRoot = useMorpheusCommandStore((state) => state.loadFilesRoot);
-  const captureArtifact = useMorpheusCommandStore((state) => state.captureArtifact);
-
-  useEffect(() => {
-    const unsubscribe = subscribe();
-    const unsubscribeConsent = subscribeConsent();
-    void loadCapabilities();
-    void loadPermissionCenter();
-    void loadFilesRoot();
-    return () => {
-      unsubscribe();
-      unsubscribeConsent();
-    };
-  }, [subscribe, subscribeConsent, loadCapabilities, loadPermissionCenter, loadFilesRoot]);
-
-  // Artifacts and grant state are derived from real terminal runs. Refreshing
-  // the permission summary here is what makes a newly created grant visible
-  // without a manual reload.
-  useEffect(() => {
-    const latest = runOrder.length ? runsById[runOrder[runOrder.length - 1]] : undefined;
-    if (!latest) return;
-    captureArtifact(latest);
-    if (latest.phase === 'succeeded' || latest.phase === 'denied') {
-      void loadPermissionCenter();
-    }
-  }, [runOrder, runsById, captureArtifact, loadPermissionCenter]);
 
   return (
     <div
@@ -99,9 +59,6 @@ export function CommandCenter() {
         {/* Sits in the header, above the fold: a capture must announce itself
             where the user is already looking, not in a panel they may have
             scrolled past. Renders nothing when no capture is happening. */}
-        <div className="mt-2 empty:mt-0">
-          <MorpheusCaptureIndicator />
-        </div>
       </header>
 
       <div className="grid flex-1 grid-cols-1 gap-4 p-4 xl:grid-cols-3">
@@ -143,10 +100,6 @@ export function CommandCenter() {
         </div>
       </div>
 
-      {/* Two dialogs, one at a time: the plan-level batch for command-bar work,
-          the per-run dialog for a single action launched directly. */}
-      <MorpheusPlanConsentDialog />
-      <MorpheusPermissionDialog />
     </div>
   );
 }

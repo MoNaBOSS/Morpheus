@@ -29,6 +29,8 @@ import { UpdateNotifier } from './components/update/UpdateNotifier';
 import { useNewChatAction } from './components/layout/use-new-chat-action';
 import { MorpheusBoot } from './components/morpheus/boot/MorpheusBoot';
 import { hostEvents } from './lib/host-events';
+import { MorpheusGlobalRuntime } from './components/morpheus/MorpheusGlobalRuntime';
+import { MorpheusQuickCommand } from './components/morpheus/MorpheusQuickCommand';
 
 
 /**
@@ -232,6 +234,8 @@ function App() {
         </Routes>
 
         <UpdateNotifier />
+        <MorpheusGlobalRuntime />
+        <MorpheusQuickCommand />
 
         {/*
           Boot overlay. A sibling of <Routes> rather than a route, so routing,

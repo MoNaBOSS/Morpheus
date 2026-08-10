@@ -2,7 +2,7 @@
  * Electron Main Process Entry
  * Manages window creation, system tray, and IPC handlers
  */
-import { app, BrowserWindow, nativeImage, session, shell, type Session } from 'electron';
+import { app, BrowserWindow, globalShortcut, nativeImage, session, shell, type Session } from 'electron';
 import { join } from 'path';
 import { GatewayManager } from '../gateway/manager';
 import { registerOpenClawConfigCoordinator } from '../gateway/config-delivery';
@@ -56,6 +56,8 @@ import { deviceOAuthManager } from '../utils/device-oauth';
 import { browserOAuthManager } from '../utils/browser-oauth';
 import { whatsAppLoginManager } from '../utils/whatsapp-login';
 import { syncAllProviderAuthToRuntime } from '../services/providers/provider-runtime-sync';
+import { HOST_EVENT_CHANNELS } from '@shared/host-events/contract';
+import { createMorpheusQuickCommandRegistration } from './morpheus-quick-command';
 
 const WINDOWS_APP_USER_MODEL_ID = 'app.morpheus.desktop';
 const isE2EMode = process.env.CLAWX_E2E === '1';
@@ -126,6 +128,14 @@ const webBrowserGuestRegistry = new WebBrowserGuestRegistry();
 let webBrowserSession!: Session;
 const mainWindowFocusState = createMainWindowFocusState();
 const quitLifecycleState = createQuitLifecycleState();
+const quickCommandRegistration = createMorpheusQuickCommandRegistration({
+  shortcuts: globalShortcut,
+  getMainWindow: () => mainWindow,
+  emit: (window) => window.webContents.send(
+    HOST_EVENT_CHANNELS.morpheus.quickCommand,
+    { trigger: 'global-shortcut' },
+  ),
+});
 
 function sendMainWindowEvent(channel: string, payload: unknown): void {
   const win = mainWindow;
@@ -404,6 +414,11 @@ async function initialize(): Promise<void> {
 
   loadMainWindow(window);
 
+  if (!isE2EMode) {
+    const registered = quickCommandRegistration.start();
+    logger.info(`[Quick Command] Global shortcut ${registered ? 'registered' : 'unavailable'}`);
+  }
+
   // Create system tray
   if (!isE2EMode) {
     createTray(window);
@@ -627,6 +642,7 @@ if (gotTheLock) {
   process.once('SIGTERM', () => requestQuitOnSignal('SIGTERM'));
 
   app.on('will-quit', () => {
+    quickCommandRegistration.stop();
     releaseProcessInstanceFileLock();
   });
 

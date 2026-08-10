@@ -407,6 +407,16 @@
       },
       "skippedBecause": "因 {{stepId}} 失败而跳过"
     },
+    "quickCommand": {
+      "title": "快捷命令",
+      "close": "关闭快捷命令",
+      "placeholder": "告诉 Morpheus 要处理什么…",
+      "planning": "正在构建类型化计划…",
+      "executing": "正在执行：{{objective}}",
+      "finished": "执行状态：{{status}}。",
+      "unsupported": "暂不支持该目标。",
+      "hint": "按 Enter 执行。只有信任边界变化时才会询问。"
+    },
     "capture": {
       "title": "屏幕截图",
       "active": "正在截取屏幕",
