@@ -202,7 +202,9 @@ function registerTypedHostHandlers(
       agentProfiles: morpheusService.agentProfiles,
       workflows: morpheusService.workflows,
       scheduler: morpheusService.scheduler,
+      audit: morpheusService.audit,
       filesRoot: morpheusService.filesRoot,
+      appVersion: app.getVersion(),
       auditHealth: morpheusService.auditHealth,
     }),
   });

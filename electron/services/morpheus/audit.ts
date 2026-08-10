@@ -14,7 +14,11 @@ import { join } from 'node:path';
 
 import { MORPHEUS_MAX_AUDIT_PAGE } from '@shared/morpheus/actions/registry';
 import type {
+  MorpheusAuditQueryPayload,
+  MorpheusAuditQueryResult,
+  MorpheusAuditRecord,
   MorpheusAuditEntry,
+  MorpheusControlAuditEntry,
   MorpheusAuditRecentResult,
 } from '@shared/morpheus/action-types';
 
@@ -39,7 +43,9 @@ export interface MorpheusAuditSink {
    * can order an emission strictly after its audit write.
    */
   record(entry: MorpheusAuditEntry): Promise<void>;
+  recordControl(entry: Omit<MorpheusControlAuditEntry, 'v' | 'seq' | 'ts' | 'appVersion'> & { appVersion: string }): Promise<void>;
   recent(limit: number): Promise<MorpheusAuditRecentResult>;
+  query(payload: MorpheusAuditQueryPayload): Promise<MorpheusAuditQueryResult>;
   /**
    * False once a write has failed and has not since recovered. The policy
    * engine reads this to enter degraded-security mode rather than executing
@@ -144,12 +150,15 @@ export function createMorpheusAuditSink(options: MorpheusAuditSinkOptions): Morp
 
   prune();
 
-  const writeSync = (entry: MorpheusAuditEntry): void => {
+  const writeSync = (entry: MorpheusAuditRecord): void => {
     const path = filePathFor(now());
     rollIfOversized(path);
-    const safe: MorpheusAuditEntry = {
+    const safe: MorpheusAuditRecord = 'actionId' in entry ? {
       ...entry,
       params: sanitizeAuditParams(entry.params),
+    } : {
+      ...entry,
+      details: sanitizeAuditParams(entry.details),
     };
     // Synchronous append on purpose. Volume is a handful of lines per
     // user-initiated action, and this removes the flush window entirely: there
@@ -165,12 +174,69 @@ export function createMorpheusAuditSink(options: MorpheusAuditSinkOptions): Morp
     }
   };
 
+  let controlSeq = 0;
+
+  const recordCursorKey = (entry: MorpheusAuditRecord): string => (
+    createHash('sha256').update(JSON.stringify(entry), 'utf8').digest('hex').slice(0, 24)
+  );
+
+  const decodeCursor = (cursor: string | undefined): string | null => {
+    if (!cursor || cursor.length > 512) return null;
+    try {
+      const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { key?: unknown };
+      return typeof parsed.key === 'string' && /^[a-f0-9]{24}$/.test(parsed.key) ? parsed.key : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const encodeCursor = (entry: MorpheusAuditRecord): string => (
+    Buffer.from(JSON.stringify({ key: recordCursorKey(entry) }), 'utf8').toString('base64url')
+  );
+
+  const orderedAuditFiles = (): string[] => {
+    let names: string[];
+    try { names = readdirSync(auditDir); } catch { return []; }
+    const parsed = names.flatMap((name) => {
+      const match = name.match(/^audit-(\d{4}-\d{2}-\d{2})\.jsonl(?:\.(\d+))?$/);
+      return match ? [{ name, day: match[1], roll: match[2] ? Number(match[2]) : Number.MAX_SAFE_INTEGER }] : [];
+    });
+    return parsed
+      .sort((a, b) => b.day.localeCompare(a.day) || b.roll - a.roll)
+      .map((entry) => join(auditDir, entry.name));
+  };
+
+  const parseRecord = (line: string): MorpheusAuditRecord | null => {
+    try {
+      const value = JSON.parse(line) as MorpheusAuditRecord;
+      if (!value || value.v !== 1 || typeof value.ts !== 'string' || typeof value.seq !== 'number') return null;
+      if (!('actionId' in value) && !('category' in value)) return null;
+      return value;
+    } catch { return null; }
+  };
+
   return {
     record(entry: MorpheusAuditEntry): Promise<void> {
       chain = chain.then(() => {
         writeSync(entry);
       }, () => {
         writeSync(entry);
+      });
+      return chain;
+    },
+
+    recordControl(entry): Promise<void> {
+      chain = chain.then(() => {
+        controlSeq += 1;
+        writeSync({
+          ...entry,
+          v: 1,
+          seq: controlSeq,
+          ts: now().toISOString(),
+        });
+      }, () => {
+        controlSeq += 1;
+        writeSync({ ...entry, v: 1, seq: controlSeq, ts: now().toISOString() });
       });
       return chain;
     },
@@ -188,16 +254,61 @@ export function createMorpheusAuditSink(options: MorpheusAuditSinkOptions): Morp
       }
 
       const lines = raw.split('\n').filter((line) => line.trim().length > 0);
-      const slice = lines.slice(-bounded);
       const entries: MorpheusAuditEntry[] = [];
-      for (const line of slice) {
+      for (let index = lines.length - 1; index >= 0 && entries.length < bounded; index -= 1) {
         try {
-          entries.push(JSON.parse(line) as MorpheusAuditEntry);
+          const parsed = JSON.parse(lines[index]) as MorpheusAuditRecord;
+          if ('actionId' in parsed) entries.push(parsed);
         } catch {
           // A torn final line must not break the panel.
         }
       }
-      return { entries, truncated: lines.length > slice.length };
+      entries.reverse();
+      const executionCount = lines.reduce((count, line) => {
+        const parsed = parseRecord(line);
+        return count + (parsed && 'actionId' in parsed ? 1 : 0);
+      }, 0);
+      return { entries, truncated: executionCount > entries.length };
+    },
+
+    async query(payload): Promise<MorpheusAuditQueryResult> {
+      await chain.catch(() => undefined);
+      const limit = Math.max(1, Math.min(Math.trunc(payload.limit ?? 50), MORPHEUS_MAX_AUDIT_PAGE));
+      const from = payload.from ? Date.parse(payload.from) : Number.NEGATIVE_INFINITY;
+      const to = payload.to ? Date.parse(payload.to) : Number.POSITIVE_INFINITY;
+      const cursor = decodeCursor(payload.cursor);
+      const entries: MorpheusAuditRecord[] = [];
+      let pastCursor = cursor === null;
+
+      outer: for (const path of orderedAuditFiles()) {
+        let raw: string;
+        try { raw = readFileSync(path, 'utf8'); } catch { continue; }
+        const lines = raw.split('\n');
+        for (let index = lines.length - 1; index >= 0; index -= 1) {
+          const record = parseRecord(lines[index]);
+          if (!record) continue;
+          if (!pastCursor) {
+            if (recordCursorKey(record) === cursor) pastCursor = true;
+            continue;
+          }
+          const time = Date.parse(record.ts);
+          if (!Number.isFinite(time) || time < from || time > to) continue;
+          const execution = 'actionId' in record;
+          if (payload.category && payload.category !== (execution ? 'execution' : record.category)) continue;
+          if (payload.capabilityId && (!execution || record.actionId !== payload.capabilityId)) continue;
+          if (payload.phase && (!execution || record.phase !== payload.phase)) continue;
+          entries.push(record);
+          if (entries.length > limit) break outer;
+        }
+      }
+
+      const truncated = entries.length > limit;
+      const page = entries.slice(0, limit);
+      return {
+        entries: page,
+        truncated,
+        ...(truncated && page.length ? { nextCursor: encodeCursor(page[page.length - 1]) } : {}),
+      };
     },
 
     isHealthy: () => healthy,

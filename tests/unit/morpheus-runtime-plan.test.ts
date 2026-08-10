@@ -64,6 +64,7 @@ function makeRuntime(options: {
 
   const audit: MorpheusAuditSink = {
     record: async (entry) => { audited.push(entry); },
+    recordControl: async () => undefined,
     recent: async () => ({ entries: [], truncated: false }),
     health: () => 'healthy',
     dispose: () => undefined,
@@ -355,6 +356,7 @@ describe('runtime plan execution', () => {
       roots: { resolve: () => FILES_ROOT } as unknown as MorpheusRootProvider,
       audit: {
         record: async (entry: MorpheusAuditEntry) => { audited.push(entry); },
+        recordControl: async () => undefined,
         recent: async () => ({ entries: [], truncated: false }),
       } as unknown as MorpheusAuditSink,
       gate: createPolicyPermissionGate(engine, store),

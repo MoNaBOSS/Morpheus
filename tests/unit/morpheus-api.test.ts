@@ -50,7 +50,12 @@ function stubOptions(runtime = stubRuntime()) {
       start: vi.fn(),
       stop: vi.fn(),
     } as never,
+    audit: {
+      recordControl: vi.fn(async () => undefined),
+      query: vi.fn(async () => ({ entries: [], truncated: false })),
+    } as never,
     filesRoot: 'C:\\Morpheus\\files',
+    appVersion: '0.5.0',
     auditHealth: () => 'healthy' as const,
   };
 }
@@ -196,6 +201,7 @@ describe('createMorpheusApi', () => {
     expect(Object.keys(createMorpheusApi(stubOptions())).sort()).toEqual([
       'agentProfile',
       'agentProfiles',
+      'auditQuery',
       'auditRecent',
       'cancelAction',
       'describeActions',

@@ -97,7 +97,8 @@ export type ExecutePlanInput = {
   auditHealth: AuditHealth;
   requestConsent: RequestConsent;
   /** Records a decision the user chose to remember. */
-  persistDecision?: (scope: PermissionScope, decision: PermissionDecisionKind) => void;
+  persistDecision?: (scope: PermissionScope, decision: PermissionDecisionKind) => Promise<void> | void;
+  recordGrantUse?: (grantId: string, scope: PermissionScope) => Promise<void> | void;
   signal?: { aborted: boolean };
   now?: () => Date;
 };
@@ -113,7 +114,7 @@ const ALLOW_DECISIONS: readonly PermissionDecisionKind[] = ['allow-once', 'allow
 const REMEMBERED_DECISIONS: readonly PermissionDecisionKind[] = ['allow-session', 'allow-always', 'deny-always'];
 
 export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanResult> {
-  const { plan, runner, policy, auditHealth, requestConsent, persistDecision, signal, now = () => new Date() } = input;
+  const { plan, runner, policy, auditHealth, requestConsent, persistDecision, recordGrantUse, signal, now = () => new Date() } = input;
   const steps = plan.steps;
   const byId = new Map(steps.map((step) => [step.stepId, step]));
 
@@ -182,6 +183,8 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
     };
   }
 
+  for (const use of trust.grantUses) await recordGrantUse?.(use.grantId, use.scope);
+
   // 4. Ask once, for the deduplicated boundaries only.
   const reasonByStep = new Map<string, string>();
   for (const stepId of trust.autoAllowed) reasonByStep.set(stepId, 'pre-authorized');
@@ -207,13 +210,13 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
             decision ?? 'no-response',
           );
         }
-        if (decision && REMEMBERED_DECISIONS.includes(decision)) persistDecision?.(boundary.scope, decision);
+        if (decision && REMEMBERED_DECISIONS.includes(decision)) await persistDecision?.(boundary.scope, decision);
         continue;
       }
 
       // `critical` accepts a one-time allow but is never remembered.
       if (!boundary.mandatoryConfirmation && REMEMBERED_DECISIONS.includes(decision)) {
-        persistDecision?.(boundary.scope, decision);
+        await persistDecision?.(boundary.scope, decision);
       }
       for (const stepId of boundary.stepIds) reasonByStep.set(stepId, decision);
     }

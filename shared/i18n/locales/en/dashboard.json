@@ -407,6 +407,59 @@
       },
       "skippedBecause": "Skipped because {{stepId}} failed"
     },
+    "foundation": {
+      "systemBuilder": "AI system builder",
+      "automation": "Morpheus automation"
+    },
+    "agentProfiles": {
+      "title": "Agent Profiles",
+      "description": "Reusable planning identities that constrain provider, context, workspace, capabilities and risk. They never bypass Main-owned policy.",
+      "mainOwned": "Main-owned boundaries",
+      "empty": "No Agent Profiles are available.",
+      "planner": "Planner",
+      "workspace": "Workspace",
+      "capabilities": "Capabilities",
+      "maxRisk": "Maximum risk",
+      "authorityNote": "This profile narrows plan construction. Every real target is still resolved, permissioned and audited by Morpheus Main."
+    },
+    "workflows": {
+      "title": "Workflows",
+      "description": "Reusable multi-step systems that compile into the same sequential typed plans as Command Center objectives.",
+      "empty": "No workflows are available.",
+      "run": "Run workflow",
+      "running": "Running…",
+      "agent": "Agent Profile",
+      "steps": "steps"
+    },
+    "schedules": {
+      "title": "Schedules",
+      "description": "Morpheus-owned automation. Every scheduled workflow still passes through exact-scope trust, policy and audit.",
+      "current": "Current schedules",
+      "empty": "No Morpheus schedules yet.",
+      "create": "Create schedule",
+      "createDescription": "Choose a real workflow and a bounded trigger.",
+      "name": "Name",
+      "workflow": "Workflow",
+      "trigger": "Trigger",
+      "interval": "Interval (minutes)",
+      "daily": "Daily at local time",
+      "once": "Run once",
+      "startup": "Application startup",
+      "save": "Save schedule",
+      "runNow": "Run now",
+      "remove": "Remove schedule"
+    },
+    "activity": {
+      "history": "Observable execution",
+      "title": "Activity",
+      "description": "Append-only execution, permission and automation history across retained audit days.",
+      "filter": "Category",
+      "all": "All",
+      "ledger": "Activity ledger",
+      "ledgerDescription": "Newest first. Payloads and secrets are never retained.",
+      "empty": "No matching activity has been recorded.",
+      "loadMore": "Load older activity"
+    },
     "quickCommand": {
       "title": "Quick Command",
       "close": "Close Quick Command",

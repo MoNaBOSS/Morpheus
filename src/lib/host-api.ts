@@ -423,6 +423,9 @@ export const hostApi = {
     ),
     cancelAction: (input: MorpheusCancelActionPayload) => invokeHost('morpheus', 'cancelAction', input),
     auditRecent: (limit?: number) => invokeHost('morpheus', 'auditRecent', { limit }),
+    auditQuery: (payload: import('@shared/morpheus/action-types').MorpheusAuditQueryPayload = {}) => (
+      invokeHost('morpheus', 'auditQuery', payload)
+    ),
     interpretCommand: (objective: string, originType?: ExecutionOriginType) => (
       invokeHost('morpheus', 'interpretCommand', { objective, originType })
     ),

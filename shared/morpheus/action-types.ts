@@ -314,6 +314,43 @@ export type MorpheusAuditRecentResult = {
   truncated: boolean;
 };
 
+export type MorpheusControlAuditCategory =
+  | 'permission'
+  | 'agent-profile'
+  | 'workflow'
+  | 'schedule';
+
+/** Non-capability policy/configuration fact in the same append-only ledger. */
+export type MorpheusControlAuditEntry = {
+  v: typeof MORPHEUS_AUDIT_VERSION;
+  seq: number;
+  ts: string;
+  category: MorpheusControlAuditCategory;
+  event: string;
+  subjectId?: string;
+  details?: Record<string, string | number | boolean>;
+  appVersion: string;
+};
+
+export type MorpheusAuditRecord = MorpheusAuditEntry | MorpheusControlAuditEntry;
+
+export type MorpheusAuditQueryPayload = {
+  from?: string;
+  to?: string;
+  capabilityId?: string;
+  phase?: MorpheusRunPhase;
+  category?: 'execution' | MorpheusControlAuditCategory;
+  limit?: number;
+  cursor?: string;
+};
+
+export type MorpheusAuditQueryResult = {
+  /** Newest first. */
+  entries: MorpheusAuditRecord[];
+  nextCursor?: string;
+  truncated: boolean;
+};
+
 export type MorpheusActionAvailability = {
   actionId: MorpheusActionId;
   supported: boolean;

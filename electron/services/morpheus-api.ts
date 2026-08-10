@@ -17,6 +17,8 @@ import type {
   MorpheusActionParams,
   MorpheusAuditRecentPayload,
   MorpheusAuditRecentResult,
+  MorpheusAuditQueryPayload,
+  MorpheusAuditQueryResult,
   MorpheusCancelActionPayload,
   MorpheusDescribeActionsResult,
   MorpheusRequestActionPayload,
@@ -49,6 +51,7 @@ import type {
   MorpheusScheduler,
 } from './morpheus';
 import type { MorpheusScheduleDraft, MorpheusScheduleTrigger } from '@shared/morpheus/schedule-types';
+import type { MorpheusAuditSink } from './morpheus/audit';
 
 export class MorpheusValidationError extends Error {
   constructor(message: string) {
@@ -163,7 +166,9 @@ export type CreateMorpheusApiOptions = {
   agentProfiles: MorpheusAgentProfileStore;
   workflows: MorpheusWorkflowService;
   scheduler: MorpheusScheduler;
+  audit: MorpheusAuditSink;
   filesRoot: string;
+  appVersion: string;
   auditHealth: () => 'healthy' | 'degraded';
 };
 
@@ -222,6 +227,50 @@ export function validateScheduleDraft(payload: unknown): MorpheusScheduleDraft {
   if (typeof record.enabled !== 'boolean') throw new MorpheusValidationError('enabled must be a boolean');
   const scheduleId = record.scheduleId === undefined ? undefined : requireNonEmptyString(record.scheduleId, 'scheduleId');
   return { ...(scheduleId ? { scheduleId } : {}), name, workflowId, enabled: record.enabled, trigger: validateScheduleTrigger(record.trigger) };
+}
+
+const AUDIT_PHASES = [
+  'requested', 'awaiting-permission', 'denied', 'running', 'succeeded', 'failed',
+  'cancelled', 'timed-out', 'unsupported-platform',
+] as const;
+const AUDIT_CATEGORIES = ['execution', 'permission', 'agent-profile', 'workflow', 'schedule'] as const;
+
+export function validateAuditQueryPayload(payload: unknown): MorpheusAuditQueryPayload {
+  if (payload === undefined || payload === null) return { limit: 50 };
+  const record = requireRecord(payload, 'auditQuery payload');
+  assertNoUnknownKeys(record, ['from', 'to', 'capabilityId', 'phase', 'category', 'limit', 'cursor'], 'auditQuery payload');
+  const out: MorpheusAuditQueryPayload = {};
+  for (const key of ['from', 'to'] as const) {
+    const value = record[key];
+    if (value === undefined) continue;
+    if (typeof value !== 'string' || !Number.isFinite(Date.parse(value))) throw new MorpheusValidationError(`${key} must be an ISO date`);
+    out[key] = new Date(value).toISOString();
+  }
+  if (out.from && out.to) {
+    const range = Date.parse(out.to) - Date.parse(out.from);
+    if (range < 0 || range > 31 * 24 * 60 * 60 * 1000) throw new MorpheusValidationError('audit date range must be at most 31 days');
+  }
+  if (record.capabilityId !== undefined) {
+    if (!isMorpheusActionId(record.capabilityId)) throw new MorpheusValidationError('unknown capabilityId');
+    out.capabilityId = record.capabilityId;
+  }
+  if (record.phase !== undefined) {
+    if (!AUDIT_PHASES.includes(record.phase as never)) throw new MorpheusValidationError('unknown audit phase');
+    out.phase = record.phase as MorpheusAuditQueryPayload['phase'];
+  }
+  if (record.category !== undefined) {
+    if (!AUDIT_CATEGORIES.includes(record.category as never)) throw new MorpheusValidationError('unknown audit category');
+    out.category = record.category as MorpheusAuditQueryPayload['category'];
+  }
+  if (record.limit !== undefined && (typeof record.limit !== 'number' || !Number.isFinite(record.limit))) {
+    throw new MorpheusValidationError('limit must be a finite number');
+  }
+  out.limit = Math.min(Math.max(1, Math.trunc(Number(record.limit ?? 50))), MORPHEUS_MAX_AUDIT_PAGE);
+  if (record.cursor !== undefined) {
+    if (typeof record.cursor !== 'string' || record.cursor.length < 1 || record.cursor.length > 512) throw new MorpheusValidationError('invalid audit cursor');
+    out.cursor = record.cursor;
+  }
+  return out;
 }
 
 /**
@@ -292,7 +341,7 @@ export function validateRevokePayload(payload: unknown): { grantId: string } {
 }
 
 export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHostServiceRegistry['morpheus'] {
-  const { runtime, grants, agentProfiles, workflows, scheduler, filesRoot, auditHealth } = options;
+  const { runtime, grants, agentProfiles, workflows, scheduler, audit, filesRoot, appVersion, auditHealth } = options;
   return {
     interpretCommand: (payload) => {
       const { objective, originType } = validateInterpretPayload(payload);
@@ -328,19 +377,39 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
       auditDegraded: auditHealth() === 'degraded',
     }),
 
-    setPermissionProfile: (payload) => {
-      grants.setProfile(validateSetProfilePayload(payload).profile);
+    setPermissionProfile: async (payload) => {
+      const profile = validateSetProfilePayload(payload).profile;
+      await audit.recordControl({
+        category: 'permission', event: 'profile-changed', subjectId: profile,
+        details: { profile }, appVersion,
+      });
+      grants.setProfile(profile);
       return { ok: true };
     },
 
-    revokeGrant: (payload) => ({ ok: grants.revoke(validateRevokePayload(payload).grantId) }),
+    revokeGrant: async (payload) => {
+      const grantId = validateRevokePayload(payload).grantId;
+      await audit.recordControl({
+        category: 'permission', event: 'grant-revoked', subjectId: grantId,
+        details: { grantId }, appVersion,
+      });
+      return { ok: grants.revoke(grantId) };
+    },
 
-    revokeAllSessionGrants: () => {
+    revokeAllSessionGrants: async () => {
+      await audit.recordControl({
+        category: 'permission', event: 'session-grants-revoked',
+        details: {}, appVersion,
+      });
       grants.revokeAllSession();
       return { ok: true };
     },
 
-    resetPermissionPolicy: () => {
+    resetPermissionPolicy: async () => {
+      await audit.recordControl({
+        category: 'permission', event: 'policy-reset',
+        details: {}, appVersion,
+      });
       grants.reset();
       return { ok: true };
     },
@@ -380,12 +449,25 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
       });
     },
     schedules: () => scheduler.list(),
-    saveSchedule: (payload) => {
+    saveSchedule: async (payload) => {
       const draft = validateScheduleDraft(payload);
       if (!workflows.get(draft.workflowId)) throw new MorpheusValidationError('Unknown Morpheus workflow');
+      await audit.recordControl({
+        category: 'schedule', event: draft.scheduleId ? 'updated' : 'created',
+        subjectId: draft.scheduleId ?? draft.workflowId,
+        details: { workflowId: draft.workflowId, trigger: draft.trigger.type },
+        appVersion,
+      });
       return scheduler.save(draft);
     },
-    removeSchedule: (payload) => ({ ok: scheduler.remove(validateIdPayload(payload, 'schedule').id) }),
+    removeSchedule: async (payload) => {
+      const id = validateIdPayload(payload, 'schedule').id;
+      await audit.recordControl({
+        category: 'schedule', event: 'removed', subjectId: id,
+        details: { scheduleId: id }, appVersion,
+      });
+      return { ok: scheduler.remove(id) };
+    },
     runSchedule: (payload) => scheduler.runNow(validateIdPayload(payload, 'schedule').id),
 
     describeActions: (): MorpheusDescribeActionsResult => runtime.describeActions(),
@@ -401,6 +483,9 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     ),
     auditRecent: (payload): Promise<MorpheusAuditRecentResult> => (
       runtime.auditRecent(validateAuditRecentPayload(payload))
+    ),
+    auditQuery: (payload): Promise<MorpheusAuditQueryResult> => (
+      audit.query(validateAuditQueryPayload(payload))
     ),
   };
 }

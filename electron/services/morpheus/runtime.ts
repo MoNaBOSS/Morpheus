@@ -739,7 +739,18 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
 
       if (verdict.outcome === 'allow') {
         clearTimeout(timer);
-        if (verdict.grantId) options.gate.recordGrantUse(verdict.grantId);
+        if (verdict.grantId) {
+          options.gate.recordGrantUse(verdict.grantId);
+          await options.audit.recordControl({
+            category: 'permission', event: 'grant-used', subjectId: verdict.grantId,
+            details: {
+              capabilityId: scope.capabilityId,
+              resourceScope: scope.resourceScope,
+              originType: scope.originType,
+            },
+            appVersion: options.appVersion,
+          });
+        }
         await execute(run, verdict.reason, verdict.grantId);
         return { runId };
       }
@@ -769,7 +780,21 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       // A remembered decision is stored BEFORE the action runs, so a crash
       // mid-execution cannot lose the consent the user just gave.
       const grantType = grantTypeForDecision(decision);
-      if (grantType) options.grants.createGrant(run.scope, grantType);
+      if (grantType) {
+        const grant = options.grants.createGrant(run.scope, grantType);
+        await options.audit.recordControl({
+          category: 'permission',
+          event: grantType === 'denied-persistent' ? 'denial-created' : 'grant-created',
+          subjectId: grant.grantId,
+          details: {
+            capabilityId: run.scope.capabilityId,
+            resourceScope: run.scope.resourceScope,
+            originType: run.scope.originType,
+            grantType,
+          },
+          appVersion: options.appVersion,
+        });
+      }
 
       if (decision === 'deny' || decision === 'deny-always') {
         await finishDenied(run, 'denied', 'permission-denied', 'Denied by the user');
@@ -870,9 +895,34 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
           });
           },
 
-          persistDecision: (scope, decision) => {
+          persistDecision: async (scope, decision) => {
             const grantType = grantTypeForDecision(decision);
-            if (grantType) options.grants.createGrant(scope, grantType);
+            if (!grantType) return;
+            const grant = options.grants.createGrant(scope, grantType);
+            await options.audit.recordControl({
+              category: 'permission',
+              event: grantType === 'denied-persistent' ? 'denial-created' : 'grant-created',
+              subjectId: grant.grantId,
+              details: {
+                capabilityId: scope.capabilityId,
+                resourceScope: scope.resourceScope,
+                originType: scope.originType,
+                grantType,
+              },
+              appVersion: options.appVersion,
+            });
+          },
+          recordGrantUse: async (grantId, scope) => {
+            options.gate.recordGrantUse(grantId);
+            await options.audit.recordControl({
+              category: 'permission', event: 'grant-used', subjectId: grantId,
+              details: {
+                capabilityId: scope.capabilityId,
+                resourceScope: scope.resourceScope,
+                originType: scope.originType,
+              },
+              appVersion: options.appVersion,
+            });
           },
         });
 

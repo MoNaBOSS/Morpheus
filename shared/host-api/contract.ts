@@ -14,6 +14,8 @@ import type {
   MorpheusAcknowledgement,
   MorpheusAuditRecentPayload,
   MorpheusAuditRecentResult,
+  MorpheusAuditQueryPayload,
+  MorpheusAuditQueryResult,
   MorpheusCancelActionPayload,
   MorpheusDescribeActionsResult,
   MorpheusRequestActionPayload,
@@ -1092,6 +1094,7 @@ export type HostApiContract = {
     respondPermission: (payload: MorpheusRespondPermissionPayload) => MorpheusAcknowledgement;
     cancelAction: (payload: MorpheusCancelActionPayload) => MorpheusAcknowledgement;
     auditRecent: (payload?: MorpheusAuditRecentPayload) => MorpheusAuditRecentResult;
+    auditQuery: (payload?: MorpheusAuditQueryPayload) => MorpheusAuditQueryResult;
     /**
      * Turns a natural-language objective into a typed execution plan and stores
      * it in Main. The renderer previews the returned plan and later names it by

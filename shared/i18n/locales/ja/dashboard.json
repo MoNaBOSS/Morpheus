@@ -407,6 +407,59 @@
       },
       "skippedBecause": "{{stepId}} が失敗したためスキップしました"
     },
+    "foundation": {
+      "systemBuilder": "AI システムビルダー",
+      "automation": "Morpheus オートメーション"
+    },
+    "agentProfiles": {
+      "title": "エージェントプロファイル",
+      "description": "プロバイダー、コンテキスト、ワークスペース、機能、リスクを制約する再利用可能な計画 ID です。Main のポリシーを迂回しません。",
+      "mainOwned": "Main 所有の境界",
+      "empty": "エージェントプロファイルがありません。",
+      "planner": "プランナー",
+      "workspace": "ワークスペース",
+      "capabilities": "機能",
+      "maxRisk": "最大リスク",
+      "authorityNote": "プロファイルは計画を狭めるだけです。実際の対象は Morpheus Main が解決、許可、監査します。"
+    },
+    "workflows": {
+      "title": "ワークフロー",
+      "description": "コマンドセンターと同じ順次型付きプランへコンパイルされる再利用可能な多段システムです。",
+      "empty": "ワークフローがありません。",
+      "run": "ワークフローを実行",
+      "running": "実行中…",
+      "agent": "エージェントプロファイル",
+      "steps": "ステップ"
+    },
+    "schedules": {
+      "title": "スケジュール",
+      "description": "Morpheus 所有の自動化です。予定されたワークフローも正確な信頼範囲、ポリシー、監査を通ります。",
+      "current": "現在のスケジュール",
+      "empty": "Morpheus スケジュールはまだありません。",
+      "create": "スケジュールを作成",
+      "createDescription": "実在するワークフローと制限されたトリガーを選択します。",
+      "name": "名前",
+      "workflow": "ワークフロー",
+      "trigger": "トリガー",
+      "interval": "間隔（分）",
+      "daily": "毎日（ローカル時刻）",
+      "once": "一度だけ実行",
+      "startup": "アプリ起動時",
+      "save": "スケジュールを保存",
+      "runNow": "今すぐ実行",
+      "remove": "スケジュールを削除"
+    },
+    "activity": {
+      "history": "観測可能な実行",
+      "title": "アクティビティ",
+      "description": "保持期間内の実行、許可、自動化に関する追記専用履歴です。",
+      "filter": "カテゴリ",
+      "all": "すべて",
+      "ledger": "アクティビティ台帳",
+      "ledgerDescription": "新しい順。ペイロードや秘密は保持しません。",
+      "empty": "一致するアクティビティはありません。",
+      "loadMore": "以前のアクティビティを読み込む"
+    },
     "quickCommand": {
       "title": "クイックコマンド",
       "close": "クイックコマンドを閉じる",

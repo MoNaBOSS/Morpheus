@@ -407,6 +407,59 @@
       },
       "skippedBecause": "因 {{stepId}} 失败而跳过"
     },
+    "foundation": {
+      "systemBuilder": "AI 系统构建器",
+      "automation": "Morpheus 自动化"
+    },
+    "agentProfiles": {
+      "title": "Agent 配置档",
+      "description": "可复用的规划身份，用于约束提供方、上下文、工作区、能力和风险，绝不会绕过主进程策略。",
+      "mainOwned": "主进程控制边界",
+      "empty": "暂无 Agent 配置档。",
+      "planner": "规划器",
+      "workspace": "工作区",
+      "capabilities": "能力",
+      "maxRisk": "最高风险",
+      "authorityNote": "配置档只会收窄计划。所有真实目标仍由 Morpheus 主进程解析、授权并审计。"
+    },
+    "workflows": {
+      "title": "工作流",
+      "description": "可复用的多步骤系统，编译为与指挥中心相同的顺序类型化计划。",
+      "empty": "暂无工作流。",
+      "run": "运行工作流",
+      "running": "运行中…",
+      "agent": "Agent 配置档",
+      "steps": "个步骤"
+    },
+    "schedules": {
+      "title": "计划任务",
+      "description": "由 Morpheus 所有的自动化。每个计划工作流仍通过精确范围的信任、策略和审计。",
+      "current": "当前计划",
+      "empty": "暂无 Morpheus 计划。",
+      "create": "创建计划",
+      "createDescription": "选择真实工作流和受限触发器。",
+      "name": "名称",
+      "workflow": "工作流",
+      "trigger": "触发器",
+      "interval": "间隔（分钟）",
+      "daily": "每天本地时间",
+      "once": "运行一次",
+      "startup": "应用启动时",
+      "save": "保存计划",
+      "runNow": "立即运行",
+      "remove": "删除计划"
+    },
+    "activity": {
+      "history": "可观察执行",
+      "title": "活动",
+      "description": "跨保留审计日期的仅追加执行、权限和自动化历史。",
+      "filter": "类别",
+      "all": "全部",
+      "ledger": "活动账本",
+      "ledgerDescription": "最新优先，绝不保留有效载荷和秘密。",
+      "empty": "没有匹配的活动记录。",
+      "loadMore": "加载更早活动"
+    },
     "quickCommand": {
       "title": "快捷命令",
       "close": "关闭快捷命令",

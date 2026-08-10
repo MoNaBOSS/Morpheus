@@ -30,6 +30,9 @@ import {
   ChevronsDownUp,
   LoaderCircle,
   Loader2,
+  Workflow,
+  CalendarClock,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isGatewayRestarting } from '@/lib/gateway-status';
@@ -423,6 +426,30 @@ export function Sidebar() {
       icon: <MessagesSquare className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.chat'),
       testId: 'sidebar-nav-chat',
+    },
+    {
+      to: '/agent-profiles',
+      icon: <Bot className="h-4 w-4" strokeWidth={2} />,
+      label: t('sidebar.agentProfiles'),
+      testId: 'sidebar-nav-agent-profiles',
+    },
+    {
+      to: '/workflows',
+      icon: <Workflow className="h-4 w-4" strokeWidth={2} />,
+      label: t('sidebar.workflows'),
+      testId: 'sidebar-nav-workflows',
+    },
+    {
+      to: '/schedules',
+      icon: <CalendarClock className="h-4 w-4" strokeWidth={2} />,
+      label: t('sidebar.schedules'),
+      testId: 'sidebar-nav-schedules',
+    },
+    {
+      to: '/activity',
+      icon: <Activity className="h-4 w-4" strokeWidth={2} />,
+      label: t('sidebar.activity'),
+      testId: 'sidebar-nav-activity',
     },
     {
       to: '/models',

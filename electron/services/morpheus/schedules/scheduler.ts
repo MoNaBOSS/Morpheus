@@ -50,6 +50,7 @@ export function createMorpheusScheduler(options: {
   createId?: () => string;
   setIntervalFn?: typeof setInterval;
   clearIntervalFn?: typeof clearInterval;
+  recordActivity?: (event: string, subjectId: string, details?: Record<string, string | number | boolean>) => Promise<void>;
 }): MorpheusScheduler {
   const now = options.now ?? (() => new Date());
   const createId = options.createId ?? (() => `schedule-${randomUUID()}`);
@@ -76,6 +77,7 @@ export function createMorpheusScheduler(options: {
     if (!schedule.enabled) return { scheduleId, status: 'rejected', error: 'Schedule is disabled' };
     if (running.has(scheduleId)) return { scheduleId, status: 'rejected', error: 'Schedule is already running' };
     running.add(scheduleId);
+    await options.recordActivity?.('run-started', scheduleId, { workflowId: schedule.workflowId });
     options.store.save({ ...schedule, lastStatus: 'running', updatedAt: now().toISOString() });
     try {
       const workflow = options.workflows.get(schedule.workflowId);
@@ -98,6 +100,7 @@ export function createMorpheusScheduler(options: {
         ...(execution.rejection ? { error: execution.rejection.message } : {}),
       };
       persistOutcome(schedule, result);
+      await options.recordActivity?.('run-finished', scheduleId, { workflowId: schedule.workflowId, status });
       return result;
     } catch (error) {
       const result: MorpheusScheduleRunResult = {
@@ -105,6 +108,7 @@ export function createMorpheusScheduler(options: {
         error: error instanceof Error ? error.message : 'Scheduled execution failed',
       };
       persistOutcome(schedule, result);
+      await options.recordActivity?.('run-failed', scheduleId, { workflowId: schedule.workflowId, error: result.error ?? 'unknown' });
       return result;
     } finally {
       running.delete(scheduleId);

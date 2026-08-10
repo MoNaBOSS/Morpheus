@@ -69,6 +69,8 @@ export type PlanTrustAssessment = {
   consentRequired: readonly TrustBoundary[];
   /** Steps refused outright, with the policy reason. */
   denied: readonly DeniedStep[];
+  /** Existing exact-scope grants that make steps automatic. */
+  grantUses: readonly { grantId: string; scope: PermissionScope; stepIds: readonly string[] }[];
 };
 
 export type EvaluatePlanTrustInput = {
@@ -97,6 +99,7 @@ export function evaluatePlanTrust(input: EvaluatePlanTrustInput): PlanTrustAsses
   const autoAllowed: string[] = [];
   const denied: DeniedStep[] = [];
   const boundaries = new Map<string, { scope: PermissionScope; stepIds: string[]; targets: Set<string> }>();
+  const grantUses = new Map<string, { scope: PermissionScope; stepIds: string[] }>();
 
   for (const stepId of order) {
     const scope = scopesByStep.get(stepId);
@@ -114,6 +117,11 @@ export function evaluatePlanTrust(input: EvaluatePlanTrustInput): PlanTrustAsses
 
     if (resolution.outcome === 'allow') {
       autoAllowed.push(stepId);
+      if (resolution.grantId) {
+        const existingGrant = grantUses.get(resolution.grantId);
+        if (existingGrant) existingGrant.stepIds.push(stepId);
+        else grantUses.set(resolution.grantId, { scope, stepIds: [stepId] });
+      }
       continue;
     }
     if (resolution.outcome === 'deny') {
@@ -148,7 +156,13 @@ export function evaluatePlanTrust(input: EvaluatePlanTrustInput): PlanTrustAsses
     ? 'rejected'
     : consentRequired.length > 0 ? 'needs-consent' : 'ready';
 
-  return { outcome, autoAllowed, consentRequired, denied };
+  return {
+    outcome,
+    autoAllowed,
+    consentRequired,
+    denied,
+    grantUses: [...grantUses.entries()].map(([grantId, value]) => ({ grantId, ...value })),
+  };
 }
 
 /**

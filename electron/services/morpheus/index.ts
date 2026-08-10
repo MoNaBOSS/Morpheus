@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import type { MorpheusActionEvent } from '@shared/morpheus/action-types';
 import type { MorpheusPlanConsentEvent } from '@shared/host-events/contract';
 
-import { createMorpheusAuditSink } from './audit';
+import { createMorpheusAuditSink, type MorpheusAuditSink } from './audit';
 import { createMorpheusCapabilityRegistry } from './capability-registry';
 import { createMorpheusGrantStore, type MorpheusGrantStore } from './policy/grant-store';
 import { createPolicyPermissionGate } from './policy/permission-gate';
@@ -53,6 +53,7 @@ export type MorpheusService = {
   workflows: MorpheusWorkflowService;
   scheduleStore: MorpheusScheduleStore;
   scheduler: MorpheusScheduler;
+  audit: MorpheusAuditSink;
   /** Current approved files root, for the Command Center's artifacts panel. */
   filesRoot: string;
   auditHealth: () => AuditHealth;
@@ -129,7 +130,14 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     filesRoot: roots.resolve('morpheusFiles'),
   });
   const scheduleStore = createMorpheusScheduleStore({ userDataDir: options.userDataDir });
-  const scheduler = createMorpheusScheduler({ store: scheduleStore, workflows, runtime });
+  const scheduler = createMorpheusScheduler({
+    store: scheduleStore,
+    workflows,
+    runtime,
+    recordActivity: (event, subjectId, details) => audit.recordControl({
+      category: 'schedule', event, subjectId, details, appVersion: options.appVersion,
+    }),
+  });
 
   return {
     runtime,
@@ -139,6 +147,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     workflows,
     scheduleStore,
     scheduler,
+    audit,
     filesRoot: roots.resolve('morpheusFiles'),
     auditHealth,
   };

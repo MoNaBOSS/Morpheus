@@ -18,6 +18,10 @@ import { Skills } from './pages/Skills';
 import { Cron } from './pages/Cron';
 import { ImageGenerationPage } from './pages/ImageGeneration';
 import { Settings } from './pages/Settings';
+import { AgentProfiles } from './pages/AgentProfiles';
+import { Workflows } from './pages/Workflows';
+import { Schedules } from './pages/Schedules';
+import { Activity } from './pages/Activity';
 import { Setup } from './pages/Setup';
 import { useSettingsStore } from './stores/settings';
 import { useUpdateStore } from './stores/update';
@@ -222,6 +226,10 @@ function App() {
             <Route path="/dashboard" element={<Navigate to="/" replace />} />
             <Route path="/models" element={<Models />} />
             <Route path="/agents" element={<Agents />} />
+            <Route path="/agent-profiles" element={<AgentProfiles />} />
+            <Route path="/workflows" element={<Workflows />} />
+            <Route path="/schedules" element={<Schedules />} />
+            <Route path="/activity" element={<Activity />} />
             <Route path="/channels" element={<Channels />} />
             <Route path="/skills" element={<Skills />} />
             <Route path="/cron" element={<Cron />} />
