@@ -27,7 +27,7 @@ Chat is one interface into Morpheus, not the product itself.
 | [`docs/design/MORPHEUS_DESIGN_SYSTEM.md`](docs/design/MORPHEUS_DESIGN_SYSTEM.md) | Tokens, primitives, accent discipline |
 | [`docs/architecture/MORPHEUS_ARCHITECTURE.md`](docs/architecture/MORPHEUS_ARCHITECTURE.md) | Layers, boundaries, extension recipes |
 | [`docs/roadmap/MORPHEUS_ROADMAP.md`](docs/roadmap/MORPHEUS_ROADMAP.md) | Sequencing and what is not planned |
-| [`docs/releases/0.1.1-ACCEPTANCE.md`](docs/releases/0.1.1-ACCEPTANCE.md) | Current milestone criteria |
+| [`docs/releases/0.5.0-ACCEPTANCE.md`](docs/releases/0.5.0-ACCEPTANCE.md) | Current milestone criteria |
 
 If any of the above conflicts with this file, **those documents win**.
 

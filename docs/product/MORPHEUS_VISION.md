@@ -35,10 +35,10 @@ contract, and each can be upgraded without rewriting the others:
 | Stage | Today | Future |
 | --- | --- | --- |
 | Intent interpretation | Deterministic phrase interpreter | OpenClaw or a provider-backed planner |
-| Execution plan | Typed, single-step | Typed, multi-step with dependencies |
-| Policy evaluation | Risk tiers + profiles + scoped grants | Same engine, richer scopes |
+| Execution plan | Typed, multi-step with dependencies | Richer conditions, retries and lineage |
+| Policy evaluation | Plan-level trust delta + profiles + scoped grants | Same engine, connected-service scopes |
 | Execution | Windows capability adapters | Linux, macOS, remote adapters |
-| Audit | Append-only JSONL | Same contract, additional sinks |
+| Audit | Cross-day append-only JSONL + durable artifact metadata | Same contract, additional sinks |
 
 **The interpreter is temporary. The plan contract is permanent.** A future AI planner
 must be able to emit the same `ExecutionPlan` structure without touching the UI, the
@@ -78,8 +78,9 @@ These are product requirements, not style preferences:
 Morpheus asks for real authority over a user's machine. That is earned by being
 predictable and inspectable:
 
-- The user always knows what will run **before** it runs, described by what the main
-  process actually resolved.
+- The complete plan and execution reason remain observable. When a genuinely new
+  trust boundary needs consent, the prompt describes what Main actually resolved;
+  work inside existing exact trust does not interrupt repeatedly.
 - Approvals are **narrow and revocable**, never blanket.
 - Everything is **recorded** before it is reported.
 - When the audit trail cannot be written, Morpheus **degrades rather than proceeds**.

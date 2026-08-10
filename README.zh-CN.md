@@ -1,17 +1,17 @@
 
 <p align="center">
-  <img src="src/assets/logo.svg" width="128" height="128" alt="ClawX Logo" />
+  <img src="src/assets/morpheus-logo.svg" width="128" height="128" alt="Morpheus Logo" />
 </p>
 
-<h1 align="center">ClawX</h1>
+<h1 align="center">Morpheus</h1>
 
 <p align="center">
-  <strong>OpenClaw AI 智能体的桌面客户端</strong>
+  <strong>桌面 AI 执行平台与 AI 系统构建器</strong>
 </p>
 
 <p align="center">
   <a href="#功能特性">功能特性</a> •
-  <a href="#为什么选择-clawx">为什么选择 ClawX</a> •
+  <a href="#为什么选择-morpheus">为什么选择 Morpheus</a> •
   <a href="#快速上手">快速上手</a> •
   <a href="#系统架构">系统架构</a> •
   <a href="#开发指南">开发指南</a> •
@@ -37,11 +37,9 @@
 
 ## 概述
 
-**ClawX** 是连接强大 AI 智能体与普通用户之间的桥梁。基于 [OpenClaw](https://github.com/OpenClaw) 构建，它将命令行式的 AI 编排转变为易用、美观的桌面体验——无需使用终端。
+**Morpheus** 将用户目标转换为类型化执行计划，评估其中的信任边界，执行确定性的系统能力，并通过实时状态、产物和只追加历史让整个过程保持可观察。聊天只是平台的一个入口，而不是产品本身。
 
-无论是自动化工作流、连接通讯软件，还是调度智能定时任务，ClawX 都能提供高效易用的图形界面，帮助你充分发挥 AI 智能体的能力。
-
-ClawX 预置了最佳实践的模型供应商配置，原生支持 Windows 平台以及多语言设置。当然，你也可以通过 **设置 → 高级 → 开发者模式** 来进行精细的高级配置。
+[OpenClaw](https://github.com/OpenClaw) 继续作为内嵌的智能体与聊天运行时。Morpheus 拥有指挥中心、执行计划、权限、能力、工作流、调度、产物和审计历史。模型供应商是可替换的推理后端，永远不会直接获得不受限制的操作系统权限。
 
 <p align="center"><strong style="font-size:1.1em; text-decoration: underline;">如需完整的企业版、专属服务支持或面向您业务场景的定制化落地辅导，请联系 <a href="mailto:public@valuecell.ai">public@valuecell.ai</a>。</strong></p>
 
@@ -75,11 +73,11 @@ ClawX 预置了最佳实践的模型供应商配置，原生支持 Windows 平�
 
 ---
 
-## 为什么选择 ClawX
+## 为什么选择 Morpheus
 
-构建 AI 智能体不应该需要精通命令行。ClawX 的设计理念很简单：**强大的技术值得拥有一个尊重用户时间的界面。**
+构建 AI 智能体不应该需要精通命令行。Morpheus 的设计理念很简单：**强大的技术值得拥有一个尊重用户时间的界面。**
 
-| 痛点 | ClawX 解决方案 |
+| 痛点 | Morpheus 解决方案 |
 |------|----------------|
 | 复杂的命令行配置 | 一键安装，配合引导式设置向导 |
 | 手动编辑配置文件 | 可视化设置界面，实时校验 |
@@ -90,7 +88,7 @@ ClawX 预置了最佳实践的模型供应商配置，原生支持 Windows 平�
 
 ### 内置 OpenClaw 核心
 
-ClawX 直接基于官方 **OpenClaw** 核心构建。无需单独安装，我们将运行时嵌入应用内部，提供开箱即用的无缝体验。
+Morpheus 直接基于官方 **OpenClaw** 核心构建。无需单独安装，我们将运行时嵌入应用内部，提供开箱即用的无缝体验。
 
 我们致力于与上游 OpenClaw 项目保持严格同步，确保你始终可以使用官方发布的最新功能、稳定性改进和生态兼容性。
 
@@ -104,22 +102,22 @@ ClawX 直接基于官方 **OpenClaw** 核心构建。无需单独安装，我们
 ### 💬 智能聊天界面
 通过现代化的聊天体验与 AI 智能体交互。支持多会话上下文、消息历史记录，并以流式 Markdown 渲染智能体回复，支持带语法高亮的围栏代码块、面向中日韩文本的解析、GitHub 风格表格，以及由 KaTeX 渲染的 LaTeX 数学公式（`$行内$`、`$$块级$$`、`\(行内\)` 和 `\[块级\]`）；用户输入则始终按原始文本显示。同时支持在多 Agent 场景下通过主输入框中的 `@agent` 直接路由到目标智能体。围栏代码会保留源码换行、自动软换行，并在流式输出结束后提供本地化的复制操作。
 从输入框插入的技能会以 `/技能名` 卡片形式显示；点击卡片可在右侧预览栏打开并阅读该技能的 `SKILL.md`。
-当你使用 `@agent` 选择其他智能体时，ClawX 会直接切换到该智能体自己的对话上下文，而不是经过默认智能体转发。各 Agent 工作区默认彼此分离，但更强的运行时隔离仍取决于 OpenClaw 的 sandbox 配置。
+当你使用 `@agent` 选择其他智能体时，Morpheus 会直接切换到该智能体自己的对话上下文，而不是经过默认智能体转发。各 Agent 工作区默认彼此分离，但更强的运行时隔离仍取决于 OpenClaw 的 sandbox 配置。
 会话侧边栏现在以工作空间优先组织：默认工作空间固定在最上方，其它工作空间按自然顺序排列，每个工作空间都可折叠或继续加载更多会话。AI 回复期间，会话行显示加载指示器；未查看的回复完成后显示蓝点；打开会话后恢复显示相对活跃时间，悬停时仍会露出操作按钮。导入的工作空间可从侧边栏标题处重命名，新名称会同步显示在对话输入框下方，同时悬浮标题仍可查看文件系统路径。如果当前所选会话存在有效工作空间，新对话会继承该工作空间，并在首次发送前保持可编辑。对于可编辑的新对话或未绑定对话，输入框的工作空间卡片会打开一个小菜单，列出最近使用及现有会话中的工作空间，并可切回默认工作空间或选择其它目录。如果保存的工作空间文件夹已被移动或删除，Chat 会暂停创建会话并提示选择现有文件夹，而不会持续重试失效路径。不可用的非默认工作空间会在侧边栏显示标记，并可在确认后删除；该操作会永久删除分组中的全部会话。只有永久删除成功后，会话行才会移除且页面才会跳转；删除失败时会保留会话与确认框，方便重试。OpenClaw 生成的 UUID 加日期兜底标题只有在与该会话 ID 匹配时才会被视为缺失标题，随后改用会话的首条用户消息展示，而不会被持久化为会话名称。
 每个 Agent 还可以单独覆盖自己的 `provider/model` 运行时设置；未覆盖的 Agent 会继续继承全局默认模型。
 
-Chat 右侧面板的工作空间和预览选项卡支持以只读方式预览 Markdown、`.docx` 和 `.pptx` 文件。Markdown 文件预览以静态渲染模式提供相同的围栏代码语法高亮、软换行与复制操作、面向中日韩文本的解析和 KaTeX 数学公式支持。预览栏顶部可将当前文件展开至 ClawX 的整个可视区域；再次点击该按钮或按 Esc 即可返回侧栏。旧版 `.doc` 和 `.ppt` 文件不会在应用内预览，而是继续通过操作系统打开。DOCX 的分页效果可能与 Microsoft Word 不同；PPTX 预览不支持动画、切换效果或媒体播放。超过 20 MB 的 Office 文件不会在应用内预览。
+Chat 右侧面板的工作空间和预览选项卡支持以只读方式预览 Markdown、`.docx` 和 `.pptx` 文件。Markdown 文件预览以静态渲染模式提供相同的围栏代码语法高亮、软换行与复制操作、面向中日韩文本的解析和 KaTeX 数学公式支持。预览栏顶部可将当前文件展开至 Morpheus 的整个可视区域；再次点击该按钮或按 Esc 即可返回侧栏。旧版 `.doc` 和 `.ppt` 文件不会在应用内预览，而是继续通过操作系统打开。DOCX 的分页效果可能与 Microsoft Word 不同；PPTX 预览不支持动画、切换效果或媒体播放。超过 20 MB 的 Office 文件不会在应用内预览。
 
 ### 本地 HTML 预览
-Chat 右侧面板只包含工作空间、预览和变更，不再提供通用网页浏览器、主页或地址栏。已授权的本地 `.html` 和 `.htm` 附件、文件活动及工作空间文件默认在预览中打开。文件操作可以选择 ClawX 内置预览或系统应用，预览标题栏也可将当前 HTML 文件交给系统浏览器打开。
+Chat 右侧面板只包含工作空间、预览和变更，不再提供通用网页浏览器、主页或地址栏。已授权的本地 `.html` 和 `.htm` 附件、文件活动及工作空间文件默认在预览中打开。文件操作可以选择 Morpheus 内置预览或系统应用，预览标题栏也可将当前 HTML 文件交给系统浏览器打开。
 
-所有链接都不可点击。ClawX 渲染的链接显示为普通文本，HTML 预览中的链接也会移除链接样式和指针交互。HTML 预览同时阻止表单、脚本跳转、重定向、页内跳转、弹窗、下载、网络请求和设备权限；它可以显示自包含的本地 HTML，但无法离开当前选中的文档。
+所有链接都不可点击。Morpheus 渲染的链接显示为普通文本，HTML 预览中的链接也会移除链接样式和指针交互。HTML 预览同时阻止表单、脚本跳转、重定向、页内跳转、弹窗、下载、网络请求和设备权限；它可以显示自包含的本地 HTML，但无法离开当前选中的文档。
 
 ### 📡 多频道管理
 同时配置和监控多个 AI 频道。每个频道独立运行，允许你为不同任务运行专门的智能体。
 现在每个频道支持多个账号，并可在 Channels 页面直接完成账号绑定到 Agent 与默认账号切换。
-对于自定义频道账号 ID，ClawX 现在会强制校验 OpenClaw 兼容的规范格式（`[a-z0-9_-]`、小写、最长 64 位、且必须以字母或数字开头），避免路由匹配异常。
-ClawX 现在还内置了腾讯官方个人微信渠道插件，可直接在 Channels 页面通过内置二维码流程完成微信连接。
+对于自定义频道账号 ID，Morpheus 现在会强制校验 OpenClaw 兼容的规范格式（`[a-z0-9_-]`、小写、最长 64 位、且必须以字母或数字开头），避免路由匹配异常。
+Morpheus 现在还内置了腾讯官方个人微信渠道插件，可直接在 Channels 页面通过内置二维码流程完成微信连接。
 
 ### ⏰ 定时任务自动化
 调度 AI 任务自动执行。定义触发器、设置时间间隔，让 AI 智能体 7×24 小时不间断工作。
@@ -128,50 +126,46 @@ ClawX 现在还内置了腾讯官方个人微信渠道插件，可直接在 Chan
 
 ### 🧩 可扩展技能系统
 通过预构建的技能扩展 AI 智能体的能力。集成的 Skills 页面采用“本地优先”方式：会扫描托管目录与 workspace 技能目录，并且无需依赖 Gateway 即可启用或停用技能；在企业扩展接管时，也可以显示扩展提供的 marketplace。
-ClawX 还会内置预装完整的文档处理技能（`pdf`、`xlsx`、`docx`、`pptx`），在启动时自动部署到托管技能目录（默认 `~/.openclaw/skills`），并在首次安装时默认启用。
+Morpheus 还会内置预装完整的文档处理技能（`pdf`、`xlsx`、`docx`、`pptx`），在启动时自动部署到托管技能目录（默认 `~/.openclaw/skills`），并在首次安装时默认启用。
 Skills 页面可展示来自多个 OpenClaw 来源的技能（托管目录、workspace、额外技能目录），并显示每个技能的实际路径，便于直接打开真实安装位置。对于 OpenClaw 自带的 bundled skills，社区版现在在打包产物里只保留并展示 `skill-creator`；开发模式和打包版启动时都会直接清理其它 bundled skill，同时把这些已删除 bundled skill 在 `openclaw.json` 中残留的旧配置一并移除。
 
 ### 🔐 安全的供应商集成
 连接多个 AI 供应商（OpenAI、Anthropic、Z.AI / GLM 等），凭证安全存储在系统原生密钥链中。OpenAI 同时支持 API Key 与浏览器 OAuth（Codex 订阅）登录。
 在开发者模式下，独立的“图像生成”页面支持配置 OpenAI 兼容生图端点（Base URL、API Key 和模型名，例如 `gpt-image-2`），生图请求会走专用的 `/v1/images/generations` 服务，聊天仍继续使用正常的 OpenAI Provider。
 如果你通过 **自定义（Custom）Provider** 对接 OpenAI-compatible 网关，可以在 **设置 → AI Providers → 编辑 Provider** 中配置自定义 `User-Agent`，以提高兼容性。
-编辑或切换 Provider 时，ClawX 会保留已有的模型级能力元数据，例如 `input: ["text", "image"]`。新选择的自定义 Provider 模型会使用与 OpenClaw onboarding 一致的图片输入能力推断；未知模型默认按纯文本模型处理。
-自定义 Provider 的模型行还会写入显式的 `contextWindow`（按模型系列推断，例如 `gpt-5.x` → 272k），旧版本保存的模型行会在启动时自动回填，使 OpenClaw 能在长会话超限前主动压缩上下文，避免出现 "Context overflow" 报错。当你没有配置 compaction 时，ClawX 会默认写入 `agents.defaults.compaction.mode = "safeguard"` 和 `reserveTokensFloor = 50000`；你手动配置过的模型行或压缩配置永远不会被修改（仅可能回填缺失的 `reserveTokensFloor`）。
+编辑或切换 Provider 时，Morpheus 会保留已有的模型级能力元数据，例如 `input: ["text", "image"]`。新选择的自定义 Provider 模型会使用与 OpenClaw onboarding 一致的图片输入能力推断；未知模型默认按纯文本模型处理。
+自定义 Provider 的模型行还会写入显式的 `contextWindow`（按模型系列推断，例如 `gpt-5.x` → 272k），旧版本保存的模型行会在启动时自动回填，使 OpenClaw 能在长会话超限前主动压缩上下文，避免出现 "Context overflow" 报错。当你没有配置 compaction 时，Morpheus 会默认写入 `agents.defaults.compaction.mode = "safeguard"` 和 `reserveTokensFloor = 50000`；你手动配置过的模型行或压缩配置永远不会被修改（仅可能回填缺失的 `reserveTokensFloor`）。
 Z.AI（国内站 / 国际站）会映射到 OpenClaw 内置的 `zai` 供应商（`ZAI_API_KEY`），默认模型为 `glm-5.2`。可通过 Code Plan 预设切换到编码套餐端点（`…/api/coding/paas/v4`），或使用普通 API 端点（`…/api/paas/v4`）；国内站与国际站互斥，因为它们共享同一个 OpenClaw 运行时 key。
-如果兼容网关的 `/models` 因非鉴权原因不可用，ClawX 会在校验 API Key 时使用已配置的模型，自动降级为轻量的 `/chat/completions` 或 `/responses` 探测。
+如果兼容网关的 `/models` 因非鉴权原因不可用，Morpheus 会在校验 API Key 时使用已配置的模型，自动降级为轻量的 `/chat/completions` 或 `/responses` 探测。
 
 ### 🌙 自适应主题
-支持浅色模式、深色模式或跟随系统主题。ClawX 自动适应你的偏好设置。
+支持浅色模式、深色模式或跟随系统主题。Morpheus 自动适应你的偏好设置。
 
 ### 🚀 开机启动控制
-在 **设置 → 通用** 中，你可以开启 **开机自动启动**，让 ClawX 在系统登录后自动启动。
+在 **设置 → 通用** 中，你可以开启 **开机自动启动**，让 Morpheus 在系统登录后自动启动。
 
 ### 🔔 更新提示
-ClawX 可以在启动时自动检查新版本。发现更新后会显示应用内提示；只有在你选择操作后，才会下载或安装更新。
+Morpheus 可以在启动时自动检查新版本。发现更新后会显示应用内提示；只有在你选择操作后，才会下载或安装更新。
 
 ---
 
-### 🟢 Morpheus 指挥中心（0.1.1）
+### 🟢 Morpheus 0.5 基础版本
 
-Morpheus 产品形态的第一个里程碑。侧边栏中的 **仪表盘** 会打开一个指挥中心，用于执行在 Electron 主进程中
-运行的本机系统操作，而非通过 Agent 运行时。
+Morpheus 默认打开 `/` 的**指挥中心**；`Ctrl+Shift+Space` 可从任何位置调用**快捷命令**；
+OpenClaw 聊天在 `/chat` 保持完整可用。三个入口都进入同一套由主进程拥有的执行管线。
 
-- **启动序列** —— 受《黑客帝国》启发的启动动画，按真实信号推进（设置水合、宿主桥接往返、网关状态）。
-  按 `Esc` 或点击即可跳过，并且始终会在限定时间内自动消失。
-- **本机操作** —— 启动已批准的应用程序、在主进程控制的目录中创建文本文件、获取不含隐私信息的系统信息。
-  这些是可扩展操作注册表中的首批条目，而非固定集合。
-- **明确确认** —— 每个操作在执行前都会显示主进程实际*解析*出的目标（可执行文件或文件的绝对路径）。
-  拒绝则完全不会执行任何工作。
-- **执行时间线** —— 由主进程上报的实时阶段，没有任何模拟数据。
-- **审计日志** —— 位于用户数据目录下的只追加 JSONL 记录。每个阶段都会先写入再送达界面，并且绝不保存
-  文件内容（仅保存大小与摘要）。
+- **多步骤类型化计划** —— 依赖、状态、结果、错误和产物均来自真实的顺序执行；失败只跳过其传递依赖项。
+- **计划级信任评估** —— Strict、Balanced（默认）和 Autonomous 会评估完整计划，只为真正新增的范围询问一次，
+  并复用精确的会话或持久授权。关键风险不可绕过，审计降级时会阻止写入与进程启动。
+- **19 项受控 Windows 能力** —— 文件与文件夹、已批准应用、独立的剪贴板读写范围、通知、可授权截图、
+  系统/存储/进程信息、已批准 URL 和受限的 VS Code 项目启动。没有通用 Shell、PowerShell、任意可执行文件或路径。
+- **AI 系统构建基础** —— 可复用的 Agent Profiles、真实起始工作流、Morpheus 自有调度和供应商中立的规划接口。
+- **真实可观察性** —— 主进程实时事件、从隐私安全审计元数据重建的持久产物，以及跨日只追加 Activity 历史。
+- **永久视觉系统** —— 新配置默认深色，在 1280×800 下保持紧凑；Matrix 风格仅用于真实的实时/已验证状态和启动序列。
 
-操作策略被编译进应用，无法从界面修改。渲染进程只发送逻辑操作 ID 与经过校验的参数——绝不会发送可执行
-文件路径、命令行、环境变量或任意文件系统路径。详见
-[`harness/reference/morpheus-execution-architecture.md`](harness/reference/morpheus-execution-architecture.md)。
-
-目前 Windows 提供这三项能力；注册表已按平台区分，因此 macOS 与 Linux 的实现只需新增模块，无需改动运行时、
-契约或界面。
+操作策略、授权、调度、目标解析、执行和审计持久化均由 Electron 主进程拥有。详见
+[`docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md`](docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md)
+与 [`docs/security/PERMISSION_MODEL.md`](docs/security/PERMISSION_MODEL.md)。
 
 ---
 
@@ -193,8 +187,8 @@ Morpheus 产品形态的第一个里程碑。侧边栏中的 **仪表盘** 会�
 
 ```bash
 # 克隆仓库
-git clone https://github.com/ValueCell-ai/ClawX.git
-cd ClawX
+git clone https://github.com/ValueCell-ai/ClawX.git morpheus-core
+cd morpheus-core
 
 # 初始化项目
 pnpm run init
@@ -204,7 +198,7 @@ pnpm dev
 ```
 ### 首次启动
 
-首次启动 ClawX 时，**设置向导** 将引导你完成以下步骤：
+首次启动 Morpheus 时，**设置向导** 将引导你完成以下步骤：
 
 1. **语言与区域** – 配置你的首选语言和地区
 2. **AI 供应商** – 通过 API 密钥或 OAuth（支持浏览器/设备登录的供应商）添加账号
@@ -213,12 +207,12 @@ pnpm dev
 
 如果系统语言在支持列表中，向导会默认选中该语言；否则回退到英文。
 
-> Moonshot（Kimi）说明：ClawX 默认保持开启 Kimi 的 web search。  
-> 当配置 Moonshot 后，ClawX 也会将 OpenClaw 配置中的 Kimi web search 同步到中国区端点（`https://api.moonshot.cn/v1`）。
+> Moonshot（Kimi）说明：Morpheus 默认保持开启 Kimi 的 web search。
+> 当配置 Moonshot 后，Morpheus 也会将 OpenClaw 配置中的 Kimi web search 同步到中国区端点（`https://api.moonshot.cn/v1`）。
 
 ### 代理设置
 
-ClawX 内置了代理设置，适用于需要通过本地代理客户端访问外网的场景，包括 Electron 本身、OpenClaw Gateway，以及 Telegram 这类频道的联网请求。
+Morpheus 内置了代理设置，适用于需要通过本地代理客户端访问外网的场景，包括 Electron 本身、OpenClaw Gateway，以及 Telegram 这类频道的联网请求。
 
 打开 **设置 → 网关 → 代理**，配置以下内容：
 
@@ -239,8 +233,8 @@ ClawX 内置了代理设置，适用于需要通过本地代理客户端访问�
 - 只填写 `host:port` 时，会按 HTTP 代理处理。
 - 高级代理项留空时，会自动回退到“代理服务器”。
 - 保存代理设置后，Electron 网络层会立即重新应用代理，并自动重启 Gateway。
-- 如果启用了 Telegram，ClawX 还会把代理同步到 OpenClaw 的 Telegram 频道配置中。
-- 当 ClawX 代理处于关闭状态时，Gateway 的常规重启会保留已有的 Telegram 频道代理配置。
+- 如果启用了 Telegram，Morpheus 还会把代理同步到 OpenClaw 的 Telegram 频道配置中。
+- 当 Morpheus 代理处于关闭状态时，Gateway 的常规重启会保留已有的 Telegram 频道代理配置。
 - 如果你要明确清空 OpenClaw 中的 Telegram 代理，请在关闭代理后点一次“保存代理设置”。
 - 在 **设置 → 高级 → 开发者** 中，可以直接运行 **OpenClaw Doctor**，执行 `openclaw doctor --json` 并在应用内查看诊断输出。
 - 在 Windows 打包版本中，内置的 `openclaw` CLI/TUI 会通过随包分发的 `node.exe` 入口运行，以保证终端输入行为稳定。
@@ -249,33 +243,33 @@ ClawX 内置了代理设置，适用于需要通过本地代理客户端访问�
 
 ## 系统架构
 
-ClawX 采用 **双进程 + Host API 统一接入架构**。渲染进程只调用统一客户端抽象，协议选择与进程生命周期由 Electron 主进程统一管理：
+Morpheus 采用 **双进程 + Host API 统一接入架构**。渲染进程只调用统一客户端抽象，协议选择与进程生命周期由 Electron 主进程统一管理：
 
-OpenClaw 配置交付也统一由 Electron Main 管理。Gateway 运行时，ClawX 以 `config.get` 返回的权威快照为基线，并通过 `config.set` 提交修改；Gateway 停止或启动中时，同一个协调器只更新解析后的 JSON5 配置文件，不会因此启动 Gateway。因此，普通的 Provider、Agent、Channel、绑定、Skill 和模型修改不会替换 Gateway 进程。完整重启仅保留给代理等进程启动环境变化、用户显式操作以及健康检查或崩溃恢复。认证配置写入 SQLite 后，ClawX 会调用 OpenClaw 的 `secrets.reload`，让运行中的 Agent 无需重启即可读取新凭据。
+OpenClaw 配置交付也统一由 Electron Main 管理。Gateway 运行时，Morpheus 以 `config.get` 返回的权威快照为基线，并通过 `config.set` 提交修改；Gateway 停止或启动中时，同一个协调器只更新解析后的 JSON5 配置文件，不会因此启动 Gateway。因此，普通的 Provider、Agent、Channel、绑定、Skill 和模型修改不会替换 Gateway 进程。完整重启仅保留给代理等进程启动环境变化、用户显式操作以及健康检查或崩溃恢复。认证配置写入 SQLite 后，Morpheus 会调用 OpenClaw 的 `secrets.reload`，让运行中的 Agent 无需重启即可读取新凭据。
 
 Chat 使用由 Electron Main 持有的 ACP stdio bridge。Renderer 接收类型化 host events，并渲染内存中的 ACP timeline。Gateway 仍负责 providers、models、skills、workspace、settings、diagnostics 和 media configuration 等非 Chat 能力。
 
-打开其它会话或页面时，尚未完成的 ACP 回复仍会继续流式接收。若在回复完成前返回，ClawX 会恢复最新的内存 timeline 并继续显示实时输出；回复完成后，普通 ACP 历史回放仍是唯一事实来源。
+打开其它会话或页面时，尚未完成的 ACP 回复仍会继续流式接收。若在回复完成前返回，Morpheus 会恢复最新的内存 timeline 并继续显示实时输出；回复完成后，普通 ACP 历史回放仍是唯一事实来源。
 
 ACP assistant 回合会显示整轮耗时。Live 计时跟随客户端观测到的 prompt 生命周期，并在应用内导航后保持连续；历史耗时由 Electron Main 根据有界的 OpenClaw transcript 时间戳计算，而且只能标注 ACP 回放已经恢复出的回合。
 
-ACP Chat 会将标准 ACP resource 渲染为附件。用户选择的图片会显示为缩略图，并在悬停蒙层中显示文件名；其它可用的附件卡片会显示文件名，以及灰色、可截断的来源路径。当前 OpenClaw ACP adapter 遗漏 assistant 媒体时，OpenClaw 持久化的规范媒体事实和显式 assistant `MEDIA:` 指令也可恢复为附件卡片，且不会显示仅用于 transcript 的元数据。现有本地文件引用（包括当前 workspace 外的路径）在每次预览或打开前，都会由 Electron Main 按精确的 session 和 generation 重新验证。AI 生成且可预览的本地附件（包括不超过 20 MB 的 `.docx` 和 `.pptx` 文件）会保留主要的只读应用内预览操作，并提供次级菜单，可通过兼容应用打开，或在 Finder、文件资源管理器或系统文件管理器中显示。对于本地 HTML 附件，该菜单第一项会在右侧预览中打开文件。Office 预览在此处也有相同限制：`.doc` 和 `.ppt` 仍通过系统应用打开，DOCX 的分页效果可能与 Microsoft Word 不同，PPTX 的动画、切换效果和媒体播放不受支持。兼容应用发现仅在 macOS 和 Windows 上可用；在 Linux 上或发现失败时，会静默降级为仅显示文件位置。其它本地文件（包括超过 20 MB 的 Office 文件）会在用户点击后通过系统应用打开。用户选择的文件夹附件在发送后也会保持可用，点击后交给系统文件管理器打开；ClawX 不会读取或预览其中内容。远程 HTTP 和 HTTPS 附件会在用户点击后从外部打开。没有规范媒体事实佐证的普通文本裸路径或行内路径不会被当作附件。
+ACP Chat 会将标准 ACP resource 渲染为附件。用户选择的图片会显示为缩略图，并在悬停蒙层中显示文件名；其它可用的附件卡片会显示文件名，以及灰色、可截断的来源路径。当前 OpenClaw ACP adapter 遗漏 assistant 媒体时，OpenClaw 持久化的规范媒体事实和显式 assistant `MEDIA:` 指令也可恢复为附件卡片，且不会显示仅用于 transcript 的元数据。现有本地文件引用（包括当前 workspace 外的路径）在每次预览或打开前，都会由 Electron Main 按精确的 session 和 generation 重新验证。AI 生成且可预览的本地附件（包括不超过 20 MB 的 `.docx` 和 `.pptx` 文件）会保留主要的只读应用内预览操作，并提供次级菜单，可通过兼容应用打开，或在 Finder、文件资源管理器或系统文件管理器中显示。对于本地 HTML 附件，该菜单第一项会在右侧预览中打开文件。Office 预览在此处也有相同限制：`.doc` 和 `.ppt` 仍通过系统应用打开，DOCX 的分页效果可能与 Microsoft Word 不同，PPTX 的动画、切换效果和媒体播放不受支持。兼容应用发现仅在 macOS 和 Windows 上可用；在 Linux 上或发现失败时，会静默降级为仅显示文件位置。其它本地文件（包括超过 20 MB 的 Office 文件）会在用户点击后通过系统应用打开。用户选择的文件夹附件在发送后也会保持可用，点击后交给系统文件管理器打开；Morpheus 不会读取或预览其中内容。远程 HTTP 和 HTTPS 附件会在用户点击后从外部打开。没有规范媒体事实佐证的普通文本裸路径或行内路径不会被当作附件。
 
-ACP Chat 也可在 runtime 以可信结构化媒体投递图像生成结果时显示生成图片预览。对于可信的 OpenClaw internal-UI 投递和与生图任务关联的最终回复，ClawX 会保留原始的用户可见完成文案，包括只有文本的失败说明，而不会统一替换成通用图片文案。历史 OpenClaw 回放中，assistant 的图片 `MEDIA:` 标记只有在同一会话已记录图像生成任务启动后才会进入内联图片体验。ClawX 通过 Electron Main 的主机媒体处理加载预览，而不是让 Renderer 任意访问文件系统。标准 ACP 图片和 resource 内容仍是首选路径，并会直接渲染。
+ACP Chat 也可在 runtime 以可信结构化媒体投递图像生成结果时显示生成图片预览。对于可信的 OpenClaw internal-UI 投递和与生图任务关联的最终回复，Morpheus 会保留原始的用户可见完成文案，包括只有文本的失败说明，而不会统一替换成通用图片文案。历史 OpenClaw 回放中，assistant 的图片 `MEDIA:` 标记只有在同一会话已记录图像生成任务启动后才会进入内联图片体验。Morpheus 通过 Electron Main 的主机媒体处理加载预览，而不是让 Renderer 任意访问文件系统。标准 ACP 图片和 resource 内容仍是首选路径，并会直接渲染。
 
 ### ACP 文件活动语义
 
-- 文件活动由成功且已完成的 OpenClaw `write`、`edit` 和 `apply_patch` 调用投影而来。工具识别方式与 OpenClaw 官方 Chat UI 保持一致；仅接收已完成调用的筛选规则是 ClawX 特有的。
+- 文件活动由成功且已完成的 OpenClaw `write`、`edit` 和 `apply_patch` 调用投影而来。工具识别方式与 OpenClaw 官方 Chat UI 保持一致；仅接收已完成调用的筛选规则是 Morpheus 特有的。
 - 已创建和已修改的活动行与可预览的 assistant 附件共用同一种文件卡片外壳和**打开方式**菜单，同时保留状态文字及可用的 `+/-` 统计。对于 HTML 文件，菜单第一项会在右侧**预览**中打开文件；已删除的活动行只保留 **Changes** 操作。应用列表、指定应用打开和显示文件位置都会由 Electron Main 根据 workspace 根目录与相对路径分别重新验证；工具路径不会因此变成附件，Renderer 也不会获得规范化系统路径。
 - `write` 按工具声明的语义显示：视为创建，并展示为全部新增的差异，即使该路径可能已经存在。
 - **Changes** 是按时间顺序记录工具声明活动的会话级记录，不是 Git 输出，也不是相对于已验证源码基线的差异。
 - 对每个文件，Changes 在每轮助手回复中最多展示一个 diff 编辑器。可安全串联的片段会合并，独立片段会拼接到同一个编辑器中，但不会被描述为基于完整文件基线的差异。
 - Shell 命令、脚本、用户或 IDE 产生的副作用不会被检测。
-- 完整的 ACP 回放可以恢复已记录的文件活动；如果回放不完整，ClawX 不会通过回退推断来补造缺失活动。
+- 完整的 ACP 回放可以恢复已记录的文件活动；如果回放不完整，Morpheus 不会通过回退推断来补造缺失活动。
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
-│                        ClawX 桌面应用                              │
+│                        Morpheus 桌面应用                              │
 │                                                                   │
 │  ┌─────────────────────────────────────────────────────────────┐  │
 │  │              Electron 主进程                                 │  │
@@ -329,7 +323,7 @@ ACP Chat 也可在 runtime 以可信结构化媒体投递图像生成结果时�
 
 ### 进程模型与 Gateway 排障
 
-- ClawX 基于 Electron，**单个应用实例出现多个系统进程是正常现象**（main/renderer/zygote/utility）。
+- Morpheus 基于 Electron，**单个应用实例出现多个系统进程是正常现象**（main/renderer/zygote/utility）。
 - 单实例保护同时使用 Electron 自带锁与本地进程文件锁回退机制，可在桌面会话总线异常时避免重复启动。
 - 滚动升级期间若新旧版本混跑，单实例保护仍可能出现不对称行为。为保证稳定性，建议桌面客户端尽量统一升级到同一版本。
 - 但 OpenClaw Gateway 监听应始终保持**单实例**：`127.0.0.1:18789` 只能有一个监听者。
@@ -337,7 +331,7 @@ ACP Chat 也可在 runtime 以可信结构化媒体投递图像生成结果时�
 - 可用以下命令确认监听进程：
   - macOS/Linux：`lsof -nP -iTCP:18789 -sTCP:LISTEN`
   - Windows（PowerShell）：`Get-NetTCPConnection -LocalPort 18789 -State Listen`
-- 点击窗口关闭按钮（`X`）默认只是最小化到托盘，并不会完全退出应用。请在托盘菜单中选择 **Quit ClawX** 执行完整退出。
+- 点击窗口关闭按钮（`X`）默认只是最小化到托盘，并不会完全退出应用。请在托盘菜单中选择 **Quit Morpheus** 执行完整退出。
 
 ---
 
@@ -371,7 +365,7 @@ ACP Chat 也可在 runtime 以可信结构化媒体投递图像生成结果时�
 
 ### 项目结构
 
-```ClawX/
+```Morpheus/
 ├── electron/                 # Electron 主进程
 │   ├── services/            # 类型化 Host API、Provider、Secrets 与运行时服务
 │   │   ├── providers/       # Provider/account 模型同步逻辑
@@ -433,7 +427,7 @@ pnpm package:linux        # 为 Linux 打包
 
 录制真实 Renderer 时，使用 `CLAWX_REMOTE_DEBUGGING_PORT=9223 pnpm dev` 启动开发环境，再让 Playwright 或 Chrome DevTools 连接 `localhost:9223`。录制真实 Electron Main 时，运行 `pnpm run profile:main`，在 `chrome://inspect` 中配置 `localhost:9229` 并选择 Electron Main target。除非正在测量 WebSocket trace 本身，否则不要设置 `CLAWX_GATEWAY_WS_TRACE`。
 
-ClawX 默认保留 Chromium 硬件加速，使长文档、滚动和布局动画能够使用 GPU 合成与光栅化。若某台机器的显卡驱动存在问题，仍可使用 Chromium 原生的 `--disable-gpu` 命令行参数作为排障回退。
+Morpheus 默认保留 Chromium 硬件加速，使长文档、滚动和布局动画能够使用 GPU 合成与光栅化。若某台机器的显卡驱动存在问题，仍可使用 Chromium 原生的 `--disable-gpu` 命令行参数作为排障回退。
 
 ### 通信回归检查
 
@@ -462,7 +456,7 @@ CI 中的 `comms-regression` 会校验必选场景与阈值。
 
 ## 参与贡献
 
-我们欢迎社区的各种贡献！无论是修复 Bug、开发新功能、改进文档还是翻译——每一份贡献都让 ClawX 变得更好。
+我们欢迎社区的各种贡献！无论是修复 Bug、开发新功能、改进文档还是翻译——每一份贡献都让 Morpheus 变得更好。
 
 ### 如何贡献
 
@@ -483,7 +477,7 @@ CI 中的 `comms-regression` 会校验必选场景与阈值。
 
 ## 致谢
 
-ClawX 构建于以下优秀的开源项目之上：
+Morpheus 构建于以下优秀的开源项目之上：
 
 - [OpenClaw](https://github.com/OpenClaw) – AI 智能体运行时
 - [Electron](https://www.electronjs.org/) – 跨平台桌面框架
@@ -501,11 +495,11 @@ ClawX 构建于以下优秀的开源项目之上：
 | :---: | :---: | :---: |
 | <img src="src/assets/community/wecom-qr.png" width="150" alt="企业微信二维码" /> | <img src="src/assets/community/feishu-qr.png" width="150" alt="飞书二维码" /> | <img src="src/assets/community/20260212-185822.png" width="150" alt="Discord 二维码" /> |
 
-### ClawX 合作伙伴计划 🚀
+### Morpheus 合作伙伴计划 🚀
 
-我们正在启动 ClawX 合作伙伴计划，寻找能够帮助我们将 ClawX 介绍给更多客户的合作伙伴，尤其是那些有定制化 AI 智能体或自动化需求的客户。
+我们正在启动 Morpheus 合作伙伴计划，寻找能够帮助我们将 Morpheus 介绍给更多客户的合作伙伴，尤其是那些有定制化 AI 智能体或自动化需求的客户。
 
-合作伙伴负责帮助我们连接潜在用户和项目，ClawX 团队则提供完整的技术支持、定制开发与集成服务。
+合作伙伴负责帮助我们连接潜在用户和项目，Morpheus 团队则提供完整的技术支持、定制开发与集成服务。
 
 如果你服务的客户对 AI 工具或自动化方案感兴趣，欢迎与我们合作。
 
@@ -523,7 +517,7 @@ ClawX 构建于以下优秀的开源项目之上：
 
 ## 许可证
 
-ClawX 基于 [MIT 许可证](LICENSE) 发布。你可以自由地使用、修改和分发本软件。
+Morpheus 基于 [MIT 许可证](LICENSE) 发布。你可以自由地使用、修改和分发本软件。
 
 ---
 

@@ -29,10 +29,13 @@ The renderer is untrusted for anything that touches the operating system.
 "Confirm everything forever" is not a security model — it trains users to click
 through. Neither is "allow everything once".
 
-- Grants bind to an **exact scope**: capability id, platform, resource, risk tier,
-  origin.
+- Grants bind to an **exact scope**: capability or frozen capability group,
+  platform, canonical resource, risk tier, and origin.
 - A changed scope invalidates the grant.
-- High and critical risk always confirm, regardless of profile or grant.
+- Permission is evaluated across the complete plan and genuinely new scopes are
+  batched into one decision.
+- High risk is sensitive but grantable. Critical risk always confirms regardless
+  of profile or grant.
 - Revocation takes effect on the next execution, with no restart.
 
 ## 4. Record before you report

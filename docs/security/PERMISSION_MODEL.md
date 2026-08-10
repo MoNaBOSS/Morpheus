@@ -121,6 +121,8 @@ a user who approved a workspace would be re-prompted as work nested deeper.
 | Capability | Tier | Group | Rationale |
 | --- | --- | --- | --- |
 | `system.report` | `low` | — | Read-only; excludes username, hostname, network interfaces, machine id |
+| `system.storage` | `low` | — | Reports aggregate bytes only for the Main-owned Morpheus workspace root |
+| `system.processes` | `high` | — | Bounded process-name/PID/memory disclosure; no command lines or environment |
 | `system.notify` | `low` | — | Transient OS notification; reads nothing, leaves nothing |
 | `file.readText` | `medium` | `workspace.read` | Reads one file inside the canonical root |
 | `file.list` | `medium` | `workspace.read` | Lists a directory inside the canonical root |
@@ -134,12 +136,15 @@ a user who approved a workspace would be re-prompted as work nested deeper.
 | `clipboard.writeText` | `medium` | — | Replaces clipboard contents; discloses nothing |
 | `clipboard.readText` | `high` | — | Reads what the user copied, which routinely includes secrets |
 | `screen.capture` | `high` | — | Records the screen, including other applications |
+| `web.openUrl` | `medium` | — | Validated HTTP(S) URL opened through Electron; no custom/file protocols |
+| `dev.launchProject` | `medium` | — | Compiled-in VS Code template with one Main-canonicalized workspace folder |
 | `file.delete` | `critical` | — | Irreversible |
 
 ### `critical` — always confirms, regardless of profile or grant
 
-This is the only unwaivable tier. Nothing implements these yet; the invariants
-are encoded and tested so they cannot later be weakened by accident:
+This is the only unwaivable tier. Morpheus 0.5 implements only bounded workspace
+deletion from this class; the wider invariants are encoded and tested so future
+capabilities cannot weaken them by accident:
 
 - File deletion or overwrite of existing content
 - Financial or cryptocurrency transactions

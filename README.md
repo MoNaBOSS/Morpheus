@@ -1,17 +1,17 @@
 
 <p align="center">
-  <img src="src/assets/logo.svg" width="128" height="128" alt="ClawX Logo" />
+  <img src="src/assets/morpheus-logo.svg" width="128" height="128" alt="Morpheus Logo" />
 </p>
 
-<h1 align="center">ClawX</h1>
+<h1 align="center">Morpheus</h1>
 
 <p align="center">
-  <strong>The Desktop Interface for OpenClaw AI Agents</strong>
+  <strong>AI execution platform and system builder for the desktop</strong>
 </p>
 
 <p align="center">
   <a href="#features">Features</a> •
-  <a href="#why-clawx">Why ClawX</a> •
+  <a href="#why-morpheus">Why Morpheus</a> •
   <a href="#getting-started">Getting Started</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#development">Development</a> •
@@ -37,11 +37,16 @@
 
 ## Overview
 
-**ClawX** bridges the gap between powerful AI agents and everyday users. Built on top of [OpenClaw](https://github.com/OpenClaw), it transforms command-line AI orchestration into an accessible, beautiful desktop experience—no terminal required.
+**Morpheus** turns an objective into a typed execution plan, evaluates its trust
+boundaries, runs deterministic capabilities, and keeps the work observable through
+live status, artifacts, and append-only history. Chat is one interface into the
+platform, not the product itself.
 
-Whether you're automating workflows, managing AI-powered channels, or scheduling intelligent tasks, ClawX provides the interface you need to harness AI agents effectively.
-
-ClawX comes pre-configured with best-practice model providers and natively supports Windows as well as multi-language settings. Of course, you can also fine-tune advanced configurations via **Settings → Advanced → Developer Mode**.
+[OpenClaw](https://github.com/OpenClaw) remains the embedded agent and chat runtime.
+Morpheus owns the Command Center, execution plans, permissions, capabilities,
+workflows, schedules, artifacts, and audit history. Model providers remain
+replaceable reasoning backends and never receive unrestricted operating-system
+authority.
 
 <p align="center"><strong style="font-size:1.1em; text-decoration: underline;">For a full enterprise edition, dedicated service support, or tailored deployment guidance for your business scenario, contact us at <a href="mailto:public@valuecell.ai">public@valuecell.ai</a>.</strong></p>
 
@@ -74,11 +79,11 @@ ClawX comes pre-configured with best-practice model providers and natively suppo
 
 ---
 
-## Why ClawX
+## Why Morpheus
 
-Building AI agents shouldn't require mastering the command line. ClawX was designed with a simple philosophy: **powerful technology deserves an interface that respects your time.**
+Building AI agents shouldn't require mastering the command line. Morpheus was designed with a simple philosophy: **powerful technology deserves an interface that respects your time.**
 
-| Challenge | ClawX Solution |
+| Challenge | Morpheus Solution |
 |-----------|----------------|
 | Complex CLI setup | One-click installation with guided setup wizard |
 | Configuration files | Visual settings with real-time validation |
@@ -89,7 +94,7 @@ Building AI agents shouldn't require mastering the command line. ClawX was desig
 
 ### OpenClaw Inside
 
-ClawX is built directly upon the official **OpenClaw** core. Instead of requiring a separate installation, we embed the runtime within the application to provide a seamless "battery-included" experience.
+Morpheus is built directly upon the official **OpenClaw** core. Instead of requiring a separate installation, we embed the runtime within the application to provide a seamless "battery-included" experience.
 
 We are committed to maintaining strict alignment with the upstream OpenClaw project, ensuring that you always have access to the latest capabilities, stability improvements, and ecosystem compatibility provided by the official releases.
 
@@ -103,22 +108,22 @@ Complete the entire setup—from installation to your first AI interaction—thr
 ### 💬 Intelligent Chat Interface
 Communicate with AI agents through a modern chat experience. Support for multiple conversation contexts, message history, assistant replies rendered as streaming Markdown with syntax-highlighted fenced code, CJK-aware parsing, GitHub-flavored tables, and KaTeX-powered LaTeX math (`$inline$`, `$$block$$`, `\(inline\)`, and `\[block\]`) while user input remains literal text, and direct `@agent` routing in the main composer for multi-agent setups. Fenced code preserves source line breaks, soft-wraps long lines, and provides a localized copy action after streaming completes.
 Skills you insert from the composer appear as `/skill-name` chips; click a chip to open the preview sidebar and read that skill's `SKILL.md`.
-When you target another agent with `@agent`, ClawX switches into that agent's own conversation context directly instead of relaying through the default agent. Agent workspaces stay separate by default, and stronger isolation depends on OpenClaw sandbox settings.
+When you target another agent with `@agent`, Morpheus switches into that agent's own conversation context directly instead of relaying through the default agent. Agent workspaces stay separate by default, and stronger isolation depends on OpenClaw sandbox settings.
 The session sidebar is workspace-first: the default workspace stays at the top, other workspaces sort naturally, and each workspace can collapse or load more sessions. A row shows a spinner while the AI is replying, a blue dot when an unseen reply finishes, and its relative activity time after the conversation is opened; hovering still reveals row actions. Imported workspaces can be renamed from their sidebar header; the custom name is reflected in the chat composer while hovering the header still reveals the filesystem path. When available, a new chat inherits the selected conversation's workspace while remaining editable until first send. Editable new or unbound chats expose the composer workspace chip as a small menu that lists recent and known-session workspaces, returns to the default workspace, or chooses another folder. If a saved workspace folder was moved or deleted, Chat pauses session creation and prompts you to choose an existing folder instead of repeatedly retrying the missing path. Unavailable non-default groups are marked in the sidebar and can be removed after confirmation; this permanently deletes every session in that group. A session row is removed and navigation changes only after permanent deletion succeeds; failed deletions leave the conversation and confirmation open for retry. Synthetic OpenClaw UUID-date fallback titles are treated as missing only when they match the session ID, then replaced with the conversation's first user prompt instead of being persisted as the session name.
 Each agent can also override its own `provider/model` runtime setting; agents without overrides continue inheriting the global default model.
 
-The Workspace and Preview tabs in Chat's right panel provide read-only previews for Markdown, `.docx`, and `.pptx` files. Markdown file previews use the same syntax-highlighted, soft-wrapped, copyable fenced code, CJK-aware parsing, and KaTeX math support in static rendering mode. The Preview header can expand the selected file to the full ClawX viewport; use the same control or Escape to return to the panel. Legacy `.doc` and `.ppt` files continue to open through the operating system instead of inline. DOCX pagination may differ from Microsoft Word, and PPTX previews do not support animations, transitions, or media playback. Office files larger than 20 MB are not previewed inline.
+The Workspace and Preview tabs in Chat's right panel provide read-only previews for Markdown, `.docx`, and `.pptx` files. Markdown file previews use the same syntax-highlighted, soft-wrapped, copyable fenced code, CJK-aware parsing, and KaTeX math support in static rendering mode. The Preview header can expand the selected file to the full Morpheus viewport; use the same control or Escape to return to the panel. Legacy `.doc` and `.ppt` files continue to open through the operating system instead of inline. DOCX pagination may differ from Microsoft Word, and PPTX previews do not support animations, transitions, or media playback. Office files larger than 20 MB are not previewed inline.
 
 ### Local HTML Preview
 The Chat right panel has Workspace, Preview, and Changes tabs; it no longer includes a general Web Browser, Home page, or address bar. Authorized local `.html` and `.htm` attachments, file activities, and Workspace files open in Preview by default. Their file actions let you choose the built-in Preview or a system application, and the Preview header can open the current HTML file in the system browser.
 
-All links are non-clickable. Links rendered by ClawX appear as ordinary text, and links inside HTML Preview have their styling and pointer interaction removed. HTML Preview also blocks forms, script navigation, redirects, hash navigation, popups, downloads, network requests, and device permissions. It can render self-contained local HTML but cannot leave the selected document.
+All links are non-clickable. Links rendered by Morpheus appear as ordinary text, and links inside HTML Preview have their styling and pointer interaction removed. HTML Preview also blocks forms, script navigation, redirects, hash navigation, popups, downloads, network requests, and device permissions. It can render self-contained local HTML but cannot leave the selected document.
 
 ### 📡 Multi-Channel Management
 Configure and monitor multiple AI channels simultaneously. Each channel operates independently, allowing you to run specialized agents for different tasks.
 Each channel now supports multiple accounts, per-account agent binding, and switching the channel default account directly from the Channels page.
-For custom channel account IDs, ClawX enforces OpenClaw-compatible canonical IDs (`[a-z0-9_-]`, lowercase, max 64 chars, must start with a letter/number) to prevent routing mismatches.
-ClawX now also bundles Tencent's official personal WeChat channel plugin, so you can link WeChat directly from the Channels page with an in-app QR flow.
+For custom channel account IDs, Morpheus enforces OpenClaw-compatible canonical IDs (`[a-z0-9_-]`, lowercase, max 64 chars, must start with a letter/number) to prevent routing mismatches.
+Morpheus now also bundles Tencent's official personal WeChat channel plugin, so you can link WeChat directly from the Channels page with an in-app QR flow.
 
 ### ⏰ Cron-Based Automation
 Schedule AI tasks to run automatically. Define triggers, set intervals, and let your AI agents work around the clock without manual intervention.
@@ -127,56 +132,64 @@ The Cron page now lets you configure external delivery directly in the task form
 
 ### 🧩 Extensible Skill System
 Extend your AI agents with pre-built skills. The integrated Skills page is local-first: it scans managed/workspace skill directories, lets you enable or disable skills without depending on the Gateway, and can optionally expose an extension-provided marketplace in enterprise builds.
-ClawX also pre-bundles full document-processing skills (`pdf`, `xlsx`, `docx`, `pptx`), deploys them automatically to the managed skills directory (default `~/.openclaw/skills`) on startup, and enables them by default on first install.
+Morpheus also pre-bundles full document-processing skills (`pdf`, `xlsx`, `docx`, `pptx`), deploys them automatically to the managed skills directory (default `~/.openclaw/skills`) on startup, and enables them by default on first install.
 The Skills page can display skills discovered from multiple OpenClaw sources (managed dir, workspace, and extra skill dirs), and now shows each skill's actual location so you can open the real folder directly. For bundled OpenClaw skills, community builds now ship and expose only `skill-creator`; non-allowlisted bundled skills are physically trimmed in both dev and packaged startup, and any stale `openclaw.json` entries left behind for those removed bundled skills are pruned.
 
 ### 🔐 Secure Provider Integration
 Connect to multiple AI providers (OpenAI, Anthropic, Z.AI / GLM, and more) with credentials stored securely in your system's native keychain. OpenAI supports both API key and browser OAuth (Codex subscription) sign-in.
 In developer mode, the dedicated Image Generation page supports an independent OpenAI-compatible image-generation endpoint (Base URL, API key, and model name such as `gpt-image-2`) so image generation can use a dedicated `/v1/images/generations` service while chat continues using the normal OpenAI provider.
 For **Custom** providers used with OpenAI-compatible gateways, you can set a custom `User-Agent` in **Settings → AI Providers → Edit Provider** for compatibility-sensitive endpoints.
-When you edit or switch providers, ClawX preserves existing per-model capability metadata such as `input: ["text", "image"]`. Newly selected Custom-provider models use OpenClaw onboarding-compatible image-input inference, with unknown models defaulting to text-only.
-Custom-provider model rows also receive an explicit `contextWindow` (inferred from the model family, e.g. `gpt-5.x` → 272k), and rows saved by older versions are backfilled on startup, so OpenClaw can compact long sessions before they fail with "Context overflow" errors. When you have no compaction config, ClawX seeds `agents.defaults.compaction.mode = "safeguard"` and `reserveTokensFloor = 50000`; rows or configs you authored yourself are never modified (except a missing `reserveTokensFloor` may be backfilled).
+When you edit or switch providers, Morpheus preserves existing per-model capability metadata such as `input: ["text", "image"]`. Newly selected Custom-provider models use OpenClaw onboarding-compatible image-input inference, with unknown models defaulting to text-only.
+Custom-provider model rows also receive an explicit `contextWindow` (inferred from the model family, e.g. `gpt-5.x` → 272k), and rows saved by older versions are backfilled on startup, so OpenClaw can compact long sessions before they fail with "Context overflow" errors. When you have no compaction config, Morpheus seeds `agents.defaults.compaction.mode = "safeguard"` and `reserveTokensFloor = 50000`; rows or configs you authored yourself are never modified (except a missing `reserveTokensFloor` may be backfilled).
 Z.AI (CN / Global) maps to OpenClaw's built-in `zai` provider (`ZAI_API_KEY`). Default model is `glm-5.2`. Use the Code Plan preset for Coding Plan endpoints (`…/api/coding/paas/v4`) or the normal API endpoints (`…/api/paas/v4`); CN and Global are mutually exclusive because they share one OpenClaw runtime key.
-When a compatible gateway rejects `/models` for non-auth reasons, ClawX automatically falls back to a lightweight `/chat/completions` or `/responses` probe using the configured model during API key validation.
+When a compatible gateway rejects `/models` for non-auth reasons, Morpheus automatically falls back to a lightweight `/chat/completions` or `/responses` probe using the configured model during API key validation.
 
 ### 🌙 Adaptive Theming
-Light mode, dark mode, or system-synchronized themes. ClawX adapts to your preferences automatically.
+Light mode, dark mode, or system-synchronized themes. Morpheus adapts to your preferences automatically.
 
 ### 🚀 Startup Launch Control
-In **Settings → General**, you can enable **Launch at system startup** so ClawX starts automatically after login.
+In **Settings → General**, you can enable **Launch at system startup** so Morpheus starts automatically after login.
 
 ### 🔔 Update Prompts
-ClawX can automatically check for new versions on startup. When an update is available, it shows an in-app prompt; downloading and installing only happen after you choose the action.
+Morpheus can automatically check for new versions on startup. When an update is available, it shows an in-app prompt; downloading and installing only happen after you choose the action.
 
 ---
 
-### 🟢 Morpheus Command Center (0.1.1)
+### 🟢 Morpheus 0.5 Foundation
 
-Morpheus opens on the **Command Center** at `/`; chat lives at `/chat` and remains fully functional.
-Commands are interpreted into a typed execution plan, evaluated against a risk-based permission
-policy, and executed in the Electron main process rather than through the agent runtime.
+Morpheus opens on the **Command Center** at `/`; **Quick Command** is available
+globally with `Ctrl+Shift+Space`; OpenClaw chat remains fully functional at
+`/chat`. All three surfaces converge on the same Main-owned execution pipeline.
 
-- **Boot sequence** — a Matrix-inspired startup overlay that advances on real signals (settings
-  hydration, a host-bridge round trip, gateway status). Press `Esc` or click to skip; it always
-  dismisses itself within a bounded time.
-- **Native actions** — launch an approved application, create a text file inside a main-process
-  controlled folder, or report privacy-safe system information. These are the first entries in an
-  extensible action registry, not a fixed set.
-- **Risk-based permissions** — Strict, Balanced (default) and Autonomous profiles. Privacy-safe reads
-  run automatically; other actions ask once and can be remembered for an exact target, for the session
-  or permanently. Every prompt shows what the main process actually *resolved*. Grants are revocable
-  from the Permission Center in Settings.
-- **Execution timeline** — live phases reported by the main process. Nothing is simulated.
-- **Audit log** — an append-only JSONL record under your user data folder. Every phase is written
-  before it reaches the interface, and file content is never stored (only its size and a digest).
+- **Sequential typed plans** — multi-step plans honour dependencies, expose real
+  step status/results/errors/artifacts, and skip only transitive dependants after
+  failure. No Renderer path can submit executable paths or fabricate events.
+- **Plan-level trust** — Strict, Balanced (default), and Autonomous profiles
+  evaluate the complete plan. Morpheus asks once only for genuinely new scopes,
+  then honours exact session or persistent grants. Critical boundaries remain
+  unwaivable; degraded audit blocks writes and launches.
+- **19 controlled Windows capabilities** — useful filesystem and folder work,
+  approved applications, separate clipboard read/write scopes, notifications,
+  sensitive-but-grantable screenshots, privacy-safe system/storage/process
+  reports, approved URLs, and a bounded VS Code project launcher. No generic
+  shell, PowerShell, arbitrary executable, argv, or unrestricted path surface.
+- **System builder foundation** — reusable Agent Profiles, two real starter
+  workflows, Morpheus-owned schedules, and a provider-neutral planner contract.
+- **Real observability** — live Main events, durable artifacts reconstructed from
+  privacy-safe audit metadata, and a cursor-based Activity ledger across daily
+  append-only audit files. Text, clipboard payloads, notification copy, process
+  names, directory entries, and URL queries are never persisted in audit output.
+- **Permanent visual system** — dark by default for fresh profiles, compact at
+  1280×800, with Matrix influence reserved for live/verified state and the real
+  signal-driven boot sequence.
 
-Action policy is compiled into the application and cannot be modified from the interface. The
-renderer sends a logical action id and validated parameters only — never an executable path, command
-line, environment, or arbitrary filesystem path. See
-[`harness/reference/morpheus-execution-architecture.md`](harness/reference/morpheus-execution-architecture.md).
+Action policy, trust grants, schedules, target resolution, execution, and audit
+persistence are owned by Electron Main. See
+[`docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md`](docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md)
+and [`docs/security/PERMISSION_MODEL.md`](docs/security/PERMISSION_MODEL.md).
 
-Windows ships the three capabilities today; the registry is platform-aware, so macOS and Linux
-implementations are added as new modules without changing the runtime, contract, or interface.
+Windows adapters ship today. Shared plan, agent, workflow, schedule, permission,
+artifact, and audit contracts remain platform-neutral for future adapters.
 
 ---
 
@@ -198,8 +211,8 @@ Download the latest release for your platform from the [Releases](https://github
 
 ```bash
 # Clone the repository
-git clone https://github.com/ValueCell-ai/ClawX.git
-cd ClawX
+git clone https://github.com/ValueCell-ai/ClawX.git morpheus-core
+cd morpheus-core
 
 # Initialize the project
 pnpm run init
@@ -209,7 +222,7 @@ pnpm dev
 ```
 ### First Launch
 
-When you launch ClawX for the first time, the **Setup Wizard** will guide you through:
+When you launch Morpheus for the first time, the **Setup Wizard** will guide you through:
 
 1. **Language & Region** – Configure your preferred locale
 2. **AI Provider** – Add providers with API keys or OAuth (for providers that support browser/device login)
@@ -218,12 +231,12 @@ When you launch ClawX for the first time, the **Setup Wizard** will guide you th
 
 The wizard preselects your system language when it is supported, and falls back to English otherwise.
 
-> Note for Moonshot (Kimi): ClawX keeps Kimi web search enabled by default.  
-> When Moonshot is configured, ClawX also syncs Kimi web search to the China endpoint (`https://api.moonshot.cn/v1`) in OpenClaw config.
+> Note for Moonshot (Kimi): Morpheus keeps Kimi web search enabled by default.
+> When Moonshot is configured, Morpheus also syncs Kimi web search to the China endpoint (`https://api.moonshot.cn/v1`) in OpenClaw config.
 
 ### Proxy Settings
 
-ClawX includes built-in proxy settings for environments where Electron, the OpenClaw Gateway, or channels such as Telegram need to reach the internet through a local proxy client.
+Morpheus includes built-in proxy settings for environments where Electron, the OpenClaw Gateway, or channels such as Telegram need to reach the internet through a local proxy client.
 
 Open **Settings → Gateway → Proxy** and configure:
 
@@ -242,10 +255,10 @@ Proxy Server: http://127.0.0.1:7890
 Notes:
 
 - A bare `host:port` value is treated as HTTP.
-- If advanced proxy fields are left empty, ClawX falls back to `Proxy Server`.
+- If advanced proxy fields are left empty, Morpheus falls back to `Proxy Server`.
 - Saving proxy settings reapplies Electron networking immediately and restarts the Gateway automatically.
-- ClawX also syncs the proxy to OpenClaw's Telegram channel config when Telegram is enabled.
-- Gateway restarts preserve an existing Telegram channel proxy if ClawX proxy is currently disabled.
+- Morpheus also syncs the proxy to OpenClaw's Telegram channel config when Telegram is enabled.
+- Gateway restarts preserve an existing Telegram channel proxy if Morpheus proxy is currently disabled.
 - To explicitly clear Telegram channel proxy from OpenClaw config, save proxy settings with proxy disabled.
 - In **Settings → Advanced → Developer**, you can run **OpenClaw Doctor** to execute `openclaw doctor --json` and inspect the diagnostic output without leaving the app.
 - On packaged Windows builds, the bundled `openclaw` CLI/TUI runs via the shipped `node.exe` entrypoint to keep terminal input behavior stable.
@@ -254,9 +267,9 @@ Notes:
 
 ## Architecture
 
-ClawX employs a **dual-process architecture** with a unified host API layer. The renderer talks to a single client abstraction, while Electron Main owns protocol selection and process lifecycle:
+Morpheus employs a **dual-process architecture** with a unified host API layer. The renderer talks to a single client abstraction, while Electron Main owns protocol selection and process lifecycle:
 
-Electron Main also owns OpenClaw configuration delivery. While the Gateway is running, ClawX reads the authoritative `config.get` snapshot and commits changes with `config.set`; while it is stopped or starting, the same coordinator updates the resolved JSON5 config file without starting the Gateway. Ordinary provider, agent, channel, binding, skill, and model changes therefore do not replace the Gateway process. Full restarts remain for process-launch environment changes such as proxy settings, explicit user actions, and health or crash recovery. Auth-profile SQLite updates use OpenClaw's `secrets.reload` RPC so running agents see new credentials without a process restart.
+Electron Main also owns OpenClaw configuration delivery. While the Gateway is running, Morpheus reads the authoritative `config.get` snapshot and commits changes with `config.set`; while it is stopped or starting, the same coordinator updates the resolved JSON5 config file without starting the Gateway. Ordinary provider, agent, channel, binding, skill, and model changes therefore do not replace the Gateway process. Full restarts remain for process-launch environment changes such as proxy settings, explicit user actions, and health or crash recovery. Auth-profile SQLite updates use OpenClaw's `secrets.reload` RPC so running agents see new credentials without a process restart.
 
 Chat uses an ACP stdio bridge owned by Electron Main. Renderer receives typed host events and renders an in-memory ACP timeline. Gateway remains responsible for non-Chat capabilities such as providers, models, skills, workspace, settings, diagnostics, and media configuration.
 
@@ -264,23 +277,23 @@ An unfinished ACP response keeps streaming when you open another conversation or
 
 ACP assistant turns show whole-turn duration. Live timing follows the client-observed prompt lifecycle and survives in-app navigation; historical timing is derived in Electron Main from bounded OpenClaw transcript timestamps and only annotates a turn already restored by ACP replay.
 
-ACP Chat renders standard ACP resources as attachments. User-selected images appear as thumbnails with a filename hover overlay, while other available attachment cards show the filename and a muted, truncating source path. When the current OpenClaw ACP adapter omits assistant media, canonical persisted OpenClaw media facts and explicit assistant `MEDIA:` directives can also be recovered as attachment cards without displaying transcript-only metadata. Existing local file references, including paths outside the active workspace, are revalidated in Electron Main for the exact session and generation before every preview or open. Previewable local attachments produced by the AI, including `.docx` and `.pptx` files within the 20 MB inline-preview limit, keep their primary read-only in-app preview action and provide a secondary menu for opening with compatible applications or revealing the file in Finder, File Explorer, or the system file manager. For local HTML attachments, that menu starts with an action that opens the file in the right-side Preview tab. The same Office limitations apply here: `.doc` and `.ppt` remain system-open formats, DOCX pagination may differ from Microsoft Word, and PPTX animations, transitions, and media playback are unsupported. Compatible-application discovery is available only on macOS and Windows and silently degrades to reveal-only behavior on Linux or when discovery fails. Other local files, including Office files larger than 20 MB, open in the system application after a user click. User-selected folder attachments also remain available after send and open in the system file manager; ClawX does not read or preview their contents. Remote HTTP and HTTPS attachments open externally after a user click. Bare or inline prose paths without canonical media facts are not treated as attachments.
+ACP Chat renders standard ACP resources as attachments. User-selected images appear as thumbnails with a filename hover overlay, while other available attachment cards show the filename and a muted, truncating source path. When the current OpenClaw ACP adapter omits assistant media, canonical persisted OpenClaw media facts and explicit assistant `MEDIA:` directives can also be recovered as attachment cards without displaying transcript-only metadata. Existing local file references, including paths outside the active workspace, are revalidated in Electron Main for the exact session and generation before every preview or open. Previewable local attachments produced by the AI, including `.docx` and `.pptx` files within the 20 MB inline-preview limit, keep their primary read-only in-app preview action and provide a secondary menu for opening with compatible applications or revealing the file in Finder, File Explorer, or the system file manager. For local HTML attachments, that menu starts with an action that opens the file in the right-side Preview tab. The same Office limitations apply here: `.doc` and `.ppt` remain system-open formats, DOCX pagination may differ from Microsoft Word, and PPTX animations, transitions, and media playback are unsupported. Compatible-application discovery is available only on macOS and Windows and silently degrades to reveal-only behavior on Linux or when discovery fails. Other local files, including Office files larger than 20 MB, open in the system application after a user click. User-selected folder attachments also remain available after send and open in the system file manager; Morpheus does not read or preview their contents. Remote HTTP and HTTPS attachments open externally after a user click. Bare or inline prose paths without canonical media facts are not treated as attachments.
 
-ACP Chat can also display generated image previews when image-generation media is delivered by the runtime as trusted structured media. Trusted OpenClaw internal-UI deliveries and task-correlated final replies preserve the original user-facing completion text, including text-only failure explanations, rather than replacing it with a generic image caption. During historical OpenClaw replay, assistant image `MEDIA:` markers are promoted to the inline image experience only when they follow a recorded image-generation task start for that session. ClawX loads previews through host media handling in Electron Main, not arbitrary Renderer filesystem access. Standard ACP image and resource content remains the preferred path and renders directly.
+ACP Chat can also display generated image previews when image-generation media is delivered by the runtime as trusted structured media. Trusted OpenClaw internal-UI deliveries and task-correlated final replies preserve the original user-facing completion text, including text-only failure explanations, rather than replacing it with a generic image caption. During historical OpenClaw replay, assistant image `MEDIA:` markers are promoted to the inline image experience only when they follow a recorded image-generation task start for that session. Morpheus loads previews through host media handling in Electron Main, not arbitrary Renderer filesystem access. Standard ACP image and resource content remains the preferred path and renders directly.
 
 ### ACP File Activity Semantics
 
-- File activity is projected from successful, completed OpenClaw `write`, `edit`, and `apply_patch` calls. Tool recognition follows the official OpenClaw Chat UI; filtering to completed calls is specific to ClawX.
+- File activity is projected from successful, completed OpenClaw `write`, `edit`, and `apply_patch` calls. Tool recognition follows the official OpenClaw Chat UI; filtering to completed calls is specific to Morpheus.
 - Created and modified activity rows use the same file-card shell and **Open with** menu as previewable assistant attachments while retaining their status and optional `+/-` summary. For HTML files, the first menu item opens the file in the right-side Preview tab. Deleted rows keep only the **Changes** action. Every application-list, selected-application, and reveal request is independently revalidated in Electron Main from the workspace root and relative path; tool-derived paths never become attachments or expose canonical native paths to Renderer.
 - A `write` is shown as the tool declares it: a creation with an all-added diff, even if the path may already exist.
 - **Changes** is a chronological, session-level record of tool-declared activity. It is not Git output or a verified diff against a source baseline.
 - For each file, Changes renders at most one diff editor per assistant turn. Sequential fragments are composed when safe; independent fragments share one concatenated editor without claiming a complete-file baseline.
 - Side effects made by shell commands, scripts, users, or IDEs are not detected.
-- A full ACP replay can restore recorded file activity. If replay is incomplete, ClawX does not infer missing activity through fallback behavior.
+- A full ACP replay can restore recorded file activity. If replay is incomplete, Morpheus does not infer missing activity through fallback behavior.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                        ClawX Desktop App                         │
+│                        Morpheus Desktop App                         │
 │                                                                  │
 │  ┌────────────────────────────────────────────────────────────┐  │
 │  │              Electron Main Process                         │  │
@@ -334,7 +347,7 @@ ACP Chat can also display generated image previews when image-generation media i
 
 ### Process Model & Gateway Troubleshooting
 
-- ClawX is an Electron app, so **one app instance normally appears as multiple OS processes** (main/renderer/zygote/utility). This is expected.
+- Morpheus is an Electron app, so **one app instance normally appears as multiple OS processes** (main/renderer/zygote/utility). This is expected.
 - Single-instance protection uses Electron's lock plus a local process-file lock fallback, preventing duplicate app launch in environments where desktop IPC/session bus is unstable.
 - During rolling upgrades, mixed old/new app versions can still have asymmetric protection behavior. For best reliability, upgrade all desktop clients to the same version.
 - The OpenClaw Gateway listener should still be **single-owner**: only one process should listen on `127.0.0.1:18789`.
@@ -342,7 +355,7 @@ ACP Chat can also display generated image previews when image-generation media i
 - To verify the active listener:
   - macOS/Linux: `lsof -nP -iTCP:18789 -sTCP:LISTEN`
   - Windows (PowerShell): `Get-NetTCPConnection -LocalPort 18789 -State Listen`
-- Clicking the window close button (`X`) hides ClawX to tray; it does **not** fully quit the app. Use tray menu **Quit ClawX** for complete shutdown.
+- Clicking the window close button (`X`) hides Morpheus to tray; it does **not** fully quit the app. Use tray menu **Quit Morpheus** for complete shutdown.
 
 ---
 
@@ -376,7 +389,7 @@ Chain multiple skills together to create sophisticated automation pipelines. Pro
 
 ### Project Structure
 
-```ClawX/
+```Morpheus/
 ├── electron/                 # Electron Main Process
 │   ├── services/            # Typed host APIs, provider, secrets and runtime services
 │   │   ├── providers/       # Provider/account model sync logic
@@ -438,7 +451,7 @@ On headless Linux, run Electron tests under a display server such as `xvfb-run -
 
 For a live Renderer recording, start development with `CLAWX_REMOTE_DEBUGGING_PORT=9223 pnpm dev` and attach Playwright or Chrome DevTools to `localhost:9223`. For a live Electron Main recording, run `pnpm run profile:main`, open `chrome://inspect`, configure `localhost:9229`, and select the Electron Main target. Leave `CLAWX_GATEWAY_WS_TRACE` unset unless WebSocket tracing itself is being measured.
 
-ClawX leaves Chromium hardware acceleration enabled by default so long documents, scrolling, and layout animations can use GPU compositing and rasterization. Chromium still honors the native `--disable-gpu` command-line switch as a troubleshooting fallback for a machine with a broken graphics driver.
+Morpheus leaves Chromium hardware acceleration enabled by default so long documents, scrolling, and layout animations can use GPU compositing and rasterization. Chromium still honors the native `--disable-gpu` command-line switch as a troubleshooting fallback for a machine with a broken graphics driver.
 
 ### Communication Regression Checks
 
@@ -461,7 +474,7 @@ from `dist/` and `dist-electron/`, so it does not require manually running
 
 - builds the renderer and Electron bundles with `pnpm run build:vite`
 - starts Electron in an isolated E2E mode with a temporary `HOME`
-- uses a temporary ClawX `userData` directory
+- uses a temporary Morpheus `userData` directory
 - skips heavy startup side effects such as gateway auto-start, bundled skill
   installation, tray creation, and CLI auto-install
 
@@ -489,7 +502,7 @@ Add future Electron flows under `tests/e2e/` and reuse the shared fixture in
 
 ## Contributing
 
-We welcome contributions from the community! Whether it's bug fixes, new features, documentation improvements, or translations—every contribution helps make ClawX better.
+We welcome contributions from the community! Whether it's bug fixes, new features, documentation improvements, or translations—every contribution helps make Morpheus better.
 
 ### How to Contribute
 
@@ -510,7 +523,7 @@ We welcome contributions from the community! Whether it's bug fixes, new feature
 
 ## Acknowledgments
 
-ClawX is built on the shoulders of excellent open-source projects:
+Morpheus is built on the shoulders of excellent open-source projects:
 
 - [OpenClaw](https://github.com/OpenClaw) – The AI agent runtime
 - [Electron](https://www.electronjs.org/) – Cross-platform desktop framework
@@ -528,11 +541,11 @@ Join our community to connect with other users, get support, and share your expe
 | :---: | :---: | :---: |
 | <img src="src/assets/community/wecom-qr.png" width="150" alt="WeChat QR Code" /> | <img src="src/assets/community/feishu-qr.png" width="150" alt="Feishu QR Code" /> | <img src="src/assets/community/20260212-185822.png" width="150" alt="Discord QR Code" /> |
 
-### ClawX Partner Program 🚀
+### Morpheus Partner Program 🚀
 
-We're launching the ClawX Partner Program and looking for partners who can help introduce ClawX to more clients, especially those with custom AI agent or automation needs.
+We're launching the Morpheus Partner Program and looking for partners who can help introduce Morpheus to more clients, especially those with custom AI agent or automation needs.
 
-Partners help connect us with potential users and projects, while the ClawX team provides full technical support, customization, and integration.
+Partners help connect us with potential users and projects, while the Morpheus team provides full technical support, customization, and integration.
 
 If you work with clients interested in AI tools or automation, we'd love to collaborate.
 
@@ -550,7 +563,7 @@ DM us or email [public@valuecell.ai](mailto:public@valuecell.ai) to learn more.
 
 ## License
 
-ClawX is released under the [MIT License](LICENSE). You're free to use, modify, and distribute this software.
+Morpheus is released under the [MIT License](LICENSE). You're free to use, modify, and distribute this software.
 
 ---
 

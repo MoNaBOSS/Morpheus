@@ -28,6 +28,9 @@ touchedAreas:
   - tests/unit/morpheus-**
   - tests/e2e/morpheus-**
   - docs/**
+  - harness/reference/morpheus-execution-architecture.md
+  - harness/specs/tasks/morpheus-0.5-foundation.md
+  - CLAUDE.md
   - README.md
   - README.zh-CN.md
   - README.ja-JP.md
@@ -56,7 +59,7 @@ requiredTests:
   - pnpm run typecheck
   - pnpm run lint
   - pnpm exec vitest run tests/unit/morpheus-agent-profiles.test.ts tests/unit/morpheus-workflows.test.ts tests/unit/morpheus-schedules.test.ts tests/unit/morpheus-activity.test.ts tests/unit/morpheus-quick-command.test.ts
-  - pnpm exec playwright test tests/e2e/morpheus-0.5-foundation.spec.ts tests/e2e/morpheus-command-center.spec.ts tests/e2e/morpheus-routing.spec.ts
+  - pnpm exec playwright test tests/e2e/morpheus-foundation.spec.ts tests/e2e/morpheus-command-center.spec.ts tests/e2e/morpheus-routing.spec.ts
   - pnpm run build:vite
 acceptance:
   - Plans remain sequential in 0.5 and dependency failures skip only their transitive dependants.

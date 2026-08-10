@@ -22,6 +22,10 @@ terminal.
 sequence only. Elsewhere, the Matrix inheritance shows as: precise monospace
 detail, green reserved for *live/verified* states, and layered depth.
 
+Fresh profiles default to the dark Morpheus surface. A saved user choice of
+light or system theme is still respected; product styling must remain legible in
+those modes rather than forcing a theme after the user has chosen one.
+
 ## Colour
 
 ### Semantic tokens (existing shadcn set)
@@ -126,8 +130,10 @@ Located in `src/components/morpheus/ui/`. Pages compose these.
 └──────────┴──────────────────────────────────────────┘
 ```
 
-At 1280×800 the header and the top of Primary must be visible without scrolling.
-Aside collapses below Primary under `xl`.
+At 1280×800 the identity, command input, runtime/provider/trust state, current
+execution, first supported action, and navigation to Chat/Agents/Skills must be
+visible without page scrolling. Long capability and activity collections scroll
+inside their own bounded regions. Aside collapses below Primary under `xl`.
 
 ## Writing
 

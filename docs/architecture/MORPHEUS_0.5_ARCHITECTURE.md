@@ -149,6 +149,14 @@ The 0.1.1 write path is correct and unchanged. `recent()` read only the current
 day's file, which cannot back a real history surface. 0.5 adds
 `query({ from, to, capabilityId?, status?, limit, cursor })` across daily files.
 
+**Status: implemented.** Queries are bounded and cursor-based. Control records
+(profile changes, grant lifecycle/use, workflow/schedule changes) and execution
+records share one append-only ledger. Action results are reduced before
+persistence: file/clipboard text, notification copy, process names, directory
+entries, and URL paths/queries remain transient Renderer results and never become
+durable audit content. Recent artifacts are reconstructed only from this reduced
+metadata, so they survive restart without creating a parallel mutable database.
+
 ## 6. Provider-neutral planning
 
 `MorpheusPlanner` is an interface with one method: objective + context in, typed
@@ -169,7 +177,27 @@ capability ids and validated parameters.
 | **Quick Command** (global shortcut) | Do something immediately from any app, without switching windows |
 | **Chat** (`/chat`) | Think and converse through OpenClaw |
 
-## 8. What 0.5 deliberately does not build
+## 8. Shipped foundation map
+
+| Foundation | Main/shared implementation | Product surface |
+| --- | --- | --- |
+| Plans | `shared/morpheus/plan/`, `electron/services/morpheus/plan/` | Command Center plan + timeline |
+| Trust | `electron/services/morpheus/policy/`, `.../plan/trust.ts` | Batched consent + Permission Center |
+| Capabilities | `shared/morpheus/actions/registry.ts`, `.../capabilities/win32/` | 19 real Windows actions |
+| Agent Profiles | `shared/morpheus/agent-profile-types.ts`, `.../agents/` | Agent Profiles |
+| Workflows | `shared/morpheus/workflow-types.ts`, `.../workflows/` | Workflows |
+| Schedules | `shared/morpheus/schedule-types.ts`, `.../schedules/` | Schedules |
+| Quick Command | Main global shortcut + `morpheus:quick-command` host event | `Ctrl+Shift+Space` overlay |
+| Activity/artifacts | `electron/services/morpheus/audit.ts` | Activity ledger + Command Center |
+| Planner boundary | `shared/morpheus/planner.ts` | Deterministic planner today; replaceable later |
+
+Every origin — command bar, Quick Command, workflow, or schedule — names a
+Main-authored plan and converges on the same sequential executor. Agent Profiles
+and workflows can narrow capabilities, but cannot create grants or acquire OS
+authority. Morpheus schedules call the same plan executor; OpenClaw cron remains
+separate and continues to schedule chat work.
+
+## 9. What 0.5 deliberately does not build
 
 - A no-code workflow editor. Workflows are real and reusable; authoring is code/config for now.
 - Unrestricted shell or PowerShell as a user-facing capability.
