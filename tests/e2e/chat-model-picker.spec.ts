@@ -206,6 +206,7 @@ test.describe('ClawX chat model picker', () => {
 
       const page = await getStableWindow(app);
       await page.reload();
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
       await expect(page.getByTestId('main-layout')).toBeVisible();
       await expect.poll(async () => app.evaluate(() => (
         (globalThis as typeof globalThis & {

@@ -180,6 +180,7 @@ test.describe('ClawX chat workspace session list', () => {
           throw error;
         }
       }
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
 
       const defaultWorkspaceGroup = page.getByTestId(defaultWorkspaceSessionGroupTestId());
       const defaultWorkspaceToggle = page.getByTestId(defaultWorkspaceSessionGroupToggleTestId());
@@ -263,6 +264,7 @@ test.describe('ClawX chat workspace session list', () => {
           throw error;
         }
       }
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
 
       await expect(page.getByTestId('main-layout')).toBeVisible();
       await expect(page.getByTestId(defaultWorkspaceSessionGroupTestId())).toBeVisible({ timeout: 30_000 });
@@ -369,6 +371,7 @@ test.describe('ClawX chat workspace session list', () => {
       } catch (error) {
         if (!String(error).includes('ERR_FILE_NOT_FOUND')) throw error;
       }
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
 
       await expect(page.getByTestId('acp-chat-empty-state')).toBeVisible({ timeout: 30_000 });
       await page.getByTestId('chat-composer-input').fill(prompt);

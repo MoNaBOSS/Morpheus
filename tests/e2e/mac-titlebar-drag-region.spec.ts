@@ -35,6 +35,7 @@ test.describe('macOS frameless chrome', () => {
     await page.getByTestId('sidebar-collapse-toggle').click();
     await expect.poll(async () => (await sidebar.boundingBox())?.width ?? 0).toBe(SIDEBAR_COLLAPSED_WIDTH);
 
+    await page.getByTestId('sidebar-nav-chat').click();
     const chatPage = page.getByTestId('chat-page');
     await expect(chatPage).toBeVisible();
     await expect(chatPage).toHaveCSS('z-index', '20');

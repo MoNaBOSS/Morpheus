@@ -127,6 +127,7 @@ test.describe('ClawX chat Markdown styling', () => {
           throw error;
         }
       }
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
 
       await expect(page.getByTestId('main-layout')).toBeVisible();
       await expect(page.getByTestId('acp-chat-empty-state')).toBeVisible({ timeout: 30_000 });

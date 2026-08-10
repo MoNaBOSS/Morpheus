@@ -114,6 +114,7 @@ async function reloadStableWindow(app: ElectronApplication): Promise<Page> {
   } catch (error) {
     if (!String(error).includes('ERR_FILE_NOT_FOUND')) throw error;
   }
+  await page.evaluate(() => { window.location.hash = '#/chat'; });
   await expect(page.getByTestId('main-layout')).toBeVisible({ timeout: 30_000 });
   return page;
 }
@@ -189,7 +190,7 @@ test.describe('ClawX sidebar session attention', () => {
 
       await targetRow.click();
       await expect(page.getByTestId('chat-page')).toBeVisible();
-      await expect(page).toHaveURL(/#\/$/);
+      await expect(page).toHaveURL(/#\/chat$/);
       await expect(targetRow).toHaveAttribute('aria-current', 'page');
       await expect(targetUnread).toHaveCount(0);
       await page.getByTestId('chat-page').hover();

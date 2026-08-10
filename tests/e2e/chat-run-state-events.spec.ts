@@ -153,6 +153,7 @@ async function openChat(app: ElectronApplication) {
       throw error;
     }
   }
+  await page.evaluate(() => { window.location.hash = '#/chat'; });
   await expect(page.getByTestId('main-layout')).toBeVisible();
   await expect(page.getByTestId('chat-page')).toBeVisible();
   return page;

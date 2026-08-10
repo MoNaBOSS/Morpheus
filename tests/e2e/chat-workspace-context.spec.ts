@@ -239,6 +239,7 @@ test.describe('ClawX chat workspace context', () => {
           throw error;
         }
       }
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
 
       await expect(page.getByTestId('main-layout')).toBeVisible();
 
@@ -314,6 +315,7 @@ test.describe('ClawX chat workspace context', () => {
           throw error;
         }
       }
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
 
       const workspaceSelector = page.getByTestId('chat-workspace-selector');
       await expect(workspaceSelector).toHaveText(SESSION_WORKSPACE_LABEL, { timeout: 30_000 });
@@ -354,6 +356,7 @@ test.describe('ClawX chat workspace context', () => {
       } catch (error) {
         if (!String(error).includes('ERR_FILE_NOT_FOUND')) throw error;
       }
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
 
       const chatTitle = page.getByTestId('chat-session-title');
       await expect(chatTitle).toHaveText('Workspace chat', { timeout: 30_000 });
@@ -387,6 +390,7 @@ test.describe('ClawX chat workspace context', () => {
           throw error;
         }
       }
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
 
       const workspaceSelector = page.getByTestId('chat-workspace-selector');
       await expect(workspaceSelector).toHaveText(SESSION_WORKSPACE_LABEL, { timeout: 30_000 });
@@ -440,6 +444,7 @@ test.describe('ClawX chat workspace context', () => {
       } catch (error) {
         if (!String(error).includes('ERR_FILE_NOT_FOUND')) throw error;
       }
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
 
       const workspaceGroup = page.getByTestId('sidebar').getByTestId(
         workspaceSessionGroupTestId(SESSION_WORKSPACE),
@@ -468,6 +473,7 @@ test.describe('ClawX chat workspace context', () => {
           throw error;
         }
       }
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
 
       const sidebar = page.getByTestId('sidebar');
       const workspaceGroup = sidebar.getByTestId(workspaceSessionGroupTestId(SESSION_WORKSPACE));
@@ -496,6 +502,7 @@ test.describe('ClawX chat workspace context', () => {
           throw error;
         }
       }
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
 
       const workspaceSelector = page.getByTestId('chat-workspace-selector');
       await expect(workspaceSelector).toHaveText(SESSION_WORKSPACE_LABEL, { timeout: 30_000 });
@@ -538,6 +545,7 @@ test.describe('ClawX chat workspace context', () => {
       } catch (error) {
         if (!String(error).includes('ERR_FILE_NOT_FOUND')) throw error;
       }
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
 
       await expect(page.getByTestId('chat-workspace-selector')).toHaveText(SESSION_WORKSPACE_LABEL, {
         timeout: 30_000,
@@ -582,6 +590,7 @@ test.describe('ClawX chat workspace context', () => {
       } catch (error) {
         if (!String(error).includes('ERR_FILE_NOT_FOUND')) throw error;
       }
+      await page.evaluate(() => { window.location.hash = '#/chat'; });
 
       const workspaceGroup = page.getByTestId('sidebar').getByTestId(
         workspaceSessionGroupTestId(SESSION_WORKSPACE),
