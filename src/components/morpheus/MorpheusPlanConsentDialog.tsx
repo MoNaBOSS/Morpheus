@@ -76,10 +76,7 @@ export function MorpheusPlanConsentDialog() {
         </DialogTitle>
         <DialogDescription className="mt-2 text-sm text-muted-foreground">
           {consent
-            ? t('morpheus.permission.plan.description', {
-              count: boundaries.length,
-              objective: consent.objective,
-            })
+            ? t('morpheus.permission.plan.description', { objective: consent.objective })
             : ''}
         </DialogDescription>
 
@@ -115,14 +112,19 @@ export function MorpheusPlanConsentDialog() {
               <p className="mt-1 text-2xs text-muted-foreground">
                 {t('morpheus.permission.plan.coversSteps', { count: boundary.stepIds.length })}
               </p>
-              {/* What a remembered decision would cover, when it differs. */}
+              {/* What a remembered decision would cover, when it is wider than
+                  the target being acted on right now. Labelled, because an
+                  unexplained second path reads as noise rather than as scope. */}
               {boundary.targets.length > 0 && boundary.resourceScope !== boundary.targets[0] && (
-                <p
-                  data-testid="morpheus-plan-consent-scope"
-                  className="mt-1 truncate font-mono text-2xs text-muted-foreground/70"
-                  title={boundary.resourceScope}
-                >
-                  {boundary.resourceScope}
+                <p className="mt-1 text-2xs text-muted-foreground/70">
+                  {t('morpheus.permission.plan.scopeLabel')}{' '}
+                  <span
+                    data-testid="morpheus-plan-consent-scope"
+                    className="font-mono"
+                    title={boundary.resourceScope}
+                  >
+                    {boundary.resourceScope}
+                  </span>
                 </p>
               )}
             </li>
@@ -139,7 +141,10 @@ export function MorpheusPlanConsentDialog() {
               onClick={() => void answerConsent(kind)}
               className="justify-start"
             >
-              {t(`morpheus.permission.decisions.${kind}`, { defaultValue: kind })}
+              {/* Plan-level wording. The per-run dialog says "this exact
+                  action"; a batched decision may cover a whole workspace
+                  group, so claiming "exact action" here would understate it. */}
+              {t(`morpheus.permission.plan.decisions.${kind}`, { defaultValue: kind })}
             </Button>
           ))}
         </div>

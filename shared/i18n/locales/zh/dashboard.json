@@ -262,10 +262,17 @@
       },
       "plan": {
         "title": "批准此计划",
-        "description": "运行“{{objective}}”前，Morpheus 需要你授权 {{count}} 项新的权限范围。",
-        "coversSteps": "涵盖 {{count}} 个步骤",
+        "description": "运行“{{objective}}”前，Morpheus 需要你的授权。",
+        "coversSteps": "涵盖步骤：{{count}}",
         "mandatoryNote": "此项无法被记住，下次仍会询问。",
-        "note": "此计划中的其他操作已在你现有的授权范围内。"
+        "note": "此计划中的其他操作已在你现有的授权范围内。",
+        "decisions": {
+          "deny": "拒绝",
+          "allow-once": "允许一次",
+          "allow-session": "本次会话内允许",
+          "allow-always": "始终允许"
+        },
+        "scopeLabel": "记住此决定的适用范围"
       },
       "groups": {
         "workspace.read": "读取此工作区中的文件",

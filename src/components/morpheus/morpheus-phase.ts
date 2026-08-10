@@ -15,6 +15,11 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
+import {
+  getMorpheusActionDescriptor,
+  isMorpheusActionId,
+} from '@shared/morpheus/actions/registry';
+
 import type { MorpheusRunPhase } from '@shared/morpheus/action-types';
 import type { BadgeProps } from '@/components/ui/badge';
 
@@ -46,10 +51,17 @@ export function morpheusPhaseLabelKey(phase: MorpheusRunPhase): string {
 }
 
 /** i18n key for an action label, resolved through the shared registry ids. */
+/**
+ * The i18n key for a capability's label, taken from its own descriptor.
+ *
+ * Previously a hardcoded ternary that fell through to `systemReport` for
+ * anything it did not recognise — so every capability added after the first
+ * three silently rendered as "Report system information". The registry already
+ * carries the key; deriving it there means a new capability cannot be
+ * mislabelled by forgetting to extend a mapping.
+ */
 export function morpheusActionLabelKey(actionId: string): string {
-  return `morpheus.actions.${actionId === 'app.launch'
-    ? 'appLaunch'
-    : actionId === 'file.createText'
-      ? 'fileCreateText'
-      : 'systemReport'}.label`;
+  return isMorpheusActionId(actionId)
+    ? getMorpheusActionDescriptor(actionId).labelKey
+    : actionId;
 }

@@ -262,10 +262,17 @@
       },
       "plan": {
         "title": "Approve this plan",
-        "description": "Morpheus needs your permission for {{count}} new trust boundary(s) before running “{{objective}}”.",
-        "coversSteps": "covers {{count}} step(s)",
+        "description": "Morpheus needs your permission before running “{{objective}}”.",
+        "coversSteps": "Steps covered: {{count}}",
         "mandatoryNote": "This cannot be remembered and will be asked again next time.",
-        "note": "Everything else in this plan is already covered by your existing permissions."
+        "note": "Everything else in this plan is already covered by your existing permissions.",
+        "decisions": {
+          "deny": "Deny",
+          "allow-once": "Allow once",
+          "allow-session": "Allow for this session",
+          "allow-always": "Always allow"
+        },
+        "scopeLabel": "Remembering this applies to"
       },
       "groups": {
         "workspace.read": "Read files in this workspace",

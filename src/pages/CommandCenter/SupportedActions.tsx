@@ -12,11 +12,26 @@ import { listMorpheusActionIds } from '@shared/morpheus/actions/registry';
 
 import { morpheusActionLabelKey } from '@/components/morpheus/morpheus-phase';
 
-/** A representative objective per capability, so one click demonstrates it. */
-const EXAMPLE_COMMAND: Record<string, string> = {
+/**
+ * A representative objective per capability, so one click demonstrates it.
+ *
+ * Every entry must round-trip through the deterministic interpreter and come
+ * back as that capability — a phrase the interpreter does not recognise would
+ * make a listed capability look broken. `morpheus-supported-actions.test.ts`
+ * asserts exactly that.
+ */
+export const EXAMPLE_COMMAND: Record<string, string> = {
   'system.report': 'Show system information',
-  'file.createText': 'Create a text file named notes.txt',
   'app.launch': 'Open Notepad',
+  'file.createText': 'Create a text file named notes.txt',
+  'file.readText': 'Read the file notes.txt',
+  'file.list': 'List the files in my workspace',
+  'file.search': 'Find files named notes',
+  'file.appendText': 'Create a text file named appended.txt',
+  'file.move': 'Create a text file named moved.txt',
+  'file.copy': 'Create a text file named copied.txt',
+  'folder.create': 'Create a folder named reports',
+  'file.delete': 'Delete the file notes.txt',
 };
 
 export function SupportedActions() {
@@ -33,7 +48,12 @@ export function SupportedActions() {
   };
 
   return (
-    <ul data-testid="morpheus-supported-actions" className="flex flex-col gap-1.5">
+    // Scrolls inside its own panel: the capability set grows every milestone,
+    // and the page itself must stay within 1280x800 without scrolling.
+    <ul
+      data-testid="morpheus-supported-actions"
+      className="flex max-h-64 flex-col gap-1.5 overflow-y-auto pr-1"
+    >
       {listMorpheusActionIds().map((actionId) => {
         const available = supported[actionId] !== false;
         return (

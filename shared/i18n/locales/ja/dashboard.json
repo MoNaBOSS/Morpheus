@@ -262,10 +262,17 @@
       },
       "plan": {
         "title": "このプランを承認",
-        "description": "「{{objective}}」を実行する前に、{{count}} 件の新しい権限範囲の承認が必要です。",
-        "coversSteps": "{{count}} 個のステップに適用",
+        "description": "「{{objective}}」を実行する前に、許可が必要です。",
+        "coversSteps": "対象ステップ数: {{count}}",
         "mandatoryNote": "この判断は記憶されず、次回も確認します。",
-        "note": "このプランの他の操作は、既存の許可の範囲内です。"
+        "note": "このプランの他の操作は、既存の許可の範囲内です。",
+        "decisions": {
+          "deny": "拒否",
+          "allow-once": "1回だけ許可",
+          "allow-session": "このセッション中は許可",
+          "allow-always": "常に許可"
+        },
+        "scopeLabel": "記憶した場合の適用範囲"
       },
       "groups": {
         "workspace.read": "このワークスペースのファイルを読む",
