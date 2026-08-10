@@ -10,11 +10,21 @@ import { FileText, FolderOpen, MonitorPlay, ScrollText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 
-export function ArtifactsPanel() {
+function reportSummary(data: Record<string, string | number>): string {
+  if (typeof data.path === 'string') return data.path;
+  if (typeof data.platform === 'string') return `${data.platform} ${data.release ?? ''}`.trim();
+  if (typeof data.origin === 'string') return data.origin;
+  if (typeof data.root === 'string') return data.root;
+  const first = Object.entries(data)[0];
+  return first ? `${first[0]}: ${first[1]}` : 'report';
+}
+
+export function ArtifactsPanel({ limit }: { limit?: number }) {
   const { t } = useTranslation('dashboard');
   const artifacts = useMorpheusCommandStore((state) => state.artifacts);
   const filesRoot = useMorpheusCommandStore((state) => state.filesRoot);
   const openFilesRoot = useMorpheusCommandStore((state) => state.openFilesRoot);
+  const visibleArtifacts = typeof limit === 'number' ? artifacts.slice(0, limit) : artifacts;
 
   return (
     <div data-testid="morpheus-artifacts" className="flex flex-col gap-2">
@@ -46,7 +56,7 @@ export function ArtifactsPanel() {
         </p>
       ) : (
         <ul data-testid="morpheus-artifact-list" className="flex flex-col gap-1">
-          {artifacts.map((artifact) => (
+          {visibleArtifacts.map((artifact) => (
             <li
               key={artifact.artifactId}
               data-testid="morpheus-artifact"
@@ -60,7 +70,7 @@ export function ArtifactsPanel() {
                 <p className="truncate font-mono text-2xs">
                   {artifact.kind === 'file' ? artifact.path
                     : artifact.kind === 'process' ? artifact.executablePath
-                      : `${artifact.data.platform} ${artifact.data.release}`}
+                      : reportSummary(artifact.data)}
                 </p>
                 <p className="text-2xs text-muted-foreground">
                   {new Date(artifact.createdAt).toLocaleTimeString()}
@@ -71,6 +81,11 @@ export function ArtifactsPanel() {
           ))}
         </ul>
       )}
+      {visibleArtifacts.length < artifacts.length ? (
+        <p className="text-right text-[9px] text-muted-foreground">
+          {t('morpheus.artifacts.more', { count: artifacts.length - visibleArtifacts.length })}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -33,6 +33,7 @@ import {
   Workflow,
   CalendarClock,
   Activity,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isGatewayRestarting } from '@/lib/gateway-status';
@@ -59,6 +60,7 @@ import { isDefaultWorkspacePath } from '@/lib/workspace-context';
 import { useWorkspaceAvailability } from '@/hooks/use-workspace-availability';
 import { projectSessionRunState } from '@/stores/chat/session-status';
 import { getSessionDisplayTitle } from '@shared/chat/session-title';
+import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
 
 interface NavItemProps {
   to: string;
@@ -167,6 +169,7 @@ export function Sidebar() {
   const sessionAttentionByKey = useSessionAttentionStore((s) => s.bySessionKey);
   const markRead = useSessionAttentionStore((s) => s.markRead);
   const handleNewChat = useNewChatAction();
+  const showQuickCommand = useMorpheusQuickCommandStore((state) => state.show);
 
   const gatewayStatus = useGatewayStore((s) => s.status);
   const isGatewayRunning = gatewayStatus.state === 'running';
@@ -420,66 +423,77 @@ export function Sidebar() {
       icon: <LayoutDashboard className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.commandCenter'),
       testId: 'sidebar-nav-command-center',
+      section: 'product',
     },
     {
       to: '/chat',
       icon: <MessagesSquare className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.chat'),
       testId: 'sidebar-nav-chat',
+      section: 'product',
     },
     {
       to: '/agent-profiles',
       icon: <Bot className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.agentProfiles'),
       testId: 'sidebar-nav-agent-profiles',
+      section: 'builder',
     },
     {
       to: '/workflows',
       icon: <Workflow className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.workflows'),
       testId: 'sidebar-nav-workflows',
+      section: 'builder',
     },
     {
       to: '/schedules',
       icon: <CalendarClock className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.schedules'),
       testId: 'sidebar-nav-schedules',
+      section: 'builder',
     },
     {
       to: '/activity',
       icon: <Activity className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.activity'),
       testId: 'sidebar-nav-activity',
+      section: 'builder',
     },
     {
       to: '/models',
       icon: <Cpu className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.models'),
       testId: 'sidebar-nav-models',
+      section: 'runtime',
     },
     {
       to: '/agents',
       icon: <Bot className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.agents'),
       testId: 'sidebar-nav-agents',
+      section: 'runtime',
     },
     {
       to: '/channels',
       icon: <Network className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.channels'),
       testId: 'sidebar-nav-channels',
+      section: 'runtime',
     },
     {
       to: '/skills',
       icon: <Puzzle className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.skills'),
       testId: 'sidebar-nav-skills',
+      section: 'runtime',
     },
     {
       to: '/cron',
       icon: <Clock className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.cronTasks'),
       testId: 'sidebar-nav-cron',
+      section: 'runtime',
     },
     ...(devModeUnlocked
       ? [
@@ -488,6 +502,7 @@ export function Sidebar() {
             icon: <ImagePlus className="h-4 w-4" strokeWidth={2} />,
             label: t('common:sidebar.imageGeneration'),
             testId: 'sidebar-nav-image-generation',
+            section: 'runtime',
           },
         ]
       : []),
@@ -500,11 +515,13 @@ export function Sidebar() {
       icon: <item.icon className="h-4 w-4" strokeWidth={2} />,
       label: item.labelI18nKey ? t(item.labelI18nKey) : item.label,
       testId: item.testId,
+      section: 'runtime',
     })),
   ];
 
   return (
     <aside
+      data-morpheus
       data-testid="sidebar"
       className={cn(
         'relative flex min-h-0 shrink-0 flex-col overflow-hidden bg-surface-sidebar',
@@ -571,9 +588,43 @@ export function Sidebar() {
           )}
         </button>
 
-        {navItems.map((item) => (
-          <NavItem key={item.to} {...item} collapsed={sidebarCollapsed} />
-        ))}
+        <button
+          type="button"
+          data-testid="sidebar-quick-command"
+          onClick={showQuickCommand}
+          className={cn(
+            'sidebar-nav-text flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-foreground/80 transition-colors',
+            'hover:bg-black/5 dark:hover:bg-white/5',
+            sidebarCollapsed && 'justify-center px-0',
+          )}
+        >
+          <div className="flex shrink-0 items-center justify-center text-[hsl(var(--morpheus-accent))] [&_svg]:size-4">
+            <Zap className="h-4 w-4" strokeWidth={2} />
+          </div>
+          {!sidebarCollapsed && (
+            <>
+              <span className="flex-1 text-left">{t('sidebar.quickCommand')}</span>
+              <kbd className="rounded border border-border/70 px-1 py-px font-mono text-[9px] text-muted-foreground">
+                Ctrl ⇧ Space
+              </kbd>
+            </>
+          )}
+        </button>
+
+        {(['product', 'builder', 'runtime'] as const).map((section) => {
+          const items = navItems.filter((item) => item.section === section);
+          if (items.length === 0) return null;
+          return (
+            <div key={section} className="mt-1.5 space-y-1 first:mt-0">
+              {!sidebarCollapsed && (
+                <p className="px-2.5 pb-0.5 text-[9px] font-medium uppercase tracking-[0.16em] text-muted-foreground/60">
+                  {t(`sidebar.groups.${section}`)}
+                </p>
+              )}
+              {items.map((item) => <NavItem key={item.to} {...item} collapsed={sidebarCollapsed} />)}
+            </div>
+          );
+        })}
       </nav>
 
       {/* Session list — below Settings, only when expanded */}
@@ -793,7 +844,7 @@ export function Sidebar() {
                                     if (currentSessionKey !== s.key) {
                                       switchSession(s.key);
                                     }
-                                    navigate('/');
+                                    navigate('/chat');
                                   }}
                                   onDoubleClick={() => handleStartRename(s.key, sessionLabel)}
                                   className={cn(

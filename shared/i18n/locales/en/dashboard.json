@@ -113,6 +113,7 @@
   },
   "morpheus": {
     "title": "Morpheus",
+    "commandCenter": "Command Center",
     "subtitle": "AI execution platform — plan, permission, execute, audit.",
     "systemPanel": {
       "title": "System",
@@ -129,7 +130,9 @@
     },
     "launcher": {
       "title": "Actions",
-      "description": "Every action asks for confirmation before it runs.",
+      "description": "Actions use plan-level trust and exact scopes.",
+      "safeDescription": "Real capabilities available on this machine.",
+      "more": "+{{count}} more capabilities",
       "run": "Run",
       "unsupported": "Not available on this platform",
       "fileNameLabel": "File name",
@@ -267,7 +270,7 @@
         },
         "autonomous": {
           "name": "Autonomous",
-          "description": "Low-risk actions run automatically. Other actions run only inside targets you have already trusted. High-risk actions always ask."
+          "description": "Routine work runs inside trusted scopes without interruption. Morpheus asks only when trust materially expands; critical actions still require confirmation."
         }
       },
       "decisions": {
@@ -311,6 +314,7 @@
         },
         "scopeLabel": "Remembering this applies to"
       },
+      "planFirst": "Trust is evaluated once for the complete plan, then approved steps run sequentially.",
       "groups": {
         "workspace.read": "Read files in this workspace",
         "workspace.write": "Create and change files in this workspace"
@@ -318,6 +322,7 @@
     },
     "timeline": {
       "title": "Execution timeline",
+      "current": "Current execution",
       "description": "Live phases reported by the main process.",
       "emptyTitle": "No actions yet",
       "emptyDescription": "Run an action to see its real execution phases here.",
@@ -345,10 +350,22 @@
       "label": "Command",
       "placeholder": "Describe an objective, e.g. \"Show system information\"",
       "run": "Run",
+      "question": "What should Morpheus handle?",
+      "promise": "Morpheus builds a typed plan, asks only when trust changes, then executes it step by step.",
+      "try": "Try",
+      "examples": {
+        "system": "Show system information",
+        "file": "Create notes.txt",
+        "notepad": "Open Notepad"
+      },
       "unsupportedTitle": "Morpheus cannot do that yet",
       "unsupportedBody": "That command does not map to a capability Morpheus actually has. It supports:"
     },
     "status": {
+      "runtime": "Runtime",
+      "provider": "Provider",
+      "trust": "Trust profile",
+      "workspace": "Workspace",
       "runtimeReady": "Runtime ready",
       "runtimeStarting": "Runtime starting",
       "runtimeStopped": "Runtime stopped",
@@ -357,10 +374,12 @@
     },
     "artifacts": {
       "title": "Artifacts",
+      "latest": "Latest artifacts",
       "rootLabel": "Approved files location",
       "rootUnknown": "Not available",
       "open": "Open",
-      "empty": "No artifacts yet. Completed actions appear here."
+      "empty": "No artifacts yet. Completed actions appear here.",
+      "more": "+{{count}} more"
     },
     "plan": {
       "steps": {
@@ -411,6 +430,16 @@
       "systemBuilder": "AI system builder",
       "automation": "Morpheus automation"
     },
+    "builder": {
+      "title": "System builder",
+      "description": "Reusable intelligence, execution, and automation.",
+      "agents": "Agent Profiles",
+      "workflows": "Workflows",
+      "schedules": "Schedules"
+    },
+    "workflow": {
+      "step": "{{summary}}"
+    },
     "agentProfiles": {
       "title": "Agent Profiles",
       "description": "Reusable planning identities that constrain provider, context, workspace, capabilities and risk. They never bypass Main-owned policy.",
@@ -455,10 +484,19 @@
       "description": "Append-only execution, permission and automation history across retained audit days.",
       "filter": "Category",
       "all": "All",
+      "categories": {
+        "execution": "Executions",
+        "permission": "Permissions",
+        "agent-profile": "Agent Profiles",
+        "workflow": "Workflows",
+        "schedule": "Schedules"
+      },
       "ledger": "Activity ledger",
       "ledgerDescription": "Newest first. Payloads and secrets are never retained.",
       "empty": "No matching activity has been recorded.",
-      "loadMore": "Load older activity"
+      "loadMore": "Load older activity",
+      "recent": "Recent activity",
+      "open": "Open full activity"
     },
     "quickCommand": {
       "title": "Quick Command",

@@ -194,6 +194,27 @@ export type MorpheusActionResult =
   | MorpheusListingResult
   | MorpheusDeletionResult;
 
+/**
+ * Privacy-safe execution metadata retained in the append-only audit ledger.
+ *
+ * Action results may contain file or clipboard text, notification copy,
+ * process names, directory entries, or URL query strings. Those values are
+ * useful transiently in the Renderer, but they are not required to prove that
+ * an action ran and must never become durable audit content.
+ */
+export type MorpheusAuditOutcome =
+  | MorpheusLaunchResult
+  | MorpheusFileResult
+  | MorpheusSystemResult
+  | MorpheusStorageResult
+  | MorpheusProjectLaunchResult
+  | MorpheusDeletionResult
+  | { kind: 'text'; path: string; bytes: number; contentSha256: string }
+  | { kind: 'listing'; path: string; entryCount: number; truncated: boolean }
+  | { kind: 'processes'; processCount: number; truncated: boolean }
+  | { kind: 'url'; origin: string }
+  | { kind: 'notification'; delivered: true };
+
 /** Renderer-supplied parameters. Validated in Main against a key whitelist. */
 /**
  * Any capability's validated parameters.
@@ -302,7 +323,8 @@ export type MorpheusAuditEntry = {
   grantId?: string;
   params?: Record<string, string | number | boolean>;
   target?: MorpheusResolvedTarget;
-  outcome?: MorpheusActionResult;
+  /** Privacy-safe metadata only; never the transient Renderer result. */
+  outcome?: MorpheusAuditOutcome;
   error?: MorpheusError;
   durationMs?: number;
   appVersion: string;

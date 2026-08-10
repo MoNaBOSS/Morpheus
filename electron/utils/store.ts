@@ -79,7 +79,9 @@ function getSystemLocale(): string {
 function createDefaultSettings(): AppSettings {
   return {
     // General
-    theme: 'system',
+    // Morpheus is designed as a dark operating-system surface. Existing
+    // profiles retain their saved choice; this applies only to fresh profiles.
+    theme: 'dark',
     language: resolveSupportedLanguage(getSystemLocale()),
     startMinimized: false,
     launchAtStartup: false,

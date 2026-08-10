@@ -78,7 +78,9 @@ interface SettingsState {
 }
 
 const defaultSettings = {
-  theme: 'system' as Theme,
+  // Mirrors Main's fresh-profile default to avoid a light-theme flash while
+  // persisted settings are loading. Existing choices still win immediately.
+  theme: 'dark' as Theme,
   language: resolveSupportedLanguage(typeof navigator !== 'undefined' ? navigator.language : undefined),
   startMinimized: false,
   launchAtStartup: false,

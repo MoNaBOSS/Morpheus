@@ -39,7 +39,7 @@ describe('Settings Store', () => {
     hostApiMock.settings.set.mockResolvedValue({ success: true });
     // Reset store to default state
     useSettingsStore.setState({
-      theme: 'system',
+      theme: 'dark',
       language: 'en',
       sidebarCollapsed: false,
       sidebarWidth: 280,
@@ -55,7 +55,7 @@ describe('Settings Store', () => {
   
   it('should have default values', () => {
     const state = useSettingsStore.getState();
-    expect(state.theme).toBe('system');
+    expect(state.theme).toBe('dark');
     expect(state.sidebarCollapsed).toBe(false);
     expect(state.gatewayAutoStart).toBe(true);
   });

@@ -7,6 +7,12 @@
         "agents": "Agents",
         "channels": "チャンネル",
         "commandCenter": "コマンドセンター",
+        "quickCommand": "クイックコマンド",
+        "groups": {
+            "product": "Morpheus",
+            "builder": "システムビルダー",
+            "runtime": "OpenClaw ランタイム"
+        },
         "agentProfiles": "エージェントプロファイル",
         "workflows": "ワークフロー",
         "schedules": "スケジュール",

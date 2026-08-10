@@ -34,7 +34,11 @@ export function Activity() {
             onChange={(event) => setCategory(event.target.value as typeof category)}
             className="rounded border border-border bg-[hsl(var(--morpheus-surface-3))] px-2 py-1 text-tiny text-foreground"
           >
-            {CATEGORY_OPTIONS.map((option) => <option key={option || 'all'} value={option}>{option || t('morpheus.activity.all')}</option>)}
+            {CATEGORY_OPTIONS.map((option) => (
+              <option key={option || 'all'} value={option}>
+                {option ? t(`morpheus.activity.categories.${option}`) : t('morpheus.activity.all')}
+              </option>
+            ))}
           </select>
         </label>
       </header>

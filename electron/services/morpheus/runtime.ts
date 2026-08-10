@@ -48,7 +48,7 @@ import {
   type MorpheusSystemInfo,
 } from '@shared/morpheus/action-types';
 
-import { morpheusContentDigest, type MorpheusAuditSink } from './audit';
+import { morpheusContentDigest, sanitizeAuditOutcome, type MorpheusAuditSink } from './audit';
 import {
   MorpheusCapabilityError,
   type MorpheusCapabilityRegistry,
@@ -302,7 +302,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       grantId: input.grantId,
       params: input.auditParams,
       target: input.target,
-      outcome: input.result,
+      outcome: sanitizeAuditOutcome(input.result),
       error: input.error,
       durationMs: input.durationMs,
       appVersion: options.appVersion,

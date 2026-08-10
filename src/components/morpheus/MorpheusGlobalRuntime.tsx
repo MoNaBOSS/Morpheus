@@ -15,17 +15,18 @@ export function MorpheusGlobalRuntime() {
   const subscribeConsent = useMorpheusCommandStore((state) => state.subscribeConsent);
   const loadPermissionCenter = useMorpheusCommandStore((state) => state.loadPermissionCenter);
   const loadFilesRoot = useMorpheusCommandStore((state) => state.loadFilesRoot);
+  const loadArtifacts = useMorpheusCommandStore((state) => state.loadArtifacts);
   const captureArtifact = useMorpheusCommandStore((state) => state.captureArtifact);
 
   useEffect(() => {
     const unsubscribe = subscribe();
     const unsubscribeConsent = subscribeConsent();
-    void Promise.all([loadCapabilities(), loadPermissionCenter(), loadFilesRoot()]);
+    void Promise.all([loadCapabilities(), loadPermissionCenter(), loadFilesRoot(), loadArtifacts()]);
     return () => {
       unsubscribe();
       unsubscribeConsent();
     };
-  }, [subscribe, subscribeConsent, loadCapabilities, loadPermissionCenter, loadFilesRoot]);
+  }, [subscribe, subscribeConsent, loadCapabilities, loadPermissionCenter, loadFilesRoot, loadArtifacts]);
 
   useEffect(() => {
     const latestId = runOrder[runOrder.length - 1];
@@ -45,4 +46,3 @@ export function MorpheusGlobalRuntime() {
     </>
   );
 }
-

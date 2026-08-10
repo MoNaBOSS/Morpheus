@@ -7,6 +7,12 @@
         "agents": "Agents",
         "channels": "频道",
         "commandCenter": "指挥中心",
+        "quickCommand": "快捷命令",
+        "groups": {
+            "product": "Morpheus",
+            "builder": "系统构建器",
+            "runtime": "OpenClaw 运行时"
+        },
         "agentProfiles": "Agent 配置档",
         "workflows": "工作流",
         "schedules": "计划任务",

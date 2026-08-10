@@ -72,7 +72,10 @@ export function PermissionCenter({ compact = false }: PermissionCenterProps) {
   const handleRevoke = (grantId: string) => void revokeGrant(grantId);
 
   return (
-    <div data-testid="morpheus-permission-center" className="flex flex-col gap-3">
+    <div
+      data-testid="morpheus-permission-center"
+      className={compact ? 'flex flex-col gap-2' : 'flex flex-col gap-3'}
+    >
       {permission.auditDegraded ? (
         <div
           data-testid="morpheus-permission-degraded"

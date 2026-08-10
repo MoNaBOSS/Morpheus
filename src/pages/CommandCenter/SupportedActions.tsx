@@ -42,11 +42,21 @@ export const EXAMPLE_COMMAND: Record<string, string> = {
   'dev.launchProject': 'Open project named project',
 };
 
-export function SupportedActions() {
+const FEATURED_ACTIONS = [
+  'system.report', 'file.createText', 'app.launch',
+  'file.list', 'clipboard.writeText', 'screen.capture',
+] as const;
+
+export function SupportedActions({ limit }: { limit?: number }) {
   const { t } = useTranslation('dashboard');
   const supported = useMorpheusActionsStore((state) => state.supportedActions);
   const setInput = useMorpheusCommandStore((state) => state.setInput);
   const submit = useMorpheusCommandStore((state) => state.submit);
+  const actionIds = listMorpheusActionIds();
+  const orderedActionIds = typeof limit === 'number'
+    ? [...FEATURED_ACTIONS.filter((id) => actionIds.includes(id)), ...actionIds.filter((id) => !FEATURED_ACTIONS.includes(id as never))]
+    : actionIds;
+  const visibleActionIds = typeof limit === 'number' ? orderedActionIds.slice(0, limit) : orderedActionIds;
 
   const run = (actionId: string) => {
     // Routed through the same command path as typing it, so there is exactly
@@ -62,7 +72,7 @@ export function SupportedActions() {
       data-testid="morpheus-supported-actions"
       className="flex max-h-64 flex-col gap-1.5 overflow-y-auto pr-1"
     >
-      {listMorpheusActionIds().map((actionId) => {
+      {visibleActionIds.map((actionId) => {
         const available = supported[actionId] !== false;
         return (
           <li
@@ -88,6 +98,11 @@ export function SupportedActions() {
           </li>
         );
       })}
+      {visibleActionIds.length < actionIds.length ? (
+        <li className="px-2.5 py-1 text-2xs text-muted-foreground">
+          {t('morpheus.launcher.more', { count: actionIds.length - visibleActionIds.length })}
+        </li>
+      ) : null}
     </ul>
   );
 }

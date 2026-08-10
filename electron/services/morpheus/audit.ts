@@ -18,6 +18,8 @@ import type {
   MorpheusAuditQueryResult,
   MorpheusAuditRecord,
   MorpheusAuditEntry,
+  MorpheusAuditOutcome,
+  MorpheusActionResult,
   MorpheusControlAuditEntry,
   MorpheusAuditRecentResult,
 } from '@shared/morpheus/action-types';
@@ -88,6 +90,46 @@ export function sanitizeAuditParams(
     }
   }
   return out;
+}
+
+/** Reduces a transient action result to the metadata needed for accountability. */
+export function sanitizeAuditOutcome(
+  outcome: MorpheusActionResult | undefined,
+): MorpheusAuditOutcome | undefined {
+  if (!outcome) return undefined;
+  switch (outcome.kind) {
+    case 'launch':
+    case 'file':
+    case 'system':
+    case 'storage':
+    case 'project-launch':
+    case 'deletion':
+      return outcome;
+    case 'text':
+      return {
+        kind: 'text', path: outcome.path, bytes: outcome.bytes,
+        contentSha256: outcome.contentSha256,
+      };
+    case 'listing':
+      return {
+        kind: 'listing', path: outcome.path, entryCount: outcome.entries.length,
+        truncated: outcome.truncated,
+      };
+    case 'processes':
+      return {
+        kind: 'processes', processCount: outcome.processes.length,
+        truncated: outcome.truncated,
+      };
+    case 'url': {
+      try {
+        return { kind: 'url', origin: new URL(outcome.url).origin };
+      } catch {
+        return { kind: 'url', origin: '[invalid-url]' };
+      }
+    }
+    case 'notification':
+      return { kind: 'notification', delivered: true };
+  }
 }
 
 function dayStamp(date: Date): string {

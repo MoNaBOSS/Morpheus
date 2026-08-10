@@ -113,6 +113,7 @@
   },
   "morpheus": {
     "title": "Morpheus",
+    "commandCenter": "コマンドセンター",
     "subtitle": "AI 実行プラットフォーム — 計画・許可・実行・監査。",
     "systemPanel": {
       "title": "システム",
@@ -129,7 +130,9 @@
     },
     "launcher": {
       "title": "アクション",
-      "description": "すべてのアクションは実行前に確認を求めます。",
+      "description": "アクションはプラン単位の信頼と正確な範囲を使用します。",
+      "safeDescription": "この端末で実際に利用できる機能です。",
+      "more": "他 {{count}} 件の機能",
       "run": "実行",
       "unsupported": "このプラットフォームでは利用できません",
       "fileNameLabel": "ファイル名",
@@ -267,7 +270,7 @@
         },
         "autonomous": {
           "name": "自律",
-          "description": "低リスクの操作は自動実行。その他は信頼済みの対象内でのみ実行。高リスクは常に確認します。"
+          "description": "信頼済み範囲の日常作業は中断なく実行します。信頼が大きく広がる場合のみ確認し、重大な操作は引き続き確認します。"
         }
       },
       "decisions": {
@@ -311,6 +314,7 @@
         },
         "scopeLabel": "記憶した場合の適用範囲"
       },
+      "planFirst": "プラン全体の信頼を一度評価し、承認済みステップを順番に実行します。",
       "groups": {
         "workspace.read": "このワークスペースのファイルを読む",
         "workspace.write": "このワークスペースでファイルを作成・変更する"
@@ -318,6 +322,7 @@
     },
     "timeline": {
       "title": "実行タイムライン",
+      "current": "現在の実行",
       "description": "メインプロセスが報告する実際のフェーズ。",
       "emptyTitle": "まだアクションはありません",
       "emptyDescription": "アクションを実行すると、実際の実行フェーズがここに表示されます。",
@@ -345,10 +350,22 @@
       "label": "コマンド",
       "placeholder": "目的を入力（例：「システム情報を表示」）",
       "run": "実行",
+      "question": "Morpheus に何を任せますか？",
+      "promise": "型付きプランを作成し、信頼が変わる時だけ確認して順番に実行します。",
+      "try": "例",
+      "examples": {
+        "system": "システム情報を表示",
+        "file": "notes.txt を作成",
+        "notepad": "メモ帳を開く"
+      },
       "unsupportedTitle": "Morpheus はまだそれを実行できません",
       "unsupportedBody": "そのコマンドは Morpheus が実際に持つ機能に対応していません。現在の対応："
     },
     "status": {
+      "runtime": "ランタイム",
+      "provider": "プロバイダー",
+      "trust": "信頼プロファイル",
+      "workspace": "ワークスペース",
       "runtimeReady": "ランタイム準備完了",
       "runtimeStarting": "ランタイム起動中",
       "runtimeStopped": "ランタイム停止",
@@ -357,10 +374,12 @@
     },
     "artifacts": {
       "title": "成果物",
+      "latest": "最新の成果物",
       "rootLabel": "承認済みファイルの場所",
       "rootUnknown": "利用不可",
       "open": "開く",
-      "empty": "成果物はまだありません。完了した操作がここに表示されます。"
+      "empty": "成果物はまだありません。完了した操作がここに表示されます。",
+      "more": "他 {{count}} 件"
     },
     "plan": {
       "steps": {
@@ -411,6 +430,16 @@
       "systemBuilder": "AI システムビルダー",
       "automation": "Morpheus オートメーション"
     },
+    "builder": {
+      "title": "システムビルダー",
+      "description": "再利用可能な知能、実行、オートメーション。",
+      "agents": "エージェントプロファイル",
+      "workflows": "ワークフロー",
+      "schedules": "スケジュール"
+    },
+    "workflow": {
+      "step": "{{summary}}"
+    },
     "agentProfiles": {
       "title": "エージェントプロファイル",
       "description": "プロバイダー、コンテキスト、ワークスペース、機能、リスクを制約する再利用可能な計画 ID です。Main のポリシーを迂回しません。",
@@ -455,10 +484,19 @@
       "description": "保持期間内の実行、許可、自動化に関する追記専用履歴です。",
       "filter": "カテゴリ",
       "all": "すべて",
+      "categories": {
+        "execution": "実行",
+        "permission": "許可",
+        "agent-profile": "エージェントプロファイル",
+        "workflow": "ワークフロー",
+        "schedule": "スケジュール"
+      },
       "ledger": "アクティビティ台帳",
       "ledgerDescription": "新しい順。ペイロードや秘密は保持しません。",
       "empty": "一致するアクティビティはありません。",
-      "loadMore": "以前のアクティビティを読み込む"
+      "loadMore": "以前のアクティビティを読み込む",
+      "recent": "最近のアクティビティ",
+      "open": "すべてのアクティビティを開く"
     },
     "quickCommand": {
       "title": "クイックコマンド",

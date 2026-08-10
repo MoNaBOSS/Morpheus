@@ -7,6 +7,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import {
   createMorpheusAuditSink,
   morpheusContentDigest,
+  sanitizeAuditOutcome,
   sanitizeAuditParams,
 } from '@electron/services/morpheus/audit';
 import {
@@ -91,6 +92,27 @@ describe('morpheus audit sink', () => {
     expect(parsed.params.contentBytes).toBe(18);
     expect(parsed.params.contentSha256).toMatch(/^[0-9a-f]{16}$/);
     expect(parsed.params.fileName).toBe('notes.txt');
+  });
+
+  it('reduces sensitive runtime results to privacy-safe audit metadata', () => {
+    expect(sanitizeAuditOutcome({
+      kind: 'text', path: 'clipboard', bytes: 19,
+      contentSha256: '0123456789abcdef', text: 'private clipboard text',
+    })).toEqual({
+      kind: 'text', path: 'clipboard', bytes: 19, contentSha256: '0123456789abcdef',
+    });
+    expect(sanitizeAuditOutcome({
+      kind: 'notification', title: 'Private title', body: 'Private body',
+    })).toEqual({ kind: 'notification', delivered: true });
+    expect(sanitizeAuditOutcome({
+      kind: 'processes', processes: [{ pid: 42, name: 'private-process.exe' }], truncated: false,
+    })).toEqual({ kind: 'processes', processCount: 1, truncated: false });
+    expect(sanitizeAuditOutcome({
+      kind: 'listing', path: 'C:\\Morpheus', entries: [{ name: 'private.txt', kind: 'file' }], truncated: false,
+    })).toEqual({ kind: 'listing', path: 'C:\\Morpheus', entryCount: 1, truncated: false });
+    expect(sanitizeAuditOutcome({
+      kind: 'url', url: 'https://example.com/private?token=must-not-persist',
+    })).toEqual({ kind: 'url', origin: 'https://example.com' });
   });
 
   it('redacts credential-shaped keys', () => {

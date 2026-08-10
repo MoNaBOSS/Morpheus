@@ -21,7 +21,7 @@ import type {
   PermissionCenterSnapshot,
   PermissionProfile,
 } from '@shared/morpheus/permission-types';
-import type { MorpheusRun } from '@shared/morpheus/action-types';
+import type { MorpheusAuditEntry, MorpheusRun } from '@shared/morpheus/action-types';
 
 const MAX_ARTIFACTS = 50;
 
@@ -65,6 +65,8 @@ export type MorpheusCommandState = {
   revokeAllSession: () => Promise<void>;
   resetPolicy: () => Promise<void>;
   loadFilesRoot: () => Promise<void>;
+  /** Rebuilds recent artifacts from the privacy-safe append-only ledger. */
+  loadArtifacts: () => Promise<void>;
   openFilesRoot: () => Promise<void>;
   /** Records a durable output produced by a completed run. */
   captureArtifact: (run: MorpheusRun) => void;
@@ -139,7 +141,113 @@ export function artifactFromRun(run: MorpheusRun): ExecutionArtifact | null {
     };
   }
 
+  if (run.result.kind === 'storage') {
+    return {
+      kind: 'report', artifactId: run.runId, createdAt,
+      data: {
+        root: run.result.root,
+        freeBytes: run.result.freeBytes,
+        totalBytes: run.result.totalBytes,
+      },
+    };
+  }
+
+  if (run.result.kind === 'processes') {
+    return {
+      kind: 'report', artifactId: run.runId, createdAt,
+      data: { processes: run.result.processes.length, truncated: run.result.truncated ? 1 : 0 },
+    };
+  }
+
+  if (run.result.kind === 'project-launch') {
+    return {
+      kind: 'process', artifactId: run.runId, createdAt,
+      executablePath: run.result.executablePath, pid: run.result.pid,
+    };
+  }
+
+  if (run.result.kind === 'url') {
+    let origin = run.result.url;
+    try { origin = new URL(run.result.url).origin; } catch { /* validated by Main */ }
+    return { kind: 'report', artifactId: run.runId, createdAt, data: { origin } };
+  }
+
+  if (run.result.kind === 'notification') {
+    return {
+      kind: 'report', artifactId: run.runId, createdAt,
+      data: { notification: 'delivered' },
+    };
+  }
+
   return null;
+}
+
+/** Reconstructs an artifact without replaying sensitive transient results. */
+export function artifactFromAuditEntry(entry: MorpheusAuditEntry): ExecutionArtifact | null {
+  if (entry.phase !== 'succeeded' || !entry.outcome) return null;
+  const outcome = entry.outcome;
+  const createdAt = entry.ts;
+
+  switch (outcome.kind) {
+    case 'file':
+      return {
+        kind: 'file', artifactId: entry.runId, path: outcome.path,
+        bytes: outcome.bytes, contentSha256: outcome.contentSha256, createdAt,
+      };
+    case 'launch':
+      return {
+        kind: 'process', artifactId: entry.runId, executablePath: outcome.executablePath,
+        pid: outcome.pid, createdAt,
+      };
+    case 'project-launch':
+      return {
+        kind: 'process', artifactId: entry.runId, executablePath: outcome.executablePath,
+        pid: outcome.pid, createdAt,
+      };
+    case 'system':
+      return {
+        kind: 'report', artifactId: entry.runId, createdAt,
+        data: {
+          platform: outcome.info.platform, release: outcome.info.release,
+          arch: outcome.info.arch, cpuCount: outcome.info.cpuCount,
+        },
+      };
+    case 'text':
+      return {
+        kind: 'report', artifactId: entry.runId, createdAt,
+        data: { path: outcome.path, bytes: outcome.bytes },
+      };
+    case 'listing':
+      return {
+        kind: 'report', artifactId: entry.runId, createdAt,
+        data: { path: outcome.path, entries: outcome.entryCount },
+      };
+    case 'deletion':
+      return {
+        kind: 'report', artifactId: entry.runId, createdAt,
+        data: { deleted: outcome.relativePath, folder: outcome.wasFolder ? 1 : 0 },
+      };
+    case 'storage':
+      return {
+        kind: 'report', artifactId: entry.runId, createdAt,
+        data: { root: outcome.root, freeBytes: outcome.freeBytes, totalBytes: outcome.totalBytes },
+      };
+    case 'processes':
+      return {
+        kind: 'report', artifactId: entry.runId, createdAt,
+        data: { processes: outcome.processCount, truncated: outcome.truncated ? 1 : 0 },
+      };
+    case 'url':
+      return {
+        kind: 'report', artifactId: entry.runId, createdAt,
+        data: { origin: outcome.origin },
+      };
+    case 'notification':
+      return {
+        kind: 'report', artifactId: entry.runId, createdAt,
+        data: { notification: 'delivered' },
+      };
+  }
 }
 
 export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) => ({
@@ -261,6 +369,22 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
       set({ filesRoot: (await hostApi.morpheus.filesRoot()).path });
     } catch {
       set({ filesRoot: null });
+    }
+  },
+
+  loadArtifacts: async () => {
+    try {
+      const result = await hostApi.morpheus.auditQuery({
+        category: 'execution', phase: 'succeeded', limit: MAX_ARTIFACTS,
+      });
+      const artifacts = result.entries.flatMap((entry) => {
+        if (!('actionId' in entry)) return [];
+        const artifact = artifactFromAuditEntry(entry);
+        return artifact ? [artifact] : [];
+      });
+      set({ artifacts });
+    } catch {
+      // Keep session artifacts if the durable ledger is temporarily unavailable.
     }
   },
 

@@ -90,6 +90,10 @@ function makeHarness(options: {
     async recent() {
       return { entries: audited.slice(-10), truncated: false };
     },
+    async recordControl() {},
+    async query() {
+      return { entries: audited.slice().reverse(), truncated: false };
+    },
     isHealthy: () => !options.auditFails,
   };
 
@@ -139,6 +143,27 @@ describe('morpheus runtime — permission gate', () => {
 
     expect(h.executeSpy).toHaveBeenCalledTimes(1);
     expect(h.events.map((e) => e.phase)).toEqual(['requested', 'awaiting-permission', 'running', 'succeeded']);
+  });
+
+  it('emits sensitive text transiently but never writes it into the audit outcome', async () => {
+    const secret = 'private clipboard value';
+    const execute = vi.fn(async () => ({
+      kind: 'text' as const,
+      path: 'clipboard',
+      bytes: Buffer.byteLength(secret, 'utf8'),
+      contentSha256: '0123456789abcdef',
+      text: secret,
+    }));
+    const h = makeHarness({ capability: makeCapability(execute, { actionId: 'clipboard.readText' }) });
+    const { runId } = await h.runtime.requestAction({ actionId: 'clipboard.readText' });
+    await h.runtime.respondPermission({ runId, decision: 'allow-once' });
+
+    expect(h.events.at(-1)?.result).toMatchObject({ kind: 'text', text: secret });
+    expect(h.audited.at(-1)?.outcome).toEqual({
+      kind: 'text', path: 'clipboard', bytes: Buffer.byteLength(secret, 'utf8'),
+      contentSha256: '0123456789abcdef',
+    });
+    expect(JSON.stringify(h.audited)).not.toContain(secret);
   });
 
   it('performs no work on denial', async () => {

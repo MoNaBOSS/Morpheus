@@ -2,7 +2,7 @@
  * Main Layout Component
  * Platform-aware application shell.
  */
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TitleBar } from './TitleBar';
 import { MAC_SIDEBAR_CHROME_HEIGHT } from '@shared/sidebar-layout';
@@ -10,9 +10,13 @@ import { cn } from '@/lib/utils';
 import { WebBrowserHost } from '@/components/web-browser/WebBrowserHost';
 
 export function MainLayout() {
+  const location = useLocation();
   const platform = window.electron?.platform;
   const isMac = platform === 'darwin';
   const isWin = platform === 'win32';
+  const isMorpheusProductSurface = [
+    '/', '/agent-profiles', '/workflows', '/schedules', '/activity',
+  ].includes(location.pathname);
 
   return (
     <div
@@ -31,7 +35,8 @@ export function MainLayout() {
         <main
           data-testid="main-content"
           className={cn(
-            'relative min-h-0 flex-1 overflow-auto rounded-tl-2xl border-l border-border/60 bg-background p-6',
+            'relative min-h-0 flex-1 rounded-tl-2xl border-l border-border/60 bg-background',
+            isMorpheusProductSurface ? 'overflow-hidden p-0' : 'overflow-auto p-6',
             !isWin && 'border-t border-border/60',
           )}
         >

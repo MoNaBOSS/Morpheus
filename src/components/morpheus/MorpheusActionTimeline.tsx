@@ -12,7 +12,7 @@ import { useMorpheusActionsStore, selectRunsNewestFirst } from '@/stores/morpheu
 
 import { MorpheusRunCard } from './MorpheusRunCard';
 
-export function MorpheusActionTimeline() {
+export function MorpheusActionTimeline({ limit }: { limit?: number }) {
   const { t } = useTranslation('dashboard');
   // Select the stable slices and derive the ordered list here. Passing a
   // selector that builds a new array would fail zustand's Object.is check on
@@ -20,8 +20,11 @@ export function MorpheusActionTimeline() {
   const runOrder = useMorpheusActionsStore((state) => state.runOrder);
   const runsById = useMorpheusActionsStore((state) => state.runsById);
   const runs = useMemo(
-    () => selectRunsNewestFirst({ runOrder, runsById }),
-    [runOrder, runsById],
+    () => {
+      const ordered = selectRunsNewestFirst({ runOrder, runsById });
+      return typeof limit === 'number' ? ordered.slice(0, limit) : ordered;
+    },
+    [runOrder, runsById, limit],
   );
 
   if (runs.length === 0) {

@@ -28,6 +28,7 @@ test.describe('Morpheus Command Center', () => {
         'morpheus-runtime-status',
         'morpheus-runtime-gateway',
         'morpheus-runtime-provider',
+        'morpheus-supported-system.report',
         'sidebar-nav-chat',
         'sidebar-nav-agents',
         'sidebar-nav-skills',

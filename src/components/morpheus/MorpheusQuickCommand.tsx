@@ -5,10 +5,13 @@ import { ArrowRight, Command, X } from 'lucide-react';
 import { hostEvents } from '@/lib/host-events';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { cn } from '@/lib/utils';
+import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
 
 export function MorpheusQuickCommand() {
   const { t } = useTranslation('dashboard');
-  const [open, setOpen] = useState(false);
+  const open = useMorpheusQuickCommandStore((state) => state.open);
+  const show = useMorpheusQuickCommandStore((state) => state.show);
+  const hide = useMorpheusQuickCommandStore((state) => state.hide);
   const [objective, setObjective] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const runObjective = useMorpheusCommandStore((state) => state.runObjective);
@@ -18,19 +21,20 @@ export function MorpheusQuickCommand() {
   const planResult = useMorpheusCommandStore((state) => state.planResult);
   const unsupported = useMorpheusCommandStore((state) => state.unsupported);
 
-  useEffect(() => hostEvents.onMorpheusQuickCommand(() => {
-    setOpen(true);
-    window.setTimeout(() => inputRef.current?.focus(), 0);
-  }), []);
+  useEffect(() => hostEvents.onMorpheusQuickCommand(show), [show]);
+
+  useEffect(() => {
+    if (open) window.setTimeout(() => inputRef.current?.focus(), 0);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') hide();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [open]);
+  }, [open, hide]);
 
   if (!open) return null;
   const busy = interpreting || executing;
@@ -44,7 +48,7 @@ export function MorpheusQuickCommand() {
       aria-modal="true"
       aria-label={t('morpheus.quickCommand.title')}
       onMouseDown={(event) => {
-        if (event.currentTarget === event.target && !busy) setOpen(false);
+        if (event.currentTarget === event.target && !busy) hide();
       }}
     >
       <section className="w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-[hsl(var(--morpheus-surface-2))] shadow-2xl shadow-black/60">
@@ -62,7 +66,7 @@ export function MorpheusQuickCommand() {
               data-testid="quick-command-close"
               aria-label={t('morpheus.quickCommand.close')}
               disabled={busy}
-              onClick={() => setOpen(false)}
+              onClick={hide}
               className="rounded p-1 text-muted-foreground hover:bg-white/5 hover:text-foreground disabled:opacity-40"
             >
               <X className="h-4 w-4" />

@@ -11,6 +11,7 @@
 import { useTranslation } from 'react-i18next';
 
 import { Panel, PlanTimeline, RiskBadge, type PlanTimelineStep } from '@/components/morpheus/ui';
+import { cn } from '@/lib/utils';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import type { ExecutionStep, ExecutionStepResult } from '@shared/morpheus/execution-types';
 
@@ -43,7 +44,7 @@ export function mergePlanSteps(
   });
 }
 
-export function PlanPanel() {
+export function PlanPanel({ className }: { className?: string }) {
   const { t } = useTranslation('dashboard');
   const plan = useMorpheusCommandStore((state) => state.plan);
   const planResult = useMorpheusCommandStore((state) => state.planResult);
@@ -55,8 +56,11 @@ export function PlanPanel() {
         title={t('morpheus.plan.title')}
         description={t('morpheus.plan.description')}
         testId="command-center-plan"
+        className={cn('flex min-h-0 flex-col', className)}
       >
-        <PlanTimeline steps={[]} emptyMessage={t('morpheus.plan.empty')} testId="plan-timeline" />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <PlanTimeline steps={[]} emptyMessage={t('morpheus.plan.empty')} testId="plan-timeline" />
+        </div>
       </Panel>
     );
   }
@@ -86,6 +90,7 @@ export function PlanPanel() {
       title={t('morpheus.plan.title')}
       description={plan.objective}
       testId="command-center-plan"
+      className={cn('flex min-h-0 flex-col', className)}
       actions={(
         <>
           <RiskBadge tier={highestTier} testId="plan-risk" />
@@ -93,7 +98,9 @@ export function PlanPanel() {
         </>
       )}
     >
-      <PlanTimeline steps={steps} emptyMessage={t('morpheus.plan.empty')} testId="plan-timeline" />
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+        <PlanTimeline steps={steps} emptyMessage={t('morpheus.plan.empty')} testId="plan-timeline" />
+      </div>
       {planResult?.rejection && (
         <p data-testid="plan-rejection" className="mt-2 px-2.5 text-2xs text-[hsl(var(--morpheus-danger))]">
           {planResult.rejection.message}

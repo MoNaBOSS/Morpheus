@@ -113,6 +113,7 @@
   },
   "morpheus": {
     "title": "Morpheus",
+    "commandCenter": "指挥中心",
     "subtitle": "AI 执行平台 —— 规划、授权、执行、审计。",
     "systemPanel": {
       "title": "系统",
@@ -129,7 +130,9 @@
     },
     "launcher": {
       "title": "操作",
-      "description": "每个操作在执行前都会请求确认。",
+      "description": "操作使用计划级信任与精确范围。",
+      "safeDescription": "此设备上真实可用的能力。",
+      "more": "另有 {{count}} 项能力",
       "run": "运行",
       "unsupported": "此平台不支持",
       "fileNameLabel": "文件名",
@@ -267,7 +270,7 @@
         },
         "autonomous": {
           "name": "自主",
-          "description": "低风险操作自动执行。其他操作仅在已信任的目标内执行。高风险操作始终询问。"
+          "description": "可信范围内的日常工作可无打扰执行。只有信任范围实质扩大时才会询问；关键操作仍需确认。"
         }
       },
       "decisions": {
@@ -311,6 +314,7 @@
         },
         "scopeLabel": "记住此决定的适用范围"
       },
+      "planFirst": "先对完整计划评估一次信任，然后顺序执行已批准步骤。",
       "groups": {
         "workspace.read": "读取此工作区中的文件",
         "workspace.write": "在此工作区中创建和修改文件"
@@ -318,6 +322,7 @@
     },
     "timeline": {
       "title": "执行时间线",
+      "current": "当前执行",
       "description": "由主进程上报的实时阶段。",
       "emptyTitle": "暂无操作",
       "emptyDescription": "运行一个操作即可在此查看其真实执行阶段。",
@@ -345,10 +350,22 @@
       "label": "命令",
       "placeholder": "描述一个目标，例如“显示系统信息”",
       "run": "运行",
+      "question": "Morpheus 应该处理什么？",
+      "promise": "Morpheus 会构建类型化计划，仅在信任变化时询问，然后逐步执行。",
+      "try": "试试",
+      "examples": {
+        "system": "显示系统信息",
+        "file": "创建 notes.txt",
+        "notepad": "打开记事本"
+      },
       "unsupportedTitle": "Morpheus 暂时无法执行该操作",
       "unsupportedBody": "该命令未映射到 Morpheus 实际具备的能力。当前支持："
     },
     "status": {
+      "runtime": "运行时",
+      "provider": "提供方",
+      "trust": "信任模式",
+      "workspace": "工作区",
       "runtimeReady": "运行时就绪",
       "runtimeStarting": "运行时启动中",
       "runtimeStopped": "运行时已停止",
@@ -357,10 +374,12 @@
     },
     "artifacts": {
       "title": "产物",
+      "latest": "最新产物",
       "rootLabel": "已批准的文件位置",
       "rootUnknown": "不可用",
       "open": "打开",
-      "empty": "暂无产物。完成的操作将显示在此处。"
+      "empty": "暂无产物。完成的操作将显示在此处。",
+      "more": "另有 {{count}} 项"
     },
     "plan": {
       "steps": {
@@ -411,6 +430,16 @@
       "systemBuilder": "AI 系统构建器",
       "automation": "Morpheus 自动化"
     },
+    "builder": {
+      "title": "系统构建器",
+      "description": "可复用的智能、执行与自动化。",
+      "agents": "Agent 配置档",
+      "workflows": "工作流",
+      "schedules": "计划任务"
+    },
+    "workflow": {
+      "step": "{{summary}}"
+    },
     "agentProfiles": {
       "title": "Agent 配置档",
       "description": "可复用的规划身份，用于约束提供方、上下文、工作区、能力和风险，绝不会绕过主进程策略。",
@@ -455,10 +484,19 @@
       "description": "跨保留审计日期的仅追加执行、权限和自动化历史。",
       "filter": "类别",
       "all": "全部",
+      "categories": {
+        "execution": "执行",
+        "permission": "权限",
+        "agent-profile": "Agent 配置档",
+        "workflow": "工作流",
+        "schedule": "计划任务"
+      },
       "ledger": "活动账本",
       "ledgerDescription": "最新优先，绝不保留有效载荷和秘密。",
       "empty": "没有匹配的活动记录。",
-      "loadMore": "加载更早活动"
+      "loadMore": "加载更早活动",
+      "recent": "最近活动",
+      "open": "打开完整活动"
     },
     "quickCommand": {
       "title": "快捷命令",
