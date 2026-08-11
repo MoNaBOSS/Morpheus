@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { objectivePassNumber } from '@/pages/CommandCenter/objective-presentation';
 import { mergePlanSteps } from '@/pages/CommandCenter/PlanPanel';
 import type { ExecutionStep, ExecutionStepResult } from '@shared/morpheus/execution-types';
 
@@ -70,5 +71,16 @@ describe('mergePlanSteps', () => {
   it('carries the dependency list through for display', () => {
     const merged = mergePlanSteps([step('b', ['a'])], [], describeStep, describeSkip);
     expect(merged[0].dependsOn).toEqual(['a']);
+  });
+});
+
+describe('objectivePassNumber', () => {
+  it('shows the initial understanding state as pass one', () => {
+    expect(objectivePassNumber(0)).toBe(1);
+  });
+
+  it('does not offset the one-based execution iteration reported by Main', () => {
+    expect(objectivePassNumber(1)).toBe(1);
+    expect(objectivePassNumber(2)).toBe(2);
   });
 });

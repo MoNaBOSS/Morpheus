@@ -42,17 +42,17 @@ export function MorpheusRunCard({ run }: MorpheusRunCardProps) {
       data-testid="morpheus-run-card"
       data-run-id={run.runId}
       data-phase={run.phase}
-      className="rounded-lg border bg-surface-modal p-3"
+      className="rounded-lg border border-border/55 bg-[hsl(var(--morpheus-surface-3))]/55 px-2.5 py-2"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium">
+          <p className="truncate text-tiny font-medium">
             {t(morpheusActionLabelKey(run.actionId))}
           </p>
           {targetLine ? (
             <p
               data-testid="morpheus-run-target"
-              className="mt-1 break-all font-mono text-tiny text-muted-foreground"
+              className="mt-0.5 truncate font-mono text-2xs text-muted-foreground"
             >
               {targetLine}
             </p>
@@ -80,7 +80,7 @@ export function MorpheusRunCard({ run }: MorpheusRunCardProps) {
         </p>
       ) : null}
 
-      <div className="mt-2 flex items-center gap-2 text-2xs text-muted-foreground">
+      <div className="mt-1.5 flex items-center gap-2 text-[9px] text-muted-foreground">
         <span>{new Date(run.updatedAt).toLocaleTimeString()}</span>
         {duration ? <span>· {duration}</span> : null}
       </div>

@@ -81,8 +81,10 @@ function NavItem({ to, icon, label, badge, collapsed, onClick, testId }: NavItem
       className={({ isActive }) =>
         cn(
           'sidebar-nav-text flex items-center gap-2 rounded-lg px-2.5 py-1.5 transition-colors',
-          'hover:bg-black/5 dark:hover:bg-white/5 text-foreground/80',
-          isActive ? 'bg-black/5 dark:bg-white/10 text-foreground' : '',
+          'hover:bg-black/5 dark:hover:bg-white/[0.045] text-foreground/75',
+          isActive
+            ? 'bg-[hsl(var(--morpheus-accent))]/[0.08] text-foreground shadow-[inset_2px_0_0_hsl(var(--morpheus-accent))]'
+            : '',
           collapsed && 'justify-center px-0',
         )
       }
@@ -540,12 +542,12 @@ export function Sidebar() {
 
       {/* Top Header Toggle */}
       <div
-        className={cn('flex shrink-0 items-center p-2 h-8', sidebarCollapsed ? 'justify-center' : 'justify-between')}
+        className={cn('flex h-12 shrink-0 items-center border-b border-border/40 px-2', sidebarCollapsed ? 'justify-center' : 'justify-between')}
       >
         {!sidebarCollapsed && (
-          <div className="flex items-center gap-2 px-2 overflow-hidden">
-            <img src={logoSvg} alt="Morpheus" className="h-5 w-auto shrink-0" />
-            <span className="text-sm font-semibold truncate whitespace-nowrap tracking-wide text-foreground/90">Morpheus</span>
+          <div className="flex items-center gap-2.5 overflow-hidden px-2">
+            <img src={logoSvg} alt="Morpheus" className="h-6 w-auto shrink-0" />
+            <span className="truncate whitespace-nowrap font-serif text-sm font-normal tracking-[0.14em] text-foreground/90">Morpheus</span>
           </div>
         )}
         <Button
@@ -567,7 +569,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1 px-2 mt-2">
+      <nav className="mt-2 flex flex-col gap-1 px-2">
         <button
           type="button"
           data-testid="sidebar-new-chat"
@@ -593,8 +595,8 @@ export function Sidebar() {
           data-testid="sidebar-quick-command"
           onClick={showQuickCommand}
           className={cn(
-            'sidebar-nav-text flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-foreground/80 transition-colors',
-            'hover:bg-black/5 dark:hover:bg-white/5',
+            'sidebar-nav-text flex items-center gap-2 rounded-lg border border-[hsl(var(--morpheus-accent-dim))]/60 bg-[hsl(var(--morpheus-accent))]/[0.05] px-2.5 py-1.5 text-foreground/85 transition-colors',
+            'hover:bg-[hsl(var(--morpheus-accent))]/[0.09]',
             sidebarCollapsed && 'justify-center px-0',
           )}
         >

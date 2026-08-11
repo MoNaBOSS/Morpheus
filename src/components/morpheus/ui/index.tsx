@@ -36,7 +36,7 @@ export function Panel({ title, description, actions, children, className, testId
     <section
       data-testid={testId}
       className={cn(
-        'rounded-lg border border-border bg-[hsl(var(--morpheus-surface-2))] p-3',
+        'rounded-xl border border-border/60 bg-[hsl(var(--morpheus-surface-2))]/90 p-3 backdrop-blur-sm',
         className,
       )}
     >
@@ -213,20 +213,33 @@ export function PlanTimeline({
   if (steps.length === 0) return <EmptyState message={emptyMessage} testId={testId} />;
 
   return (
-    <ol className="space-y-px" data-testid={testId}>
-      {steps.map((step) => (
+    <ol className="space-y-0.5" data-testid={testId}>
+      {steps.map((step, index) => {
+        const tone = toneForStepStatus(step.status);
+        return (
         <li
           key={step.stepId}
           data-testid={`plan-step-${step.stepId}`}
           data-status={step.status}
-          className="flex items-start gap-2 rounded px-2.5 py-1.5 hover:bg-[hsl(var(--morpheus-surface-3))]"
+          className="group relative flex items-start gap-2.5 rounded-lg px-2 py-2 hover:bg-[hsl(var(--morpheus-surface-3))]/75"
         >
-          <span className="mt-1.5">
-            <StatusDot tone={toneForStepStatus(step.status)} />
+          {index < steps.length - 1 ? (
+            <span aria-hidden className="absolute bottom-[-5px] left-[18px] top-7 w-px bg-border/70" />
+          ) : null}
+          <span
+            data-tone={tone}
+            className={cn(
+              'relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border bg-[hsl(var(--morpheus-surface-2))] font-mono text-[9px] text-muted-foreground',
+              tone === 'ok' && 'border-[hsl(var(--morpheus-accent-dim))] text-[hsl(var(--morpheus-accent))]',
+              tone === 'running' && 'border-[hsl(var(--morpheus-accent))] text-[hsl(var(--morpheus-accent))] shadow-[0_0_12px_hsl(var(--morpheus-glow))]',
+              tone === 'error' && 'border-[hsl(var(--morpheus-danger))]/60 text-[hsl(var(--morpheus-danger))]',
+            )}
+          >
+            {index + 1}
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="truncate text-tiny text-foreground">{step.summary}</span>
+              <span className="truncate text-tiny font-medium text-foreground/90">{step.summary}</span>
               {typeof step.durationMs === 'number' && (
                 <span className="shrink-0 font-mono text-2xs text-muted-foreground">
                   {step.durationMs}ms
@@ -243,7 +256,8 @@ export function PlanTimeline({
             )}
           </div>
         </li>
-      ))}
+        );
+      })}
     </ol>
   );
 }

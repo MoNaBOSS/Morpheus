@@ -40,7 +40,7 @@ export function MorpheusActionTimeline({ limit }: { limit?: number }) {
   }
 
   return (
-    <ul data-testid="morpheus-timeline" className="flex flex-col gap-2">
+    <ul data-testid="morpheus-timeline" className="flex flex-col gap-1">
       {runs.map((run) => (
         <MorpheusRunCard key={run.runId} run={run} />
       ))}

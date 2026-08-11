@@ -135,6 +135,22 @@ execution, first supported action, and navigation to Chat/Agents/Skills must be
 visible without page scrolling. Long capability and activity collections scroll
 inside their own bounded regions. Aside collapses below Primary under `xl`.
 
+### Command Center cockpit
+
+The Windows Command Center is a command-first operator cockpit, not a collection
+of equally weighted dashboard cards.
+
+1. The command surface is the visual anchor and remains above the fold.
+2. The primary body shows the current typed plan and real execution together.
+3. The right rail answers readiness, trust, and available-action questions.
+4. Artifacts and recent activity form a compact secondary rail, not the page's
+   dominant content.
+5. An idle primary panel explains the real lifecycle and current readiness. It
+   must not become a large blank surface, fake plan, or decorative diagnostic.
+
+The Matrix signal field may sit behind the command surface at very low contrast.
+It must never reduce input legibility or imply work that is not running.
+
 ## Writing
 
 - Say what happened, not what might have. "Created notes.txt" not "Operation completed."

@@ -328,6 +328,11 @@
       "emptyDescription": "アクションを実行すると、実際の実行フェーズがここに表示されます。",
       "systemSummary": "{{platform}} {{release}}（{{arch}}）"
     },
+    "readiness": {
+      "gateway": "OpenClaw ランタイム", "audit": "監査の永続化", "auditHealthy": "正常",
+      "capabilities": "Windows 機能", "capabilityCount": "{{count}} 個利用可能",
+      "sequential": "プランは順次実行されます。最初の実ステップ前に、Morpheus が信頼境界全体を一度評価します。"
+    },
     "audit": {
       "title": "監査ログ",
       "description": "追記専用の記録です。ファイル内容は保存されません。",
@@ -348,6 +353,7 @@
     },
     "command": {
       "label": "コマンド",
+      "operator": "Morpheus オペレーター",
       "placeholder": "目的を入力（例：「システム情報を表示」）",
       "run": "実行",
       "question": "Morpheus に何を任せますか？",
@@ -360,6 +366,17 @@
       },
       "unsupportedTitle": "Morpheus はまだそれを実行できません",
       "unsupportedBody": "そのコマンドは Morpheus が実際に持つ機能に対応していません。現在の対応："
+    },
+    "objective": {
+      "iteration": "パス {{current}}",
+      "progress": "目標の進捗",
+      "plannerAutomatic": "自動プランナー",
+      "states": {
+        "ready": "準備完了", "listening": "聞き取り中", "understanding": "理解中", "planning": "計画中",
+        "waiting-for-approval": "承認待ち", "executing": "実行中", "observing": "観察中", "replanning": "再計画中",
+        "speaking": "読み上げ中", "complete": "完了", "needs-clarification": "確認が必要", "cancelled": "キャンセル済み",
+        "degraded": "セキュリティ低下", "error": "エラー"
+      }
     },
     "status": {
       "runtime": "ランタイム",
@@ -403,6 +420,9 @@
       "title": "実行プラン",
       "description": "Morpheus が順に実行する内容です。",
       "empty": "プランはまだありません。コマンドバーに目的を入力してください。",
+      "readyTitle": "目的を受け付ける準備ができました",
+      "readyBody": "望む結果を説明してください。Morpheus が型付きプランを作成し、信頼境界全体を評価して、観察可能なステップを実行します。",
+      "flow": { "objective": "目的", "plan": "型付きプラン", "trust": "信頼確認", "execute": "実行" },
       "executing": "実行中…",
       "statusLabel": "プラン",
       "status": {

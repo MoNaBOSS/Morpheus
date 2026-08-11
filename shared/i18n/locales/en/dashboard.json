@@ -328,6 +328,14 @@
       "emptyDescription": "Run an action to see its real execution phases here.",
       "systemSummary": "{{platform}} {{release}} ({{arch}})"
     },
+    "readiness": {
+      "gateway": "OpenClaw runtime",
+      "audit": "Audit persistence",
+      "auditHealthy": "Healthy",
+      "capabilities": "Windows capabilities",
+      "capabilityCount": "{{count}} available",
+      "sequential": "Plans execute sequentially. Morpheus evaluates trust once before the first real step."
+    },
     "audit": {
       "title": "Audit log",
       "description": "Append-only record. File content is never stored.",
@@ -348,6 +356,7 @@
     },
     "command": {
       "label": "Command",
+      "operator": "Morpheus operator",
       "placeholder": "Describe an objective, e.g. \"Show system information\"",
       "run": "Run",
       "question": "What should Morpheus handle?",
@@ -360,6 +369,27 @@
       },
       "unsupportedTitle": "Morpheus cannot do that yet",
       "unsupportedBody": "That command does not map to a capability Morpheus actually has. It supports:"
+    },
+    "objective": {
+      "iteration": "Pass {{current}}",
+      "progress": "Objective progress",
+      "plannerAutomatic": "Automatic planner",
+      "states": {
+        "ready": "Ready",
+        "listening": "Listening",
+        "understanding": "Understanding",
+        "planning": "Planning",
+        "waiting-for-approval": "Waiting for approval",
+        "executing": "Executing",
+        "observing": "Observing",
+        "replanning": "Replanning",
+        "speaking": "Speaking",
+        "complete": "Complete",
+        "needs-clarification": "Needs clarification",
+        "cancelled": "Cancelled",
+        "degraded": "Security degraded",
+        "error": "Error"
+      }
     },
     "status": {
       "runtime": "Runtime",
@@ -403,6 +433,14 @@
       "title": "Execution plan",
       "description": "What Morpheus will do, in order.",
       "empty": "No plan yet. Describe what you want in the command bar.",
+      "readyTitle": "Ready for an objective",
+      "readyBody": "Describe the outcome. Morpheus will construct a typed plan, compare its complete trust boundary, and execute observable steps.",
+      "flow": {
+        "objective": "Objective",
+        "plan": "Typed plan",
+        "trust": "Trust check",
+        "execute": "Execution"
+      },
       "executing": "Executing…",
       "statusLabel": "Plan",
       "status": {

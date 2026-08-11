@@ -70,7 +70,7 @@ export function SupportedActions({ limit }: { limit?: number }) {
     // and the page itself must stay within 1280x800 without scrolling.
     <ul
       data-testid="morpheus-supported-actions"
-      className="flex max-h-64 flex-col gap-1.5 overflow-y-auto pr-1"
+      className="flex max-h-56 flex-col divide-y divide-border/50 overflow-y-auto pr-1"
     >
       {visibleActionIds.map((actionId) => {
         const available = supported[actionId] !== false;
@@ -78,7 +78,7 @@ export function SupportedActions({ limit }: { limit?: number }) {
           <li
             key={actionId}
             data-testid={`morpheus-supported-${actionId}`}
-            className="flex items-center justify-between gap-2 rounded-md border bg-surface-modal px-2.5 py-1.5"
+            className="group flex items-center justify-between gap-2 px-1 py-1.5"
           >
             <span className="min-w-0 truncate text-2xs">
               {t(morpheusActionLabelKey(actionId))}
@@ -90,7 +90,7 @@ export function SupportedActions({ limit }: { limit?: number }) {
               data-testid={`morpheus-run-action-${actionId}`}
               onClick={() => run(actionId)}
               aria-label={t(morpheusActionLabelKey(actionId))}
-              className="h-6 shrink-0 gap-1 px-2"
+              className="h-6 shrink-0 gap-1 px-2 opacity-70 group-hover:opacity-100"
             >
               <Play className="h-3 w-3" aria-hidden />
               {t('morpheus.launcher.run')}

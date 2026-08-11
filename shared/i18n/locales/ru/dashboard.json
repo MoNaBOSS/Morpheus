@@ -328,6 +328,11 @@
       "emptyDescription": "Запустите действие, чтобы увидеть здесь его реальные фазы выполнения.",
       "systemSummary": "{{platform}} {{release}} ({{arch}})"
     },
+    "readiness": {
+      "gateway": "Среда OpenClaw", "audit": "Хранение аудита", "auditHealthy": "Исправно",
+      "capabilities": "Возможности Windows", "capabilityCount": "Доступно: {{count}}",
+      "sequential": "Планы выполняются последовательно. Morpheus один раз оценивает всю границу доверия до первого реального шага."
+    },
     "audit": {
       "title": "Журнал аудита",
       "description": "Записи только добавляются. Содержимое файлов не сохраняется.",
@@ -348,6 +353,7 @@
     },
     "command": {
       "label": "Команда",
+      "operator": "Оператор Morpheus",
       "placeholder": "Опишите задачу, например «Показать сведения о системе»",
       "run": "Запустить",
       "question": "Что поручить Morpheus?",
@@ -360,6 +366,17 @@
       },
       "unsupportedTitle": "Morpheus пока не может этого сделать",
       "unsupportedBody": "Эта команда не соответствует ни одной реальной возможности Morpheus. Поддерживается:"
+    },
+    "objective": {
+      "iteration": "Проход {{current}}",
+      "progress": "Ход выполнения цели",
+      "plannerAutomatic": "Автоматический планировщик",
+      "states": {
+        "ready": "Готов", "listening": "Слушает", "understanding": "Анализирует", "planning": "Планирует",
+        "waiting-for-approval": "Ожидает разрешения", "executing": "Выполняет", "observing": "Наблюдает", "replanning": "Перепланирует",
+        "speaking": "Озвучивает", "complete": "Завершено", "needs-clarification": "Нужно уточнение", "cancelled": "Отменено",
+        "degraded": "Защита снижена", "error": "Ошибка"
+      }
     },
     "status": {
       "runtime": "Среда",
@@ -403,6 +420,9 @@
       "title": "План выполнения",
       "description": "Что Morpheus сделает и в каком порядке.",
       "empty": "Плана пока нет. Опишите задачу в командной строке.",
+      "readyTitle": "Готов принять задачу",
+      "readyBody": "Опишите нужный результат. Morpheus построит типизированный план, оценит всю границу доверия и выполнит наблюдаемые шаги.",
+      "flow": { "objective": "Задача", "plan": "Типизированный план", "trust": "Проверка доверия", "execute": "Выполнение" },
       "executing": "Выполняется…",
       "statusLabel": "План",
       "status": {

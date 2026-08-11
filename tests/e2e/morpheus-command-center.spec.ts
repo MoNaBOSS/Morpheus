@@ -28,6 +28,8 @@ test.describe('Morpheus Command Center', () => {
         'morpheus-runtime-status',
         'morpheus-runtime-gateway',
         'morpheus-runtime-provider',
+        'command-center-readiness',
+        'plan-timeline',
         'morpheus-supported-system.report',
         'sidebar-nav-chat',
         'sidebar-nav-agents',
@@ -83,6 +85,9 @@ test.describe('Morpheus Command Center', () => {
       await page.getByTestId('morpheus-command-submit').click();
       await expect(page.getByTestId('morpheus-run-card').first())
         .toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
+      await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i);
+      await expect(page.getByTestId('command-center-objective-iteration')).toContainText('1');
+      await expect(page.getByTestId('command-center-objective-progress')).toHaveAttribute('style', /100%/);
     } finally {
       await closeElectronApp(app);
     }

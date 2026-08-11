@@ -10,8 +10,9 @@
  */
 import { useTranslation } from 'react-i18next';
 
-import { Panel, PlanTimeline, RiskBadge, type PlanTimelineStep } from '@/components/morpheus/ui';
+import { Panel, PlanTimeline, RiskBadge, StatusDot, type PlanTimelineStep, type StatusTone } from '@/components/morpheus/ui';
 import { cn } from '@/lib/utils';
+import { objectivePassNumber } from '@/pages/CommandCenter/objective-presentation';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import type { ExecutionStep, ExecutionStepResult } from '@shared/morpheus/execution-types';
 
@@ -49,6 +50,7 @@ export function PlanPanel({ className }: { className?: string }) {
   const plan = useMorpheusCommandStore((state) => state.plan);
   const planResult = useMorpheusCommandStore((state) => state.planResult);
   const executing = useMorpheusCommandStore((state) => state.executing);
+  const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
 
   if (!plan) {
     return (
@@ -58,8 +60,19 @@ export function PlanPanel({ className }: { className?: string }) {
         testId="command-center-plan"
         className={cn('flex min-h-0 flex-col', className)}
       >
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <PlanTimeline steps={[]} emptyMessage={t('morpheus.plan.empty')} testId="plan-timeline" />
+        <div className="flex min-h-0 flex-1 flex-col justify-center px-2" data-testid="plan-timeline">
+          <StatusDot tone="ok" label={t('morpheus.plan.readyTitle')} />
+          <p className="mt-2 max-w-md text-tiny leading-relaxed text-foreground/80">
+            {t('morpheus.plan.readyBody')}
+          </p>
+          <ol className="mt-4 grid grid-cols-4 gap-1.5">
+            {(['objective', 'plan', 'trust', 'execute'] as const).map((stage, index) => (
+              <li key={stage} className="rounded-lg border border-border/55 bg-[hsl(var(--morpheus-surface-3))]/50 px-2 py-2">
+                <span className="font-mono text-[9px] text-[hsl(var(--morpheus-accent))]">0{index + 1}</span>
+                <p className="mt-1 text-2xs text-foreground/75">{t(`morpheus.plan.flow.${stage}`)}</p>
+              </li>
+            ))}
+          </ol>
         </div>
       </Panel>
     );
@@ -84,6 +97,15 @@ export function PlanPanel({ className }: { className?: string }) {
     (worst, step) => (RANK[step.permission.riskTier] > RANK[worst] ? step.permission.riskTier : worst),
     'low',
   );
+  const settled = steps.filter((step) => step.status !== 'pending' && step.status !== 'running').length;
+  const progress = steps.length > 0 ? Math.round((settled / steps.length) * 100) : 0;
+  const objectiveTone: StatusTone = objectiveRun?.state === 'complete'
+    ? 'ok'
+    : objectiveRun?.state === 'error' || objectiveRun?.state === 'degraded'
+      ? 'error'
+      : objectiveRun?.state === 'needs-clarification' || objectiveRun?.state === 'waiting-for-approval'
+        ? 'warn'
+        : executing ? 'running' : 'idle';
 
   return (
     <Panel
@@ -98,6 +120,31 @@ export function PlanPanel({ className }: { className?: string }) {
         </>
       )}
     >
+      {objectiveRun ? (
+        <div data-testid="command-center-objective" className="mb-2.5 rounded-lg border border-border/55 bg-[hsl(var(--morpheus-surface-3))]/55 px-3 py-2">
+          <div className="flex items-center justify-between gap-3">
+            <StatusDot
+              tone={objectiveTone}
+              label={t(`morpheus.objective.states.${objectiveRun.state}`)}
+              testId="command-center-objective-state"
+            />
+            <span data-testid="command-center-objective-iteration" className="font-mono text-[9px] text-muted-foreground">
+              {t('morpheus.objective.iteration', { current: objectivePassNumber(objectiveRun.iteration) })}
+            </span>
+          </div>
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-border/60" aria-label={t('morpheus.objective.progress')}>
+            <div
+              data-testid="command-center-objective-progress"
+              className="h-full rounded-full bg-[hsl(var(--morpheus-accent))] transition-[width] duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="mt-1.5 flex min-w-0 items-center gap-3 text-[9px] text-muted-foreground">
+            <span className="truncate">{objectiveRun.plannerId ?? t('morpheus.objective.plannerAutomatic')}</span>
+            {objectiveRun.modelId ? <span className="truncate font-mono">{objectiveRun.modelId}</span> : null}
+          </div>
+        </div>
+      ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto pr-1">
         <PlanTimeline steps={steps} emptyMessage={t('morpheus.plan.empty')} testId="plan-timeline" />
       </div>
@@ -106,6 +153,11 @@ export function PlanPanel({ className }: { className?: string }) {
           {planResult.rejection.message}
         </p>
       )}
+      {objectiveRun?.summary ? (
+        <p data-testid="command-center-objective-summary" className="mt-2 border-l border-[hsl(var(--morpheus-accent-dim))] pl-2 text-2xs text-foreground/75">
+          {objectiveRun.summary}
+        </p>
+      ) : null}
     </Panel>
   );
 }

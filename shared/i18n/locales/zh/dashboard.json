@@ -328,6 +328,11 @@
       "emptyDescription": "运行一个操作即可在此查看其真实执行阶段。",
       "systemSummary": "{{platform}} {{release}}（{{arch}}）"
     },
+    "readiness": {
+      "gateway": "OpenClaw 运行时", "audit": "审计持久化", "auditHealthy": "正常",
+      "capabilities": "Windows 能力", "capabilityCount": "{{count}} 项可用",
+      "sequential": "计划按顺序执行。Morpheus 会在第一个真实步骤前对完整信任边界评估一次。"
+    },
     "audit": {
       "title": "审计日志",
       "description": "只追加记录，绝不保存文件内容。",
@@ -348,6 +353,7 @@
     },
     "command": {
       "label": "命令",
+      "operator": "Morpheus 智能执行",
       "placeholder": "描述一个目标，例如“显示系统信息”",
       "run": "运行",
       "question": "Morpheus 应该处理什么？",
@@ -360,6 +366,17 @@
       },
       "unsupportedTitle": "Morpheus 暂时无法执行该操作",
       "unsupportedBody": "该命令未映射到 Morpheus 实际具备的能力。当前支持："
+    },
+    "objective": {
+      "iteration": "第 {{current}} 轮",
+      "progress": "目标进度",
+      "plannerAutomatic": "自动规划器",
+      "states": {
+        "ready": "就绪", "listening": "正在聆听", "understanding": "正在理解", "planning": "正在规划",
+        "waiting-for-approval": "等待批准", "executing": "正在执行", "observing": "正在观察", "replanning": "正在重新规划",
+        "speaking": "正在播报", "complete": "已完成", "needs-clarification": "需要澄清", "cancelled": "已取消",
+        "degraded": "安全降级", "error": "错误"
+      }
     },
     "status": {
       "runtime": "运行时",
@@ -403,6 +420,9 @@
       "title": "执行计划",
       "description": "Morpheus 将按顺序执行的操作。",
       "empty": "暂无计划。请在命令栏中描述你的需求。",
+      "readyTitle": "已准备接收目标",
+      "readyBody": "描述你想要的结果。Morpheus 将构建类型化计划、评估完整信任边界并执行可观察的步骤。",
+      "flow": { "objective": "目标", "plan": "类型化计划", "trust": "信任检查", "execute": "执行" },
       "executing": "正在执行…",
       "statusLabel": "计划",
       "status": {

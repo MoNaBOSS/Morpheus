@@ -1,6 +1,6 @@
-/** Truthful runtime, provider, trust, and workspace state for the Command Center. */
+/** Truthful runtime, provider, and trust state for the Command Center. */
 import { useTranslation } from 'react-i18next';
-import { Activity, Cpu, FolderRoot, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Activity, Cpu, ShieldAlert, ShieldCheck } from 'lucide-react';
 
 import { StatusDot } from '@/components/morpheus/ui';
 import { useGatewayStore } from '@/stores/gateway';
@@ -43,7 +43,6 @@ export function RuntimeStatusBar() {
   const accounts = useProviderStore((state) => state.accounts);
   const defaultAccountId = useProviderStore((state) => state.defaultAccountId);
   const permission = useMorpheusCommandStore((state) => state.permission);
-  const filesRoot = useMorpheusCommandStore((state) => state.filesRoot);
 
   const running = gatewayStatus.state === 'running';
   const ready = running && gatewayStatus.gatewayReady !== false;
@@ -65,7 +64,7 @@ export function RuntimeStatusBar() {
   return (
     <div
       data-testid="morpheus-runtime-status"
-      className="grid min-w-0 flex-1 grid-cols-2 divide-x divide-border/60 rounded-md border border-border/70 bg-[hsl(var(--morpheus-surface-2))]/75 px-3 lg:grid-cols-4"
+      className="morpheus-runtime-strip grid min-w-0 flex-1 grid-cols-3 divide-x divide-border/50 overflow-hidden rounded-lg border border-border/60 bg-[hsl(var(--morpheus-surface-2))]/80 px-2"
     >
       <RuntimeCell
         testId="morpheus-runtime-gateway"
@@ -93,12 +92,6 @@ export function RuntimeStatusBar() {
       >
         <StatusDot tone={permission?.auditDegraded ? 'error' : 'ok'} />
       </RuntimeCell>
-      <RuntimeCell
-        testId="morpheus-runtime-workspace"
-        icon={<FolderRoot className="h-4 w-4" />}
-        label={t('morpheus.status.workspace')}
-        value={filesRoot ?? t('morpheus.artifacts.rootUnknown')}
-      />
       {permission?.auditDegraded ? (
         <span data-testid="morpheus-audit-degraded" className="sr-only">{t('morpheus.status.auditDegraded')}</span>
       ) : null}
