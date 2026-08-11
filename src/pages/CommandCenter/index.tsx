@@ -6,7 +6,7 @@ import { Activity, Boxes, ShieldCheck } from 'lucide-react';
 import morpheusLogo from '@/assets/morpheus-logo.svg';
 import { MorpheusActionTimeline } from '@/components/morpheus/MorpheusActionTimeline';
 import { PermissionCenter } from '@/components/morpheus/PermissionCenter';
-import { MorpheusWorkspaceControl } from '@/components/morpheus/MorpheusWorkspaceControl';
+import { MorpheusObjectiveContextPicker } from '@/components/morpheus/MorpheusObjectiveContextPicker';
 import { Panel } from '@/components/morpheus/ui';
 import { useMorpheusFoundationStore } from '@/stores/morpheus-foundation';
 
@@ -48,7 +48,7 @@ export function CommandCenter() {
           </div>
         </div>
         <RuntimeStatusBar />
-        <MorpheusWorkspaceControl compact />
+        <MorpheusObjectiveContextPicker />
       </header>
 
       <div className="relative z-10 shrink-0 border-b border-border/50 px-5 py-3">

@@ -480,6 +480,8 @@
       "workspace": "Workspace",
       "capabilities": "Capabilities",
       "maxRisk": "Maximum risk",
+      "active": "Active Agent Profile",
+      "automatic": "Automatic",
       "authorityNote": "This profile narrows plan construction. Every real target is still resolved, permissioned and audited by Morpheus Main.",
       "create": "Create profile",
       "reset": "Restore built-ins",

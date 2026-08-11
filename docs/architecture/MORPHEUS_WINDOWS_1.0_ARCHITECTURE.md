@@ -176,6 +176,11 @@ final safe summary -> Renderer speech adapter -> system voice
 Ordinary `/chat` messages continue through ACP unchanged. Chat gains an explicit
 Morpheus execution affordance that submits an objective to the same core. This
 preserves conversation behavior while proving Chat is a core entry surface.
+The explicit action is text-only in Windows 1.0: ordinary Enter/Send remains ACP,
+while Ctrl+Enter/Execute submits to Morpheus. Command Center and Quick Command
+share the same logical workspace and optional Agent Profile context. Those
+selectors send ids only; Main resolves every profile, workspace root, capability
+target and trust boundary.
 
 OpenClaw is accessed through an adapter where planning or memory reuse is
 appropriate. The plan executor remains independent of Gateway/ACP modules.

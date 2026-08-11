@@ -27,6 +27,7 @@ vi.mock('@/lib/host-events', () => ({
 }));
 
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
+import { useMorpheusExecutionContextStore } from '@/stores/morpheus-execution-context';
 import type { MorpheusObjectiveEvent, MorpheusObjectiveRun } from '@shared/morpheus/core/objective-types';
 import type { ExecutionPlan } from '@shared/morpheus/execution-types';
 
@@ -91,17 +92,30 @@ beforeEach(() => {
     planResult: null, consent: null, artifacts: [], objectiveRun: null,
     objectiveHistory: null,
   });
+  useMorpheusExecutionContextStore.setState({ selectedAgentProfileId: null });
 });
 
 describe('unified Morpheus objective store', () => {
   it('routes typed, Quick Command and voice objectives through Main submitObjective', async () => {
-    await useMorpheusCommandStore.getState().runObjective('  Show system information  ', 'voice');
+    await expect(useMorpheusCommandStore.getState().runObjective('  Show system information  ', 'voice'))
+      .resolves.toBe(true);
     expect(mocks.submitObjective).toHaveBeenCalledWith({
       objective: 'Show system information',
       originType: 'voice',
       workspaceId: 'morpheus-files',
     });
     expect(useMorpheusCommandStore.getState().input).toBe('');
+  });
+
+  it('carries only logical workspace and Agent Profile context into Main', async () => {
+    useMorpheusExecutionContextStore.setState({ selectedAgentProfileId: 'developer' });
+    await useMorpheusCommandStore.getState().runObjective('Open the project', 'chat');
+    expect(mocks.submitObjective).toHaveBeenCalledWith({
+      objective: 'Open the project',
+      originType: 'chat',
+      workspaceId: 'morpheus-files',
+      agentProfileId: 'developer',
+    });
   });
 
   it('projects real objective events and Main-authored plans into the Command Center', () => {

@@ -462,6 +462,8 @@
       "workspace": "工作区",
       "capabilities": "能力",
       "maxRisk": "最高风险",
+      "active": "活动 Agent 配置档",
+      "automatic": "自动选择",
       "authorityNote": "配置档只会收窄计划。所有真实目标仍由 Morpheus 主进程解析、授权并审计。",
       "create": "创建配置档", "reset": "恢复内置配置", "builtIn": "内置", "custom": "自定义",
       "removeTitle": "删除 Agent 配置档？", "removeDescription": "只删除自定义配置档定义。仍被工作流使用时，Morpheus 会阻止删除。",

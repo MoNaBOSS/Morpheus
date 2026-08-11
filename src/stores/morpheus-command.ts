@@ -29,6 +29,7 @@ import type {
 } from '@shared/morpheus/permission-types';
 import type { MorpheusAuditEntry, MorpheusRun } from '@shared/morpheus/action-types';
 import { useMorpheusWorkspacesStore } from './morpheus-workspaces';
+import { useMorpheusExecutionContextStore } from './morpheus-execution-context';
 
 const MAX_ARTIFACTS = 50;
 
@@ -63,7 +64,7 @@ export type MorpheusCommandState = {
   runObjective: (
     objective: string,
     originType?: SubmitMorpheusObjectivePayload['originType'],
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   clearPlan: () => void;
   subscribeObjectives: () => () => void;
   loadObjectives: () => Promise<void>;
@@ -347,14 +348,20 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
 
   runObjective: async (objectiveInput, originType = 'command-bar') => {
     const objective = objectiveInput.trim();
-    if (!objective) return;
+    if (!objective) return false;
 
     set({ interpreting: true, plan: null, unsupported: null, planResult: null });
     try {
       // Every interactive surface enters the same Main-owned objective state
       // machine. Renderer never receives authority to execute plan steps.
       const workspaceId = useMorpheusWorkspacesStore.getState().selectedWorkspaceId;
-      const result = await hostApi.morpheus.submitObjective({ objective, originType, workspaceId });
+      const agentProfileId = useMorpheusExecutionContextStore.getState().selectedAgentProfileId;
+      const result = await hostApi.morpheus.submitObjective({
+        objective,
+        originType,
+        workspaceId,
+        ...(agentProfileId ? { agentProfileId } : {}),
+      });
       if (!result.accepted) {
         set({
           unsupported: {
@@ -365,9 +372,10 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
           plan: null,
           interpreting: false,
         });
-        return;
+        return false;
       }
       set({ input: '' });
+      return true;
     } catch (error) {
       set({
         interpreting: false,
@@ -375,6 +383,7 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
         unsupported: { objective, reason: 'not-understood', supportedCapabilities: [] },
       });
       console.error('[morpheus] command failed', error);
+      return false;
     }
   },
 

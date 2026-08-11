@@ -462,6 +462,8 @@
       "workspace": "ワークスペース",
       "capabilities": "機能",
       "maxRisk": "最大リスク",
+      "active": "アクティブなエージェントプロファイル",
+      "automatic": "自動選択",
       "authorityNote": "プロファイルは計画を狭めるだけです。実際の対象は Morpheus Main が解決、許可、監査します。",
       "create": "プロファイルを作成", "reset": "組み込みを復元", "builtIn": "組み込み", "custom": "カスタム",
       "removeTitle": "エージェントプロファイルを削除しますか？", "removeDescription": "カスタム定義のみ削除します。ワークフローが使用中の場合、Morpheus は削除を拒否します。",

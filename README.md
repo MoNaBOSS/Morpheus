@@ -160,6 +160,10 @@ Morpheus can automatically check for new versions on startup. When an update is 
 Morpheus opens on the **Command Center** at `/`; **Quick Command** is available
 globally with `Ctrl+Shift+Space`; OpenClaw chat remains fully functional at
 `/chat`. All three surfaces converge on the same Main-owned execution pipeline.
+In Chat, ordinary **Send** remains conversational ACP traffic; the separate
+**Execute** action (`Ctrl+Enter`) submits a text objective to Morpheus. Command
+Center and Quick Command share logical workspace and Agent Profile context while
+Main retains target resolution and execution authority.
 
 - **Sequential typed plans** — multi-step plans honour dependencies, expose real
   step status/results/errors/artifacts, and skip only transitive dependants after

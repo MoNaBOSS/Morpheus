@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ChatInput } from '@/pages/Chat/ChatInput';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 const hostApiFetchMock = vi.hoisted(() => vi.fn());
 const hostApiDialogOpenMock = vi.hoisted(() => vi.fn());
 const toastErrorMock = vi.hoisted(() => vi.fn());
+const toastSuccessMock = vi.hoisted(() => vi.fn());
 const { agentsState, chatState, gatewayState, providersState, artifactPanelMocks } = vi.hoisted(() => ({
   agentsState: {
     agents: [] as Array<Record<string, unknown>>,
@@ -77,6 +79,7 @@ vi.mock('@/lib/host-api', () => ({
 vi.mock('sonner', () => ({
   toast: {
     error: toastErrorMock,
+    success: toastSuccessMock,
   },
 }));
 
@@ -108,6 +111,16 @@ function translate(key: string, vars?: Record<string, unknown>): string {
       return 'Gateway not connected...';
     case 'composer.send':
       return 'Send';
+    case 'composer.morpheusExecute':
+      return 'Execute';
+    case 'composer.morpheusExecuteHint':
+      return 'Execute through Morpheus';
+    case 'composer.morpheusNoAttachments':
+      return 'Text only';
+    case 'composer.morpheusAccepted':
+      return 'Objective sent to Morpheus';
+    case 'composer.morpheusRejected':
+      return 'Morpheus could not start this objective';
     case 'composer.stop':
       return 'Stop';
     case 'composer.thinking':
@@ -156,6 +169,8 @@ function renderChatInput(onSend = vi.fn()) {
     </TooltipProvider>,
   );
 }
+
+const originalRunObjective = useMorpheusCommandStore.getState().runObjective;
 
 function configureAgentAndModelPickers() {
   const now = '2025-01-01T00:00:00.000Z';
@@ -233,7 +248,31 @@ describe('ChatInput agent targeting', () => {
     vi.mocked(hostApiFetchMock).mockReset();
     vi.mocked(hostApiDialogOpenMock).mockReset();
     toastErrorMock.mockReset();
+    toastSuccessMock.mockReset();
     artifactPanelMocks.openPreview.mockReset();
+    useMorpheusCommandStore.setState({
+      runObjective: originalRunObjective,
+      interpreting: false,
+      executing: false,
+    });
+  });
+
+  it('keeps ordinary Chat send separate from explicit Morpheus execution', async () => {
+    const runObjective = vi.fn(async () => true);
+    useMorpheusCommandStore.setState({ runObjective, interpreting: false, executing: false });
+    const onSend = vi.fn();
+    renderChatInput(onSend);
+
+    const input = screen.getByTestId('chat-composer-input');
+    fireEvent.change(input, { target: { value: 'Show system information' } });
+    fireEvent.click(screen.getByTestId('chat-composer-morpheus-execute'));
+
+    await waitFor(() => {
+      expect(runObjective).toHaveBeenCalledWith('Show system information', 'chat');
+    });
+    expect(onSend).not.toHaveBeenCalled();
+    expect(input).toHaveValue('');
+    expect(toastSuccessMock).toHaveBeenCalledWith('Objective sent to Morpheus');
   });
 
   it('renders a dot pulse and visible thinking label while a message is sending', () => {

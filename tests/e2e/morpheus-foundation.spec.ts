@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-import { closeElectronApp, expect, getStableWindow, test } from './fixtures/electron';
+import { closeElectronApp, expect, getStableWindow, installIpcMocks, test } from './fixtures/electron';
 
 async function openCommandCenter(page: Page): Promise<void> {
   await expect(page.getByTestId('command-center-page')).toBeVisible();
@@ -44,7 +44,11 @@ test.describe('Morpheus 0.5 foundation', () => {
       await openCommandCenter(page);
 
       await page.getByTestId('sidebar-quick-command').click();
-      await expect(page.getByTestId('morpheus-quick-command')).toBeVisible();
+      const quickCommand = page.getByTestId('morpheus-quick-command');
+      await expect(quickCommand).toBeVisible();
+      await expect(quickCommand.getByTestId('morpheus-objective-context')).toBeVisible();
+      await expect(quickCommand.getByTestId('morpheus-workspace-select')).toBeVisible();
+      await expect(quickCommand.getByTestId('morpheus-agent-profile-select')).toHaveValue('');
       await expect(page.getByTestId('quick-command-input')).toBeFocused();
       await page.getByTestId('quick-command-input').fill('Show system information');
       await page.getByTestId('quick-command-submit').click();
@@ -56,6 +60,34 @@ test.describe('Morpheus 0.5 foundation', () => {
       await page.getByTestId('quick-command-close').click();
       await expect(page.getByTestId('morpheus-run-card').first())
         .toHaveAttribute('data-phase', 'succeeded');
+    } finally {
+      await closeElectronApp(app);
+    }
+  });
+
+  test('keeps ordinary OpenClaw send separate from explicit Chat execution through Morpheus Core', async ({
+    launchElectronApp,
+  }) => {
+    const app = await launchElectronApp({ skipSetup: true });
+    try {
+      await installIpcMocks(app, {
+        gatewayStatus: { state: 'running', gatewayReady: true, port: 18789, pid: 12345 },
+      });
+      const page = await getStableWindow(app);
+      await page.reload();
+      await openCommandCenter(page);
+      await page.getByTestId('sidebar-nav-chat').click();
+      await expect(page.getByTestId('chat-page')).toBeVisible({ timeout: 20_000 });
+      const input = page.getByTestId('chat-composer-input');
+      await expect(input).toBeEnabled({ timeout: 30_000 });
+      await input.fill('Show system information');
+      await expect(page.getByTestId('chat-composer-send')).toBeEnabled();
+      await page.getByTestId('chat-composer-morpheus-execute').click();
+      await expect(input).toHaveValue('');
+
+      await page.getByTestId('sidebar-nav-command-center').click();
+      await expect(page.getByTestId('plan-status')).toContainText(/completed/i, { timeout: 20_000 });
+      await expect(page.getByTestId('morpheus-run-card').first()).toHaveAttribute('data-phase', 'succeeded');
     } finally {
       await closeElectronApp(app);
     }

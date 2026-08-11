@@ -7,6 +7,7 @@ import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { cn } from '@/lib/utils';
 import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
 import { MorpheusVoiceButton } from './MorpheusVoiceButton';
+import { MorpheusObjectiveContextPicker } from './MorpheusObjectiveContextPicker';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 
 export function MorpheusQuickCommand() {
@@ -78,6 +79,10 @@ export function MorpheusQuickCommand() {
             </button>
           </div>
         </header>
+
+        <div className="border-b border-border/60 px-4 py-2">
+          <MorpheusObjectiveContextPicker className="justify-between" />
+        </div>
 
         <form
           className="p-3"

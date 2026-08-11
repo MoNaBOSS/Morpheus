@@ -9,7 +9,9 @@ the runtime.
 > `windows-1.0-foundation` from the committed 0.5 checkpoint `d6a03f8`. The
 > provider-backed Objective Core, secure voice entry, Main-owned workspace
 > registry, unified workflow/schedule execution, and real system-builder authoring
-> surfaces are committed on that branch. This document will be finalized
+> surfaces are committed on that branch. Command Center, Quick Command, and an
+> explicit text-only Chat Execute action now share the same logical execution
+> context without changing ordinary OpenClaw Send behavior. This document will be finalized
 > again before the Windows 1.0 packaging checkpoint.
 
 ## Current project status

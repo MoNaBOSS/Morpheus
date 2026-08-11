@@ -7,7 +7,7 @@
  * references in the ACP session/prompt request.
  */
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { SendHorizontal, Square, X, Paperclip, FileText, Film, Music, FileArchive, File, FolderOpen, Loader2, AtSign, Search, ChevronDown, Check } from 'lucide-react';
+import { SendHorizontal, Square, X, Paperclip, FileText, Film, Music, FileArchive, File, FolderOpen, Loader2, AtSign, Search, ChevronDown, Check, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { useGatewayStore } from '@/stores/gateway';
 import { useAgentsStore } from '@/stores/agents';
 import { useChatStore } from '@/stores/chat';
+import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useArtifactPanel } from '@/stores/artifact-panel';
 import { buildPreviewTarget } from '@/components/file-preview/build-preview-target';
 import { useProviderStore } from '@/stores/providers';
@@ -241,6 +242,9 @@ export function ChatInput({
   const providerError = useProviderStore((s) => s.error);
   const refreshProviderSnapshot = useProviderStore((s) => s.refreshProviderSnapshot);
   const currentAgentId = useChatStore((s) => s.currentAgentId);
+  const runMorpheusObjective = useMorpheusCommandStore((state) => state.runObjective);
+  const morpheusInterpreting = useMorpheusCommandStore((state) => state.interpreting);
+  const morpheusExecuting = useMorpheusCommandStore((state) => state.executing);
   const currentAgent = useMemo(
     () => (agents ?? []).find((agent) => agent.id === currentAgentId) ?? null,
     [agents, currentAgentId],
@@ -690,6 +694,13 @@ export function ChatInput({
     && !sending
     && !imageGenerating;
   const canStop = sending && !inputDisabled && !!onStop;
+  const morpheusBusy = morpheusInterpreting || morpheusExecuting;
+  const canExecuteWithMorpheus = Boolean(input.trim())
+    && attachments.length === 0
+    && !inputDisabled
+    && !sending
+    && !imageGenerating
+    && !morpheusBusy;
 
   const handleSend = useCallback(async () => {
     if (!canSend) return;
@@ -738,6 +749,21 @@ export function ChatInput({
     if (!canStop) return;
     onStop?.();
   }, [canStop, onStop]);
+
+  const handleMorpheusExecute = useCallback(async () => {
+    if (!canExecuteWithMorpheus) return;
+    const objective = input.trim();
+    const accepted = await runMorpheusObjective(objective, 'chat');
+    if (!accepted) {
+      toast.error(t('composer.morpheusRejected'));
+      return;
+    }
+    setInput('');
+    setSelectedSkill(null);
+    setSkillQuery('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    toast.success(t('composer.morpheusAccepted'));
+  }, [canExecuteWithMorpheus, input, runMorpheusObjective, t]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -800,6 +826,13 @@ export function ChatInput({
         setWorkspaceMenuOpen(false);
         return;
       }
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
+        const nativeEvent = e.nativeEvent as KeyboardEvent;
+        if (isComposingRef.current || nativeEvent.isComposing || nativeEvent.keyCode === 229) return;
+        e.preventDefault();
+        void handleMorpheusExecute();
+        return;
+      }
       if (e.key === 'Enter' && !e.shiftKey) {
         const nativeEvent = e.nativeEvent as KeyboardEvent;
         if (isComposingRef.current || nativeEvent.isComposing || nativeEvent.keyCode === 229) {
@@ -809,7 +842,7 @@ export function ChatInput({
         handleSend();
       }
     },
-    [handleSend, input, moveCaretTo, selectedSkill, skillTokenRanges],
+    [handleMorpheusExecute, handleSend, input, moveCaretTo, selectedSkill, skillTokenRanges],
   );
 
   // Handle paste (Ctrl/Cmd+V with files)
@@ -1186,13 +1219,26 @@ export function ChatInput({
               </div>
             )}
 
-            {/* Send Button — pushed to the right */}
+            <Button
+              type="button"
+              data-testid="chat-composer-morpheus-execute"
+              onClick={() => void handleMorpheusExecute()}
+              disabled={!canExecuteWithMorpheus}
+              variant="ghost"
+              className="ml-auto h-8 shrink-0 gap-1.5 rounded-lg border border-[hsl(var(--morpheus-accent-dim))]/70 px-2 text-2xs text-[hsl(var(--morpheus-accent))] hover:bg-[hsl(var(--morpheus-accent))]/10 disabled:border-border/50 disabled:text-muted-foreground/40"
+              title={attachments.length > 0 ? t('composer.morpheusNoAttachments') : t('composer.morpheusExecuteHint')}
+            >
+              {morpheusBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{t('composer.morpheusExecute')}</span>
+            </Button>
+
+            {/* Ordinary send remains the OpenClaw chat path. */}
             <Button
               onClick={sending ? handleStop : handleSend}
               disabled={sending ? !canStop : !canSend}
               size="icon"
               data-testid="chat-composer-send"
-              className={`ml-auto shrink-0 h-8 w-8 rounded-lg transition-colors ${
+              className={`shrink-0 h-8 w-8 rounded-lg transition-colors ${
                 (sending || canSend)
                   ? 'bg-black/5 dark:bg-white/10 text-foreground hover:bg-black/10 dark:hover:bg-white/20'
                   : 'text-muted-foreground/50 hover:bg-transparent bg-transparent'
