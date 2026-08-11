@@ -58,6 +58,10 @@ import type {
   CorrectMorpheusObjectivePayload,
   SubmitMorpheusObjectivePayload,
 } from '@shared/morpheus/core/objective-types';
+import type {
+  MorpheusTranscribeAudioPayload,
+  MorpheusVoiceSettingsPatch,
+} from '@shared/morpheus/voice-types';
 import type { PermissionProfile } from '@shared/morpheus/permission-types';
 import { invokeHost } from './host-api-client';
 
@@ -451,6 +455,13 @@ export const hostApi = {
     ),
     cancelObjective: (payload: CancelMorpheusObjectivePayload) => (
       invokeHost('morpheus', 'cancelObjective', payload)
+    ),
+    voiceStatus: () => invokeHost('morpheus', 'voiceStatus'),
+    updateVoiceSettings: (payload: MorpheusVoiceSettingsPatch) => (
+      invokeHost('morpheus', 'updateVoiceSettings', payload)
+    ),
+    transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => (
+      invokeHost('morpheus', 'transcribeAudio', payload)
     ),
     permissionCenter: () => invokeHost('morpheus', 'permissionCenter'),
     setPermissionProfile: (profile: PermissionProfile) => (

@@ -26,6 +26,7 @@ export const MORPHEUS_PLAN_VERSION = 1 as const;
 export type ExecutionOrigin =
   | { type: 'command-bar'; commandText: string }
   | { type: 'quick-command'; commandText: string }
+  | { type: 'voice'; commandText: string }
   | { type: 'action-launcher' }
   | { type: 'chat'; sessionKey?: string }
   | { type: 'workflow'; workflowId: string; agentProfileId?: string }
@@ -36,6 +37,7 @@ export type ExecutionOriginType = ExecutionOrigin['type'];
 export const EXECUTION_ORIGIN_TYPES: readonly ExecutionOriginType[] = Object.freeze([
   'command-bar',
   'quick-command',
+  'voice',
   'action-launcher',
   'chat',
   'workflow',

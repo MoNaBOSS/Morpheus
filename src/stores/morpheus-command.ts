@@ -11,12 +11,18 @@ import { hostApi } from '@/lib/host-api';
 import { hostEvents } from '@/lib/host-events';
 import type { MorpheusPlanConsentEvent } from '@shared/host-events/contract';
 import type {
-  ExecutionOriginType,
   ExecutionArtifact,
   ExecutionPlan,
   UnsupportedCommand,
 } from '@shared/morpheus/execution-types';
 import type { MorpheusPlanExecutionResult } from '@shared/host-api/contract';
+import {
+  isObjectiveTerminalState,
+  type MorpheusObjectiveEvent,
+  type MorpheusObjectiveRun,
+  type MorpheusObjectiveSnapshot,
+  type SubmitMorpheusObjectivePayload,
+} from '@shared/morpheus/core/objective-types';
 import type {
   PermissionCenterSnapshot,
   PermissionProfile,
@@ -47,12 +53,23 @@ export type MorpheusCommandState = {
   artifacts: ExecutionArtifact[];
   filesRoot: string | null;
   permission: PermissionCenterSnapshot | null;
+  /** Main-owned objective state shared by Command Center, Quick Command and Chat execution. */
+  objectiveRun: MorpheusObjectiveRun | null;
+  objectiveHistory: MorpheusObjectiveSnapshot | null;
 
   setInput: (input: string) => void;
   submit: () => Promise<void>;
-  runObjective: (objective: string, originType?: ExecutionOriginType) => Promise<void>;
+  runObjective: (
+    objective: string,
+    originType?: SubmitMorpheusObjectivePayload['originType'],
+  ) => Promise<void>;
+  /** Temporary 0.5 workflow bridge; interactive objectives never use this path. */
   executePreparedPlan: (plan: ExecutionPlan) => Promise<void>;
   clearPlan: () => void;
+  subscribeObjectives: () => () => void;
+  loadObjectives: () => Promise<void>;
+  cancelObjective: () => Promise<void>;
+  correctObjective: (correction: string) => Promise<void>;
   /** Subscribes to plan consent requests. Returns the unsubscribe function. */
   subscribeConsent: () => () => void;
   /** Answers every boundary in the outstanding request with one decision. */
@@ -71,6 +88,63 @@ export type MorpheusCommandState = {
   /** Records a durable output produced by a completed run. */
   captureArtifact: (run: MorpheusRun) => void;
 };
+
+function executionResultFromObjective(run: MorpheusObjectiveRun): MorpheusPlanExecutionResult | null {
+  const observation = run.observations.at(-1);
+  if (!observation) return null;
+  const artifacts = new Map(run.artifacts.map((artifact) => [artifact.artifactId, artifact]));
+  return {
+    planId: observation.planId,
+    status: observation.status,
+    steps: observation.steps.map((step) => ({
+      stepId: step.stepId,
+      status: step.status,
+      durationMs: step.durationMs,
+      error: step.errorCode
+        ? { code: step.errorCode, message: step.errorMessage ?? step.errorCode }
+        : undefined,
+      skippedBecauseOf: step.skippedBecauseOf,
+      artifact: step.artifactIds.length > 0 ? artifacts.get(step.artifactIds[0]) : undefined,
+    })),
+  };
+}
+
+function mergeObjectiveArtifacts(
+  existing: readonly ExecutionArtifact[],
+  incoming: readonly ExecutionArtifact[],
+): ExecutionArtifact[] {
+  const byId = new Map(existing.map((artifact) => [artifact.artifactId, artifact]));
+  for (const artifact of incoming) byId.set(artifact.artifactId, artifact);
+  return [...byId.values()]
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    .slice(0, MAX_ARTIFACTS);
+}
+
+function objectiveStatePatch(
+  event: MorpheusObjectiveEvent,
+  previous: MorpheusCommandState,
+): Partial<MorpheusCommandState> {
+  const terminal = isObjectiveTerminalState(event.run.state);
+  const interpreting = ['understanding', 'planning', 'replanning'].includes(event.run.state);
+  const priorPlan = previous.objectiveRun?.objectiveRunId === event.objectiveRunId
+    ? previous.plan
+    : null;
+  return {
+    objectiveRun: event.run,
+    plan: event.plan ?? priorPlan,
+    planResult: executionResultFromObjective(event.run),
+    interpreting,
+    executing: !terminal && !interpreting,
+    unsupported: event.run.state === 'needs-clarification'
+      ? {
+          objective: event.run.objective,
+          reason: 'not-understood',
+          supportedCapabilities: [],
+        }
+      : null,
+    artifacts: mergeObjectiveArtifacts(previous.artifacts, event.run.artifacts),
+  };
+}
 
 /** Derives an artifact from a terminal run, or null when it produced none. */
 export function artifactFromRun(run: MorpheusRun): ExecutionArtifact | null {
@@ -261,6 +335,8 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
   artifacts: [],
   filesRoot: null,
   permission: null,
+  objectiveRun: null,
+  objectiveHistory: null,
 
   setInput: (input) => set({ input }),
 
@@ -276,16 +352,22 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
 
     set({ interpreting: true, plan: null, unsupported: null, planResult: null });
     try {
-      // Interpretation happens in Main so the plan's resource scope is the
-      // canonical approved root rather than anything the renderer chose.
-      const result = await hostApi.morpheus.interpretCommand(objective, originType);
-      if (!result.ok) {
-        set({ unsupported: result.unsupported, plan: null, interpreting: false });
+      // Every interactive surface enters the same Main-owned objective state
+      // machine. Renderer never receives authority to execute plan steps.
+      const result = await hostApi.morpheus.submitObjective({ objective, originType });
+      if (!result.accepted) {
+        set({
+          unsupported: {
+            objective,
+            reason: 'not-understood',
+            supportedCapabilities: [],
+          },
+          plan: null,
+          interpreting: false,
+        });
         return;
       }
-
       set({ input: '' });
-      await get().executePreparedPlan(result.plan);
     } catch (error) {
       set({
         interpreting: false,
@@ -299,16 +381,62 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
   executePreparedPlan: async (plan) => {
     set({ plan, unsupported: null, interpreting: false, executing: true, planResult: null });
     try {
-      // The renderer names the plan Main authored; it does not orchestrate it.
       const execution = await hostApi.morpheus.executePlan(plan.planId);
       set({ planResult: execution, executing: false });
     } catch (error) {
       set({ executing: false });
-      console.error('[morpheus] plan execution failed', error);
+      console.error('[morpheus] workflow plan execution failed', error);
     }
   },
 
-  clearPlan: () => set({ plan: null, unsupported: null, planResult: null }),
+  clearPlan: () => set({
+    plan: null,
+    unsupported: null,
+    planResult: null,
+    objectiveRun: null,
+  }),
+
+  subscribeObjectives: () => hostEvents.onMorpheusObjectiveEvent((event) => {
+    set((state) => objectiveStatePatch(event, state));
+    void get().loadObjectives();
+  }),
+
+  loadObjectives: async () => {
+    try {
+      const snapshot = await hostApi.morpheus.objectiveSnapshot();
+      const selectedId = snapshot.activeObjectiveRunId ?? snapshot.runOrder[0];
+      const run = selectedId ? snapshot.runsById[selectedId] ?? null : null;
+      const plan = selectedId ? snapshot.plansByObjectiveRunId[selectedId] ?? null : null;
+      set((state) => ({
+        objectiveHistory: snapshot,
+        objectiveRun: run,
+        plan: plan ?? (state.objectiveRun?.objectiveRunId === selectedId ? state.plan : null),
+        planResult: run ? executionResultFromObjective(run) : null,
+        interpreting: run ? ['understanding', 'planning', 'replanning'].includes(run.state) : false,
+        executing: run ? !isObjectiveTerminalState(run.state)
+          && !['understanding', 'planning', 'replanning'].includes(run.state) : false,
+        unsupported: run?.state === 'needs-clarification'
+          ? { objective: run.objective, reason: 'not-understood', supportedCapabilities: [] }
+          : null,
+        artifacts: run ? mergeObjectiveArtifacts(state.artifacts, run.artifacts) : state.artifacts,
+      }));
+    } catch {
+      // A transient snapshot failure must not erase the last real event.
+    }
+  },
+
+  cancelObjective: async () => {
+    const run = get().objectiveRun;
+    if (!run || isObjectiveTerminalState(run.state)) return;
+    await hostApi.morpheus.cancelObjective({ objectiveRunId: run.objectiveRunId });
+  },
+
+  correctObjective: async (correction) => {
+    const run = get().objectiveRun;
+    const text = correction.trim();
+    if (!run || !text) return;
+    await hostApi.morpheus.correctObjective({ objectiveRunId: run.objectiveRunId, correction: text });
+  },
 
   subscribeConsent: () => hostEvents.onMorpheusPlanConsent((event) => {
     set({ consent: event });

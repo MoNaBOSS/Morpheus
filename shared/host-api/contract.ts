@@ -57,6 +57,12 @@ import type {
   SubmitMorpheusObjectivePayload,
   SubmitMorpheusObjectiveResult,
 } from '../morpheus/core/objective-types';
+import type {
+  MorpheusTranscribeAudioPayload,
+  MorpheusTranscriptionResult,
+  MorpheusVoiceSettingsPatch,
+  MorpheusVoiceStatus,
+} from '../morpheus/voice-types';
 import type { WebBrowserNavigatePayload } from '../web-browser';
 
 export type JsonRecord = Record<string, unknown>;
@@ -1121,6 +1127,9 @@ export type HostApiContract = {
     objectiveSnapshot: () => MorpheusObjectiveSnapshot;
     correctObjective: (payload: CorrectMorpheusObjectivePayload) => MorpheusAcknowledgement;
     cancelObjective: (payload: CancelMorpheusObjectivePayload) => MorpheusAcknowledgement;
+    voiceStatus: () => MorpheusVoiceStatus;
+    updateVoiceSettings: (payload: MorpheusVoiceSettingsPatch) => MorpheusVoiceStatus;
+    transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => MorpheusTranscriptionResult;
     permissionCenter: () => PermissionCenterSnapshot;
     setPermissionProfile: (payload: SetPermissionProfilePayload) => PermissionAcknowledgement;
     revokeGrant: (payload: RevokeGrantPayload) => PermissionAcknowledgement;

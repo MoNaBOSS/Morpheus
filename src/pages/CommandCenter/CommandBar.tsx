@@ -4,6 +4,7 @@ import { ArrowRight, Loader2, Sparkles } from 'lucide-react';
 
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { morpheusActionLabelKey } from '@/components/morpheus/morpheus-phase';
+import { MorpheusVoiceButton } from '@/components/morpheus/MorpheusVoiceButton';
 
 const STARTER_OBJECTIVES = [
   { key: 'system', objective: 'Show system information' },
@@ -50,6 +51,7 @@ export function CommandBar() {
           onChange={(event) => setInput(event.target.value)}
           className="h-9 min-w-0 flex-1 bg-transparent px-1 text-sm text-foreground outline-none placeholder:text-muted-foreground/70 disabled:opacity-60"
         />
+        <MorpheusVoiceButton source="command-center" />
         <button
           type="submit"
           data-testid="morpheus-command-submit"

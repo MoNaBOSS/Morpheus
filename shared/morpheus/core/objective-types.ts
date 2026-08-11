@@ -78,6 +78,8 @@ export type MorpheusStepObservation = {
   status: ExecutionStepStatus;
   durationMs?: number;
   errorCode?: string;
+  errorMessage?: string;
+  skippedBecauseOf?: string;
   artifactIds: readonly string[];
 };
 
@@ -126,7 +128,7 @@ export type MorpheusObjectiveSnapshot = {
 
 export type SubmitMorpheusObjectivePayload = {
   objective: string;
-  originType: 'command-bar' | 'quick-command' | 'chat';
+  originType: 'command-bar' | 'quick-command' | 'voice' | 'chat';
   workspaceId?: string;
   agentProfileId?: string;
 };

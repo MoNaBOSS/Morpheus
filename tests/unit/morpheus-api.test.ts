@@ -10,6 +10,8 @@ import {
   validateRequestActionPayload,
   validateRespondPermissionPayload,
   validateSubmitObjectivePayload,
+  validateTranscribeAudioPayload,
+  validateVoiceSettingsPatch,
 } from '@electron/services/morpheus-api';
 import type { MorpheusRuntime } from '@electron/services/morpheus';
 
@@ -58,6 +60,17 @@ function stubOptions(runtime = stubRuntime()) {
       snapshot: vi.fn(() => ({ activeObjectiveRunId: null, runOrder: [], runsById: {}, plansByObjectiveRunId: {} })),
       correct: vi.fn(async () => ({ accepted: true })),
       cancel: vi.fn(async () => ({ accepted: true })),
+    } as never,
+    voice: {
+      status: vi.fn(async () => ({
+        settings: {
+          v: 1, enabled: true, providerAccountId: null, modelId: 'whisper-1',
+          speakResponses: true, autoSubmitTranscript: true,
+        },
+        transcriptionAvailable: false,
+      })),
+      updateSettings: vi.fn(),
+      transcribe: vi.fn(),
     } as never,
     audit: {
       recordControl: vi.fn(async () => undefined),
@@ -226,6 +239,29 @@ describe('validateAuditRecentPayload', () => {
   });
 });
 
+describe('voice payload validation', () => {
+  it('accepts only bounded settings fields and ephemeral audio metadata', () => {
+    expect(validateVoiceSettingsPatch({ enabled: true, speakResponses: false }))
+      .toEqual({ enabled: true, speakResponses: false });
+    expect(validateTranscribeAudioPayload({
+      audioBase64: 'dm9pY2U=',
+      mimeType: 'audio/webm',
+      durationMs: 1_000,
+    })).toEqual({ audioBase64: 'dm9pY2U=', mimeType: 'audio/webm', durationMs: 1_000 });
+  });
+
+  it('rejects authority smuggling and malformed voice envelopes', () => {
+    expect(() => validateVoiceSettingsPatch({ enabled: true, apiKey: 'secret' }))
+      .toThrow(/unsupported key/);
+    expect(() => validateTranscribeAudioPayload({
+      audioBase64: 'dm9pY2U=', mimeType: 'audio/wav', durationMs: 1_000, path: 'C:\\audio.wav',
+    })).toThrow(/unsupported key/);
+    expect(() => validateTranscribeAudioPayload({
+      audioBase64: 'dm9pY2U=', mimeType: 'audio/wav', durationMs: 1_000,
+    })).toThrow(/unsupported voice mimeType/);
+  });
+});
+
 describe('createMorpheusApi', () => {
   it('exposes exactly the contract surface', () => {
     expect(Object.keys(createMorpheusApi(stubOptions())).sort()).toEqual([
@@ -257,6 +293,9 @@ describe('createMorpheusApi', () => {
       'setPermissionProfile',
       'submitObjective',
       'systemInfo',
+      'transcribeAudio',
+      'updateVoiceSettings',
+      'voiceStatus',
       'workflow',
       'workflows',
     ]);

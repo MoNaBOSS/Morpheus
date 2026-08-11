@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Command, X } from 'lucide-react';
 
@@ -6,20 +6,24 @@ import { hostEvents } from '@/lib/host-events';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { cn } from '@/lib/utils';
 import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
+import { MorpheusVoiceButton } from './MorpheusVoiceButton';
+import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 
 export function MorpheusQuickCommand() {
   const { t } = useTranslation('dashboard');
   const open = useMorpheusQuickCommandStore((state) => state.open);
   const show = useMorpheusQuickCommandStore((state) => state.show);
   const hide = useMorpheusQuickCommandStore((state) => state.hide);
-  const [objective, setObjective] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const objective = useMorpheusCommandStore((state) => state.input);
+  const setObjective = useMorpheusCommandStore((state) => state.setInput);
   const runObjective = useMorpheusCommandStore((state) => state.runObjective);
   const interpreting = useMorpheusCommandStore((state) => state.interpreting);
   const executing = useMorpheusCommandStore((state) => state.executing);
   const plan = useMorpheusCommandStore((state) => state.plan);
   const planResult = useMorpheusCommandStore((state) => state.planResult);
   const unsupported = useMorpheusCommandStore((state) => state.unsupported);
+  const voicePhase = useMorpheusVoiceStore((state) => state.phase);
 
   useEffect(() => hostEvents.onMorpheusQuickCommand(show), [show]);
 
@@ -37,7 +41,8 @@ export function MorpheusQuickCommand() {
   }, [open, hide]);
 
   if (!open) return null;
-  const busy = interpreting || executing;
+  const voiceBusy = voicePhase === 'requesting' || voicePhase === 'listening' || voicePhase === 'transcribing';
+  const busy = interpreting || executing || voiceBusy;
 
   return (
     <div
@@ -80,7 +85,6 @@ export function MorpheusQuickCommand() {
             event.preventDefault();
             if (!objective.trim() || busy) return;
             void runObjective(objective, 'quick-command');
-            setObjective('');
           }}
         >
           <div className="flex items-center gap-2 rounded-lg border border-border bg-[hsl(var(--morpheus-surface-3))] px-3 py-2 focus-within:border-[hsl(var(--morpheus-accent-dim))]">
@@ -93,6 +97,7 @@ export function MorpheusQuickCommand() {
               placeholder={t('morpheus.quickCommand.placeholder')}
               className="min-w-0 flex-1 bg-transparent font-mono text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
+            <MorpheusVoiceButton source="quick-command" className="h-8 w-8" />
             <button
               type="submit"
               data-testid="quick-command-submit"

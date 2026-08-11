@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes morpheus-voice-scan {
+  0%, 100% { transform: translateX(-20%); opacity: 0.45; }
+  50% { transform: translateX(220%); opacity: 1; }
+}
+
 /* ──────────────────────────────────────────────────────────────────────────
  * ClawX design tokens — CSS variable layer
  * ──────────────────────────────────────────────────────────────────────────

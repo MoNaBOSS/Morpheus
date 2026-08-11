@@ -59,6 +59,14 @@ import type {
   CorrectMorpheusObjectivePayload,
   SubmitMorpheusObjectivePayload,
 } from '@shared/morpheus/core/objective-types';
+import {
+  MORPHEUS_VOICE_MAX_AUDIO_BYTES,
+  MORPHEUS_VOICE_MAX_DURATION_MS,
+  MORPHEUS_VOICE_MIME_TYPES,
+  type MorpheusTranscribeAudioPayload,
+  type MorpheusVoiceSettingsPatch,
+} from '@shared/morpheus/voice-types';
+import type { MorpheusVoiceService } from './morpheus/voice/voice-service';
 
 export class MorpheusValidationError extends Error {
   constructor(message: string) {
@@ -174,6 +182,7 @@ export type CreateMorpheusApiOptions = {
   workflows: MorpheusWorkflowService;
   scheduler: MorpheusScheduler;
   objectives: MorpheusObjectiveOrchestrator;
+  voice: MorpheusVoiceService;
   audit: MorpheusAuditSink;
   filesRoot: string;
   appVersion: string;
@@ -188,7 +197,7 @@ export function validateSubmitObjectivePayload(payload: unknown): SubmitMorpheus
   const objective = requireNonEmptyString(record.objective, 'objective').trim();
   if (!objective || objective.length > 4_000) throw new MorpheusValidationError('objective must be between 1 and 4000 characters');
   const originType = record.originType ?? 'command-bar';
-  if (!['command-bar', 'quick-command', 'chat'].includes(String(originType))) {
+  if (!['command-bar', 'quick-command', 'voice', 'chat'].includes(String(originType))) {
     throw new MorpheusValidationError('unsupported objective originType');
   }
   const optionalId = (value: unknown, label: string): string | undefined => {
@@ -224,6 +233,44 @@ export function validateCancelObjectivePayload(payload: unknown): CancelMorpheus
   const record = requireRecord(payload, 'cancelObjective payload');
   assertNoUnknownKeys(record, ['objectiveRunId'], 'cancelObjective payload');
   return { objectiveRunId: validateObjectiveId(record.objectiveRunId) };
+}
+
+export function validateVoiceSettingsPatch(payload: unknown): MorpheusVoiceSettingsPatch {
+  const record = requireRecord(payload, 'updateVoiceSettings payload');
+  assertNoUnknownKeys(record, [
+    'enabled', 'providerAccountId', 'modelId', 'speakResponses', 'autoSubmitTranscript',
+  ], 'updateVoiceSettings payload');
+  for (const key of ['enabled', 'speakResponses', 'autoSubmitTranscript'] as const) {
+    if (record[key] !== undefined && typeof record[key] !== 'boolean') {
+      throw new MorpheusValidationError(`${key} must be a boolean`);
+    }
+  }
+  if (record.providerAccountId !== undefined && record.providerAccountId !== null
+    && (typeof record.providerAccountId !== 'string' || !/^[A-Za-z0-9._-]{1,128}$/.test(record.providerAccountId))) {
+    throw new MorpheusValidationError('invalid providerAccountId');
+  }
+  if (record.modelId !== undefined && (typeof record.modelId !== 'string'
+    || !record.modelId.trim() || record.modelId.length > 200)) {
+    throw new MorpheusValidationError('invalid voice modelId');
+  }
+  return record as MorpheusVoiceSettingsPatch;
+}
+
+export function validateTranscribeAudioPayload(payload: unknown): MorpheusTranscribeAudioPayload {
+  const record = requireRecord(payload, 'transcribeAudio payload');
+  assertNoUnknownKeys(record, ['audioBase64', 'mimeType', 'durationMs'], 'transcribeAudio payload');
+  if (typeof record.audioBase64 !== 'string' || !record.audioBase64
+    || record.audioBase64.length > Math.ceil(MORPHEUS_VOICE_MAX_AUDIO_BYTES / 3) * 4 + 4) {
+    throw new MorpheusValidationError('audioBase64 is empty or too large');
+  }
+  if (!MORPHEUS_VOICE_MIME_TYPES.includes(record.mimeType as never)) {
+    throw new MorpheusValidationError('unsupported voice mimeType');
+  }
+  if (typeof record.durationMs !== 'number' || !Number.isInteger(record.durationMs)
+    || record.durationMs < 100 || record.durationMs > MORPHEUS_VOICE_MAX_DURATION_MS) {
+    throw new MorpheusValidationError('invalid voice durationMs');
+  }
+  return record as MorpheusTranscribeAudioPayload;
 }
 
 function validateIdPayload(payload: unknown, label: string): { id: string } {
@@ -287,7 +334,7 @@ const AUDIT_PHASES = [
   'requested', 'awaiting-permission', 'denied', 'running', 'succeeded', 'failed',
   'cancelled', 'timed-out', 'unsupported-platform',
 ] as const;
-const AUDIT_CATEGORIES = ['execution', 'objective', 'planner', 'permission', 'agent-profile', 'workflow', 'schedule'] as const;
+const AUDIT_CATEGORIES = ['execution', 'objective', 'planner', 'voice', 'permission', 'agent-profile', 'workflow', 'schedule'] as const;
 
 export function validateAuditQueryPayload(payload: unknown): MorpheusAuditQueryPayload {
   if (payload === undefined || payload === null) return { limit: 50 };
@@ -395,7 +442,7 @@ export function validateRevokePayload(payload: unknown): { grantId: string } {
 }
 
 export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHostServiceRegistry['morpheus'] {
-  const { runtime, grants, agentProfiles, workflows, scheduler, objectives, audit, filesRoot, appVersion, auditHealth } = options;
+  const { runtime, grants, agentProfiles, workflows, scheduler, objectives, voice, audit, filesRoot, appVersion, auditHealth } = options;
   const planner = options.planner ?? createDeterministicMorpheusPlanner();
   return {
     interpretCommand: async (payload) => {
@@ -428,6 +475,9 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     objectiveSnapshot: () => objectives.snapshot(),
     correctObjective: (payload) => objectives.correct(validateCorrectObjectivePayload(payload)),
     cancelObjective: (payload) => objectives.cancel(validateCancelObjectivePayload(payload)),
+    voiceStatus: () => voice.status(),
+    updateVoiceSettings: (payload) => voice.updateSettings(validateVoiceSettingsPatch(payload)),
+    transcribeAudio: (payload) => voice.transcribe(validateTranscribeAudioPayload(payload)),
 
     permissionCenter: (): PermissionCenterSnapshot => ({
       profile: grants.getProfile(),

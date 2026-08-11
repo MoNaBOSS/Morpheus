@@ -96,6 +96,7 @@ export interface MorpheusObjectiveOrchestrator {
 
 function originFromPayload(payload: SubmitMorpheusObjectivePayload): ExecutionOrigin {
   if (payload.originType === 'quick-command') return { type: 'quick-command', commandText: payload.objective };
+  if (payload.originType === 'voice') return { type: 'voice', commandText: payload.objective };
   if (payload.originType === 'chat') return { type: 'chat' };
   return { type: 'command-bar', commandText: payload.objective };
 }
@@ -136,6 +137,8 @@ function observationFrom(
         status: step.status,
         durationMs: step.durationMs,
         errorCode: step.error?.code,
+        errorMessage: step.error?.message,
+        skippedBecauseOf: step.skippedBecauseOf,
         artifactIds: step.artifact ? [step.artifact.artifactId] : [],
       };
     }),

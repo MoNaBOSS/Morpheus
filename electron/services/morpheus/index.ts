@@ -44,6 +44,7 @@ import {
 } from './core/objective-orchestrator';
 import { createMorpheusPlannerSelector } from './planning/planner-selector';
 import { getProviderService, type ProviderService } from '../providers/provider-service';
+import { createMorpheusVoiceService, type MorpheusVoiceService } from './voice/voice-service';
 
 export type CreateMorpheusServiceOptions = {
   userDataDir: string;
@@ -65,6 +66,7 @@ export type MorpheusService = {
   scheduler: MorpheusScheduler;
   objectiveStore: MorpheusObjectiveStore;
   objectives: MorpheusObjectiveOrchestrator;
+  voice: MorpheusVoiceService;
   audit: MorpheusAuditSink;
   /** Current approved files root, for the Command Center's artifacts panel. */
   filesRoot: string;
@@ -138,8 +140,15 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   const agentProfiles = createMorpheusAgentProfileStore({ userDataDir: options.userDataDir });
   const filesRoot = roots.resolve('morpheusFiles');
   const objectiveStore = createMorpheusObjectiveStore({ userDataDir: options.userDataDir });
+  const providerService = options.providerService ?? getProviderService();
   const plannerSelector = createMorpheusPlannerSelector({
-    providerService: options.providerService ?? getProviderService(),
+    providerService,
+  });
+  const voice = createMorpheusVoiceService({
+    userDataDir: options.userDataDir,
+    providerService,
+    audit,
+    appVersion: options.appVersion,
   });
   objectives = createMorpheusObjectiveOrchestrator({
     store: objectiveStore,
@@ -178,6 +187,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     scheduler,
     objectiveStore,
     objectives,
+    voice,
     audit,
     filesRoot,
     auditHealth,
@@ -193,3 +203,4 @@ export type { MorpheusScheduleStore } from './schedules/schedule-store';
 export type { MorpheusScheduler } from './schedules/scheduler';
 export type { MorpheusObjectiveStore } from './core/objective-store';
 export type { MorpheusObjectiveOrchestrator } from './core/objective-orchestrator';
+export type { MorpheusVoiceService } from './voice/voice-service';

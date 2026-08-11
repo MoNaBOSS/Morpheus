@@ -508,6 +508,22 @@
       "unsupported": "That objective is not supported yet.",
       "hint": "Enter runs the objective. Morpheus asks only when trust changes."
     },
+    "voice": {
+      "start": "Speak to Morpheus",
+      "stop": "Finish listening",
+      "cancel": "Cancel voice input",
+      "dismiss": "Dismiss voice status",
+      "speaking": "Morpheus is speaking",
+      "errorBody": "Voice input could not continue. Check the microphone and transcription provider in Settings.",
+      "states": {
+        "idle": "Voice ready",
+        "requesting": "Requesting microphone access…",
+        "listening": "Listening — speak naturally",
+        "transcribing": "Understanding your voice…",
+        "ready": "Voice objective captured",
+        "error": "Voice input unavailable"
+      }
+    },
     "capture": {
       "title": "Screen capture",
       "active": "Capturing the screen",

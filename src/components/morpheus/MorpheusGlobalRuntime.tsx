@@ -6,6 +6,7 @@ import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { MorpheusCaptureIndicator } from './MorpheusCaptureIndicator';
 import { MorpheusPermissionDialog } from './MorpheusPermissionDialog';
 import { MorpheusPlanConsentDialog } from './MorpheusPlanConsentDialog';
+import { MorpheusVoiceRuntime } from './MorpheusVoiceRuntime';
 
 export function MorpheusGlobalRuntime() {
   const subscribe = useMorpheusActionsStore((state) => state.subscribe);
@@ -13,6 +14,8 @@ export function MorpheusGlobalRuntime() {
   const runOrder = useMorpheusActionsStore((state) => state.runOrder);
   const runsById = useMorpheusActionsStore((state) => state.runsById);
   const subscribeConsent = useMorpheusCommandStore((state) => state.subscribeConsent);
+  const subscribeObjectives = useMorpheusCommandStore((state) => state.subscribeObjectives);
+  const loadObjectives = useMorpheusCommandStore((state) => state.loadObjectives);
   const loadPermissionCenter = useMorpheusCommandStore((state) => state.loadPermissionCenter);
   const loadFilesRoot = useMorpheusCommandStore((state) => state.loadFilesRoot);
   const loadArtifacts = useMorpheusCommandStore((state) => state.loadArtifacts);
@@ -21,12 +24,25 @@ export function MorpheusGlobalRuntime() {
   useEffect(() => {
     const unsubscribe = subscribe();
     const unsubscribeConsent = subscribeConsent();
-    void Promise.all([loadCapabilities(), loadPermissionCenter(), loadFilesRoot(), loadArtifacts()]);
+    const unsubscribeObjectives = subscribeObjectives();
+    void Promise.all([
+      loadCapabilities(), loadPermissionCenter(), loadFilesRoot(), loadArtifacts(), loadObjectives(),
+    ]);
     return () => {
       unsubscribe();
       unsubscribeConsent();
+      unsubscribeObjectives();
     };
-  }, [subscribe, subscribeConsent, loadCapabilities, loadPermissionCenter, loadFilesRoot, loadArtifacts]);
+  }, [
+    subscribe,
+    subscribeConsent,
+    subscribeObjectives,
+    loadCapabilities,
+    loadPermissionCenter,
+    loadFilesRoot,
+    loadArtifacts,
+    loadObjectives,
+  ]);
 
   useEffect(() => {
     const latestId = runOrder[runOrder.length - 1];
@@ -43,6 +59,7 @@ export function MorpheusGlobalRuntime() {
       </div>
       <MorpheusPlanConsentDialog />
       <MorpheusPermissionDialog />
+      <MorpheusVoiceRuntime />
     </>
   );
 }

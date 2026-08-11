@@ -207,6 +207,7 @@ function registerTypedHostHandlers(
       workflows: morpheusService.workflows,
       scheduler: morpheusService.scheduler,
       objectives: morpheusService.objectives,
+      voice: morpheusService.voice,
       audit: morpheusService.audit,
       filesRoot: morpheusService.filesRoot,
       appVersion: app.getVersion(),

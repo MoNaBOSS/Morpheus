@@ -135,6 +135,9 @@ export const hostEvents = {
   onMorpheusQuickCommand: (handler: HostEventHandler<'morpheus', 'quickCommand'>) => (
     onMorpheusEvent('quickCommand', handler)
   ),
+  onMorpheusVoiceCommand: (handler: HostEventHandler<'morpheus', 'voiceCommand'>) => (
+    onMorpheusEvent('voiceCommand', handler)
+  ),
   onMorpheusObjectiveEvent: (handler: HostEventHandler<'morpheus', 'objectiveEvent'>) => (
     onMorpheusEvent('objectiveEvent', handler)
   ),

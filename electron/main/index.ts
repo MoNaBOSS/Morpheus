@@ -58,6 +58,8 @@ import { whatsAppLoginManager } from '../utils/whatsapp-login';
 import { syncAllProviderAuthToRuntime } from '../services/providers/provider-runtime-sync';
 import { HOST_EVENT_CHANNELS } from '@shared/host-events/contract';
 import { createMorpheusQuickCommandRegistration } from './morpheus-quick-command';
+import { createMorpheusVoiceCommandRegistration } from './morpheus-voice-command';
+import { installMorpheusMediaPermissionPolicy } from './morpheus-media-permissions';
 
 const WINDOWS_APP_USER_MODEL_ID = 'app.morpheus.desktop';
 const isE2EMode = process.env.CLAWX_E2E === '1';
@@ -136,6 +138,14 @@ const quickCommandRegistration = createMorpheusQuickCommandRegistration({
     { trigger: 'global-shortcut' },
   ),
 });
+const voiceCommandRegistration = createMorpheusVoiceCommandRegistration({
+  shortcuts: globalShortcut,
+  getMainWindow: () => mainWindow,
+  emit: (window) => window.webContents.send(
+    HOST_EVENT_CHANNELS.morpheus.voiceCommand,
+    { trigger: 'global-shortcut' },
+  ),
+});
 
 function sendMainWindowEvent(channel: string, payload: unknown): void {
   const win = mainWindow;
@@ -197,6 +207,11 @@ function createWindow(): BrowserWindow {
       : undefined,
     frame: isMac || !useCustomTitleBar,
     show: false,
+  });
+
+  installMorpheusMediaPermissionPolicy({
+    targetSession: win.webContents.session,
+    getMainWebContents: () => mainWindow?.webContents ?? null,
   });
 
   installWebBrowserGuestPolicy(win.webContents, {
@@ -417,6 +432,8 @@ async function initialize(): Promise<void> {
   if (!isE2EMode) {
     const registered = quickCommandRegistration.start();
     logger.info(`[Quick Command] Global shortcut ${registered ? 'registered' : 'unavailable'}`);
+    const voiceRegistered = voiceCommandRegistration.start();
+    logger.info(`[Voice Command] Global shortcut ${voiceRegistered ? 'registered' : 'unavailable'}`);
   }
 
   // Create system tray
@@ -643,6 +660,7 @@ if (gotTheLock) {
 
   app.on('will-quit', () => {
     quickCommandRegistration.stop();
+    voiceCommandRegistration.stop();
     releaseProcessInstanceFileLock();
   });
 
