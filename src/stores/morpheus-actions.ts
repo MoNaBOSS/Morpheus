@@ -23,6 +23,7 @@ import type {
 } from '@shared/morpheus/action-types';
 import { isMorpheusTerminalPhase } from '@shared/morpheus/action-types';
 import type { MorpheusActionId } from '@shared/morpheus/actions/registry';
+import { useMorpheusWorkspacesStore } from './morpheus-workspaces';
 
 /** Bound on retained runs so a long session cannot grow the timeline forever. */
 const MAX_RETAINED_RUNS = 100;
@@ -152,7 +153,8 @@ export const useMorpheusActionsStore = create<MorpheusActionsState>((set, get) =
   requestAction: async (actionId, params) => {
     set({ requestError: null });
     try {
-      const result = await hostApi.morpheus.requestAction({ actionId, params });
+      const workspaceId = useMorpheusWorkspacesStore.getState().selectedWorkspaceId;
+      const result = await hostApi.morpheus.requestAction({ actionId, params, workspaceId });
       return result.runId;
     } catch (error) {
       set({ requestError: errorMessage(error) });

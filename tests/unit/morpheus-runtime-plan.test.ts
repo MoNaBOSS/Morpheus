@@ -70,7 +70,10 @@ function makeRuntime(options: {
     dispose: () => undefined,
   } as unknown as MorpheusAuditSink;
 
-  const roots: MorpheusRootProvider = { resolve: () => FILES_ROOT } as unknown as MorpheusRootProvider;
+  const roots: MorpheusRootProvider = {
+    resolve: () => FILES_ROOT,
+    forWorkspace: () => roots,
+  };
 
   let created: MorpheusRuntime;
   created = createMorpheusRuntime({
@@ -370,7 +373,13 @@ describe('runtime plan execution', () => {
 
     const runtime = createMorpheusRuntime({
       registry: registryWithFakeCapability(),
-      roots: { resolve: () => FILES_ROOT } as unknown as MorpheusRootProvider,
+      roots: (() => {
+        const scoped: MorpheusRootProvider = {
+          resolve: () => FILES_ROOT,
+          forWorkspace: () => scoped,
+        };
+        return scoped;
+      })(),
       audit: {
         record: async (entry: MorpheusAuditEntry) => { audited.push(entry); },
         recordControl: async () => undefined,

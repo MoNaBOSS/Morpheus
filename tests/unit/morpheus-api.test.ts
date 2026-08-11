@@ -11,6 +11,9 @@ import {
   validateRespondPermissionPayload,
   validateSubmitObjectivePayload,
   validateTranscribeAudioPayload,
+  validateAddWorkspacePayload,
+  validateUpdateWorkspacePayload,
+  validateWorkspaceIdPayload,
   validateVoiceSettingsPatch,
 } from '@electron/services/morpheus-api';
 import type { MorpheusRuntime } from '@electron/services/morpheus';
@@ -23,6 +26,7 @@ function stubGrants() {
     createGrant: vi.fn(),
     recordUse: vi.fn(),
     revoke: vi.fn(() => true),
+    revokeForResourceScope: vi.fn(() => 0),
     revokeAllSession: vi.fn(() => 0),
     reset: vi.fn(),
     listSessionGrants: vi.fn(() => []),
@@ -72,6 +76,17 @@ function stubOptions(runtime = stubRuntime()) {
       updateSettings: vi.fn(),
       transcribe: vi.fn(),
     } as never,
+    workspaces: {
+      list: vi.fn(() => ({
+        defaultWorkspaceId: 'morpheus-files',
+        workspaces: [],
+      })),
+      get: vi.fn(),
+      resolveRoot: vi.fn(() => 'C:\\Morpheus\\files'),
+      add: vi.fn(),
+      update: vi.fn(),
+      remove: vi.fn(),
+    } as never,
     audit: {
       recordControl: vi.fn(async () => undefined),
       query: vi.fn(async () => ({ entries: [], truncated: false })),
@@ -79,6 +94,7 @@ function stubOptions(runtime = stubRuntime()) {
     filesRoot: 'C:\\Morpheus\\files',
     appVersion: '0.5.0',
     auditHealth: () => 'healthy' as const,
+    selectWorkspaceDirectory: vi.fn(async () => null),
   };
 }
 
@@ -206,6 +222,54 @@ describe('validateCancelActionPayload', () => {
   });
 });
 
+describe('workspace trust boundary validation', () => {
+  it('accepts logical workspace metadata and rejects renderer paths', () => {
+    expect(validateAddWorkspacePayload({ name: 'Client A', access: 'read' }))
+      .toEqual({ name: 'Client A', access: 'read' });
+    expect(validateUpdateWorkspacePayload({ workspaceId: 'workspace-client', enabled: false }))
+      .toEqual({ workspaceId: 'workspace-client', enabled: false });
+    expect(validateWorkspaceIdPayload({ workspaceId: 'workspace-client' }))
+      .toEqual({ workspaceId: 'workspace-client' });
+
+    expect(() => validateAddWorkspacePayload({ path: 'C:\\outside' }))
+      .toThrow(/unsupported key: path/);
+    expect(() => validateUpdateWorkspacePayload({
+      workspaceId: 'workspace-client', rootPath: 'C:\\outside',
+    })).toThrow(/unsupported key: rootPath/);
+  });
+
+  it('uses only the Main folder picker and revokes exact-root grants on removal', async () => {
+    const options = stubOptions();
+    const workspace = {
+      v: 1 as const,
+      workspaceId: 'workspace-client',
+      name: 'Client',
+      rootPath: 'C:\\Trusted\\Client',
+      kind: 'user' as const,
+      access: 'read-write' as const,
+      enabled: true,
+      available: true,
+      createdAt: '2026-08-11T00:00:00.000Z',
+      updatedAt: '2026-08-11T00:00:00.000Z',
+    };
+    options.selectWorkspaceDirectory = vi.fn(async () => 'C:\\Trusted\\Client');
+    options.workspaces.add = vi.fn(() => workspace);
+    options.workspaces.get = vi.fn(() => workspace);
+    options.workspaces.remove = vi.fn(() => workspace);
+    const api = createMorpheusApi(options);
+
+    await expect(api.addWorkspace({ name: 'Client' })).resolves.toEqual({ workspace });
+    expect(options.workspaces.add).toHaveBeenCalledWith(
+      'C:\\Trusted\\Client', { name: 'Client' },
+    );
+
+    await expect(api.removeWorkspace({ workspaceId: 'workspace-client' }))
+      .resolves.toEqual({ workspace });
+    expect(options.grants.revokeForResourceScope).toHaveBeenCalledWith('C:\\Trusted\\Client');
+    expect(options.workspaces.remove).toHaveBeenCalledWith('workspace-client');
+  });
+});
+
 describe('objective payload validation', () => {
   it('accepts only bounded logical objective fields', () => {
     expect(validateSubmitObjectivePayload({ objective: 'Open Notepad', originType: 'quick-command' }))
@@ -265,6 +329,7 @@ describe('voice payload validation', () => {
 describe('createMorpheusApi', () => {
   it('exposes exactly the contract surface', () => {
     expect(Object.keys(createMorpheusApi(stubOptions())).sort()).toEqual([
+      'addWorkspace',
       'agentProfile',
       'agentProfiles',
       'auditQuery',
@@ -278,9 +343,11 @@ describe('createMorpheusApi', () => {
       'interpretCommand',
       'objectiveSnapshot',
       'openFilesRoot',
+      'openWorkspace',
       'permissionCenter',
       'prepareWorkflow',
       'removeSchedule',
+      'removeWorkspace',
       'requestAction',
       'resetPermissionPolicy',
       'respondPermission',
@@ -295,9 +362,11 @@ describe('createMorpheusApi', () => {
       'systemInfo',
       'transcribeAudio',
       'updateVoiceSettings',
+      'updateWorkspace',
       'voiceStatus',
       'workflow',
       'workflows',
+      'workspaces',
     ]);
   });
 

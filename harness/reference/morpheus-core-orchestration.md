@@ -11,6 +11,12 @@ schedules submit an objective or a registered definition id to Electron Main.
 Main creates the objective id, timestamps, origin, workspace/profile binding and
 all subsequent plan ids.
 
+Workspace selection is a logical id only. Main owns the registry, obtains new
+roots from the native directory picker, canonicalizes them, and stamps the
+selected id onto every plan. A provider or Renderer cannot propose a root.
+Read-only workspace policy is enforced again in the runtime so direct actions,
+workflows and schedules cannot bypass the objective planner's capability filter.
+
 ## One orchestration owner
 
 The Main-owned Objective Orchestrator coordinates interfaces for context,

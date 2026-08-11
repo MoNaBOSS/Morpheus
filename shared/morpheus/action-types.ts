@@ -52,6 +52,8 @@ export type MorpheusFailureCode =
   | 'permission-denied'
   | 'permission-timeout'
   | 'rate-limited'
+  | 'workspace-unavailable'
+  | 'workspace-read-only'
   | 'cancelled'
   | 'internal';
 
@@ -278,6 +280,8 @@ export type MorpheusRequestActionPayload = {
   params?: MorpheusActionParams;
   originType?: import('./execution-types').ExecutionOriginType;
   agentId?: string;
+  /** Logical Main-owned workspace id. Never an absolute root. */
+  workspaceId?: string;
 };
 
 export type MorpheusRequestActionResult = {
@@ -341,6 +345,7 @@ export type MorpheusControlAuditCategory =
   | 'planner'
   | 'voice'
   | 'permission'
+  | 'workspace'
   | 'agent-profile'
   | 'workflow'
   | 'schedule';

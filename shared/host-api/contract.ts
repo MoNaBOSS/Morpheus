@@ -63,6 +63,13 @@ import type {
   MorpheusVoiceSettingsPatch,
   MorpheusVoiceStatus,
 } from '../morpheus/voice-types';
+import type {
+  AddMorpheusWorkspacePayload,
+  MorpheusWorkspaceIdPayload,
+  MorpheusWorkspaceResult,
+  MorpheusWorkspacesSnapshot,
+  UpdateMorpheusWorkspacePayload,
+} from '../morpheus/workspace-types';
 import type { WebBrowserNavigatePayload } from '../web-browser';
 
 export type JsonRecord = Record<string, unknown>;
@@ -1138,6 +1145,12 @@ export type HostApiContract = {
     filesRoot: () => MorpheusFilesRootResult;
     /** Opens the approved folder via a typed capability, not renderer shell access. */
     openFilesRoot: () => PermissionAcknowledgement;
+    workspaces: () => MorpheusWorkspacesSnapshot;
+    /** The directory itself comes only from Main's native folder picker. */
+    addWorkspace: (payload: AddMorpheusWorkspacePayload) => MorpheusWorkspaceResult;
+    updateWorkspace: (payload: UpdateMorpheusWorkspacePayload) => MorpheusWorkspaceResult;
+    removeWorkspace: (payload: MorpheusWorkspaceIdPayload) => MorpheusWorkspaceResult;
+    openWorkspace: (payload: MorpheusWorkspaceIdPayload) => PermissionAcknowledgement;
     agentProfiles: () => AgentProfilesSnapshot;
     agentProfile: (payload: MorpheusIdPayload) => MorpheusAgentProfileResult;
     workflows: () => WorkflowsSnapshot;

@@ -67,6 +67,7 @@ system's core guarantee.
 | Capability registry | `electron/services/morpheus/capability-registry.ts` |
 | Capability adapters | `electron/services/morpheus/capabilities/<platform>/` |
 | Approved roots | `electron/services/morpheus/roots.ts` |
+| Main-owned workspace registry | `electron/services/morpheus/workspaces/` |
 | Policy engine + grant store | `electron/services/morpheus/policy/` |
 | Plan store, trust evaluation, executor | `electron/services/morpheus/plan/` |
 | Agent Profiles / workflows / schedules | `electron/services/morpheus/{agents,workflows,schedules}/` |
@@ -120,6 +121,9 @@ existing interface.
 
 **Additional audit destination** — provide another sink implementation.
 
-**New writable location** — extend the root provider.
+**New trusted workspace** — register it through the typed Main API. Main obtains
+the path from its native directory picker, canonicalizes it, and persists only a
+logical id for Renderer selection. The root provider captures that canonical
+root for one execution; callers never extend authority with a path payload.
 
 All four are interface substitutions, not call-site edits.

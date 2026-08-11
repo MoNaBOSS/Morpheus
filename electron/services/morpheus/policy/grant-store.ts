@@ -44,6 +44,8 @@ export interface MorpheusGrantStore {
   createGrant(scope: PermissionScope, grantType: GrantType, expiresAt?: string): PermissionGrant;
   recordUse(grantId: string): void;
   revoke(grantId: string): boolean;
+  /** Revokes every grant bound to one exact Main-resolved resource scope. */
+  revokeForResourceScope(resourceScope: string): number;
   revokeAllSession(): number;
   reset(): void;
   listSessionGrants(): PermissionGrant[];
@@ -201,6 +203,26 @@ export function createMorpheusGrantStore(options: GrantStoreOptions): MorpheusGr
       persisted.grants = persisted.grants.filter((candidate) => candidate.grantId !== grantId);
       flush();
       return true;
+    },
+
+    revokeForResourceScope(resourceScope: string): number {
+      let count = 0;
+      for (const [key, grant] of sessionGrants) {
+        if (grant.resourceScope === resourceScope) {
+          sessionGrants.delete(key);
+          count += 1;
+        }
+      }
+      const retained = persisted.grants.filter((grant) => {
+        if (grant.resourceScope !== resourceScope) return true;
+        count += 1;
+        return false;
+      });
+      if (retained.length !== persisted.grants.length) {
+        persisted.grants = retained;
+        flush();
+      }
+      return count;
     },
 
     revokeAllSession(): number {

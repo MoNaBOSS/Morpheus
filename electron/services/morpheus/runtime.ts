@@ -18,6 +18,7 @@ import {
   MORPHEUS_MAX_RUNS_PER_MINUTE,
   MORPHEUS_PERMISSION_TIMEOUT_MS,
   getMorpheusActionDescriptor,
+  isMorpheusWorkspaceWriteAction,
   isMorpheusActionId,
   listMorpheusActionIds,
   listMorpheusApplicationKeys,
@@ -78,6 +79,8 @@ import {
 import type { TrustBoundary } from './plan/trust';
 import { createMorpheusPlanStore, type MorpheusPlanStore } from './plan/plan-store';
 import type { MorpheusRootProvider } from './roots';
+import type { MorpheusWorkspaceStore } from './workspaces/workspace-store';
+import { MORPHEUS_DEFAULT_WORKSPACE_ID } from '@shared/morpheus/workspace-types';
 import { collectMorpheusSystemInfo } from './capabilities/win32/system-report';
 
 export class MorpheusRequestError extends Error {
@@ -101,6 +104,8 @@ type PendingRun = {
 export type MorpheusRuntimeOptions = {
   registry: MorpheusCapabilityRegistry;
   roots: MorpheusRootProvider;
+  /** Main-owned workspace policy. Optional only for isolated legacy fixtures. */
+  workspaces?: Pick<MorpheusWorkspaceStore, 'get'>;
   audit: MorpheusAuditSink;
   gate: MorpheusPermissionGate;
   grants: MorpheusGrantStore;
@@ -310,6 +315,27 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
   const env = options.env ?? process.env;
   const createRunId = options.createRunId ?? (() => randomUUID());
   const permissionTimeoutMs = options.permissionTimeoutMs ?? MORPHEUS_PERMISSION_TIMEOUT_MS;
+
+  const workspaceError = (
+    actionId: MorpheusActionId,
+    workspaceId: string = MORPHEUS_DEFAULT_WORKSPACE_ID,
+  ): MorpheusError | null => {
+    if (!options.workspaces) return null;
+    const workspace = options.workspaces.get(workspaceId);
+    if (!workspace?.enabled || !workspace.available) {
+      return {
+        code: 'workspace-unavailable',
+        message: 'The selected Morpheus workspace is unavailable.',
+      };
+    }
+    if (workspace.access === 'read' && isMorpheusWorkspaceWriteAction(actionId)) {
+      return {
+        code: 'workspace-read-only',
+        message: 'The selected Morpheus workspace is read-only.',
+      };
+    }
+    return null;
+  };
 
   const pending = new Map<string, PendingRun>();
   const executing = new Set<string>();
@@ -541,7 +567,12 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
    * audit-before-emit ordering and the same failure handling as a direct
    * action — there is no second, weaker execution path.
    */
-  const planStepRunner = (planId: string, originType: ExecutionOriginType, agentId?: string): PlanStepRunner => ({
+  const planStepRunner = (
+    planId: string,
+    originType: ExecutionOriginType,
+    agentId?: string,
+    workspaceId?: string,
+  ): PlanStepRunner => ({
     async prepare(step: ExecutionStep): Promise<PrepareResult> {
       const actionId = step.capabilityId;
       if (!isMorpheusActionId(actionId)) {
@@ -555,10 +586,13 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         };
       }
 
+      const accessError = workspaceError(actionId, workspaceId);
+      if (accessError) return { ok: false, error: accessError };
+
       let resolution: MorpheusResolution;
       try {
         resolution = await capability.resolve(step.params as MorpheusParamsFor<MorpheusActionId>, {
-          roots: options.roots,
+          roots: options.roots.forWorkspace(workspaceId),
           appVersion: options.appVersion,
           env,
         });
@@ -701,6 +735,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       const params: MorpheusActionParams = payload.params ?? {};
       const originType: ExecutionOriginType = payload.originType ?? 'action-launcher';
       const agentId = payload.agentId;
+      const workspaceId = payload.workspaceId;
       const auditParams = buildAuditParams(payload.actionId, params);
       const runId = createRunId();
       const startedAt = now().getTime();
@@ -733,13 +768,26 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         return { runId };
       }
 
+      const accessError = workspaceError(actionId, workspaceId);
+      if (accessError) {
+        await transition({
+          runId,
+          actionId,
+          phase: 'failed',
+          auditParams,
+          error: accessError,
+          durationMs: now().getTime() - startedAt,
+        });
+        return { runId };
+      }
+
       let resolution: MorpheusResolution;
       try {
         // The registry dispatches on a runtime id, so the static type argument
         // is erased at the lookup. `params` was validated against THIS action's
         // descriptors in `validateRequestActionPayload` before reaching here.
         resolution = await capability.resolve(params as MorpheusParamsFor<MorpheusActionId>, {
-          roots: options.roots,
+          roots: options.roots.forWorkspace(workspaceId),
           appVersion: options.appVersion,
           env,
         });
@@ -935,6 +983,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
             planId,
             plan.origin.type,
             'agentProfileId' in plan.origin ? plan.origin.agentProfileId : undefined,
+            plan.workspaceId,
           ),
           policy: options.gate,
           auditHealth: (options.auditHealth ?? (() => 'healthy' as AuditHealth))(),

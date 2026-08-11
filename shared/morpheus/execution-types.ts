@@ -161,6 +161,8 @@ export type ExecutionPlan = {
   origin: ExecutionOrigin;
   /** What the user asked for, in their words. */
   objective: string;
+  /** Logical Main-owned workspace binding; never a Renderer-supplied path. */
+  workspaceId?: string;
   status: ExecutionPlanStatus;
   steps: readonly ExecutionStep[];
   /**

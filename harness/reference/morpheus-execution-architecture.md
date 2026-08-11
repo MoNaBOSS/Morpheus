@@ -15,7 +15,7 @@ sequential, typed plan executor. Security invariants live in
 | Plan store/trust/executor | `electron/services/morpheus/plan/` | Holds Main-authored plans, resolves all targets, computes trust delta, requests one batched decision, and executes steps sequentially. |
 | Policy/grants | `electron/services/morpheus/policy/` | Strict/Balanced/Autonomous evaluation and atomic exact-scope session/persistent grants/denials. |
 | Capability adapters | `electron/services/morpheus/capabilities/<platform>/` | Resolve and execute one registered capability. Windows ships today. |
-| Approved roots | `electron/services/morpheus/roots.ts` | Resolves logical roots to canonical Main-owned paths. |
+| Workspace registry and approved roots | `electron/services/morpheus/workspaces/`, `electron/services/morpheus/roots.ts` | Atomically stores Main-selected logical workspaces and captures one canonical root per execution. |
 | Runtime | `electron/services/morpheus/runtime.ts` | Run lifecycle, audited phase transitions, real event emission, single-action compatibility adapter. |
 | Agent/workflow/schedule services | `electron/services/morpheus/{agents,workflows,schedules}/` | Validated persistent product models that compile or invoke the same plan pipeline. |
 | Audit query/sink | `electron/services/morpheus/audit.ts` | Append-only ordered writes, outcome redaction, cross-day bounded queries, health state. |
@@ -78,9 +78,15 @@ result, or audit record.
 ## Filesystem and process safety
 
 Workspace trust is rooted in a canonical Main-owned root, not individual file
-names. Routine non-destructive operations within an exact trusted root reuse the
-same grant. Relative names are validated, canonicalized, checked for containment,
-bounded, and protected against links/reserved Windows names. Creation is
+names. Renderer sends only a validated logical workspace id; adding a workspace
+always invokes Main's native folder picker. Registrations persist atomically,
+missing or redirected roots fail closed, and removing a registration never
+deletes files. Removal revokes every session, persistent and denial grant bound
+to that exact root so trust cannot silently return if the folder is re-added.
+Routine non-destructive operations within an exact trusted root reuse the same
+grant. Relative names are validated, canonicalized, checked for containment,
+bounded, and protected against links/reserved Windows names. Read-only workspace
+policy is enforced in the runtime for direct and planned execution. Creation is
 exclusive; overwrite and deletion remain critical.
 
 Applications and developer tools use frozen compiled-in keys/templates. Main

@@ -185,7 +185,9 @@ describe('morpheus actions store — host calls', () => {
     const runId = await useMorpheusActionsStore.getState().requestAction('system.report');
 
     expect(runId).toBe('run-9');
-    expect(requestActionMock).toHaveBeenCalledWith({ actionId: 'system.report', params: undefined });
+    expect(requestActionMock).toHaveBeenCalledWith({
+      actionId: 'system.report', params: undefined, workspaceId: 'morpheus-files',
+    });
     expect(useMorpheusActionsStore.getState().requestError).toBeNull();
   });
 

@@ -28,6 +28,7 @@ import type {
   PermissionProfile,
 } from '@shared/morpheus/permission-types';
 import type { MorpheusAuditEntry, MorpheusRun } from '@shared/morpheus/action-types';
+import { useMorpheusWorkspacesStore } from './morpheus-workspaces';
 
 const MAX_ARTIFACTS = 50;
 
@@ -354,7 +355,8 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
     try {
       // Every interactive surface enters the same Main-owned objective state
       // machine. Renderer never receives authority to execute plan steps.
-      const result = await hostApi.morpheus.submitObjective({ objective, originType });
+      const workspaceId = useMorpheusWorkspacesStore.getState().selectedWorkspaceId;
+      const result = await hostApi.morpheus.submitObjective({ objective, originType, workspaceId });
       if (!result.accepted) {
         set({
           unsupported: {

@@ -99,6 +99,7 @@ describe('unified Morpheus objective store', () => {
     expect(mocks.submitObjective).toHaveBeenCalledWith({
       objective: 'Show system information',
       originType: 'voice',
+      workspaceId: 'morpheus-files',
     });
     expect(useMorpheusCommandStore.getState().input).toBe('');
   });

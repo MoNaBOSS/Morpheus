@@ -86,6 +86,21 @@ export type MorpheusActionId =
   | 'web.openUrl'
   | 'dev.launchProject';
 
+/** Actions that create, change, or remove durable state inside a workspace. */
+export const MORPHEUS_WORKSPACE_WRITE_ACTIONS = Object.freeze([
+  'file.createText',
+  'file.appendText',
+  'file.move',
+  'file.copy',
+  'file.delete',
+  'folder.create',
+  'screen.capture',
+] as const satisfies readonly MorpheusActionId[]);
+
+export function isMorpheusWorkspaceWriteAction(actionId: MorpheusActionId): boolean {
+  return MORPHEUS_WORKSPACE_WRITE_ACTIONS.includes(actionId as never);
+}
+
 
 /**
  * Named bundles of capabilities that share ONE trust decision for one exact

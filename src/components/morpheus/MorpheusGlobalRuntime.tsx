@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 
 import { useMorpheusActionsStore } from '@/stores/morpheus-actions';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
+import { useMorpheusWorkspacesStore } from '@/stores/morpheus-workspaces';
 import { MorpheusCaptureIndicator } from './MorpheusCaptureIndicator';
 import { MorpheusPermissionDialog } from './MorpheusPermissionDialog';
 import { MorpheusPlanConsentDialog } from './MorpheusPlanConsentDialog';
@@ -20,13 +21,14 @@ export function MorpheusGlobalRuntime() {
   const loadFilesRoot = useMorpheusCommandStore((state) => state.loadFilesRoot);
   const loadArtifacts = useMorpheusCommandStore((state) => state.loadArtifacts);
   const captureArtifact = useMorpheusCommandStore((state) => state.captureArtifact);
+  const loadWorkspaces = useMorpheusWorkspacesStore((state) => state.load);
 
   useEffect(() => {
     const unsubscribe = subscribe();
     const unsubscribeConsent = subscribeConsent();
     const unsubscribeObjectives = subscribeObjectives();
     void Promise.all([
-      loadCapabilities(), loadPermissionCenter(), loadFilesRoot(), loadArtifacts(), loadObjectives(),
+      loadCapabilities(), loadPermissionCenter(), loadFilesRoot(), loadWorkspaces(), loadArtifacts(), loadObjectives(),
     ]);
     return () => {
       unsubscribe();
@@ -40,6 +42,7 @@ export function MorpheusGlobalRuntime() {
     loadCapabilities,
     loadPermissionCenter,
     loadFilesRoot,
+    loadWorkspaces,
     loadArtifacts,
     loadObjectives,
   ]);

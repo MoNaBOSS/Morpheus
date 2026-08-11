@@ -18,6 +18,7 @@ import {
 import type { MorpheusAgentProfile } from '@shared/morpheus/agent-profile-types';
 import {
   getMorpheusActionDescriptor,
+  isMorpheusWorkspaceWriteAction,
   listMorpheusActionIds,
   type MorpheusActionId,
 } from '@shared/morpheus/actions/registry';
@@ -32,6 +33,10 @@ import type {
   MorpheusPlannerReviewResult,
   MorpheusPlanningCapability,
 } from '@shared/morpheus/planner';
+import {
+  MORPHEUS_DEFAULT_WORKSPACE_ID,
+  type MorpheusWorkspaceAccess,
+} from '@shared/morpheus/workspace-types';
 
 import type { MorpheusAuditSink } from '../audit';
 import type { MorpheusAgentProfileStore } from '../agents/profile-store';
@@ -45,6 +50,7 @@ import type {
   MorpheusPlannerSelection,
   MorpheusPlannerSelector,
 } from '../planning/planner-selector';
+import type { MorpheusWorkspaceStore } from '../workspaces/workspace-store';
 
 const CAPABILITY_DESCRIPTIONS: Record<MorpheusActionId, string> = {
   'app.launch': 'Launch one compiled-in approved Windows application by logical key.',
@@ -169,7 +175,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
   planners: MorpheusPlannerSelector;
   audit: MorpheusAuditSink;
   appVersion: string;
-  filesRoot: string;
+  workspaces: Pick<MorpheusWorkspaceStore, 'get' | 'resolveRoot'>;
   emit: (event: MorpheusObjectiveEvent) => void;
   platform?: string;
   now?: () => Date;
@@ -247,11 +253,17 @@ export function createMorpheusObjectiveOrchestrator(options: {
     return output;
   };
 
-  const selectionCapabilities = (agent: MorpheusAgentProfile): MorpheusPlanningCapability[] => {
+  const selectionCapabilities = (
+    agent: MorpheusAgentProfile,
+    workspaceAccess: MorpheusWorkspaceAccess,
+  ): MorpheusPlanningCapability[] => {
     const allowed = new Set(agent.permissionBoundary.capabilityIds);
+    const allowWorkspaceWrites = agent.workspace.access === 'read-write'
+      && workspaceAccess === 'read-write';
     return listMorpheusActionIds().flatMap((capabilityId) => {
       const descriptor = getMorpheusActionDescriptor(capabilityId);
-      if (!allowed.has(capabilityId) || !descriptor.platforms.includes(platform as never)) return [];
+      if (!allowed.has(capabilityId) || !descriptor.platforms.includes(platform as never)
+        || (!allowWorkspaceWrites && isMorpheusWorkspaceWriteAction(capabilityId))) return [];
       return [{
         capabilityId,
         riskTier: descriptor.riskTier,
@@ -309,7 +321,30 @@ export function createMorpheusObjectiveOrchestrator(options: {
     const owner = active.get(objectiveRunId);
     if (!owner) return;
     const startedAt = now().getTime();
-    const capabilities = selectionCapabilities(agent);
+    const initialRun = options.store.get(objectiveRunId);
+    const workspaceId = initialRun?.workspaceId ?? MORPHEUS_DEFAULT_WORKSPACE_ID;
+    const workspace = options.workspaces.get(workspaceId);
+    if (!workspace?.enabled || !workspace.available) {
+      await transition(objectiveRunId, 'error', {
+        error: { code: 'workspace-unavailable', message: 'The selected Morpheus workspace is unavailable.' },
+      });
+      active.delete(objectiveRunId);
+      return;
+    }
+    let filesRoot: string;
+    try {
+      filesRoot = options.workspaces.resolveRoot(workspaceId);
+    } catch (error) {
+      await transition(objectiveRunId, 'error', {
+        error: {
+          code: 'workspace-unavailable',
+          message: error instanceof Error ? error.message : 'The selected Morpheus workspace is unavailable.',
+        },
+      });
+      active.delete(objectiveRunId);
+      return;
+    }
+    const capabilities = selectionCapabilities(agent, workspace.access);
     const fingerprints = new Set<string>();
     let totalSteps = 0;
     let plannerSelection: MorpheusPlannerSelection;
@@ -335,7 +370,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
         current: run,
         history,
         agent,
-        workspaceLabel: 'Morpheus Files',
+        workspaceLabel: workspace.name,
       });
       await transition(objectiveRunId, 'planning', {
         plannerId: planner.plannerId,
@@ -356,7 +391,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
               objective,
               origin: run.origin,
               platform,
-              filesRoot: options.filesRoot,
+              filesRoot,
               objectiveRunId,
               iteration,
               capabilities,
@@ -377,7 +412,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
             if (agent.planner.kind !== 'auto' || planner.plannedBy !== 'provider') throw error;
             const deterministic = createDeterministicMorpheusPlanner();
             proposed = await deterministic.plan({
-              objective, origin: run.origin, platform, filesRoot: options.filesRoot,
+              objective, origin: run.origin, platform, filesRoot,
               objectiveRunId, iteration, capabilities, context, limits,
             });
             planner = deterministic;
@@ -398,7 +433,12 @@ export function createMorpheusObjectiveOrchestrator(options: {
           return;
         }
 
-        const plan: ExecutionPlan = proposed.plan;
+        // Workspace binding is Main-owned. Provider proposals cannot choose or
+        // widen a root even if they include an extra field in raw output.
+        const plan: ExecutionPlan = {
+          ...proposed.plan,
+          workspaceId,
+        };
         ensurePlanAllowed(plan, capabilities, totalSteps, fingerprints);
         totalSteps += plan.steps.length;
         options.runtime.registerPlan(plan);
@@ -539,7 +579,9 @@ export function createMorpheusObjectiveOrchestrator(options: {
     const agentProfileId = payload.agentProfileId ?? 'general';
     const agent = options.agents.get(agentProfileId);
     if (!agent?.enabled) return { objectiveRunId: '', accepted: false, message: 'The selected Agent Profile is unavailable.' };
-    if (payload.workspaceId && payload.workspaceId !== 'morpheus-files') {
+    const workspaceId = payload.workspaceId ?? MORPHEUS_DEFAULT_WORKSPACE_ID;
+    const workspace = options.workspaces.get(workspaceId);
+    if (!workspace?.enabled || !workspace.available) {
       return { objectiveRunId: '', accepted: false, message: 'The selected workspace is unavailable.' };
     }
 
@@ -554,7 +596,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
       createdAt: timestamp,
       updatedAt: timestamp,
       startedAt: timestamp,
-      workspaceId: 'morpheus-files',
+      workspaceId,
       agentProfileId,
       iteration: 0,
       corrections: [],

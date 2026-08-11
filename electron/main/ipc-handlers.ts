@@ -208,10 +208,17 @@ function registerTypedHostHandlers(
       scheduler: morpheusService.scheduler,
       objectives: morpheusService.objectives,
       voice: morpheusService.voice,
+      workspaces: morpheusService.workspaces,
       audit: morpheusService.audit,
       filesRoot: morpheusService.filesRoot,
       appVersion: app.getVersion(),
       auditHealth: morpheusService.auditHealth,
+      selectWorkspaceDirectory: async () => {
+        const result = await dialog.showOpenDialog(mainWindow, {
+          properties: ['openDirectory'],
+        });
+        return result.canceled ? null : result.filePaths[0] ?? null;
+      },
     }),
   });
   // Start only after the renderer can receive a batched consent request. An

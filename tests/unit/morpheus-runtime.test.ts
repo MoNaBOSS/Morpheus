@@ -27,7 +27,10 @@ import {
   listMorpheusApplicationKeys,
 } from '@shared/morpheus/actions/registry';
 
-const roots: MorpheusRootProvider = { resolve: () => 'C:\\root' };
+const roots: MorpheusRootProvider = {
+  resolve: () => 'C:\\root',
+  forWorkspace: () => roots,
+};
 
 /**
  * These tests exercise run lifecycle, not policy. An always-prompt gate keeps
@@ -69,6 +72,12 @@ function makeHarness(options: {
   platform?: string;
   permissionTimeoutMs?: number;
   auditFails?: boolean;
+  workspace?: {
+    workspaceId: string;
+    access: 'read' | 'read-write';
+    enabled?: boolean;
+    available?: boolean;
+  } | null;
 } = {}): Harness {
   const events: MorpheusActionEvent[] = [];
   const audited: MorpheusAuditEntry[] = [];
@@ -100,6 +109,25 @@ function makeHarness(options: {
   const runtime = createMorpheusRuntime({
     registry,
     roots,
+    ...(options.workspace === undefined ? {} : {
+      workspaces: {
+        get: (workspaceId: string) => {
+          if (!options.workspace || options.workspace.workspaceId !== workspaceId) return undefined;
+          return {
+            v: 1 as const,
+            workspaceId,
+            name: 'Test workspace',
+            rootPath: 'C:\\root',
+            kind: 'user' as const,
+            access: options.workspace.access,
+            enabled: options.workspace.enabled ?? true,
+            available: options.workspace.available ?? true,
+            createdAt: '2026-08-11T00:00:00.000Z',
+            updatedAt: '2026-08-11T00:00:00.000Z',
+          };
+        },
+      },
+    }),
     audit,
     gate: options.gate ?? alwaysPromptGate(),
     grants: createMorpheusGrantStore({ userDataDir: mkdtempSync(join(tmpdir(), 'morpheus-runtime-')) }),
@@ -281,6 +309,30 @@ describe('morpheus runtime — audit ordering', () => {
 });
 
 describe('morpheus runtime — validation and limits', () => {
+  it('blocks writes through the direct action path when the selected workspace is read-only', async () => {
+    const executeSpy = vi.fn(async () => ({ kind: 'file' as const, path: 'C:\\root\\notes.txt', bytes: 1 }));
+    const h = makeHarness({
+      workspace: { workspaceId: 'workspace-readonly', access: 'read' },
+      capability: makeCapability(executeSpy, { actionId: 'file.createText' }),
+    });
+    await h.runtime.requestAction({
+      actionId: 'file.createText',
+      params: { fileName: 'notes.txt', content: 'x' },
+      workspaceId: 'workspace-readonly',
+    });
+
+    expect(executeSpy).not.toHaveBeenCalled();
+    expect(h.events.map((event) => event.phase)).toEqual(['requested', 'failed']);
+    expect(h.events.at(-1)?.error?.code).toBe('workspace-read-only');
+  });
+
+  it('rejects an unknown logical workspace before resolving any capability', async () => {
+    const h = makeHarness({ workspace: null });
+    await h.runtime.requestAction({ actionId: 'system.report', workspaceId: 'workspace-unknown' });
+    expect(h.executeSpy).not.toHaveBeenCalled();
+    expect(h.events.at(-1)?.error?.code).toBe('workspace-unavailable');
+  });
+
   it('rejects an unknown action at the boundary without creating a run', async () => {
     const h = makeHarness();
     await expect(h.runtime.requestAction({ actionId: 'shell.exec' })).rejects.toThrow(MorpheusRequestError);

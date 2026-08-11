@@ -58,7 +58,21 @@ function setup(planner: MorpheusPlanner, execute?: MorpheusRuntime['executePlan'
     planners: { select: vi.fn(async () => ({ ok: true as const, planner, providerAccountId: 'provider-1', modelId: 'model-1' })) },
     audit,
     appVersion: '1.0.0',
-    filesRoot: join(root, 'files'),
+    workspaces: {
+      get: vi.fn(() => ({
+        v: 1 as const,
+        workspaceId: 'morpheus-files',
+        name: 'Morpheus Files',
+        rootPath: join(root, 'files'),
+        kind: 'managed' as const,
+        access: 'read-write' as const,
+        enabled: true,
+        available: true,
+        createdAt: '2026-08-11T00:00:00.000Z',
+        updatedAt: '2026-08-11T00:00:00.000Z',
+      })),
+      resolveRoot: vi.fn(() => join(root, 'files')),
+    },
     platform: 'win32',
     createId: (() => { let id = 0; return () => `objective-${++id}`; })(),
     emit: (event) => {
@@ -94,6 +108,9 @@ describe('Main-owned objective orchestration', () => {
     expect(run.artifacts).toHaveLength(2);
     expect(run.summary).toBe('System information verified.');
     expect(runtime.executePlan).toHaveBeenCalledTimes(2);
+    expect(runtime.registerPlan).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      workspaceId: 'morpheus-files',
+    }));
     expect(events.map((event) => event.state)).toEqual(expect.arrayContaining([
       'understanding', 'planning', 'executing', 'observing', 'replanning', 'complete',
     ]));

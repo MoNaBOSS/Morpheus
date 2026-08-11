@@ -100,6 +100,7 @@ describe('Morpheus renderer voice controller', () => {
     await vi.waitFor(() => expect(mocks.submitObjective).toHaveBeenCalledWith({
       objective: 'Open Notepad',
       originType: 'voice',
+      workspaceId: 'morpheus-files',
     }));
     expect(track.stop).toHaveBeenCalled();
     expect(useMorpheusVoiceStore.getState()).toMatchObject({

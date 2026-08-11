@@ -62,6 +62,10 @@ import type {
   MorpheusTranscribeAudioPayload,
   MorpheusVoiceSettingsPatch,
 } from '@shared/morpheus/voice-types';
+import type {
+  AddMorpheusWorkspacePayload,
+  UpdateMorpheusWorkspacePayload,
+} from '@shared/morpheus/workspace-types';
 import type { PermissionProfile } from '@shared/morpheus/permission-types';
 import { invokeHost } from './host-api-client';
 
@@ -472,6 +476,19 @@ export const hostApi = {
     resetPermissionPolicy: () => invokeHost('morpheus', 'resetPermissionPolicy'),
     filesRoot: () => invokeHost('morpheus', 'filesRoot'),
     openFilesRoot: () => invokeHost('morpheus', 'openFilesRoot'),
+    workspaces: () => invokeHost('morpheus', 'workspaces'),
+    addWorkspace: (payload: AddMorpheusWorkspacePayload = {}) => (
+      invokeHost('morpheus', 'addWorkspace', payload)
+    ),
+    updateWorkspace: (payload: UpdateMorpheusWorkspacePayload) => (
+      invokeHost('morpheus', 'updateWorkspace', payload)
+    ),
+    removeWorkspace: (workspaceId: string) => (
+      invokeHost('morpheus', 'removeWorkspace', { workspaceId })
+    ),
+    openWorkspace: (workspaceId: string) => (
+      invokeHost('morpheus', 'openWorkspace', { workspaceId })
+    ),
     agentProfiles: () => invokeHost('morpheus', 'agentProfiles'),
     agentProfile: (id: string) => invokeHost('morpheus', 'agentProfile', { id }),
     workflows: () => invokeHost('morpheus', 'workflows'),

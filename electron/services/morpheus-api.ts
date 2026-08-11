@@ -67,6 +67,13 @@ import {
   type MorpheusVoiceSettingsPatch,
 } from '@shared/morpheus/voice-types';
 import type { MorpheusVoiceService } from './morpheus/voice/voice-service';
+import {
+  isMorpheusWorkspaceId,
+  type AddMorpheusWorkspacePayload,
+  type MorpheusWorkspaceIdPayload,
+  type UpdateMorpheusWorkspacePayload,
+} from '@shared/morpheus/workspace-types';
+import type { MorpheusWorkspaceStore } from './morpheus/workspaces/workspace-store';
 
 export class MorpheusValidationError extends Error {
   constructor(message: string) {
@@ -104,7 +111,7 @@ function assertNoUnknownKeys(record: Record<string, unknown>, allowed: string[],
  */
 export function validateRequestActionPayload(payload: unknown): MorpheusRequestActionPayload {
   const record = requireRecord(payload, 'requestAction payload');
-  assertNoUnknownKeys(record, ['actionId', 'params', 'originType', 'agentId'], 'requestAction payload');
+  assertNoUnknownKeys(record, ['actionId', 'params', 'originType', 'agentId', 'workspaceId'], 'requestAction payload');
 
   // Origin and agent identity participate in grant scope, so they are validated
   // as strictly as the action itself — an unrecognised origin is rejected, not
@@ -115,6 +122,9 @@ export function validateRequestActionPayload(payload: unknown): MorpheusRequestA
   }
   if (record.agentId !== undefined && typeof record.agentId !== 'string') {
     throw new MorpheusValidationError('agentId must be a string');
+  }
+  if (record.workspaceId !== undefined && !isMorpheusWorkspaceId(record.workspaceId)) {
+    throw new MorpheusValidationError('invalid workspaceId');
   }
 
   const actionId = requireNonEmptyString(record.actionId, 'actionId');
@@ -140,6 +150,7 @@ export function validateRequestActionPayload(payload: unknown): MorpheusRequestA
     params: validation.params as MorpheusActionParams,
     ...(origin ? { originType: origin } : {}),
     ...(agentId ? { agentId } : {}),
+    ...(record.workspaceId ? { workspaceId: record.workspaceId as string } : {}),
   };
 }
 
@@ -183,10 +194,13 @@ export type CreateMorpheusApiOptions = {
   scheduler: MorpheusScheduler;
   objectives: MorpheusObjectiveOrchestrator;
   voice: MorpheusVoiceService;
+  workspaces: MorpheusWorkspaceStore;
   audit: MorpheusAuditSink;
   filesRoot: string;
   appVersion: string;
   auditHealth: () => 'healthy' | 'degraded';
+  /** Main-owned native picker. Renderer can never supply a directory path. */
+  selectWorkspaceDirectory: () => Promise<string | null>;
   /** Main-owned adapter boundary; raw provider output never enters here directly. */
   planner?: MorpheusPlanner;
 };
@@ -207,12 +221,64 @@ export function validateSubmitObjectivePayload(payload: unknown): SubmitMorpheus
     }
     return value;
   };
+  if (record.workspaceId !== undefined && !isMorpheusWorkspaceId(record.workspaceId)) {
+    throw new MorpheusValidationError('invalid workspaceId');
+  }
+  const agentProfileId = optionalId(record.agentProfileId, 'agentProfileId');
   return {
     objective,
     originType: originType as SubmitMorpheusObjectivePayload['originType'],
-    ...(optionalId(record.workspaceId, 'workspaceId') ? { workspaceId: record.workspaceId as string } : {}),
-    ...(optionalId(record.agentProfileId, 'agentProfileId') ? { agentProfileId: record.agentProfileId as string } : {}),
+    ...(record.workspaceId ? { workspaceId: record.workspaceId } : {}),
+    ...(agentProfileId ? { agentProfileId } : {}),
   };
+}
+
+function validateWorkspaceAccess(value: unknown): 'read' | 'read-write' | undefined {
+  if (value === undefined) return undefined;
+  if (value !== 'read' && value !== 'read-write') {
+    throw new MorpheusValidationError('workspace access must be read or read-write');
+  }
+  return value;
+}
+
+function validateWorkspaceName(value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string' || !value.trim() || value.trim().length > 80) {
+    throw new MorpheusValidationError('workspace name must be between 1 and 80 characters');
+  }
+  return value.trim();
+}
+
+export function validateAddWorkspacePayload(payload: unknown): AddMorpheusWorkspacePayload {
+  const record = requireRecord(payload, 'addWorkspace payload');
+  assertNoUnknownKeys(record, ['name', 'access'], 'addWorkspace payload');
+  const name = validateWorkspaceName(record.name);
+  const access = validateWorkspaceAccess(record.access);
+  return { ...(name ? { name } : {}), ...(access ? { access } : {}) };
+}
+
+export function validateUpdateWorkspacePayload(payload: unknown): UpdateMorpheusWorkspacePayload {
+  const record = requireRecord(payload, 'updateWorkspace payload');
+  assertNoUnknownKeys(record, ['workspaceId', 'name', 'access', 'enabled'], 'updateWorkspace payload');
+  if (!isMorpheusWorkspaceId(record.workspaceId)) throw new MorpheusValidationError('invalid workspaceId');
+  if (record.enabled !== undefined && typeof record.enabled !== 'boolean') {
+    throw new MorpheusValidationError('workspace enabled must be a boolean');
+  }
+  const name = validateWorkspaceName(record.name);
+  const access = validateWorkspaceAccess(record.access);
+  return {
+    workspaceId: record.workspaceId,
+    ...(name ? { name } : {}),
+    ...(access ? { access } : {}),
+    ...(record.enabled === undefined ? {} : { enabled: record.enabled }),
+  };
+}
+
+export function validateWorkspaceIdPayload(payload: unknown): MorpheusWorkspaceIdPayload {
+  const record = requireRecord(payload, 'workspace payload');
+  assertNoUnknownKeys(record, ['workspaceId'], 'workspace payload');
+  if (!isMorpheusWorkspaceId(record.workspaceId)) throw new MorpheusValidationError('invalid workspaceId');
+  return { workspaceId: record.workspaceId };
 }
 
 function validateObjectiveId(value: unknown): string {
@@ -334,7 +400,10 @@ const AUDIT_PHASES = [
   'requested', 'awaiting-permission', 'denied', 'running', 'succeeded', 'failed',
   'cancelled', 'timed-out', 'unsupported-platform',
 ] as const;
-const AUDIT_CATEGORIES = ['execution', 'objective', 'planner', 'voice', 'permission', 'agent-profile', 'workflow', 'schedule'] as const;
+const AUDIT_CATEGORIES = [
+  'execution', 'objective', 'planner', 'voice', 'permission', 'workspace',
+  'agent-profile', 'workflow', 'schedule',
+] as const;
 
 export function validateAuditQueryPayload(payload: unknown): MorpheusAuditQueryPayload {
   if (payload === undefined || payload === null) return { limit: 50 };
@@ -442,7 +511,10 @@ export function validateRevokePayload(payload: unknown): { grantId: string } {
 }
 
 export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHostServiceRegistry['morpheus'] {
-  const { runtime, grants, agentProfiles, workflows, scheduler, objectives, voice, audit, filesRoot, appVersion, auditHealth } = options;
+  const {
+    runtime, grants, agentProfiles, workflows, scheduler, objectives, voice,
+    workspaces, audit, filesRoot, appVersion, auditHealth,
+  } = options;
   const planner = options.planner ?? createDeterministicMorpheusPlanner();
   return {
     interpretCommand: async (payload) => {
@@ -532,7 +604,54 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
      * rather than anything it supplied.
      */
     openFilesRoot: async () => {
-      await shell.openPath(filesRoot);
+      const error = await shell.openPath(filesRoot);
+      if (error) throw new Error(error);
+      return { ok: true };
+    },
+
+    workspaces: () => workspaces.list(),
+    addWorkspace: async (payload) => {
+      const input = validateAddWorkspacePayload(payload);
+      const directoryPath = await options.selectWorkspaceDirectory();
+      if (!directoryPath) return { workspace: null };
+      await audit.recordControl({
+        category: 'workspace', event: 'registration-requested',
+        details: { access: input.access ?? 'read-write' }, appVersion,
+      });
+      return { workspace: workspaces.add(directoryPath, input) };
+    },
+    updateWorkspace: async (payload) => {
+      const input = validateUpdateWorkspacePayload(payload);
+      if (!workspaces.get(input.workspaceId)) throw new MorpheusValidationError('Unknown Morpheus workspace');
+      await audit.recordControl({
+        category: 'workspace', event: 'update-requested', subjectId: input.workspaceId,
+        details: {
+          ...(input.access ? { access: input.access } : {}),
+          ...(input.enabled === undefined ? {} : { enabled: input.enabled }),
+          ...(input.name ? { nameChanged: true } : {}),
+        },
+        appVersion,
+      });
+      return { workspace: workspaces.update(input) };
+    },
+    removeWorkspace: async (payload) => {
+      const { workspaceId } = validateWorkspaceIdPayload(payload);
+      const workspace = workspaces.get(workspaceId);
+      if (!workspace) return { workspace: null };
+      if (workspace.kind === 'managed') {
+        throw new MorpheusValidationError('The managed Morpheus workspace cannot be removed');
+      }
+      await audit.recordControl({
+        category: 'workspace', event: 'removal-requested', subjectId: workspaceId,
+        details: {}, appVersion,
+      });
+      grants.revokeForResourceScope(workspace.rootPath);
+      return { workspace: workspaces.remove(workspaceId) };
+    },
+    openWorkspace: async (payload) => {
+      const { workspaceId } = validateWorkspaceIdPayload(payload);
+      const error = await shell.openPath(workspaces.resolveRoot(workspaceId));
+      if (error) throw new Error(error);
       return { ok: true };
     },
 

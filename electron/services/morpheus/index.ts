@@ -45,6 +45,10 @@ import {
 import { createMorpheusPlannerSelector } from './planning/planner-selector';
 import { getProviderService, type ProviderService } from '../providers/provider-service';
 import { createMorpheusVoiceService, type MorpheusVoiceService } from './voice/voice-service';
+import {
+  createMorpheusWorkspaceStore,
+  type MorpheusWorkspaceStore,
+} from './workspaces/workspace-store';
 
 export type CreateMorpheusServiceOptions = {
   userDataDir: string;
@@ -67,6 +71,7 @@ export type MorpheusService = {
   objectiveStore: MorpheusObjectiveStore;
   objectives: MorpheusObjectiveOrchestrator;
   voice: MorpheusVoiceService;
+  workspaces: MorpheusWorkspaceStore;
   audit: MorpheusAuditSink;
   /** Current approved files root, for the Command Center's artifacts panel. */
   filesRoot: string;
@@ -88,7 +93,11 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   registry.register(win32OpenUrlCapability);
   registry.register(win32LaunchProjectCapability);
 
-  const roots = createMorpheusRootProvider({ userDataDir: options.userDataDir });
+  const workspaces = createMorpheusWorkspaceStore({ userDataDir: options.userDataDir });
+  const roots = createMorpheusRootProvider({
+    userDataDir: options.userDataDir,
+    workspaces,
+  });
   const audit = createMorpheusAuditSink({
     auditDir: join(options.userDataDir, 'morpheus', 'audit'),
   });
@@ -105,6 +114,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   const runtime = createMorpheusRuntime({
     registry,
     roots,
+    workspaces,
     audit,
     gate,
     grants,
@@ -138,7 +148,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   });
 
   const agentProfiles = createMorpheusAgentProfileStore({ userDataDir: options.userDataDir });
-  const filesRoot = roots.resolve('morpheusFiles');
+  const filesRoot = workspaces.resolveRoot();
   const objectiveStore = createMorpheusObjectiveStore({ userDataDir: options.userDataDir });
   const providerService = options.providerService ?? getProviderService();
   const plannerSelector = createMorpheusPlannerSelector({
@@ -157,7 +167,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     planners: plannerSelector,
     audit,
     appVersion: options.appVersion,
-    filesRoot,
+    workspaces,
     emit: (event) => options.emitObjective?.(event),
   });
   const workflowStore = createMorpheusWorkflowStore({ userDataDir: options.userDataDir });
@@ -188,6 +198,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     objectiveStore,
     objectives,
     voice,
+    workspaces,
     audit,
     filesRoot,
     auditHealth,
@@ -204,3 +215,4 @@ export type { MorpheusScheduler } from './schedules/scheduler';
 export type { MorpheusObjectiveStore } from './core/objective-store';
 export type { MorpheusObjectiveOrchestrator } from './core/objective-orchestrator';
 export type { MorpheusVoiceService } from './voice/voice-service';
+export type { MorpheusWorkspaceStore } from './workspaces/workspace-store';

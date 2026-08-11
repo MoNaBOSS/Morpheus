@@ -121,6 +121,13 @@ The grant scope for a filesystem target is the **workspace root**, never the
 file's parent directory — otherwise every subfolder would be a new boundary and
 a user who approved a workspace would be re-prompted as work nested deeper.
 
+Morpheus may register multiple exact workspace roots. Main obtains each root
+from a native directory picker, stores it atomically, and accepts only its
+logical id from Renderer and planners. Grants never cross roots. Read-only
+workspace policy is enforced at execution time on every entry path, and
+removing a workspace registration revokes grants for that exact root without
+deleting any user files.
+
 ### Current capabilities
 
 | Capability | Tier | Group | Rationale |
