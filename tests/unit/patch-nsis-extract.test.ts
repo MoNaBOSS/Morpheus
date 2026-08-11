@@ -96,6 +96,37 @@ describe('patch-nsis-extract', () => {
     expect(result).not.toContain('continuing overwrite install anyway');
   });
 
+  it('upgrades the previous fail-closed ClawX v2 template to Morpheus identity', () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'morpheus-patch-nsis-'));
+    const target = join(tempDir, 'extractAppPackage.nsh');
+    writeFileSync(
+      target,
+      SAMPLE_FILE.replace(
+        SAMPLE_EXTRACT_MACRO,
+        `!macro extractUsing7za FILE
+  ; ClawX-patched-v2: extract directly to $INSTDIR and fail closed.
+  SetOutPath $INSTDIR
+  ClearErrors
+  Nsis7z::Extract "\${FILE}"
+  IfErrors 0 clawx_extract_done
+  MessageBox MB_OK|MB_ICONEXCLAMATION "$(decompressionFailed)" /SD IDOK
+  SetErrorLevel 2
+  Quit
+  clawx_extract_done:
+!macroend`,
+      ),
+      'utf8',
+    );
+
+    expect(patchNsisExtractTemplate(target)).toBe(true);
+
+    const result = readFileSync(target, 'utf8');
+    expect(result).toContain('Morpheus-patched-v3');
+    expect(result).toContain('Failed to extract Morpheus files after multiple attempts.');
+    expect(result).not.toContain('ClawX-patched-v2');
+    expect(result).not.toMatch(/taskkill[^\r\n]*openclaw-gateway\.exe/i);
+  });
+
   it('restores and re-patches a corrupted template', () => {
     tempDir = mkdtempSync(join(tmpdir(), 'clawx-patch-nsis-'));
     const target = join(tempDir, 'extractAppPackage.nsh');

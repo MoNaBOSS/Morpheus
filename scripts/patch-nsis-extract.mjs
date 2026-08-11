@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Patch electron-builder's NSIS extractUsing7za macro to extract directly into
  * $INSTDIR instead of temp + CopyFiles.
@@ -29,6 +28,7 @@ export const EXTRACT_APP_PACKAGE_NSH = join(
 
 const PATCH_MARKER = 'Morpheus-patched-v3: extract directly to $INSTDIR and fail closed';
 const LEGACY_PATCH_MARKER = 'ClawX-patched: extract directly to $INSTDIR';
+const LEGACY_PATCH_MARKER_V2 = 'ClawX-patched-v2: extract directly to $INSTDIR and fail closed';
 const LEGACY_CONTINUE_ON_EXTRACT_FAILURE = 'continuing overwrite install anyway';
 const FATAL_EXTRACT_FAILURE_DETAIL = 'Failed to extract Morpheus files after multiple attempts.';
 const ROLLBACK_EXTRACT_FAILURE_DETAIL = 'Restoring previous Morpheus installation after failed update';
@@ -104,6 +104,7 @@ function isTemplateHealthy(content) {
 function hasStaleExtractPatch(content) {
   return content.includes(PATCH_MARKER)
     || content.includes(LEGACY_PATCH_MARKER)
+    || content.includes(LEGACY_PATCH_MARKER_V2)
     || content.includes(LEGACY_CONTINUE_ON_EXTRACT_FAILURE)
     || content.includes('$(appCannotBeClosed)');
 }
