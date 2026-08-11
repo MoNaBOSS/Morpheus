@@ -154,4 +154,33 @@ describe('Main-owned objective orchestration', () => {
     expect(runtime.cancelPlan).toHaveBeenCalledWith({ planId: 'plan-cancel' });
     orchestrator.dispose();
   });
+
+  it('runs a Main-compiled workflow plan through objective history without invoking a planner', async () => {
+    const planner: MorpheusPlanner = {
+      plannerId: 'provider:must-not-run',
+      plannedBy: 'provider',
+      plan: vi.fn(),
+    };
+    const { orchestrator, runtime } = setup(planner);
+    const workflowPlan = plan('workflow-plan');
+    const submitted = await orchestrator.submitInternal({
+      objective: 'System brief',
+      origin: { type: 'workflow', workflowId: 'system-brief', agentProfileId: 'general' },
+      workspaceId: 'morpheus-files',
+      agentProfileId: 'general',
+      preparedPlan: workflowPlan,
+    });
+    const terminal = await orchestrator.waitForTerminal(submitted.objectiveRunId);
+
+    expect(terminal.state).toBe('complete');
+    expect(terminal.plannerId).toBe('workflow-compiler-v1');
+    expect(planner.plan).not.toHaveBeenCalled();
+    expect(runtime.registerPlan).toHaveBeenCalledWith(expect.objectContaining({
+      planId: 'workflow-plan',
+      workspaceId: 'morpheus-files',
+      origin: { type: 'workflow', workflowId: 'system-brief', agentProfileId: 'general' },
+    }));
+    await expect(orchestrator.waitForIdle()).resolves.toBeUndefined();
+    orchestrator.dispose();
+  });
 });

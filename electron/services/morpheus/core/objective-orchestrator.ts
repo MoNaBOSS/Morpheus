@@ -79,17 +79,22 @@ type ObjectiveSubmission = {
   origin: ExecutionOrigin;
   workspaceId?: string;
   agentProfileId?: string;
+  /** Main-compiled workflow plan. Never accepted from Renderer. */
+  preparedPlan?: ExecutionPlan;
 };
 
 type ActiveObjective = {
   generation: number;
   controller: AbortController;
   currentPlanId?: string;
+  preparedPlan?: ExecutionPlan;
 };
 
 export interface MorpheusObjectiveOrchestrator {
   submit(payload: SubmitMorpheusObjectivePayload): Promise<SubmitMorpheusObjectiveResult>;
   submitInternal(payload: ObjectiveSubmission): Promise<SubmitMorpheusObjectiveResult>;
+  waitForTerminal(objectiveRunId: string, timeoutMs?: number): Promise<MorpheusObjectiveRun>;
+  waitForIdle(timeoutMs?: number): Promise<void>;
   correct(payload: CorrectMorpheusObjectivePayload): Promise<{ accepted: boolean }>;
   cancel(payload: CancelMorpheusObjectivePayload): Promise<{ accepted: boolean }>;
   snapshot(): MorpheusObjectiveSnapshot;
@@ -189,8 +194,28 @@ export function createMorpheusObjectiveOrchestrator(options: {
   const active = new Map<string, ActiveObjective>();
   const planOwners = new Map<string, { objectiveRunId: string; generation: number }>();
   const transitionChains = new Map<string, Promise<void>>();
+  const terminalWaiters = new Map<string, Set<{
+    resolve: (run: MorpheusObjectiveRun) => void;
+    reject: (error: Error) => void;
+    timer: NodeJS.Timeout;
+  }>>();
+  const idleWaiters = new Set<{
+    resolve: () => void;
+    reject: (error: Error) => void;
+    timer: NodeJS.Timeout;
+  }>();
   let seq = 0;
   let disposed = false;
+
+  const finishActive = (objectiveRunId: string): void => {
+    active.delete(objectiveRunId);
+    if (active.size !== 0) return;
+    for (const waiter of idleWaiters) {
+      clearTimeout(waiter.timer);
+      waiter.resolve();
+    }
+    idleWaiters.clear();
+  };
 
   const currentPlan = (objectiveRunId: string): ExecutionPlan | undefined => (
     options.store.snapshot().plansByObjectiveRunId[objectiveRunId]
@@ -246,6 +271,16 @@ export function createMorpheusObjectiveOrchestrator(options: {
         run: structuredClone(run),
         plan: currentPlan(objectiveRunId),
       });
+      if (terminal) {
+        const waiters = terminalWaiters.get(objectiveRunId);
+        if (waiters) {
+          for (const waiter of waiters) {
+            clearTimeout(waiter.timer);
+            waiter.resolve(structuredClone(run));
+          }
+          terminalWaiters.delete(objectiveRunId);
+        }
+      }
     });
     transitionChains.set(objectiveRunId, next);
     await next;
@@ -328,7 +363,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
       await transition(objectiveRunId, 'error', {
         error: { code: 'workspace-unavailable', message: 'The selected Morpheus workspace is unavailable.' },
       });
-      active.delete(objectiveRunId);
+      finishActive(objectiveRunId);
       return;
     }
     let filesRoot: string;
@@ -341,25 +376,16 @@ export function createMorpheusObjectiveOrchestrator(options: {
           message: error instanceof Error ? error.message : 'The selected Morpheus workspace is unavailable.',
         },
       });
-      active.delete(objectiveRunId);
+      finishActive(objectiveRunId);
       return;
     }
     const capabilities = selectionCapabilities(agent, workspace.access);
     const fingerprints = new Set<string>();
     let totalSteps = 0;
-    let plannerSelection: MorpheusPlannerSelection;
     let planner: MorpheusPlanner;
     let proposed: InterpretationResult | null = null;
 
     try {
-      plannerSelection = await options.planners.select(agent);
-      if (!isCurrent(objectiveRunId, generation)) return;
-      if (!plannerSelection.ok) {
-        await transition(objectiveRunId, 'needs-clarification', { clarification: plannerSelection.reason });
-        active.delete(objectiveRunId);
-        return;
-      }
-      planner = plannerSelection.planner;
       let run = options.store.get(objectiveRunId) as MorpheusObjectiveRun;
       const historySnapshot = options.store.snapshot();
       const history = historySnapshot.runOrder.flatMap((id) => {
@@ -372,12 +398,35 @@ export function createMorpheusObjectiveOrchestrator(options: {
         agent,
         workspaceLabel: workspace.name,
       });
-      await transition(objectiveRunId, 'planning', {
-        plannerId: planner.plannerId,
-        providerAccountId: plannerSelection.providerAccountId,
-        modelId: plannerSelection.modelId,
-        plannerNotice: plannerSelection.fallbackReason,
-      });
+      if (owner.preparedPlan) {
+        const preparedPlan: ExecutionPlan = {
+          ...owner.preparedPlan,
+          origin: run.origin,
+          objective: run.objective,
+        };
+        planner = {
+          plannerId: 'workflow-compiler-v1',
+          plannedBy: 'deterministic',
+          plan: async () => ({ ok: true, plan: preparedPlan }),
+        };
+        proposed = { ok: true, plan: preparedPlan };
+        await transition(objectiveRunId, 'planning', { plannerId: planner.plannerId });
+      } else {
+        const plannerSelection: MorpheusPlannerSelection = await options.planners.select(agent);
+        if (!isCurrent(objectiveRunId, generation)) return;
+        if (!plannerSelection.ok) {
+          await transition(objectiveRunId, 'needs-clarification', { clarification: plannerSelection.reason });
+          finishActive(objectiveRunId);
+          return;
+        }
+        planner = plannerSelection.planner;
+        await transition(objectiveRunId, 'planning', {
+          plannerId: planner.plannerId,
+          providerAccountId: plannerSelection.providerAccountId,
+          modelId: plannerSelection.modelId,
+          plannerNotice: plannerSelection.fallbackReason,
+        });
+      }
 
       for (let iteration = 1; iteration <= limits.maxIterations; iteration += 1) {
         if (!isCurrent(objectiveRunId, generation) || owner.controller.signal.aborted) return;
@@ -429,7 +478,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
             clarification: interpretationClarification(proposed),
             iteration,
           });
-          active.delete(objectiveRunId);
+          finishActive(objectiveRunId);
           return;
         }
 
@@ -468,7 +517,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
         if (execution.status === 'cancelled') {
           options.store.setActivePlan(objectiveRunId, null);
           await transition(objectiveRunId, 'cancelled');
-          active.delete(objectiveRunId);
+          finishActive(objectiveRunId);
           return;
         }
         if (execution.status === 'rejected' && execution.rejection?.code === 'permission-denied') {
@@ -476,7 +525,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
           await transition(objectiveRunId, 'needs-clarification', {
             clarification: 'Execution stopped because the required trust boundary was not approved.',
           });
-          active.delete(objectiveRunId);
+          finishActive(objectiveRunId);
           return;
         }
 
@@ -489,7 +538,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
               error: execution.rejection ?? { code: 'execution-incomplete', message: summaryForExecution(execution) },
             }),
           });
-          active.delete(objectiveRunId);
+          finishActive(objectiveRunId);
           return;
         }
 
@@ -519,7 +568,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
               error: { code: 'review-unavailable', message: summaryForExecution(execution) },
             }),
           });
-          active.delete(objectiveRunId);
+          finishActive(objectiveRunId);
           return;
         }
 
@@ -527,13 +576,13 @@ export function createMorpheusObjectiveOrchestrator(options: {
         if (review.outcome === 'complete') {
           options.store.setActivePlan(objectiveRunId, null);
           await transition(objectiveRunId, 'complete', { summary: review.summary });
-          active.delete(objectiveRunId);
+          finishActive(objectiveRunId);
           return;
         }
         if (review.outcome === 'clarify') {
           options.store.setActivePlan(objectiveRunId, null);
           await transition(objectiveRunId, 'needs-clarification', { clarification: review.question });
-          active.delete(objectiveRunId);
+          finishActive(objectiveRunId);
           return;
         }
 
@@ -545,7 +594,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
       await transition(objectiveRunId, 'error', {
         error: { code: 'iteration-limit', message: 'Morpheus reached the safe replanning limit before completion.' },
       });
-      active.delete(objectiveRunId);
+      finishActive(objectiveRunId);
     } catch (error) {
       if (!isCurrent(objectiveRunId, generation)) return;
       options.store.setActivePlan(objectiveRunId, null);
@@ -557,7 +606,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
           error: { code: 'objective-failed', message: error instanceof Error ? error.message : String(error) },
         });
       }
-      active.delete(objectiveRunId);
+      finishActive(objectiveRunId);
     } finally {
       for (const [planId, planOwner] of planOwners) {
         if (planOwner.objectiveRunId === objectiveRunId && planOwner.generation === generation) planOwners.delete(planId);
@@ -605,7 +654,11 @@ export function createMorpheusObjectiveOrchestrator(options: {
       artifacts: [],
     };
     options.store.put(run);
-    const owner = { generation: 1, controller: new AbortController() };
+    const owner: ActiveObjective = {
+      generation: 1,
+      controller: new AbortController(),
+      preparedPlan: payload.preparedPlan,
+    };
     active.set(objectiveRunId, owner);
     await transition(objectiveRunId, 'understanding');
     void processObjective(objectiveRunId, owner.generation, agent);
@@ -623,6 +676,42 @@ export function createMorpheusObjectiveOrchestrator(options: {
     },
 
     submitInternal,
+
+    waitForTerminal(objectiveRunId, timeoutMs = limits.maxDurationMs + 5_000) {
+      const existing = options.store.get(objectiveRunId);
+      if (!existing) return Promise.reject(new Error('Unknown Morpheus objective'));
+      if (isObjectiveTerminalState(existing.state)) return Promise.resolve(structuredClone(existing));
+      return new Promise<MorpheusObjectiveRun>((resolve, reject) => {
+        const waiter = {
+          resolve,
+          reject,
+          timer: setTimeout(() => {
+            terminalWaiters.get(objectiveRunId)?.delete(waiter);
+            reject(new Error('Timed out waiting for the Morpheus objective'));
+          }, timeoutMs),
+        };
+        waiter.timer.unref?.();
+        const waiters = terminalWaiters.get(objectiveRunId) ?? new Set();
+        waiters.add(waiter);
+        terminalWaiters.set(objectiveRunId, waiters);
+      });
+    },
+
+    waitForIdle(timeoutMs = limits.maxDurationMs + 5_000) {
+      if (active.size === 0) return Promise.resolve();
+      return new Promise<void>((resolve, reject) => {
+        const waiter = {
+          resolve,
+          reject,
+          timer: setTimeout(() => {
+            idleWaiters.delete(waiter);
+            reject(new Error('Timed out waiting for Morpheus to become idle'));
+          }, timeoutMs),
+        };
+        waiter.timer.unref?.();
+        idleWaiters.add(waiter);
+      });
+    },
 
     async correct(payload) {
       const run = options.store.get(payload.objectiveRunId);
@@ -658,7 +747,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
       if (owner.currentPlanId) await options.runtime.cancelPlan({ planId: owner.currentPlanId });
       options.store.setActivePlan(payload.objectiveRunId, null);
       await transition(payload.objectiveRunId, 'cancelled');
-      active.delete(payload.objectiveRunId);
+      finishActive(payload.objectiveRunId);
       return { accepted: true };
     },
 
@@ -682,6 +771,18 @@ export function createMorpheusObjectiveOrchestrator(options: {
       for (const owner of active.values()) owner.controller.abort(new DOMException('Morpheus shutting down', 'AbortError'));
       active.clear();
       planOwners.clear();
+      for (const waiters of terminalWaiters.values()) {
+        for (const waiter of waiters) {
+          clearTimeout(waiter.timer);
+          waiter.reject(new Error('Morpheus is shutting down'));
+        }
+      }
+      terminalWaiters.clear();
+      for (const waiter of idleWaiters) {
+        clearTimeout(waiter.timer);
+        waiter.reject(new Error('Morpheus is shutting down'));
+      }
+      idleWaiters.clear();
     },
   };
 }

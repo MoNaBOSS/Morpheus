@@ -174,14 +174,13 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   const workflows = createMorpheusWorkflowService({
     store: workflowStore,
     profiles: agentProfiles,
-    runtime,
-    filesRoot,
+    workspaces,
   });
   const scheduleStore = createMorpheusScheduleStore({ userDataDir: options.userDataDir });
   const scheduler = createMorpheusScheduler({
     store: scheduleStore,
     workflows,
-    runtime,
+    objectives,
     recordActivity: (event, subjectId, details) => audit.recordControl({
       category: 'schedule', event, subjectId, details, appVersion: options.appVersion,
     }),

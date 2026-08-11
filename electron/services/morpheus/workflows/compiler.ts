@@ -9,11 +9,13 @@ import {
 } from '@shared/morpheus/execution-types';
 import {
   getMorpheusActionDescriptor,
+  isMorpheusWorkspaceWriteAction,
   requiresMandatoryConfirmation,
   type MorpheusRiskTier,
 } from '@shared/morpheus/actions/registry';
 import type { MorpheusAgentProfile } from '@shared/morpheus/agent-profile-types';
 import type { MorpheusWorkflow, WorkflowTriggerType } from '@shared/morpheus/workflow-types';
+import type { MorpheusWorkspaceAccess } from '@shared/morpheus/workspace-types';
 import { validateParams } from '@shared/morpheus/capabilities/params';
 import { buildPlanGraph } from '@shared/morpheus/plan/graph';
 
@@ -35,6 +37,7 @@ export type CompileWorkflowOptions = {
   origin: ExecutionOrigin;
   platform: string;
   filesRoot: string;
+  workspaceAccess?: MorpheusWorkspaceAccess;
   now?: () => Date;
   createId?: () => string;
 };
@@ -55,6 +58,10 @@ export function compileWorkflowPlan(options: CompileWorkflowOptions): ExecutionP
   const steps: ExecutionStep[] = workflow.steps.map((workflowStep) => {
     if (!allowed.has(workflowStep.capabilityId)) {
       throw new Error(`Agent Profile does not allow ${workflowStep.capabilityId}`);
+    }
+    if ((profile.workspace.access === 'read' || options.workspaceAccess === 'read')
+      && isMorpheusWorkspaceWriteAction(workflowStep.capabilityId)) {
+      throw new Error(`${workflowStep.capabilityId} requires a read-write workspace`);
     }
     const descriptor = getMorpheusActionDescriptor(workflowStep.capabilityId);
     if (RISK_ORDER[descriptor.riskTier] > RISK_ORDER[profile.permissionBoundary.maxRiskTier]) {
@@ -95,4 +102,3 @@ export function compileWorkflowPlan(options: CompileWorkflowOptions): ExecutionP
     plannedBy: 'deterministic',
   };
 }
-

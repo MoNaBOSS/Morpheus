@@ -56,3 +56,12 @@ export type AgentProfileSummary = Pick<
 export type AgentProfilesSnapshot = {
   profiles: readonly AgentProfileSummary[];
 };
+
+/** Renderer-editable fields. Main authors identity metadata and timestamps. */
+export type MorpheusAgentProfileDraft = Pick<
+  MorpheusAgentProfile,
+  'name' | 'description' | 'instructions' | 'planner' | 'workspace' | 'memory'
+  | 'permissionBoundary' | 'enabled'
+> & { profileId?: string };
+
+export type MorpheusAgentProfileResult = { profile: MorpheusAgentProfile | null };

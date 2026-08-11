@@ -66,6 +66,8 @@ import type {
   AddMorpheusWorkspacePayload,
   UpdateMorpheusWorkspacePayload,
 } from '@shared/morpheus/workspace-types';
+import type { MorpheusAgentProfileDraft } from '@shared/morpheus/agent-profile-types';
+import type { MorpheusWorkflowDraft } from '@shared/morpheus/workflow-types';
 import type { PermissionProfile } from '@shared/morpheus/permission-types';
 import { invokeHost } from './host-api-client';
 
@@ -491,9 +493,19 @@ export const hostApi = {
     ),
     agentProfiles: () => invokeHost('morpheus', 'agentProfiles'),
     agentProfile: (id: string) => invokeHost('morpheus', 'agentProfile', { id }),
+    saveAgentProfile: (payload: MorpheusAgentProfileDraft) => (
+      invokeHost('morpheus', 'saveAgentProfile', payload)
+    ),
+    resetAgentProfiles: () => invokeHost('morpheus', 'resetAgentProfiles'),
     workflows: () => invokeHost('morpheus', 'workflows'),
     workflow: (id: string) => invokeHost('morpheus', 'workflow', { id }),
-    prepareWorkflow: (workflowId: string) => invokeHost('morpheus', 'prepareWorkflow', { workflowId }),
+    saveWorkflow: (payload: MorpheusWorkflowDraft) => (
+      invokeHost('morpheus', 'saveWorkflow', payload)
+    ),
+    removeWorkflow: (id: string) => invokeHost('morpheus', 'removeWorkflow', { id }),
+    runWorkflow: (workflowId: string, workspaceId?: string) => (
+      invokeHost('morpheus', 'runWorkflow', { workflowId, ...(workspaceId ? { workspaceId } : {}) })
+    ),
     schedules: () => invokeHost('morpheus', 'schedules'),
     saveSchedule: (draft: import('@shared/morpheus/schedule-types').MorpheusScheduleDraft) => (
       invokeHost('morpheus', 'saveSchedule', draft)

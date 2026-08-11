@@ -7,10 +7,13 @@
  * rather than ignored, so a payload that smuggles an extra field fails loudly
  * instead of being silently dropped.
  */
+import { randomUUID } from 'node:crypto';
+
 import {
   MORPHEUS_MAX_AUDIT_PAGE,
   getMorpheusActionDescriptor,
   isMorpheusActionId,
+  type MorpheusRiskTier,
 } from '@shared/morpheus/actions/registry';
 import type {
   MorpheusAcknowledgement,
@@ -74,6 +77,17 @@ import {
   type UpdateMorpheusWorkspacePayload,
 } from '@shared/morpheus/workspace-types';
 import type { MorpheusWorkspaceStore } from './morpheus/workspaces/workspace-store';
+import {
+  MORPHEUS_AGENT_PROFILE_VERSION,
+  type AgentPlannerBinding,
+  type MorpheusAgentProfileDraft,
+} from '@shared/morpheus/agent-profile-types';
+import {
+  MORPHEUS_WORKFLOW_VERSION,
+  type MorpheusWorkflowDraft,
+  type MorpheusWorkflowStep,
+  type WorkflowTriggerType,
+} from '@shared/morpheus/workflow-types';
 
 export class MorpheusValidationError extends Error {
   constructor(message: string) {
@@ -201,6 +215,7 @@ export type CreateMorpheusApiOptions = {
   auditHealth: () => 'healthy' | 'degraded';
   /** Main-owned native picker. Renderer can never supply a directory path. */
   selectWorkspaceDirectory: () => Promise<string | null>;
+  now?: () => Date;
   /** Main-owned adapter boundary; raw provider output never enters here directly. */
   planner?: MorpheusPlanner;
 };
@@ -281,6 +296,185 @@ export function validateWorkspaceIdPayload(payload: unknown): MorpheusWorkspaceI
   return { workspaceId: record.workspaceId };
 }
 
+function boundedText(
+  value: unknown,
+  label: string,
+  maxLength: number,
+  allowEmpty = true,
+): string {
+  if (typeof value !== 'string' || value.length > maxLength || (!allowEmpty && !value.trim())) {
+    throw new MorpheusValidationError(`${label} is invalid`);
+  }
+  return value;
+}
+
+function validatePlannerBinding(value: unknown): AgentPlannerBinding {
+  const planner = requireRecord(value, 'Agent Profile planner');
+  const kind = planner.kind;
+  if (kind === 'auto' || kind === 'deterministic') {
+    assertNoUnknownKeys(planner, ['kind'], 'Agent Profile planner');
+    return { kind };
+  }
+  if (kind === 'openclaw') {
+    assertNoUnknownKeys(planner, ['kind', 'agentId', 'modelId'], 'Agent Profile planner');
+    const agentId = boundedText(planner.agentId, 'OpenClaw agentId', 128, false).trim();
+    const modelId = planner.modelId === undefined
+      ? undefined
+      : boundedText(planner.modelId, 'OpenClaw modelId', 200, false).trim();
+    return { kind, agentId, ...(modelId ? { modelId } : {}) };
+  }
+  if (kind === 'provider') {
+    assertNoUnknownKeys(planner, ['kind', 'providerId', 'modelId'], 'Agent Profile planner');
+    return {
+      kind,
+      providerId: boundedText(planner.providerId, 'providerId', 128, false).trim(),
+      modelId: boundedText(planner.modelId, 'modelId', 200, false).trim(),
+    };
+  }
+  throw new MorpheusValidationError('unknown Agent Profile planner kind');
+}
+
+export function validateAgentProfileDraft(payload: unknown): MorpheusAgentProfileDraft {
+  const record = requireRecord(payload, 'saveAgentProfile payload');
+  assertNoUnknownKeys(record, [
+    'profileId', 'name', 'description', 'instructions', 'planner', 'workspace',
+    'memory', 'permissionBoundary', 'enabled',
+  ], 'saveAgentProfile payload');
+  if (record.profileId !== undefined
+    && (typeof record.profileId !== 'string' || !/^[a-z][a-z0-9-]{1,63}$/.test(record.profileId))) {
+    throw new MorpheusValidationError('invalid Agent Profile id');
+  }
+  if (typeof record.enabled !== 'boolean') throw new MorpheusValidationError('Agent Profile enabled must be boolean');
+  const workspace = requireRecord(record.workspace, 'Agent Profile workspace');
+  assertNoUnknownKeys(workspace, ['rootKey', 'access'], 'Agent Profile workspace');
+  if (workspace.rootKey !== 'morpheusFiles' || !['read', 'read-write'].includes(String(workspace.access))) {
+    throw new MorpheusValidationError('invalid Agent Profile workspace policy');
+  }
+  const memory = requireRecord(record.memory, 'Agent Profile memory');
+  assertNoUnknownKeys(memory, ['mode', 'maxContextItems'], 'Agent Profile memory');
+  if (!['none', 'session', 'workspace'].includes(String(memory.mode))
+    || typeof memory.maxContextItems !== 'number' || !Number.isInteger(memory.maxContextItems)
+    || memory.maxContextItems < 0 || memory.maxContextItems > 200) {
+    throw new MorpheusValidationError('invalid Agent Profile memory policy');
+  }
+  const permission = requireRecord(record.permissionBoundary, 'Agent Profile permissionBoundary');
+  assertNoUnknownKeys(permission, ['capabilityIds', 'maxRiskTier'], 'Agent Profile permissionBoundary');
+  if (!Array.isArray(permission.capabilityIds) || permission.capabilityIds.length > 64
+    || permission.capabilityIds.some((id) => !isMorpheusActionId(id))) {
+    throw new MorpheusValidationError('invalid Agent Profile capability allowlist');
+  }
+  const capabilityIds = [...new Set(permission.capabilityIds)] as MorpheusAgentProfileDraft['permissionBoundary']['capabilityIds'];
+  if (capabilityIds.length !== permission.capabilityIds.length) {
+    throw new MorpheusValidationError('duplicate Agent Profile capability');
+  }
+  if (!['low', 'medium', 'high', 'critical'].includes(String(permission.maxRiskTier))) {
+    throw new MorpheusValidationError('invalid Agent Profile maximum risk');
+  }
+  return {
+    ...(record.profileId ? { profileId: record.profileId } : {}),
+    name: boundedText(record.name, 'Agent Profile name', 80, false).trim(),
+    description: boundedText(record.description, 'Agent Profile description', 300),
+    instructions: boundedText(record.instructions, 'Agent Profile instructions', 8_000),
+    planner: validatePlannerBinding(record.planner),
+    workspace: { rootKey: 'morpheusFiles', access: workspace.access as 'read' | 'read-write' },
+    memory: {
+      mode: memory.mode as 'none' | 'session' | 'workspace',
+      maxContextItems: memory.maxContextItems,
+    },
+    permissionBoundary: {
+      capabilityIds,
+      maxRiskTier: permission.maxRiskTier as MorpheusRiskTier,
+    },
+    enabled: record.enabled,
+  };
+}
+
+export function validateWorkflowDraft(payload: unknown): MorpheusWorkflowDraft {
+  const record = requireRecord(payload, 'saveWorkflow payload');
+  assertNoUnknownKeys(record, [
+    'workflowId', 'name', 'description', 'agentProfileId', 'steps',
+    'allowedTriggers', 'outputs', 'enabled',
+  ], 'saveWorkflow payload');
+  if (record.workflowId !== undefined
+    && (typeof record.workflowId !== 'string' || !/^[a-z][a-z0-9-]{1,63}$/.test(record.workflowId))) {
+    throw new MorpheusValidationError('invalid workflow id');
+  }
+  const agentProfileId = boundedText(record.agentProfileId, 'workflow Agent Profile id', 64, false).trim();
+  if (!/^[a-z][a-z0-9-]{1,63}$/.test(agentProfileId)) throw new MorpheusValidationError('invalid workflow Agent Profile id');
+  if (typeof record.enabled !== 'boolean') throw new MorpheusValidationError('workflow enabled must be boolean');
+  if (!Array.isArray(record.steps) || record.steps.length < 1 || record.steps.length > 32) {
+    throw new MorpheusValidationError('workflow must contain between 1 and 32 steps');
+  }
+  const stepIds = new Set<string>();
+  const steps: MorpheusWorkflowStep[] = record.steps.map((value, index) => {
+    const step = requireRecord(value, `workflow step ${index + 1}`);
+    assertNoUnknownKeys(step, [
+      'stepId', 'capabilityId', 'params', 'dependsOn', 'condition', 'summary',
+    ], `workflow step ${index + 1}`);
+    const stepId = boundedText(step.stepId, 'workflow step id', 64, false).trim();
+    if (!/^[a-z][a-z0-9-]{0,63}$/.test(stepId) || stepIds.has(stepId)) {
+      throw new MorpheusValidationError('invalid or duplicate workflow step id');
+    }
+    stepIds.add(stepId);
+    if (!isMorpheusActionId(step.capabilityId)) throw new MorpheusValidationError('unknown workflow capability');
+    const validated = validateParams(getMorpheusActionDescriptor(step.capabilityId).params, step.params);
+    if (!validated.ok) throw new MorpheusValidationError('invalid workflow capability parameters');
+    if (!Array.isArray(step.dependsOn) || step.dependsOn.some((id) => typeof id !== 'string')) {
+      throw new MorpheusValidationError('invalid workflow dependencies');
+    }
+    let condition: MorpheusWorkflowStep['condition'];
+    if (step.condition !== undefined) {
+      const rawCondition = requireRecord(step.condition, 'workflow condition');
+      if (rawCondition.type === 'always') {
+        assertNoUnknownKeys(rawCondition, ['type'], 'workflow condition');
+        condition = { type: 'always' };
+      } else if (rawCondition.type === 'step-succeeded') {
+        assertNoUnknownKeys(rawCondition, ['type', 'stepId'], 'workflow condition');
+        condition = {
+          type: 'step-succeeded',
+          stepId: boundedText(rawCondition.stepId, 'workflow condition step', 64, false),
+        };
+      } else {
+        throw new MorpheusValidationError('invalid workflow condition');
+      }
+    }
+    return {
+      stepId,
+      capabilityId: step.capabilityId,
+      params: validated.params as MorpheusActionParams,
+      dependsOn: [...step.dependsOn],
+      ...(condition ? { condition } : {}),
+      summary: boundedText(step.summary, 'workflow step summary', 160, false).trim(),
+    };
+  });
+  if (!Array.isArray(record.allowedTriggers) || record.allowedTriggers.length < 1) {
+    throw new MorpheusValidationError('workflow needs at least one trigger');
+  }
+  const allowedTriggers = [...new Set(record.allowedTriggers)] as WorkflowTriggerType[];
+  if (allowedTriggers.length !== record.allowedTriggers.length
+    || allowedTriggers.some((trigger) => !['manual', 'schedule', 'app-startup'].includes(String(trigger)))) {
+    throw new MorpheusValidationError('invalid workflow triggers');
+  }
+  const outputs = requireRecord(record.outputs, 'workflow outputs');
+  assertNoUnknownKeys(outputs, ['collectArtifacts', 'retainHistory'], 'workflow outputs');
+  if (typeof outputs.collectArtifacts !== 'boolean' || typeof outputs.retainHistory !== 'boolean') {
+    throw new MorpheusValidationError('invalid workflow output policy');
+  }
+  return {
+    ...(record.workflowId ? { workflowId: record.workflowId } : {}),
+    name: boundedText(record.name, 'workflow name', 100, false).trim(),
+    description: boundedText(record.description, 'workflow description', 400),
+    agentProfileId,
+    steps,
+    allowedTriggers,
+    outputs: {
+      collectArtifacts: outputs.collectArtifacts,
+      retainHistory: outputs.retainHistory,
+    },
+    enabled: record.enabled,
+  };
+}
+
 function validateObjectiveId(value: unknown): string {
   const id = requireNonEmptyString(value, 'objectiveRunId');
   if (id.length > 128 || !/^[A-Za-z0-9-]+$/.test(id)) throw new MorpheusValidationError('invalid objectiveRunId');
@@ -347,12 +541,15 @@ function validateIdPayload(payload: unknown, label: string): { id: string } {
   return { id };
 }
 
-function validatePrepareWorkflowPayload(payload: unknown): { workflowId: string } {
-  const record = requireRecord(payload, 'prepareWorkflow payload');
-  assertNoUnknownKeys(record, ['workflowId'], 'prepareWorkflow payload');
+function validateRunWorkflowPayload(payload: unknown): { workflowId: string; workspaceId?: string } {
+  const record = requireRecord(payload, 'runWorkflow payload');
+  assertNoUnknownKeys(record, ['workflowId', 'workspaceId'], 'runWorkflow payload');
   const workflowId = requireNonEmptyString(record.workflowId, 'workflowId');
   if (!/^[a-z][a-z0-9-]{1,63}$/.test(workflowId)) throw new MorpheusValidationError('invalid workflow id');
-  return { workflowId };
+  if (record.workspaceId !== undefined && !isMorpheusWorkspaceId(record.workspaceId)) {
+    throw new MorpheusValidationError('invalid workspaceId');
+  }
+  return { workflowId, ...(record.workspaceId ? { workspaceId: record.workspaceId } : {}) };
 }
 
 function validateScheduleTrigger(value: unknown): MorpheusScheduleTrigger {
@@ -386,14 +583,24 @@ function validateScheduleTrigger(value: unknown): MorpheusScheduleTrigger {
 
 export function validateScheduleDraft(payload: unknown): MorpheusScheduleDraft {
   const record = requireRecord(payload, 'saveSchedule payload');
-  assertNoUnknownKeys(record, ['scheduleId', 'name', 'workflowId', 'enabled', 'trigger'], 'saveSchedule payload');
+  assertNoUnknownKeys(record, ['scheduleId', 'name', 'workflowId', 'workspaceId', 'enabled', 'trigger'], 'saveSchedule payload');
   const name = requireNonEmptyString(record.name, 'name').trim();
   if (name.length > 100) throw new MorpheusValidationError('name is too long');
   const workflowId = requireNonEmptyString(record.workflowId, 'workflowId');
   if (!/^[a-z][a-z0-9-]{1,63}$/.test(workflowId)) throw new MorpheusValidationError('invalid workflowId');
   if (typeof record.enabled !== 'boolean') throw new MorpheusValidationError('enabled must be a boolean');
+  if (record.workspaceId !== undefined && !isMorpheusWorkspaceId(record.workspaceId)) {
+    throw new MorpheusValidationError('invalid workspaceId');
+  }
   const scheduleId = record.scheduleId === undefined ? undefined : requireNonEmptyString(record.scheduleId, 'scheduleId');
-  return { ...(scheduleId ? { scheduleId } : {}), name, workflowId, enabled: record.enabled, trigger: validateScheduleTrigger(record.trigger) };
+  return {
+    ...(scheduleId ? { scheduleId } : {}),
+    name,
+    workflowId,
+    ...(record.workspaceId ? { workspaceId: record.workspaceId } : {}),
+    enabled: record.enabled,
+    trigger: validateScheduleTrigger(record.trigger),
+  };
 }
 
 const AUDIT_PHASES = [
@@ -515,6 +722,7 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     runtime, grants, agentProfiles, workflows, scheduler, objectives, voice,
     workspaces, audit, filesRoot, appVersion, auditHealth,
   } = options;
+  const now = options.now ?? (() => new Date());
   const planner = options.planner ?? createDeterministicMorpheusPlanner();
   return {
     interpretCommand: async (payload) => {
@@ -659,22 +867,103 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     agentProfile: (payload) => ({
       profile: agentProfiles.get(validateIdPayload(payload, 'Agent Profile').id) ?? null,
     }),
+    saveAgentProfile: async (payload) => {
+      const draft = validateAgentProfileDraft(payload);
+      const profileId = draft.profileId ?? `agent-${randomUUID()}`;
+      const existing = agentProfiles.get(profileId);
+      const timestamp = now().toISOString();
+      await audit.recordControl({
+        category: 'agent-profile', event: 'save-requested', subjectId: profileId,
+        details: {
+          planner: draft.planner.kind,
+          capabilityCount: draft.permissionBoundary.capabilityIds.length,
+          workspaceAccess: draft.workspace.access,
+        },
+        appVersion,
+      });
+      return {
+        profile: agentProfiles.save({
+          v: MORPHEUS_AGENT_PROFILE_VERSION,
+          ...draft,
+          profileId,
+          builtIn: existing?.builtIn ?? false,
+          createdAt: existing?.createdAt ?? timestamp,
+          updatedAt: timestamp,
+        }),
+      };
+    },
+    resetAgentProfiles: async () => {
+      await audit.recordControl({
+        category: 'agent-profile', event: 'built-ins-reset', details: {}, appVersion,
+      });
+      return agentProfiles.resetBuiltIns();
+    },
     workflows: () => workflows.list(),
     workflow: (payload) => ({
       workflow: workflows.get(validateIdPayload(payload, 'workflow').id) ?? null,
     }),
-    prepareWorkflow: (payload) => {
-      const { workflowId } = validatePrepareWorkflowPayload(payload);
+    saveWorkflow: async (payload) => {
+      const draft = validateWorkflowDraft(payload);
+      if (!agentProfiles.get(draft.agentProfileId)) {
+        throw new MorpheusValidationError('Unknown workflow Agent Profile');
+      }
+      const workflowId = draft.workflowId ?? `workflow-${randomUUID()}`;
+      const existing = workflows.get(workflowId);
+      const timestamp = now().toISOString();
+      await audit.recordControl({
+        category: 'workflow', event: 'save-requested', subjectId: workflowId,
+        details: {
+          agentProfileId: draft.agentProfileId,
+          stepCount: draft.steps.length,
+          enabled: draft.enabled,
+        },
+        appVersion,
+      });
+      return {
+        workflow: workflows.save({
+          v: MORPHEUS_WORKFLOW_VERSION,
+          ...draft,
+          workflowId,
+          builtIn: existing?.builtIn ?? false,
+          createdAt: existing?.createdAt ?? timestamp,
+          updatedAt: timestamp,
+        }),
+      };
+    },
+    removeWorkflow: async (payload) => {
+      const id = validateIdPayload(payload, 'workflow').id;
+      const workflow = workflows.get(id);
+      if (!workflow) return { ok: false };
+      if (workflow.builtIn) throw new MorpheusValidationError('Built-in Morpheus workflows cannot be removed');
+      if (scheduler.list().schedules.some((schedule) => schedule.workflowId === id)) {
+        throw new MorpheusValidationError('Remove schedules that use this workflow first');
+      }
+      await audit.recordControl({
+        category: 'workflow', event: 'removal-requested', subjectId: id,
+        details: {}, appVersion,
+      });
+      return { ok: workflows.remove(id) };
+    },
+    runWorkflow: (payload) => {
+      const { workflowId, workspaceId } = validateRunWorkflowPayload(payload);
       const workflow = workflows.get(workflowId);
       if (!workflow) throw new MorpheusValidationError('Unknown Morpheus workflow');
-      return workflows.prepare({
+      const plan = workflows.prepare({
         workflowId,
         trigger: 'manual',
+        workspaceId,
         origin: {
           type: 'workflow',
           workflowId,
           agentProfileId: workflow.agentProfileId,
         },
+      });
+      return objectives.submitInternal({
+        objective: workflow.name,
+        origin: plan.origin,
+        workspaceId: plan.workspaceId,
+        agentProfileId: workflow.agentProfileId,
+        preparedPlan: plan,
       });
     },
     schedules: () => scheduler.list(),

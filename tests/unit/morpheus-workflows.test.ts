@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { MORPHEUS_STARTER_AGENT_PROFILES } from '../../shared/morpheus/agents/registry';
 import { MORPHEUS_STARTER_WORKFLOWS } from '../../shared/morpheus/workflows/registry';
@@ -9,6 +9,7 @@ import { compileWorkflowPlan } from '../../electron/services/morpheus/workflows/
 import { createMorpheusWorkflowStore, validateMorpheusWorkflow } from '../../electron/services/morpheus/workflows/workflow-store';
 import { createMorpheusAgentProfileStore } from '../../electron/services/morpheus/agents/profile-store';
 import { createMorpheusWorkflowService } from '../../electron/services/morpheus/workflows/workflow-service';
+import { createMorpheusWorkspaceStore } from '../../electron/services/morpheus/workspaces/workspace-store';
 
 const roots: string[] = [];
 afterEach(() => {
@@ -61,16 +62,15 @@ describe('Morpheus workflows', () => {
     expect(validateMorpheusWorkflow(workflow)).toBeNull();
   });
 
-  it('registers a manual workflow plan in Main rather than returning renderer-authored work', () => {
+  it('compiles a workspace-bound plan for the objective orchestrator without registering a bypass', () => {
     const root = temporaryRoot();
     const store = createMorpheusWorkflowStore({ userDataDir: root });
     const profiles = createMorpheusAgentProfileStore({ userDataDir: root });
-    const registerPlan = vi.fn((plan) => plan);
+    const workspaces = createMorpheusWorkspaceStore({ userDataDir: root });
     const service = createMorpheusWorkflowService({
       store,
       profiles,
-      runtime: { registerPlan } as never,
-      filesRoot: join(root, 'morpheus', 'files'),
+      workspaces,
       platform: 'win32',
     });
     const plan = service.prepare({
@@ -78,7 +78,7 @@ describe('Morpheus workflows', () => {
       trigger: 'manual',
       origin: { type: 'workflow', workflowId: 'system-brief', agentProfileId: 'general' },
     });
-    expect(registerPlan).toHaveBeenCalledOnce();
+    expect(plan.workspaceId).toBe('morpheus-files');
     expect(plan.steps).toHaveLength(2);
   });
 });

@@ -5,6 +5,13 @@ This is a status snapshot for continuing development on another machine. Read
 architecture, design, security, roadmap, and release documents before changing
 the runtime.
 
+> **Windows 1.0 campaign in progress:** development continues on
+> `windows-1.0-foundation` from the committed 0.5 checkpoint `d6a03f8`. The
+> provider-backed Objective Core, secure voice entry, and Main-owned workspace
+> registry are committed on that branch. Workflow and schedule execution is now
+> being converged on the same Objective Core; this document will be finalized
+> again before the Windows 1.0 packaging checkpoint.
+
 ## Current project status
 
 **Morpheus 0.5.0 Foundation is implemented, committed, packaged, and verified on

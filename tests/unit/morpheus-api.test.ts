@@ -12,8 +12,10 @@ import {
   validateSubmitObjectivePayload,
   validateTranscribeAudioPayload,
   validateAddWorkspacePayload,
+  validateAgentProfileDraft,
   validateUpdateWorkspacePayload,
   validateWorkspaceIdPayload,
+  validateWorkflowDraft,
   validateVoiceSettingsPatch,
 } from '@electron/services/morpheus-api';
 import type { MorpheusRuntime } from '@electron/services/morpheus';
@@ -49,6 +51,8 @@ function stubOptions(runtime = stubRuntime()) {
       list: vi.fn(() => ({ workflows: [] })),
       get: vi.fn(),
       prepare: vi.fn(),
+      save: vi.fn(),
+      remove: vi.fn(() => true),
     } as never,
     scheduler: {
       list: vi.fn(() => ({ schedules: [] })),
@@ -61,9 +65,12 @@ function stubOptions(runtime = stubRuntime()) {
     } as never,
     objectives: {
       submit: vi.fn(async () => ({ objectiveRunId: 'objective-1', accepted: true })),
+      submitInternal: vi.fn(async () => ({ objectiveRunId: 'objective-workflow', accepted: true })),
       snapshot: vi.fn(() => ({ activeObjectiveRunId: null, runOrder: [], runsById: {}, plansByObjectiveRunId: {} })),
       correct: vi.fn(async () => ({ accepted: true })),
       cancel: vi.fn(async () => ({ accepted: true })),
+      waitForTerminal: vi.fn(),
+      waitForIdle: vi.fn(),
     } as never,
     voice: {
       status: vi.fn(async () => ({
@@ -345,17 +352,21 @@ describe('createMorpheusApi', () => {
       'openFilesRoot',
       'openWorkspace',
       'permissionCenter',
-      'prepareWorkflow',
       'removeSchedule',
+      'removeWorkflow',
       'removeWorkspace',
       'requestAction',
+      'resetAgentProfiles',
       'resetPermissionPolicy',
       'respondPermission',
       'respondPlanPermission',
       'revokeAllSessionGrants',
       'revokeGrant',
       'runSchedule',
+      'runWorkflow',
+      'saveAgentProfile',
       'saveSchedule',
+      'saveWorkflow',
       'schedules',
       'setPermissionProfile',
       'submitObjective',
@@ -432,5 +443,76 @@ describe('createMorpheusApi', () => {
     createMorpheusApi(stubOptions(runtime)).systemInfo();
     expect(runtime.systemInfo).toHaveBeenCalledTimes(1);
     expect(runtime.requestAction).not.toHaveBeenCalled();
+  });
+
+  it('submits a Main-compiled workflow through the objective orchestrator', async () => {
+    const options = stubOptions();
+    const workflow = { workflowId: 'system-brief', name: 'System brief', agentProfileId: 'general' };
+    const plan = {
+      planId: 'workflow-plan',
+      workspaceId: 'workspace-client',
+      origin: { type: 'workflow', workflowId: 'system-brief', agentProfileId: 'general' },
+    };
+    options.workflows.get = vi.fn(() => workflow);
+    options.workflows.prepare = vi.fn(() => plan);
+    const api = createMorpheusApi(options);
+
+    await expect(api.runWorkflow({
+      workflowId: 'system-brief', workspaceId: 'workspace-client',
+    })).resolves.toEqual({ objectiveRunId: 'objective-workflow', accepted: true });
+    expect(options.objectives.submitInternal).toHaveBeenCalledWith({
+      objective: 'System brief',
+      origin: plan.origin,
+      workspaceId: 'workspace-client',
+      agentProfileId: 'general',
+      preparedPlan: plan,
+    });
+  });
+});
+
+describe('Agent Profile and workflow draft validation', () => {
+  const agentDraft = {
+    name: 'Research Agent',
+    description: 'Researches bounded objectives.',
+    instructions: 'Cite evidence.',
+    planner: { kind: 'auto' },
+    workspace: { rootKey: 'morpheusFiles', access: 'read' },
+    memory: { mode: 'workspace', maxContextItems: 20 },
+    permissionBoundary: {
+      capabilityIds: ['system.report', 'file.readText'],
+      maxRiskTier: 'medium',
+    },
+    enabled: true,
+  };
+
+  it('constructs a narrow Agent Profile draft and rejects hidden authority fields', () => {
+    expect(validateAgentProfileDraft(agentDraft)).toEqual(agentDraft);
+    expect(() => validateAgentProfileDraft({
+      ...agentDraft, apiKey: 'secret',
+    })).toThrow(/unsupported key: apiKey/);
+    expect(() => validateAgentProfileDraft({
+      ...agentDraft,
+      planner: { kind: 'provider', providerId: 'provider-1', modelId: 'model', apiKey: 'secret' },
+    })).toThrow(/unsupported key: apiKey/);
+  });
+
+  it('normalizes capability params and rejects executable-shaped workflow fields', () => {
+    const draft = {
+      name: 'Workspace report',
+      description: 'Reads a report.',
+      agentProfileId: 'research',
+      steps: [{
+        stepId: 'read', capabilityId: 'file.readText', params: { path: 'report.txt' },
+        dependsOn: [], summary: 'Read report',
+      }],
+      allowedTriggers: ['manual'],
+      outputs: { collectArtifacts: true, retainHistory: true },
+      enabled: true,
+    };
+    expect(validateWorkflowDraft(draft)).toEqual(draft);
+    expect(() => validateWorkflowDraft({
+      ...draft,
+      steps: [{ ...draft.steps[0], command: 'powershell', args: ['-c', 'whoami'] }],
+    })).toThrow(/unsupported key: command/);
   });
 });

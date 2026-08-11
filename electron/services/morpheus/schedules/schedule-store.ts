@@ -1,6 +1,10 @@
 import { join } from 'node:path';
 
 import type { MorpheusSchedule, SchedulesSnapshot } from '@shared/morpheus/schedule-types';
+import {
+  MORPHEUS_DEFAULT_WORKSPACE_ID,
+  isMorpheusWorkspaceId,
+} from '@shared/morpheus/workspace-types';
 import { readValidatedJson, writeJsonAtomically } from '../storage/atomic-json';
 
 type StoredSchedules = { v: 1; schedules: MorpheusSchedule[] };
@@ -25,6 +29,8 @@ export function validateMorpheusSchedule(value: unknown): MorpheusSchedule | nul
   if (typeof value.scheduleId !== 'string' || !/^[a-z0-9][a-z0-9-]{1,80}$/.test(value.scheduleId)) return null;
   if (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 100) return null;
   if (typeof value.workflowId !== 'string' || !/^[a-z][a-z0-9-]{1,63}$/.test(value.workflowId)) return null;
+  const workspaceId = value.workspaceId ?? MORPHEUS_DEFAULT_WORKSPACE_ID;
+  if (!isMorpheusWorkspaceId(workspaceId)) return null;
   if (typeof value.enabled !== 'boolean' || !validIso(value.createdAt) || !validIso(value.updatedAt)) return null;
   if (value.nextRunAt !== undefined && !validIso(value.nextRunAt)) return null;
   if (value.lastRunAt !== undefined && !validIso(value.lastRunAt)) return null;
@@ -37,7 +43,7 @@ export function validateMorpheusSchedule(value: unknown): MorpheusSchedule | nul
       || value.trigger.everyMinutes < 1 || value.trigger.everyMinutes > 43_200)) return null;
   if (value.trigger.type === 'daily'
     && (typeof value.trigger.localTime !== 'string' || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value.trigger.localTime))) return null;
-  return value as MorpheusSchedule;
+  return { ...value, workspaceId } as MorpheusSchedule;
 }
 
 function validateStored(value: unknown): StoredSchedules | null {
@@ -73,4 +79,3 @@ export function createMorpheusScheduleStore(options: { userDataDir: string }): M
     },
   };
 }
-

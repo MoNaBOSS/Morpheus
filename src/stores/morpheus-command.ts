@@ -64,8 +64,6 @@ export type MorpheusCommandState = {
     objective: string,
     originType?: SubmitMorpheusObjectivePayload['originType'],
   ) => Promise<void>;
-  /** Temporary 0.5 workflow bridge; interactive objectives never use this path. */
-  executePreparedPlan: (plan: ExecutionPlan) => Promise<void>;
   clearPlan: () => void;
   subscribeObjectives: () => () => void;
   loadObjectives: () => Promise<void>;
@@ -377,17 +375,6 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
         unsupported: { objective, reason: 'not-understood', supportedCapabilities: [] },
       });
       console.error('[morpheus] command failed', error);
-    }
-  },
-
-  executePreparedPlan: async (plan) => {
-    set({ plan, unsupported: null, interpreting: false, executing: true, planResult: null });
-    try {
-      const execution = await hostApi.morpheus.executePlan(plan.planId);
-      set({ planResult: execution, executing: false });
-    } catch (error) {
-      set({ executing: false });
-      console.error('[morpheus] workflow plan execution failed', error);
     }
   },
 

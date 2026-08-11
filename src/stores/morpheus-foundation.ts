@@ -2,9 +2,13 @@
 import { create } from 'zustand';
 
 import { hostApi } from '@/lib/host-api';
-import { useMorpheusCommandStore } from './morpheus-command';
-import type { AgentProfileSummary } from '@shared/morpheus/agent-profile-types';
-import type { MorpheusWorkflow } from '@shared/morpheus/workflow-types';
+import { useMorpheusWorkspacesStore } from './morpheus-workspaces';
+import type {
+  AgentProfileSummary,
+  MorpheusAgentProfile,
+  MorpheusAgentProfileDraft,
+} from '@shared/morpheus/agent-profile-types';
+import type { MorpheusWorkflow, MorpheusWorkflowDraft } from '@shared/morpheus/workflow-types';
 import type {
   MorpheusSchedule,
   MorpheusScheduleDraft,
@@ -25,6 +29,11 @@ export type MorpheusFoundationState = {
   loading: boolean;
   error: string | null;
   loadModels: () => Promise<void>;
+  getAgentProfile: (profileId: string) => Promise<MorpheusAgentProfile | null>;
+  saveAgentProfile: (draft: MorpheusAgentProfileDraft) => Promise<MorpheusAgentProfile | null>;
+  resetAgentProfiles: () => Promise<void>;
+  saveWorkflow: (draft: MorpheusWorkflowDraft) => Promise<MorpheusWorkflow | null>;
+  removeWorkflow: (workflowId: string) => Promise<void>;
   runWorkflow: (workflowId: string) => Promise<void>;
   saveSchedule: (draft: MorpheusScheduleDraft) => Promise<void>;
   removeSchedule: (scheduleId: string) => Promise<void>;
@@ -61,13 +70,58 @@ export const useMorpheusFoundationStore = create<MorpheusFoundationState>((set, 
     }
   },
 
+  getAgentProfile: async (profileId) => (
+    (await hostApi.morpheus.agentProfile(profileId)).profile
+  ),
+
+  saveAgentProfile: async (draft) => {
+    try {
+      const result = await hostApi.morpheus.saveAgentProfile(draft);
+      await get().loadModels();
+      return result.profile;
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Agent Profile could not be saved' });
+      return null;
+    }
+  },
+
+  resetAgentProfiles: async () => {
+    await hostApi.morpheus.resetAgentProfiles();
+    await get().loadModels();
+  },
+
+  saveWorkflow: async (draft) => {
+    try {
+      const result = await hostApi.morpheus.saveWorkflow(draft);
+      await get().loadModels();
+      return result.workflow;
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Workflow could not be saved' });
+      return null;
+    }
+  },
+
+  removeWorkflow: async (workflowId) => {
+    try {
+      await hostApi.morpheus.removeWorkflow(workflowId);
+      await get().loadModels();
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Workflow could not be removed' });
+    }
+  },
+
   runWorkflow: async (workflowId) => {
-    const plan = await hostApi.morpheus.prepareWorkflow(workflowId);
-    await useMorpheusCommandStore.getState().executePreparedPlan(plan);
+    const workspaceId = useMorpheusWorkspacesStore.getState().selectedWorkspaceId;
+    const result = await hostApi.morpheus.runWorkflow(workflowId, workspaceId);
+    if (!result.accepted) set({ error: result.message ?? 'Morpheus could not start this workflow' });
   },
 
   saveSchedule: async (draft) => {
-    await hostApi.morpheus.saveSchedule(draft);
+    await hostApi.morpheus.saveSchedule({
+      ...draft,
+      workspaceId: draft.workspaceId
+        ?? useMorpheusWorkspacesStore.getState().selectedWorkspaceId,
+    });
     set({ schedules: (await hostApi.morpheus.schedules()).schedules });
   },
 

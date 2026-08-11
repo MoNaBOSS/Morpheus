@@ -24,7 +24,6 @@ import type {
   MorpheusSystemInfo,
 } from '../morpheus/action-types';
 import type {
-  ExecutionPlan,
   ExecutionOriginType,
   ExecutionPlanStatus,
   ExecutionStepResult,
@@ -32,10 +31,13 @@ import type {
 } from '../morpheus/execution-types';
 import type {
   AgentProfilesSnapshot,
+  MorpheusAgentProfileDraft,
   MorpheusAgentProfile,
 } from '../morpheus/agent-profile-types';
 import type {
   MorpheusWorkflow,
+  MorpheusWorkflowDraft,
+  RunMorpheusWorkflowPayload,
   WorkflowsSnapshot,
 } from '../morpheus/workflow-types';
 import type {
@@ -894,7 +896,6 @@ export type MorpheusPlanExecutionResult = {
 export type MorpheusIdPayload = { id: string };
 export type MorpheusAgentProfileResult = { profile: MorpheusAgentProfile | null };
 export type MorpheusWorkflowResult = { workflow: MorpheusWorkflow | null };
-export type MorpheusPrepareWorkflowPayload = { workflowId: string };
 
 export type HostApiContract = {
   app: {
@@ -1153,10 +1154,14 @@ export type HostApiContract = {
     openWorkspace: (payload: MorpheusWorkspaceIdPayload) => PermissionAcknowledgement;
     agentProfiles: () => AgentProfilesSnapshot;
     agentProfile: (payload: MorpheusIdPayload) => MorpheusAgentProfileResult;
+    saveAgentProfile: (payload: MorpheusAgentProfileDraft) => MorpheusAgentProfileResult;
+    resetAgentProfiles: () => AgentProfilesSnapshot;
     workflows: () => WorkflowsSnapshot;
     workflow: (payload: MorpheusIdPayload) => MorpheusWorkflowResult;
-    /** Compiles a reusable workflow into a Main-held typed plan. */
-    prepareWorkflow: (payload: MorpheusPrepareWorkflowPayload) => ExecutionPlan;
+    saveWorkflow: (payload: MorpheusWorkflowDraft) => MorpheusWorkflowResult;
+    removeWorkflow: (payload: MorpheusIdPayload) => PermissionAcknowledgement;
+    /** Runs a Main-compiled workflow through the unified objective pipeline. */
+    runWorkflow: (payload: RunMorpheusWorkflowPayload) => SubmitMorpheusObjectiveResult;
     schedules: () => SchedulesSnapshot;
     saveSchedule: (payload: MorpheusScheduleDraft) => MorpheusSchedule;
     removeSchedule: (payload: MorpheusIdPayload) => PermissionAcknowledgement;

@@ -8,8 +8,9 @@ import {
   type MorpheusScheduleTrigger,
   type SchedulesSnapshot,
 } from '@shared/morpheus/schedule-types';
+import { MORPHEUS_DEFAULT_WORKSPACE_ID } from '@shared/morpheus/workspace-types';
 
-import type { MorpheusRuntime } from '../runtime';
+import type { MorpheusObjectiveOrchestrator } from '../core/objective-orchestrator';
 import type { MorpheusWorkflowService } from '../workflows/workflow-service';
 import type { MorpheusScheduleStore } from './schedule-store';
 
@@ -45,7 +46,7 @@ export function nextRunFor(trigger: MorpheusScheduleTrigger, now: Date, afterRun
 export function createMorpheusScheduler(options: {
   store: MorpheusScheduleStore;
   workflows: MorpheusWorkflowService;
-  runtime: MorpheusRuntime;
+  objectives: MorpheusObjectiveOrchestrator;
   now?: () => Date;
   createId?: () => string;
   setIntervalFn?: typeof setInterval;
@@ -86,18 +87,46 @@ export function createMorpheusScheduler(options: {
       const plan = options.workflows.prepare({
         workflowId: workflow.workflowId,
         trigger,
+        workspaceId: schedule.workspaceId,
         origin: {
           type: 'schedule', scheduleId, workflowId: workflow.workflowId,
           agentProfileId: workflow.agentProfileId,
         },
       });
-      const execution = await options.runtime.executePlan({ planId: plan.planId });
-      const status = execution.status === 'completed' ? 'completed' as const
-        : execution.status === 'partially-completed' ? 'partially-completed' as const
-          : execution.status === 'rejected' ? 'rejected' as const : 'failed' as const;
+      let submitted = await options.objectives.submitInternal({
+        objective: schedule.name,
+        origin: plan.origin,
+        workspaceId: schedule.workspaceId,
+        agentProfileId: workflow.agentProfileId,
+        preparedPlan: plan,
+      });
+      while (!submitted.accepted && submitted.objectiveRunId) {
+        // Scheduled work queues behind the one active sequential objective. It
+        // does not race another plan or get silently discarded as "busy".
+        await options.objectives.waitForIdle();
+        submitted = await options.objectives.submitInternal({
+          objective: schedule.name,
+          origin: plan.origin,
+          workspaceId: schedule.workspaceId,
+          agentProfileId: workflow.agentProfileId,
+          preparedPlan: plan,
+        });
+      }
+      if (!submitted.accepted) throw new Error(submitted.message ?? 'Scheduled objective was rejected');
+      const objective = await options.objectives.waitForTerminal(submitted.objectiveRunId);
+      const observationStatus = objective.observations.at(-1)?.status;
+      const status = objective.state === 'complete'
+        ? observationStatus === 'partially-completed' ? 'partially-completed' as const : 'completed' as const
+        : objective.state === 'needs-clarification' ? 'rejected' as const
+          : 'failed' as const;
       const result: MorpheusScheduleRunResult = {
-        scheduleId, planId: plan.planId, status,
-        ...(execution.rejection ? { error: execution.rejection.message } : {}),
+        scheduleId,
+        objectiveRunId: submitted.objectiveRunId,
+        planId: objective.planIds.at(-1) ?? plan.planId,
+        status,
+        ...(objective.error?.message
+          ? { error: objective.error.message }
+          : objective.clarification ? { error: objective.clarification } : {}),
       };
       persistOutcome(schedule, result);
       await options.recordActivity?.('run-finished', scheduleId, { workflowId: schedule.workflowId, status });
@@ -124,6 +153,7 @@ export function createMorpheusScheduler(options: {
         v: MORPHEUS_SCHEDULE_VERSION,
         scheduleId: existing?.scheduleId ?? createId(),
         name: draft.name.trim(), workflowId: draft.workflowId, enabled: draft.enabled,
+        workspaceId: draft.workspaceId ?? existing?.workspaceId ?? MORPHEUS_DEFAULT_WORKSPACE_ID,
         trigger: structuredClone(draft.trigger),
         createdAt: existing?.createdAt ?? stamp.toISOString(), updatedAt: stamp.toISOString(),
         nextRunAt: draft.enabled ? nextRunFor(draft.trigger, stamp) : undefined,

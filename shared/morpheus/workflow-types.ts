@@ -41,3 +41,16 @@ export type MorpheusWorkflow = {
 
 export type WorkflowsSnapshot = { workflows: readonly MorpheusWorkflow[] };
 
+export type RunMorpheusWorkflowPayload = {
+  workflowId: string;
+  workspaceId?: string;
+};
+
+/** Renderer-editable workflow definition. Main authors ids and timestamps. */
+export type MorpheusWorkflowDraft = Pick<
+  MorpheusWorkflow,
+  'name' | 'description' | 'agentProfileId' | 'steps' | 'allowedTriggers'
+  | 'outputs' | 'enabled'
+> & { workflowId?: string };
+
+export type MorpheusWorkflowResult = { workflow: MorpheusWorkflow | null };

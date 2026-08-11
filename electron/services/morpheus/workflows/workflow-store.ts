@@ -15,6 +15,7 @@ export interface MorpheusWorkflowStore {
   list(): WorkflowsSnapshot;
   get(workflowId: string): MorpheusWorkflow | undefined;
   save(workflow: MorpheusWorkflow): MorpheusWorkflow;
+  remove(workflowId: string): boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -91,8 +92,27 @@ export function createMorpheusWorkflowStore(options: { userDataDir: string }): M
       const existing = byId.get(valid.workflowId);
       const next = { ...structuredClone(valid), builtIn: existing?.builtIn ?? false, createdAt: existing?.createdAt ?? valid.createdAt };
       byId.set(next.workflowId, next);
-      flush();
+      try {
+        flush();
+      } catch (error) {
+        if (existing) byId.set(existing.workflowId, existing);
+        else byId.delete(next.workflowId);
+        throw error;
+      }
       return structuredClone(next);
+    },
+    remove(workflowId) {
+      const existing = byId.get(workflowId);
+      if (!existing) return false;
+      if (existing.builtIn) throw new Error('Built-in Morpheus workflows cannot be removed');
+      byId.delete(workflowId);
+      try {
+        flush();
+      } catch (error) {
+        byId.set(workflowId, existing);
+        throw error;
+      }
+      return true;
     },
   };
 }

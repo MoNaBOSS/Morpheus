@@ -129,11 +129,19 @@ These remain configuration over the one core, never separate engines.
 
 - Agent Profiles select instructions, planner/provider preference, capabilities,
   workspace/memory policy and execution limits. They can narrow authority only.
-- Workflows compile validated inputs and steps to the same `ExecutionPlan`.
-- Schedules submit objectives/workflows to the same orchestrator with a distinct
-  schedule origin and policy scope.
+- Workflows are validated and compiled in Main to the same `ExecutionPlan`, then
+  submitted through the Objective Orchestrator. Renderer never submits a plan.
+- Schedules resolve their logical workspace, compile the referenced workflow in
+  Main, and submit it to the same Objective Orchestrator with a distinct schedule
+  origin. Scheduled runs wait for the active objective to finish so Windows 1.0
+  retains the single sequential execution lane.
+- Objective history, permission evaluation, runtime observation, artifacts and
+  audit ordering are therefore identical for commands, workflows and schedules.
 
-All user-authored definitions are validated in Main and written atomically.
+All user-authored definitions are exhaustively validated in Main, receive
+Main-authored ids and timestamps, and are written atomically. Store failures roll
+back in-memory state. Definitions may narrow capability/workspace authority but
+cannot create grants or bypass policy.
 
 ## Voice
 

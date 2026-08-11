@@ -116,12 +116,29 @@ export function createMorpheusAgentProfileStore(options: { userDataDir: string }
         createdAt: existing?.createdAt ?? valid.createdAt,
       };
       byId.set(next.profileId, next);
-      flush();
+      try {
+        flush();
+      } catch (error) {
+        if (existing) byId.set(existing.profileId, existing);
+        else byId.delete(next.profileId);
+        throw error;
+      }
       return copyProfile(next);
     },
     resetBuiltIns() {
+      const previous = new Map(
+        MORPHEUS_STARTER_AGENT_PROFILES.map((starter) => [starter.profileId, byId.get(starter.profileId)]),
+      );
       for (const starter of MORPHEUS_STARTER_AGENT_PROFILES) byId.set(starter.profileId, copyProfile(starter));
-      flush();
+      try {
+        flush();
+      } catch (error) {
+        for (const [profileId, profile] of previous) {
+          if (profile) byId.set(profileId, profile);
+          else byId.delete(profileId);
+        }
+        throw error;
+      }
       return snapshot();
     },
   };

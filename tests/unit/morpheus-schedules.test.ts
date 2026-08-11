@@ -37,15 +37,24 @@ describe('Morpheus scheduling', () => {
 
   it('runs a workflow through a schedule-specific origin and persists the real outcome', async () => {
     const store = createMorpheusScheduleStore({ userDataDir: root() });
-    const prepare = vi.fn(() => ({ planId: 'plan-scheduled' }));
-    const executePlan = vi.fn(async () => ({ planId: 'plan-scheduled', status: 'completed' as const, steps: [] }));
+    const origin = {
+      type: 'schedule' as const, scheduleId: 'schedule-1',
+      workflowId: 'system-brief', agentProfileId: 'general',
+    };
+    const prepare = vi.fn(() => ({ planId: 'plan-scheduled', origin, workspaceId: 'morpheus-files' }));
+    const submitInternal = vi.fn(async () => ({ objectiveRunId: 'objective-scheduled', accepted: true }));
+    const waitForTerminal = vi.fn(async () => ({
+      state: 'complete', planIds: ['plan-scheduled'], observations: [{ status: 'completed' }],
+    }));
     const scheduler = createMorpheusScheduler({
       store,
       workflows: {
         get: vi.fn(() => ({ workflowId: 'system-brief', agentProfileId: 'general' })),
         prepare,
       } as never,
-      runtime: { executePlan } as never,
+      objectives: {
+        submitInternal, waitForTerminal, waitForIdle: vi.fn(async () => undefined),
+      } as never,
       now: () => new Date('2026-08-10T10:00:00.000Z'),
       createId: () => 'schedule-1',
     });
@@ -58,30 +67,46 @@ describe('Morpheus scheduling', () => {
     expect(prepare).toHaveBeenCalledWith({
       workflowId: 'system-brief',
       trigger: 'schedule',
-      origin: {
-        type: 'schedule', scheduleId: 'schedule-1', workflowId: 'system-brief', agentProfileId: 'general',
-      },
+      workspaceId: 'morpheus-files',
+      origin,
     });
-    expect(executePlan).toHaveBeenCalledWith({ planId: 'plan-scheduled' });
+    expect(submitInternal).toHaveBeenCalledWith(expect.objectContaining({
+      objective: 'System brief every hour',
+      workspaceId: 'morpheus-files',
+      preparedPlan: expect.objectContaining({ planId: 'plan-scheduled' }),
+    }));
+    expect(waitForTerminal).toHaveBeenCalledWith('objective-scheduled');
     expect(store.get('schedule-1')?.lastStatus).toBe('completed');
   });
 
   it('runs an app-startup schedule at most once per application session', async () => {
     const store = createMorpheusScheduleStore({ userDataDir: root() });
-    const executePlan = vi.fn(async () => ({ planId: 'p', status: 'completed' as const, steps: [] }));
+    const submitInternal = vi.fn(async () => ({ objectiveRunId: 'objective-startup', accepted: true }));
     const scheduler = createMorpheusScheduler({
       store,
       workflows: {
         get: vi.fn(() => ({ workflowId: 'system-brief', agentProfileId: 'general' })),
-        prepare: vi.fn(() => ({ planId: 'p' })),
+        prepare: vi.fn(() => ({
+          planId: 'p', workspaceId: 'morpheus-files',
+          origin: {
+            type: 'schedule', scheduleId: 'startup-1',
+            workflowId: 'system-brief', agentProfileId: 'general',
+          },
+        })),
       } as never,
-      runtime: { executePlan } as never,
+      objectives: {
+        submitInternal,
+        waitForTerminal: vi.fn(async () => ({
+          state: 'complete', planIds: ['p'], observations: [{ status: 'completed' }],
+        })),
+        waitForIdle: vi.fn(async () => undefined),
+      } as never,
       now: () => new Date('2026-08-10T10:00:00.000Z'),
       createId: () => 'startup-1',
     });
     scheduler.save({ name: 'Startup brief', workflowId: 'system-brief', enabled: true, trigger: { type: 'app-startup' } });
     await scheduler.tick();
     await scheduler.tick();
-    expect(executePlan).toHaveBeenCalledOnce();
+    expect(submitInternal).toHaveBeenCalledOnce();
   });
 });

@@ -20,6 +20,7 @@ export type MorpheusSchedule = {
   scheduleId: string;
   name: string;
   workflowId: string;
+  workspaceId: string;
   enabled: boolean;
   trigger: MorpheusScheduleTrigger;
   createdAt: string;
@@ -32,6 +33,7 @@ export type MorpheusSchedule = {
 
 export type MorpheusScheduleDraft = Pick<MorpheusSchedule, 'name' | 'workflowId' | 'enabled' | 'trigger'> & {
   scheduleId?: string;
+  workspaceId?: string;
 };
 
 export type SchedulesSnapshot = { schedules: readonly MorpheusSchedule[] };
@@ -39,7 +41,7 @@ export type SchedulesSnapshot = { schedules: readonly MorpheusSchedule[] };
 export type MorpheusScheduleRunResult = {
   scheduleId: string;
   status: MorpheusScheduleRunStatus;
+  objectiveRunId?: string;
   planId?: string;
   error?: string;
 };
-
