@@ -140,6 +140,19 @@ describe('no visible ClawX text in the rendered UI', () => {
     }
   });
 
+  it('describes Morpheus as an execution platform rather than an OpenClaw GUI', () => {
+    for (const lang of ['en', 'zh', 'ja', 'ru']) {
+      const settings = read(`shared/i18n/locales/${lang}/settings.json`);
+      const setup = read(`shared/i18n/locales/${lang}/setup.json`);
+      expect(settings).not.toMatch(/Graphical AI Assistant|图形化 AI 助手|グラフィカル AI アシスタント|Графический AI-ассистент/);
+      expect(setup).not.toMatch(/graphical interface for OpenClaw|OpenClaw 的图形界面|OpenClawのグラフィカルインターフェース|графический интерфейс для OpenClaw/i);
+    }
+
+    const englishSettings = read('shared/i18n/locales/en/settings.json');
+    expect(englishSettings).toContain('AI Execution Platform');
+    expect(englishSettings).toContain('OpenClaw provides the embedded Chat runtime');
+  });
+
   it('has no ClawX in rendered JSX text or alt attributes', () => {
     const offenders: string[] = [];
     for (const file of collect(join(REPO_ROOT, 'src'))) {

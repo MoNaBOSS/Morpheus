@@ -78,6 +78,8 @@ export function Settings() {
 
   const { status: gatewayStatus, restart: restartGateway } = useGatewayStore();
   const currentVersion = useUpdateStore((state) => state.currentVersion);
+  const updateStatus = useUpdateStore((state) => state.status);
+  const updatesConfigured = updateStatus !== 'not-configured';
   const [controlUiInfo, setControlUiInfo] = useState<ControlUiInfo | null>(null);
   const [openclawCliCommand, setOpenclawCliCommand] = useState('');
   const [openclawCliError, setOpenclawCliError] = useState<string | null>(null);
@@ -1089,9 +1091,16 @@ export function Settings() {
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="text-sm font-medium text-foreground">{t('updates.autoCheck')}</Label>
-                  <p className="text-meta text-muted-foreground mt-1">{t('updates.autoCheckDesc')}</p>
+                  <p className="text-meta text-muted-foreground mt-1">
+                    {t(updatesConfigured ? 'updates.autoCheckDesc' : 'updates.autoCheckUnavailable')}
+                  </p>
                 </div>
-                <Switch checked={autoCheckUpdate} onCheckedChange={setAutoCheckUpdate} />
+                <Switch
+                  data-testid="update-auto-check-toggle"
+                  checked={updatesConfigured && autoCheckUpdate}
+                  disabled={!updatesConfigured}
+                  onCheckedChange={setAutoCheckUpdate}
+                />
               </div>
             </div>
           </div>

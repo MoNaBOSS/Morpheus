@@ -162,6 +162,7 @@
     "description": "保持 Morpheus 最新",
     "autoCheck": "自动检查更新",
     "autoCheckDesc": "启动时检查更新",
+    "autoCheckUnavailable": "配置 Morpheus 更新服务后，启动时自动检查功能才可用。",
     "autoDownload": "更新提示",
     "autoDownloadDesc": "发现新版本时显示通知；仅在您选择更新后才下载",
     "status": {
@@ -172,6 +173,7 @@
       "autoInstalling": "将在 {{seconds}} 秒后重启并安装更新...",
       "failed": "检查更新失败",
       "latest": "您已拥有最新版本",
+      "notConfigured": "此版本尚未配置更新服务",
       "check": "检查更新以获取最新功能"
     },
     "action": {
@@ -182,6 +184,7 @@
       "cancelAutoInstall": "取消",
       "later": "稍后",
       "retry": "重试",
+      "notConfigured": "未配置",
       "check": "检查更新"
     },
     "currentVersion": "当前版本",
@@ -194,7 +197,8 @@
       "downloadedDescription": "v{{version}} 已下载完成。重启即可安装。",
       "unknownVersion": "新版本"
     },
-    "help": "Morpheus 会自动检查更新，并在下载或安装前提示您确认。"
+    "help": "Morpheus 会自动检查更新，并在下载或安装前提示您确认。",
+    "helpNotConfigured": "此版本未配置 Morpheus 更新端点，也不会联系任何更新服务。"
   },
   "advanced": {
     "title": "高级",
@@ -261,8 +265,8 @@
   "about": {
     "title": "关于",
     "appName": "Morpheus",
-    "tagline": "图形化 AI 助手",
-    "basedOn": "基于 OpenClaw",
+    "tagline": "AI 执行平台",
+    "basedOn": "Morpheus 负责规划、权限、能力和审计；OpenClaw 提供内嵌的聊天运行时。",
     "version": "版本 {{version}}",
     "docs": "官网",
     "github": "GitHub",

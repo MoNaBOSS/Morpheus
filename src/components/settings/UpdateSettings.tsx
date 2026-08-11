@@ -3,7 +3,7 @@
  * Displays update status and allows manual update checking/installation
  */
 import { useEffect, useCallback } from 'react';
-import { Download, RefreshCw, Loader2, Rocket, XCircle } from 'lucide-react';
+import { CircleOff, Download, RefreshCw, Loader2, Rocket, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useUpdateStore } from '@/stores/update';
@@ -56,6 +56,8 @@ export function UpdateSettings() {
         return <Rocket className="h-4 w-4 text-primary" />;
       case 'error':
         return <RefreshCw className="h-4 w-4 text-destructive" />;
+      case 'not-configured':
+        return <CircleOff className="h-4 w-4 text-muted-foreground" />;
       default:
         return <RefreshCw className="h-4 w-4 text-muted-foreground" />;
     }
@@ -78,6 +80,8 @@ export function UpdateSettings() {
         return error || t('updates.status.failed');
       case 'not-available':
         return t('updates.status.latest');
+      case 'not-configured':
+        return t('updates.status.notConfigured');
       default:
         return t('updates.status.check');
     }
@@ -128,6 +132,13 @@ export function UpdateSettings() {
             {t('updates.action.retry')}
           </Button>
         );
+      case 'not-configured':
+        return (
+          <Button data-testid="update-not-configured-action" disabled variant="outline" size="sm">
+            <CircleOff className="h-4 w-4 mr-2" />
+            {t('updates.action.notConfigured')}
+          </Button>
+        );
       default:
         return (
           <Button onClick={handleCheckForUpdates} variant="outline" size="sm">
@@ -160,7 +171,9 @@ export function UpdateSettings() {
 
       {/* Status */}
       <div className="flex items-center justify-between py-3 border-t border-b">
-        <p className="text-sm text-muted-foreground">{renderStatusText()}</p>
+        <p data-testid="update-status-text" className="text-sm text-muted-foreground">
+          {renderStatusText()}
+        </p>
         {renderAction()}
       </div>
 
@@ -210,7 +223,7 @@ export function UpdateSettings() {
 
       {/* Help Text */}
       <p className="text-xs text-muted-foreground">
-        {t('updates.help')}
+        {t(status === 'not-configured' ? 'updates.helpNotConfigured' : 'updates.help')}
       </p>
     </div>
   );

@@ -2,7 +2,7 @@
     "steps": {
         "welcome": {
             "title": "Welcome to Morpheus",
-            "description": "Your AI assistant is ready to be configured"
+            "description": "Your AI execution platform is ready to be configured"
         },
         "runtime": {
             "title": "Environment Check",
@@ -27,7 +27,7 @@
     },
     "welcome": {
         "title": "Welcome to Morpheus",
-        "description": "Morpheus is a graphical interface for OpenClaw, making it easy to use AI assistants across your favorite messaging platforms.",
+        "description": "Morpheus turns objectives into typed, policy-checked execution while embedding OpenClaw for Chat.",
         "features": {
             "noCommand": "Zero command-line required",
             "modernUI": "Modern, beautiful interface",
@@ -87,7 +87,7 @@
     },
     "channel": {
         "title": "Connect a Messaging Channel",
-        "subtitle": "Choose a platform to connect your AI assistant to. You can add more channels later in Settings.",
+        "subtitle": "Choose a messaging platform for the embedded Chat runtime. You can add more channels later in Settings.",
         "configure": "Configure {{name}}",
         "howTo": "How to connect:",
         "viewDocs": "View docs",
@@ -98,7 +98,7 @@
     },
     "installing": {
         "title": "Installing Essential Components",
-        "subtitle": "Setting up the tools needed to power your AI assistant",
+        "subtitle": "Setting up the runtime components Morpheus uses for planning, execution, and Chat",
         "progress": "Progress",
         "status": {
             "pending": "Pending",
@@ -113,7 +113,7 @@
     },
     "complete": {
         "title": "Setup Complete!",
-        "subtitle": "Morpheus is configured and ready to use. You can now start chatting with your AI assistant.",
+        "subtitle": "Morpheus is ready. Open the Command Center to execute an objective, or use Chat to think with the embedded agent runtime.",
         "provider": "AI Provider",
         "components": "Components",
         "gateway": "Gateway",
@@ -146,7 +146,7 @@
         },
         "terminal": {
             "name": "Terminal",
-            "description": "Shell command execution"
+            "description": "Command-line support used by compatible skills"
         }
     }
 }

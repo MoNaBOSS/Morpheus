@@ -99,7 +99,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 
       // Auto-check for updates on startup (respects user toggle)
       const autoCheckUpdate = useSettingsStore.getState().autoCheckUpdate;
-      if (autoCheckUpdate) {
+      if (autoCheckUpdate && get().status !== 'not-configured') {
         setTimeout(() => {
           get().checkForUpdates().catch(() => {});
         }, 10000);

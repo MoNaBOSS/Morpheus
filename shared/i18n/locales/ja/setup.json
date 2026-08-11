@@ -2,7 +2,7 @@
     "steps": {
         "welcome": {
             "title": "Morpheusへようこそ",
-            "description": "AIアシスタントの設定準備が整いました"
+            "description": "AI 実行プラットフォームの設定準備が整いました"
         },
         "runtime": {
             "title": "環境チェック",
@@ -27,7 +27,7 @@
     },
     "welcome": {
         "title": "Morpheusへようこそ",
-        "description": "MorpheusはOpenClawのグラフィカルインターフェースで、お気に入りのメッセージングプラットフォームでAIアシスタントを簡単に使用できます。",
+        "description": "Morpheus は目標を型付けされたポリシー検証済みの実行へ変換し、Chat 用に OpenClaw を組み込みます。",
         "features": {
             "noCommand": "コマンドライン不要",
             "modernUI": "モダンで美しいインターフェース",
@@ -87,7 +87,7 @@
     },
     "channel": {
         "title": "メッセージングチャンネルを接続",
-        "subtitle": "AIアシスタントを接続するプラットフォームを選択してください。チャンネルは後で設定で追加できます。",
+        "subtitle": "組み込み Chat ランタイム用のメッセージングプラットフォームを選択してください。チャンネルは後で設定から追加できます。",
         "configure": "{{name}} を構成",
         "howTo": "接続方法：",
         "viewDocs": "ドキュメントを表示",
@@ -98,7 +98,7 @@
     },
     "installing": {
         "title": "必須コンポーネントをインストール中",
-        "subtitle": "AIアシスタントに必要なツールをセットアップしています",
+        "subtitle": "Morpheus が計画、実行、Chat に使用するランタイムコンポーネントを設定しています",
         "progress": "進捗",
         "status": {
             "pending": "待機中",
@@ -113,7 +113,7 @@
     },
     "complete": {
         "title": "セットアップ完了！",
-        "subtitle": "Morpheusの構成が完了し、使用準備が整いました。AIアシスタントとのチャットを開始できます。",
+        "subtitle": "Morpheus の準備が整いました。コマンドセンターで目標を実行するか、Chat で組み込みエージェントランタイムと対話できます。",
         "provider": "AI プロバイダー",
         "components": "コンポーネント",
         "gateway": "ゲートウェイ",
@@ -146,7 +146,7 @@
         },
         "terminal": {
             "name": "ターミナル",
-            "description": "シェルコマンドの実行"
+            "description": "対応スキルが使用するコマンドラインサポート"
         }
     }
 }

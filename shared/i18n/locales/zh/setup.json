@@ -2,7 +2,7 @@
     "steps": {
         "welcome": {
             "title": "欢迎使用 Morpheus",
-            "description": "您的 AI 助手已准备好进行配置"
+            "description": "您的 AI 执行平台已准备好进行配置"
         },
         "runtime": {
             "title": "环境检查",
@@ -27,7 +27,7 @@
     },
     "welcome": {
         "title": "欢迎使用 Morpheus",
-        "description": "Morpheus 是 OpenClaw 的图形界面，让您可以在喜爱的消息平台上轻松使用 AI 助手。",
+        "description": "Morpheus 将目标转化为经过类型约束和策略检查的执行，同时内嵌 OpenClaw 作为聊天运行时。",
         "features": {
             "noCommand": "无需命令行",
             "modernUI": "现代美观的界面",
@@ -87,7 +87,7 @@
     },
     "channel": {
         "title": "连接消息渠道",
-        "subtitle": "选择要连接 AI 助手的平台。您可以稍后在设置中添加更多渠道。",
+        "subtitle": "为内嵌的聊天运行时选择消息平台。您可以稍后在设置中添加更多渠道。",
         "configure": "配置 {{name}}",
         "howTo": "如何连接：",
         "viewDocs": "查看文档",
@@ -98,7 +98,7 @@
     },
     "installing": {
         "title": "安装必要组件",
-        "subtitle": "正在设置 AI 助手所需的工具",
+        "subtitle": "正在设置 Morpheus 用于规划、执行和聊天的运行时组件",
         "progress": "进度",
         "status": {
             "pending": "等待中",
@@ -113,7 +113,7 @@
     },
     "complete": {
         "title": "设置完成！",
-        "subtitle": "Morpheus 已配置并准备就绪。您现在可以开始与您的 AI 助手聊天了。",
+        "subtitle": "Morpheus 已准备就绪。打开指挥中心执行目标，或使用聊天功能与内嵌的智能体运行时共同思考。",
         "provider": "AI 提供商",
         "components": "组件",
         "gateway": "网关",
@@ -146,7 +146,7 @@
         },
         "terminal": {
             "name": "终端",
-            "description": "Shell 命令执行"
+            "description": "供兼容技能使用的命令行支持"
         }
     }
 }
