@@ -41,27 +41,18 @@ sequence, and three deterministic Windows capabilities.
 - OpenClaw gateway, chat, Agents, Skills, Channels, Cron, and provider/model
   surfaces remain separate and functional.
 
-## Next
+## In progress
 
-### 0.6 — Provider-backed planning
+### Windows 1.0 Foundation
 
-Add provider- and OpenClaw-backed `MorpheusPlanner` adapters that emit the same
-validated `ExecutionPlan` as the deterministic planner. Add ambiguity handling,
-plan explanation, and planner evaluation fixtures without moving execution
-authority out of Main.
+One coherent campaign: centralized objective orchestration, provider-backed
+planning, structured observation/replanning, bounded context/memory, first-class
+voice, usable Agent Profiles/workflows/schedules, workspace/artifact lineage,
+flagship Quick Command, voice-first Command Center, Windows background behavior,
+security hardening and packaged end-to-end verification.
 
-### 0.7 — System authoring
-
-Validated user-authored Agent Profiles and workflows; parameterised workflow
-inputs; artifact lineage; run retry/resume; richer schedule management. This is
-an editing surface over the existing contracts, not a second runtime or a giant
-no-code editor.
-
-### 0.8 — Platform adapters and distribution
-
-Implement macOS and Linux capability adapters, replace the inherited macOS icon,
-verify native packaging/signing, and establish a real Morpheus update endpoint.
-Platform-neutral contracts remain shared; platform operations stay isolated.
+This is deliberately not four disconnected 0.x mini-products. It reuses the 0.5
+executor and trust chassis and judges completion by real packaged user journeys.
 
 ## Later
 

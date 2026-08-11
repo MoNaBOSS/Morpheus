@@ -18,7 +18,8 @@ and permanently recorded.
 Every Morpheus command follows one path:
 
 ```
-User objective
+Voice / text / Quick Command / Chat execution
+  → objective + bounded context
   → intent interpretation
   → typed execution plan
   → policy evaluation
@@ -26,6 +27,8 @@ User objective
   → deterministic capability execution
   → live events
   → results and artifacts
+  → structured observation and bounded replanning when needed
+  → optional spoken response and useful context
   → append-only audit history
 ```
 
@@ -46,10 +49,11 @@ policy engine, or the runtime.
 
 ## Chat is an interface, not the product
 
-Chat is one way to reach Morpheus. It is not what Morpheus *is*. The Command Center —
-command in, plan out, execution observed — is the primary surface. Chat remains fully
-functional and is a first-class navigation destination, but it does not define the
-product.
+Chat is one way to reach Morpheus. It is not what Morpheus *is*. Voice, Quick
+Command, Command Center and explicit Chat execution enter the same Morpheus Core.
+The Command Center — objective in, understanding/planning/execution observed — is
+the primary surface. Ordinary OpenClaw Chat remains fully functional and a
+first-class navigation destination, but it does not define the product.
 
 ## What Morpheus is not
 

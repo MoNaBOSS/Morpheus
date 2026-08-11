@@ -26,6 +26,11 @@ of its scopes together against the active profile and existing grants, and asks
 what was already authorized. A plan that stays inside existing trust runs with no
 interruption at all.
 
+Observation and replanning do not reset trust. Exact matching grants continue to
+apply across continuation plans inside an objective; only a genuinely new or
+materially wider scope is surfaced as a new trust delta. Approval of one plan is
+not blanket approval for anything a later planner invents.
+
 Interruption is reserved for:
 
 - a command Morpheus did not understand well enough to plan safely
@@ -261,6 +266,16 @@ When audit persistence is unhealthy, Morpheus **does not silently proceed**:
 - The reason is explained to the user.
 
 Availability is not a sufficient reason to execute unaudited privileged work.
+
+## Voice and provider privacy
+
+- Microphone audio is ephemeral by default, validated for type/size/duration and
+  never persisted to Audit.
+- Transcription and planning credentials remain in Main-owned secure storage.
+- Planner context is bounded and excludes credentials, keys, raw audit files and
+  unlimited transcripts.
+- Spoken output is an explicit user-facing summary, not hidden reasoning or raw
+  sensitive content.
 
 ## Permission Center
 

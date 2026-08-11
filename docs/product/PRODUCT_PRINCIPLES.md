@@ -13,6 +13,10 @@ as "the agent says it did X" or "Morpheus actually does X", build the second.
 | Every command produces a typed `ExecutionPlan` | `morpheus-execution-plan.test.ts` |
 | Every timeline entry comes from a real main-process event | `morpheus-runtime.test.ts` |
 
+Windows 1.0 extends this into an objective loop: planning is followed by
+structured observation and bounded replanning until the objective is complete,
+cancelled, or genuinely needs the user. Voice and text use the same loop.
+
 ## 2. The main process is the authority
 
 The renderer is untrusted for anything that touches the operating system.
@@ -90,3 +94,5 @@ A change is complete when:
 3. No fake data, simulated events or unsubstantiated claims were introduced.
 4. Inherited functionality still works.
 5. Docs updated when behaviour or interfaces changed (AGENTS.md doc-sync rule).
+6. The packaged user journey works; a contract, adapter, placeholder or mocked
+   provider is not accepted as a completed product feature.
