@@ -1,7 +1,9 @@
 # Morpheus Windows 1.0 Security Review
 
-Status: implementation remediations complete; release verification pending
+Status: implementation remediations and credential-independent release
+verification complete
 Baseline reviewed: `ffeeacf`
+Final verified packaged source: `445d95ec53e94cb65dbcd60707e5e8017b2ae513`
 Review date: 2026-08-11
 
 ## Scope
@@ -72,7 +74,16 @@ and must not appear as the normal Morpheus UI identity.
 
 ## Release gate
 
-Windows 1.0 may be called security-reviewed only after the focused security
-tests, full typecheck/lint, Morpheus unit/E2E suites, package build, and packaged
-production smoke test all complete. Any remaining failure or credential gap
-must be reported explicitly in the release acceptance record.
+The focused security tests, full typecheck/lint, targeted Morpheus unit suite,
+full Electron E2E suite, package build, and packaged production smoke completed.
+The review remains intentionally focused on the Windows desktop authority
+boundaries listed above; it is not a claim that every inherited repository file
+received an exhaustive security audit.
+
+The local binaries are unsigned because production Authenticode is owned by the
+authorized CI/signing environment. During smoke, the user's independent OpenClaw
+configuration warned that
+`browser.ssrfPolicy.dangerouslyAllowPrivateNetwork=true`; Morpheus reports this
+condition but does not silently rewrite user-owned OpenClaw configuration. Both
+limitations are documented release facts rather than hidden verification
+successes.

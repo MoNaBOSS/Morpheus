@@ -41,7 +41,7 @@ sequence, and three deterministic Windows capabilities.
 - OpenClaw gateway, chat, Agents, Skills, Channels, Cron, and provider/model
   surfaces remain separate and functional.
 
-### Windows 1.0 Foundation *(release verification in progress)*
+### Windows 1.0 Foundation *(release candidate built and verified)*
 
 One coherent campaign: centralized objective orchestration, provider-backed
 planning, structured observation/replanning, bounded context/memory, first-class
@@ -52,14 +52,16 @@ security hardening and packaged end-to-end verification.
 This is deliberately not four disconnected 0.x mini-products. It reuses the 0.5
 executor and trust chassis and judges completion by real packaged user journeys.
 
-Implemented source now includes the shared Objective Core for Command Center,
+The verified release candidate includes the shared Objective Core for Command Center,
 Quick Command, explicit Chat execution, workflows and schedules; provider-backed
 planning and bounded review/replanning; secure voice transcription and Windows
 speech output; Main-owned workspace and runtime controls; real system-builder
 authoring; a compact Matrix-accented Windows interface; and hardened desktop,
-Gateway, file, navigation and installer boundaries. Final release status is
-recorded in `docs/releases/1.0.0-FOUNDATION-ACCEPTANCE.md` after packaging and
-normal-production smoke verification.
+Gateway, file, navigation and installer boundaries. Full regression validation,
+NSIS packaging, and normal-production packaged smoke are complete. Credentialed
+provider and microphone behavior remains a user-acceptance exercise, not a mock
+release gate. Exact verification is recorded in
+`docs/releases/1.0.0-FOUNDATION-ACCEPTANCE.md`.
 
 ## Later
 
