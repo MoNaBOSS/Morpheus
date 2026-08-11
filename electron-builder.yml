@@ -114,8 +114,8 @@ dmg:
 
 # Windows Configuration
 win:
-  # Skip update signature verification: we ship via OSS + GitHub without a
-  # code-signing certificate, so verifying would always fail on the updater.
+  # No update provider is configured. Before enabling updates, production
+  # signing and update signature verification must be enabled together.
   verifyUpdateCodeSignature: false
   extraResources:
     - from: resources/bin/win32-${arch}

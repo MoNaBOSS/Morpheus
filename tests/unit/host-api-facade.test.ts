@@ -646,7 +646,7 @@ describe('hostApi facade', () => {
       /\bfrom\s+['"][^'"]*(?:electron\/|dist-electron|preload|ipc-handlers|host-contract)/g,
       /\bimport\(\s*['"][^'"]*(?:@electron\/|electron\/|dist-electron|preload|ipc-handlers|host-contract)/g,
       /\brequire\(\s*['"][^'"]*(?:@electron\/|electron\/|dist-electron|preload|ipc-handlers|host-contract)/g,
-    ]).filter((violation) => violation !== "src/types/web-browser.ts: from 'electron'");
+    ]);
     const sharedToAppLayer = findViolations('shared', [
       /\bfrom\s+['"]@\//g,
       /\bfrom\s+['"]@electron\//g,
@@ -655,7 +655,7 @@ describe('hostApi facade', () => {
       /\brequire\(\s*['"][^'"]*(?:@\/|@electron\/|src\/|electron\/|dist-electron|preload|ipc-handlers|host-contract)/g,
     ]);
 
-    expect(webBrowserTypeBridge).toContain("import type { WebviewTag } from 'electron';");
+    expect(webBrowserTypeBridge).not.toContain("from 'electron'");
     expect({
       electronToRenderer,
       rendererToElectron,

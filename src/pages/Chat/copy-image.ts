@@ -14,9 +14,18 @@ function blobFromBytes(data: Uint8Array, mimeType: string): Blob {
 
 async function blobFromDataUrl(dataUrl: string): Promise<Blob | null> {
   try {
-    const response = await fetch(dataUrl);
-    if (!response.ok) return null;
-    return await response.blob();
+    if (!dataUrl.startsWith('data:')) return null;
+    const separator = dataUrl.indexOf(',');
+    if (separator < 5) return null;
+
+    const metadata = dataUrl.slice(5, separator);
+    const payload = dataUrl.slice(separator + 1);
+    const segments = metadata.split(';');
+    const mimeType = segments[0] || 'application/octet-stream';
+    const bytes = segments.includes('base64')
+      ? Uint8Array.from(atob(payload), (character) => character.charCodeAt(0))
+      : new TextEncoder().encode(decodeURIComponent(payload));
+    return blobFromBytes(bytes, mimeType);
   } catch {
     return null;
   }

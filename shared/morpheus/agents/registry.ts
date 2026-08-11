@@ -8,7 +8,7 @@ import {
 const CREATED_AT = '2026-08-10T00:00:00.000Z';
 
 const GENERAL_CAPABILITIES = Object.freeze([
-  'system.report', 'system.storage', 'system.notify',
+  'system.report', 'system.storage', 'system.processes', 'system.notify',
   'file.createText', 'file.readText', 'file.appendText', 'file.list', 'file.search',
   'file.move', 'file.copy', 'folder.create',
   'app.launch', 'clipboard.readText', 'clipboard.writeText', 'screen.capture',

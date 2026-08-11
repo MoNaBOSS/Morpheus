@@ -25,10 +25,20 @@ function isAudioCheck(details: PermissionCheckHandlerHandlerDetails): boolean {
   return details.mediaType === 'audio';
 }
 
+function isTrustedApplicationPermission(
+  contents: WebContents | null,
+  permission: string,
+  getMainWebContents: () => WebContents | null,
+): boolean {
+  return permission === 'clipboard-sanitized-write'
+    && isTrustedContents(contents, getMainWebContents);
+}
+
 /**
  * The default session is shared by the application shell, so install one
- * explicit policy: only the live Morpheus window may request microphone audio.
- * Video, display capture, embedded guests and every unrelated permission are
+ * explicit policy: only the live Morpheus window may request microphone audio
+ * or perform a sanitized clipboard write. Clipboard reads remain Main-owned;
+ * video, display capture, embedded guests and every unrelated permission are
  * denied. The isolated browser guest session has its own deny-all policy.
  */
 export function installMorpheusMediaPermissionPolicy(options: {
@@ -36,16 +46,22 @@ export function installMorpheusMediaPermissionPolicy(options: {
   getMainWebContents: () => WebContents | null;
 }): void {
   options.targetSession.setPermissionCheckHandler((contents, permission, _origin, details) => (
-    permission === 'media'
-    && isTrustedContents(contents, options.getMainWebContents)
-    && isAudioCheck(details)
+    isTrustedApplicationPermission(contents, permission, options.getMainWebContents)
+    || (
+      permission === 'media'
+      && isTrustedContents(contents, options.getMainWebContents)
+      && isAudioCheck(details)
+    )
   ));
 
   options.targetSession.setPermissionRequestHandler((contents, permission, callback, details) => {
     callback(
-      permission === 'media'
-      && isTrustedContents(contents, options.getMainWebContents)
-      && isAudioOnlyRequest(details as MediaAccessPermissionRequest),
+      isTrustedApplicationPermission(contents, permission, options.getMainWebContents)
+      || (
+        permission === 'media'
+        && isTrustedContents(contents, options.getMainWebContents)
+        && isAudioOnlyRequest(details as MediaAccessPermissionRequest)
+      ),
     );
   });
 }

@@ -7,9 +7,9 @@ type AuditEntry = {
   v: number;
   seq: number;
   ts: string;
-  runId: string;
-  actionId: string;
-  phase: string;
+  runId?: string;
+  actionId?: string;
+  phase?: string;
   decision?: string;
   params?: Record<string, unknown>;
   appVersion: string;
@@ -63,13 +63,22 @@ test.describe('Morpheus audit log', () => {
       for (const entry of entries) {
         expect(entry.v).toBe(1);
         expect(typeof entry.seq).toBe('number');
-        expect(typeof entry.runId).toBe('string');
         expect(typeof entry.appVersion).toBe('string');
         expect(Number.isNaN(Date.parse(entry.ts))).toBe(false);
       }
 
+      const actionEntries = entries.filter((entry) => entry.actionId !== undefined);
+      for (const entry of actionEntries) {
+        expect(typeof entry.runId).toBe('string');
+        expect(typeof entry.actionId).toBe('string');
+        expect(typeof entry.phase).toBe('string');
+      }
+
       // Monotonic sequence, in file order.
-      const sequences = entries.map((entry) => entry.seq);
+      // Action event sequence is the per-process Renderer ordering key. Control
+      // records (objective, workspace, runtime, etc.) have an independent
+      // category sequence and may be interleaved in the append-only file.
+      const sequences = actionEntries.map((entry) => entry.seq);
       expect([...sequences].sort((a, b) => a - b)).toEqual(sequences);
 
       // Both lifecycles are present, in full.
@@ -78,7 +87,7 @@ test.describe('Morpheus audit log', () => {
       // plan, and consent is sought for the whole plan before any run exists. A
       // refused step therefore never becomes a `requested` run at all — it is
       // recorded as `denied` and nothing executes.
-      const phasesFor = (actionId: string) => entries
+      const phasesFor = (actionId: string) => actionEntries
         .filter((entry) => entry.actionId === actionId)
         .map((entry) => entry.phase);
       expect(phasesFor('file.createText')).toEqual([
@@ -89,13 +98,13 @@ test.describe('Morpheus audit log', () => {
       ]);
 
       // Decisions are recorded.
-      expect(entries.some((entry) => entry.decision === 'granted')).toBe(true);
-      expect(entries.some((entry) => entry.decision === 'denied')).toBe(true);
+      expect(actionEntries.some((entry) => entry.decision === 'granted')).toBe(true);
+      expect(actionEntries.some((entry) => entry.decision === 'denied')).toBe(true);
 
       // THE invariant: content is never persisted, only its size and digest.
       const raw = JSON.stringify(entries);
       expect(raw).not.toContain(secret);
-      const writeEntry = entries.find((entry) => entry.actionId === 'file.createText');
+      const writeEntry = actionEntries.find((entry) => entry.actionId === 'file.createText');
       expect(writeEntry?.params?.fileName).toBe('audited.txt');
       expect(writeEntry?.params?.contentBytes).toBe(secret.length);
       expect(String(writeEntry?.params?.contentSha256)).toMatch(/^[0-9a-f]{16}$/);

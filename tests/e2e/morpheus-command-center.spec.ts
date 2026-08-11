@@ -62,7 +62,7 @@ test.describe('Morpheus Command Center', () => {
 
       // No provider is configured in an isolated profile, and the interface
       // says so instead of inventing a model name.
-      await expect(page.getByTestId('morpheus-runtime-provider')).toContainText(/no provider/i);
+      await expect(page.getByTestId('morpheus-runtime-provider')).toContainText(/not configured/i);
     } finally {
       await closeElectronApp(app);
     }

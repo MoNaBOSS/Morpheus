@@ -25,7 +25,7 @@
 <a href="https://discord.com/invite/84Kex3GGAh" target="_blank">
 <img src="https://img.shields.io/discord/1399603591471435907?logo=discord&labelColor=%20%235462eb&logoColor=%20%23f5f5f5&color=%20%235462eb" alt="chat on Discord" />
 </a>
-<img src="https://img.shields.io/github/downloads/ValueCell-ai/ClawX/total?color=%23027DEB" alt="Downloads" />
+<img src="https://img.shields.io/github/downloads/MoNaBOSS/Morpheus/total?color=%23027DEB" alt="Downloads" />
 <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 </p>
 
@@ -136,23 +136,27 @@ Z.AI (CN / Global) соответствует встроенному прова�
 ### 🚀 Управление автозапуском
 В **Настройки → Общие** вы можете включить **Запускать при старте системы**, чтобы Morpheus автоматически запускался после входа в систему.
 
+### 🔔 Обновления
+Morpheus сейчас честно показывает статус «не настроено». Приложение не обращается к унаследованному каналу ClawX и не устанавливает его релизы. Проверка обновлений будет включена только после явной настройки подписанного канала Morpheus.
+
 ---
 
-### 🟢 Morpheus 0.5 Foundation
+### 🟢 Morpheus Windows 1.0 Foundation
 
 Morpheus открывается в **Командном центре** на `/`; **Quick Command** вызывается глобально через
-`Ctrl+Shift+Space`; чат OpenClaw остаётся полностью доступным на `/chat`. Все интерфейсы используют
-один конвейер выполнения, принадлежащий Main-процессу.
+`Ctrl+Shift+Space`; **Voice Command** имеет отдельное глобальное сочетание клавиш; чат OpenClaw остаётся полностью доступным на `/chat`. Голос, Quick Command, Command Center и явное выполнение из Chat входят в единый Objective Core, принадлежащий Main-процессу.
 
 - **Типизированные многошаговые планы** выполняются последовательно, соблюдают зависимости и показывают реальные статусы, результаты, ошибки и артефакты.
+- **Objective Core с поддержкой провайдеров** позволяет настроенным провайдерам интерпретировать, проверять и перепланировать цели через типизированную границу с проверкой схемы. Вывод провайдера всегда считается недоверенным и не получает прямых полномочий ОС; детерминированный планировщик остаётся честным резервом.
 - **Доверие на уровне плана** спрашивает один раз только о действительно новой области и повторно использует точные сессионные или постоянные разрешения. Critical-границы не обходятся.
 - **19 контролируемых возможностей Windows** охватывают файлы, папки, одобренные приложения, отдельные области чтения/записи буфера обмена, уведомления, снимки экрана, системные отчёты, URL и ограниченный запуск VS Code. Произвольного Shell, PowerShell, пути или исполняемого файла нет.
 - **Основа конструктора систем** включает Agent Profiles, реальные стартовые workflow, расписания Morpheus и нейтральный к провайдеру контракт планировщика.
 - **Реальная наблюдаемость** основана на событиях Main, долговечных артефактах и междневном журнале Activity только на добавление.
 - **Постоянная дизайн-система** использует тёмную тему для новых профилей, компоновку 1280×800 и Matrix-акценты только для реальных активных/подтверждённых состояний.
+- **Нативное поведение Windows** включает реальное состояние Gateway, паузу/возобновление выполнения, профили разрешений, Quick Command и Voice Command в трее. Распознавание речи использует только настроенного совместимого провайдера, озвучивание — службу Windows; учётные данные не передаются Renderer.
 
 Политика, разрешения, расписания, разрешение целей, выполнение и аудит принадлежат Electron Main. См.
-[`docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md`](docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md)
+[`docs/architecture/MORPHEUS_WINDOWS_1.0_ARCHITECTURE.md`](docs/architecture/MORPHEUS_WINDOWS_1.0_ARCHITECTURE.md)
 и [`docs/security/PERMISSION_MODEL.md`](docs/security/PERMISSION_MODEL.md).
 
 ---
@@ -169,13 +173,13 @@ Morpheus открывается в **Командном центре** на `/`;
 
 #### Готовые релизы (рекомендуется)
 
-Скачайте последний релиз для вашей платформы со страницы [Releases](https://github.com/ValueCell-ai/ClawX/releases).
+Скачайте последний релиз для вашей платформы со страницы [Morpheus Releases](https://github.com/MoNaBOSS/Morpheus/releases).
 
 #### Сборка из исходников
 
 ```bash
 # Клонирование репозитория
-git clone https://github.com/ValueCell-ai/ClawX.git morpheus-core
+git clone https://github.com/MoNaBOSS/Morpheus.git morpheus-core
 cd morpheus-core
 
 # Инициализация проекта
@@ -240,7 +244,7 @@ Morpheus использует **двухпроцессную архитекту�
 │  │  • Управление жизненным циклом окна и приложения           │ │
 │  │  • Наблюдение за процессом шлюза                           │ │
 │  │  • Интеграция с системой (трей, уведомления, связка ключей)│ │
-│  │  • Оркестрация автообновлений                              │ │
+│  │  • Политика обновлений Morpheus (сейчас не настроена)      │ │
 │  └────────────────────────────────────────────────────────────┘ │
 │                            │                                    │
 │                   IPC (авторитетная плоскость управления)       │
@@ -482,7 +486,7 @@ Morpheus построен на плечах отличных проектов с
 ## История звёзд
 
 <p align="center">
-<img src="https://api.star-history.com/svg?repos=ValueCell-ai/ClawX&type=Date" alt="Star History Chart" />
+<img src="https://api.star-history.com/svg?repos=MoNaBOSS/Morpheus&type=Date" alt="Star History Chart" />
 </p>
 
 ---

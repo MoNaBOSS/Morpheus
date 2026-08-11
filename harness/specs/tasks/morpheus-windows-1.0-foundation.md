@@ -20,8 +20,10 @@ touchedAreas:
   - electron/preload/**
   - src/lib/host-api.ts
   - src/lib/host-events.ts
+  - src/types/**
   - src/stores/morpheus-**
   - src/components/morpheus/**
+  - src/components/web-browser/**
   - src/pages/CommandCenter/**
   - src/pages/Chat/**
   - src/pages/AgentProfiles/**
@@ -33,14 +35,19 @@ touchedAreas:
   - src/styles/globals.css
   - index.html
   - scripts/installer.nsh
+  - electron-builder.yml
   - scripts/patch-nsis-*.mjs
   - resources/cli/**
   - resources/context/**
-  - tests/unit/morpheus-**
+  - tests/unit/**
   - tests/e2e/morpheus-**
+  - tests/e2e/fixtures/electron.ts
+  - tests/e2e/chat-streamdown-rendering.spec.ts
+  - tests/e2e/markdown-file-preview.spec.ts
   - docs/**
   - harness/reference/morpheus-core-orchestration.md
   - harness/reference/morpheus-execution-architecture.md
+  - harness/src/**
   - harness/specs/tasks/morpheus-windows-1.0-foundation.md
   - harness/specs/rules/morpheus-objective-orchestration-safety.md
   - CLAUDE.md
@@ -49,6 +56,7 @@ touchedAreas:
   - README.zh-CN.md
   - README.ja-JP.md
   - README.ru-RU.md
+  - package.json
 expectedUserBehavior:
   - Voice, Command Center, Quick Command and explicit Chat execution submit objectives to the same Morpheus Core.
   - A configured provider creates a validated typed plan; no provider receives execution authority.

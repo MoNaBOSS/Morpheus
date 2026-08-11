@@ -51,6 +51,9 @@ outside the repository because it is a machine-specific verification artifact.
 - Audit records are persisted before runtime events are emitted; degraded audit
   health blocks state-changing/process actions.
 - Voice audio is bounded, disclosure-aware and ephemeral by default.
+- The live application renderer may perform sanitized clipboard writes for
+  explicit copy controls. Chromium clipboard reads remain denied; Morpheus
+  clipboard reads use the separate Main-owned, scoped and audited capability.
 - Embedded browser guests have a separate partition and restrictive policy.
 - Top-level renderer navigation is limited to the application document; web
   links are delegated to the default browser and custom protocols are blocked.

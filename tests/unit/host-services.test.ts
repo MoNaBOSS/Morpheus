@@ -423,8 +423,11 @@ describe('host services', () => {
       42,
     );
     await expect(gatewayApi.rpc({ method: '   ' })).rejects.toThrow('Invalid gateway RPC method');
-    await expect(gatewayApi.rpc({ method: 'status', timeoutMs: 0 })).rejects.toThrow(
+    await expect(gatewayApi.rpc({ method: 'sessions.list', timeoutMs: 0 })).rejects.toThrow(
       'Invalid gateway RPC timeout',
+    );
+    await expect(gatewayApi.rpc({ method: 'status' })).rejects.toThrow(
+      'Gateway RPC method is not available to the renderer',
     );
     expect(gatewayManager.rpc).toHaveBeenCalledTimes(1);
   });

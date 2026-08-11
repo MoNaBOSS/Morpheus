@@ -1,16 +1,18 @@
+const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+
 export const PROFILES = {
   fast: [
-    { name: 'Generate extension bridge', command: 'pnpm', args: ['run', 'ext:bridge'] },
-    { name: 'Lint without autofix', command: 'pnpm', args: ['run', 'lint:check'] },
-    { name: 'Typecheck', command: 'pnpm', args: ['run', 'typecheck'] },
-    { name: 'Unit tests', command: 'pnpm', args: ['test'] },
+    { name: 'Generate extension bridge', command: pnpmCommand, args: ['run', 'ext:bridge'] },
+    { name: 'Lint without autofix', command: pnpmCommand, args: ['run', 'lint:check'] },
+    { name: 'Typecheck', command: pnpmCommand, args: ['run', 'typecheck'] },
+    { name: 'Unit tests', command: pnpmCommand, args: ['test'] },
   ],
   comms: [
-    { name: 'Comms replay', command: 'pnpm', args: ['run', 'comms:replay'] },
-    { name: 'Comms compare', command: 'pnpm', args: ['run', 'comms:compare'] },
+    { name: 'Comms replay', command: pnpmCommand, args: ['run', 'comms:replay'] },
+    { name: 'Comms compare', command: pnpmCommand, args: ['run', 'comms:compare'] },
   ],
   e2e: [
-    { name: 'Electron E2E', command: 'pnpm', args: ['run', 'test:e2e'] },
+    { name: 'Electron E2E', command: pnpmCommand, args: ['run', 'test:e2e'] },
   ],
 };
 

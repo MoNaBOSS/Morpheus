@@ -53,7 +53,7 @@ test.describe('Morpheus 0.5 foundation', () => {
       await page.getByTestId('quick-command-input').fill('Show system information');
       await page.getByTestId('quick-command-submit').click();
 
-      await expect(page.getByTestId('quick-command-status')).toContainText(/completed/i, {
+      await expect(page.getByTestId('quick-command-status')).toContainText(/complete/i, {
         timeout: 20_000,
       });
       await expect(page.getByTestId('morpheus-plan-consent-dialog')).toHaveCount(0);

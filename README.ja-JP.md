@@ -25,7 +25,7 @@
   <a href="https://discord.com/invite/84Kex3GGAh" target="_blank">
   <img src="https://img.shields.io/discord/1399603591471435907?logo=discord&labelColor=%20%235462eb&logoColor=%20%23f5f5f5&color=%20%235462eb" alt="chat on Discord" />
   </a>
-  <img src="https://img.shields.io/github/downloads/ValueCell-ai/ClawX/total?color=%23027DEB" alt="Downloads" />
+  <img src="https://img.shields.io/github/downloads/MoNaBOSS/Morpheus/total?color=%23027DEB" alt="Downloads" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 </p>
 
@@ -81,7 +81,7 @@ AIエージェントの構築にコマンドラインの習得は不要である
 | 複雑なCLIセットアップ | ワンクリックインストールとガイド付きセットアップウィザード |
 | 設定ファイル | リアルタイムバリデーション付きのビジュアル設定 |
 | プロセス管理 | ゲートウェイライフサイクルの自動管理 |
-| アプリ更新 | 起動時に更新を確認し、ダウンロードやインストール前に通知 |
+| アプリ更新 | 署名済み Morpheus 更新先が設定されるまで無効 |
 | 複数のAIプロバイダー | 統合プロバイダー設定パネル |
 | スキル/プラグインのインストール | 組み込みのスキルマーケットプレイスと管理機能 |
 
@@ -144,25 +144,27 @@ Z.AI（CN / Global）は OpenClaw 組み込みの `zai` プロバイダー（`ZA
 **設定 → 通用** から **システム起動時に自動起動** を有効化すると、ログイン後に Morpheus が自動的に起動します。
 
 ### 🔔 更新通知
-Morpheus は起動時に新しいバージョンを自動確認できます。更新が見つかるとアプリ内通知を表示し、ダウンロードやインストールはユーザーが選択した後にのみ実行されます。
+Morpheus は現在、更新を「未設定」と正確に表示します。継承元の ClawX 更新フィードへ接続したり、そのリリースをインストールしたりしません。署名済み Morpheus エンドポイントが明示的に設定された場合だけ更新確認を有効にします。
 
 ---
 
-### 🟢 Morpheus 0.5 Foundation
+### 🟢 Morpheus Windows 1.0 Foundation
 
-Morpheus は `/` の**コマンドセンター**を既定画面とし、`Ctrl+Shift+Space` でどこからでも**クイックコマンド**を開けます。OpenClaw チャットは `/chat` で完全に利用でき、三つの入口は同じ Main 所有の実行パイプラインへ合流します。
+Morpheus は `/` の**コマンドセンター**を既定画面とし、`Ctrl+Shift+Space` でどこからでも**クイックコマンド**を開けます。**音声コマンド**には独立したグローバルショートカットがあり、OpenClaw チャットは `/chat` で完全に利用できます。音声、クイックコマンド、コマンドセンター、Chat の明示的実行は同じ Main 所有の Objective Core へ合流します。
 Chat の通常の**送信**は ACP 会話のまま維持され、独立した**実行**操作（`Ctrl+Enter`）がテキスト目標を Morpheus に送ります。コマンドセンターとクイックコマンドは論理ワークスペース／Agent Profile コンテキストを共有し、対象解決と実行権限は Main が保持します。
 
 - **複数ステップの型付きプラン** — 依存関係、状態、結果、エラー、成果物は実際の順次実行から得られます。失敗時は推移的な依存ステップだけをスキップします。
+- **プロバイダー対応 Objective Core** — 設定済みプロバイダーは、型付きでスキーマ検証された境界を通じて目標解釈、計画レビュー、再計画を行えます。プロバイダー出力は常に信頼されない入力で、OS 権限を直接受け取りません。決定論的プランナーが正直なフォールバックです。
 - **プラン単位の信頼評価** — Strict、Balanced（既定）、Autonomous はプラン全体を評価し、本当に新しいスコープだけを一度確認します。正確なセッション／永続グラントを再利用し、critical 境界は回避できません。
 - **19 個の制御された Windows 機能** — ファイル／フォルダー、承認済みアプリ、分離されたクリップボード読み書き、通知、グラント可能な画面キャプチャ、システム／ストレージ／プロセス情報、承認済み URL、制限付き VS Code 起動。汎用 Shell、PowerShell、任意の実行ファイルやパスはありません。
 - **AI システムビルダー** — 編集可能でプロバイダー対応の Agent Profiles、Main 検証済みの型付きワークフロー、ワークスペースに結びつく Morpheus スケジュール、プロバイダー中立のプランナー契約。定義は権限を狭めるだけで、許可を作成しません。
 - **信頼済みワークスペース** — ネイティブフォルダ選択、正確な正規ルート、読み取り／読み書きポリシー、論理選択を備え、ルートの削除・無効化・降格時に許可を即時取り消します。
 - **実在する可観測性** — Main のライブイベント、プライバシー安全な監査メタデータから復元する永続成果物、日次ファイルをまたぐ追記専用 Activity 履歴。
 - **恒久的なビジュアルシステム** — 新規プロファイルはダークが既定で、1280×800 に収まる密度。Matrix の影響は実際のライブ／検証済み状態とブートに限定します。
+- **Windows ネイティブ動作** — トレイから実際の Gateway 状態、ランタイム一時停止／再開、権限プロファイル、クイック／音声コマンドを操作できます。音声認識は設定済み互換プロバイダーのみを使い、読み上げは Windows 音声サービスを使います。資格情報は Renderer に公開されません。
 
 ポリシー、グラント、スケジュール、対象解決、実行、監査永続化は Electron Main が所有します。詳細は
-[`docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md`](docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md)
+[`docs/architecture/MORPHEUS_WINDOWS_1.0_ARCHITECTURE.md`](docs/architecture/MORPHEUS_WINDOWS_1.0_ARCHITECTURE.md)
 および [`docs/security/PERMISSION_MODEL.md`](docs/security/PERMISSION_MODEL.md) を参照してください。
 
 ---
@@ -179,13 +181,13 @@ Chat の通常の**送信**は ACP 会話のまま維持され、独立した**�
 
 #### ビルド済みリリース（推奨）
 
-[Releases](https://github.com/ValueCell-ai/ClawX/releases)ページから、お使いのプラットフォーム向けの最新リリースをダウンロードしてください。
+[Morpheus Releases](https://github.com/MoNaBOSS/Morpheus/releases)ページから、お使いのプラットフォーム向けの最新リリースをダウンロードしてください。
 
 #### ソースからビルド
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/ValueCell-ai/ClawX.git morpheus-core
+git clone https://github.com/MoNaBOSS/Morpheus.git morpheus-core
 cd morpheus-core
 
 # プロジェクトの初期化
@@ -271,7 +273,7 @@ ACP Chat は、runtime が画像生成メディアを信頼できる構造化メ
 │  │  • ウィンドウ＆アプリケーションライフサイクル管理                    │  │
 │  │  • ゲートウェイプロセスの監視                                     │  │
 │  │  • システム統合（トレイ、通知、キーチェーン）                       │  │
-│  │  • 自動アップデートオーケストレーション                            │  │
+│  │  • Morpheus 更新ポリシー（現在未設定）                             │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                              │                                     │
 │                              │ IPC（権威ある制御プレーン）             │
@@ -505,7 +507,7 @@ AI ツールや自動化に関心のある顧客とお仕事をされている�
 ## スター履歴
 
 <p align="center">
-  <img src="https://api.star-history.com/svg?repos=ValueCell-ai/ClawX&type=Date" alt="スター履歴チャート" />
+  <img src="https://api.star-history.com/svg?repos=MoNaBOSS/Morpheus&type=Date" alt="スター履歴チャート" />
 </p>
 
 ---

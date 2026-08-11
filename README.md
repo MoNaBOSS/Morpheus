@@ -25,7 +25,7 @@
   <a href="https://discord.com/invite/84Kex3GGAh" target="_blank">
   <img src="https://img.shields.io/discord/1399603591471435907?logo=discord&labelColor=%20%235462eb&logoColor=%20%23f5f5f5&color=%20%235462eb" alt="chat on Discord" />
   </a>
-  <img src="https://img.shields.io/github/downloads/ValueCell-ai/ClawX/total?color=%23027DEB" alt="Downloads" />
+  <img src="https://img.shields.io/github/downloads/MoNaBOSS/Morpheus/total?color=%23027DEB" alt="Downloads" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 </p>
 
@@ -88,7 +88,7 @@ Building AI agents shouldn't require mastering the command line. Morpheus was de
 | Complex CLI setup | One-click installation with guided setup wizard |
 | Configuration files | Visual settings with real-time validation |
 | Process management | Automatic gateway lifecycle management |
-| App updates | Startup update checks with a prompt before downloading or installing |
+| App updates | Morpheus-only updates remain disabled until a signed endpoint is configured |
 | Multiple AI providers | Unified provider configuration panel |
 | Skill/plugin installation | Local-first skill management with optional extension-provided marketplace |
 
@@ -151,15 +151,17 @@ Light mode, dark mode, or system-synchronized themes. Morpheus adapts to your pr
 In **Settings → General**, you can enable **Launch at system startup** so Morpheus starts automatically after login.
 
 ### 🔔 Update Prompts
-Morpheus can automatically check for new versions on startup. When an update is available, it shows an in-app prompt; downloading and installing only happen after you choose the action.
+Morpheus currently reports updates as **not configured**. It does not contact or install from the inherited ClawX feed. Update checks will be enabled only after a signed Morpheus endpoint is explicitly configured.
 
 ---
 
-### 🟢 Morpheus 0.5 Foundation
+### 🟢 Morpheus Windows 1.0 Foundation
 
 Morpheus opens on the **Command Center** at `/`; **Quick Command** is available
-globally with `Ctrl+Shift+Space`; OpenClaw chat remains fully functional at
-`/chat`. All three surfaces converge on the same Main-owned execution pipeline.
+globally with `Ctrl+Shift+Space`; **Voice Command** has its own global shortcut;
+and OpenClaw chat remains fully functional at `/chat`. Voice, Quick Command,
+Command Center and explicit Chat execution converge on the same Main-owned
+Objective Core.
 In Chat, ordinary **Send** remains conversational ACP traffic; the separate
 **Execute** action (`Ctrl+Enter`) submits a text objective to Morpheus. Command
 Center and Quick Command share logical workspace and Agent Profile context while
@@ -168,6 +170,10 @@ Main retains target resolution and execution authority.
 - **Sequential typed plans** — multi-step plans honour dependencies, expose real
   step status/results/errors/artifacts, and skip only transitive dependants after
   failure. No Renderer path can submit executable paths or fabricate events.
+- **Provider-backed Objective Core** — configured providers may interpret,
+  review and replan objectives through a typed, schema-validated boundary.
+  Provider output is untrusted input and never receives direct OS authority;
+  deterministic planning remains the truthful fallback.
 - **Plan-level trust** — Strict, Balanced (default), and Autonomous profiles
   evaluate the complete plan. Morpheus asks once only for genuinely new scopes,
   then honours exact session or persistent grants. Critical boundaries remain
@@ -190,10 +196,14 @@ Main retains target resolution and execution authority.
 - **Permanent visual system** — dark by default for fresh profiles, compact at
   1280×800, with Matrix influence reserved for live/verified state and the real
   signal-driven boot sequence.
+- **Windows operator behavior** — tray controls expose real gateway state,
+  runtime pause/resume, permission profiles, Quick Command and Voice Command.
+  Voice transcription uses only a configured compatible provider; speech output
+  uses the Windows speech service. No credential is exposed to Renderer.
 
 Action policy, trust grants, schedules, target resolution, execution, and audit
 persistence are owned by Electron Main. See
-[`docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md`](docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md)
+[`docs/architecture/MORPHEUS_WINDOWS_1.0_ARCHITECTURE.md`](docs/architecture/MORPHEUS_WINDOWS_1.0_ARCHITECTURE.md)
 and [`docs/security/PERMISSION_MODEL.md`](docs/security/PERMISSION_MODEL.md).
 
 Windows adapters ship today. Shared plan, agent, workflow, schedule, permission,
@@ -213,13 +223,13 @@ artifact, and audit contracts remain platform-neutral for future adapters.
 
 #### Pre-built Releases (Recommended)
 
-Download the latest release for your platform from the [Releases](https://github.com/ValueCell-ai/ClawX/releases) page.
+Download the latest release for your platform from the [Morpheus Releases](https://github.com/MoNaBOSS/Morpheus/releases) page.
 
 #### Build from Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/ValueCell-ai/ClawX.git morpheus-core
+git clone https://github.com/MoNaBOSS/Morpheus.git morpheus-core
 cd morpheus-core
 
 # Initialize the project
@@ -308,7 +318,7 @@ ACP Chat can also display generated image previews when image-generation media i
 │  │  • Window & application lifecycle management               │  │
 │  │  • Gateway process supervision                             │  │
 │  │  • System integration (tray, notifications, keychain)      │  │
-│  │  • Auto-update orchestration                               │  │
+│  │  • Morpheus update policy (currently not configured)      │  │
 │  └────────────────────────────────────────────────────────────┘  │
 │                              │                                   │
 │                              │ IPC (authoritative control plane) │
@@ -564,7 +574,7 @@ DM us or email [public@valuecell.ai](mailto:public@valuecell.ai) to learn more.
 ## Star History
 
 <p align="center">
-  <img src="https://api.star-history.com/svg?repos=ValueCell-ai/ClawX&type=Date" alt="Star History Chart" />
+  <img src="https://api.star-history.com/svg?repos=MoNaBOSS/Morpheus&type=Date" alt="Star History Chart" />
 </p>
 
 ---

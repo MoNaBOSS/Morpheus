@@ -116,6 +116,7 @@ function productionAttachmentBundle(): Promise<string> {
         `export { createAttachmentAccess, StagedAttachmentRegistry } from ${JSON.stringify(join(repoRoot, 'electron/services/attachment-access.ts'))};`,
         `export { AcpSessionAccessRegistry } from ${JSON.stringify(join(repoRoot, 'electron/services/acp-session-access-registry.ts'))};`,
         `export { createMediaApi } from ${JSON.stringify(join(repoRoot, 'electron/services/media-api.ts'))};`,
+        `export { createFilesApi } from ${JSON.stringify(join(repoRoot, 'electron/services/files-api.ts'))};`,
       ].join('\n'),
       loader: 'ts',
       resolveDir: repoRoot,
@@ -858,6 +859,11 @@ export async function installAttachmentHostFixture(
       createMediaApi: (dependencies: { attachmentAccess: unknown }) => {
         thumbnails: (input: unknown) => Promise<unknown>;
       };
+      createFilesApi: (dependencies: {
+        attachmentAccess: unknown;
+        stagedAttachments: unknown;
+        allowedReadRoots: () => string[];
+      }) => Record<string, (input: Record<string, unknown> | undefined) => Promise<unknown>>;
       createAttachmentAccess: (dependencies: {
         sessionAccessRegistry: unknown;
         stagedAttachments: unknown;
@@ -877,6 +883,20 @@ export async function installAttachmentHostFixture(
       stagedAttachments: productionStagedAttachments,
     });
     const productionMediaApi = production.createMediaApi({ attachmentAccess: productionAttachmentAccess });
+    const productionFilesApi = production.createFilesApi({
+      attachmentAccess: productionAttachmentAccess,
+      stagedAttachments: productionStagedAttachments,
+      allowedReadRoots: () => [payload.workspaceDir],
+    });
+    const productionWorkspaceFileActions = new Set([
+      'listTree',
+      'readText',
+      'readBinary',
+      'stat',
+      'readWorkspaceText',
+      'readWorkspaceBinary',
+      'statWorkspaceFile',
+    ]);
 
     const respond = (id: unknown, data: unknown) => ({
       id: typeof id === 'string' ? id : undefined,
@@ -965,6 +985,15 @@ export async function installAttachmentHostFixture(
           workspaceRoot,
           executionCwd,
         });
+      }
+      if (
+        request.module === 'files'
+        && request.action
+        && productionWorkspaceFileActions.has(request.action)
+      ) {
+        const handler = productionFilesApi[request.action];
+        if (!handler) throw new Error(`Missing production files handler: ${request.action}`);
+        return respond(request.id, await handler(request.payload));
       }
       if (request.module === 'files' && request.action === 'resolveAttachment') {
         return respond(request.id, await productionAttachmentAccess.resolveAttachment(request.payload));

@@ -31,6 +31,8 @@ describe('Morpheus Agent Profiles', () => {
         expect(getMorpheusActionDescriptor(capabilityId).riskTier).not.toBe('critical');
       }
     }
+    expect(MORPHEUS_STARTER_AGENT_PROFILES.find((profile) => profile.profileId === 'general')
+      ?.permissionBoundary.capabilityIds).toContain('system.processes');
   });
 
   it('falls back safely from corrupt persistent state and atomically persists an update', () => {

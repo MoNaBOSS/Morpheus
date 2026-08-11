@@ -181,9 +181,9 @@ test.describe('Markdown file preview', () => {
         secureContext: window.isSecureContext,
       }))).toEqual({ clipboard: true, secureContext: true });
       await copyButton.click();
-      await expect.poll(() => page.evaluate(async () => (
-        await navigator.clipboard.readText()
-      ).trim().replace(/\r\n?/g, '\n')))
+      await expect.poll(() => app.evaluate(({ clipboard }) => (
+        clipboard.readText().trim().replace(/\r\n?/g, '\n')
+      )))
         .toBe([
           'const highlightedValue = 42;',
           'const secondLine = highlightedValue + 1;',

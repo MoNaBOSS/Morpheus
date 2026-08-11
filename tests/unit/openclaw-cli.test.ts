@@ -248,7 +248,7 @@ describe('getOpenClawEmbeddedForkSpec', () => {
         env: expect.objectContaining({
           ELECTRON_RUN_AS_NODE: '1',
           OPENCLAW_NO_RESPAWN: '1',
-          OPENCLAW_EMBEDDED_IN: 'ClawX',
+          OPENCLAW_EMBEDDED_IN: 'Morpheus',
           OPENCLAW_EXEC_SHELL_SNAPSHOT: '0',
         }),
       },
@@ -281,6 +281,6 @@ describe('getOpenClawEmbeddedForkSpec', () => {
 
     const { getOpenClawEmbeddedForkSpec } = await import('@electron/utils/openclaw-cli');
 
-    expect(() => getOpenClawEmbeddedForkSpec(['acp'])).toThrow('ClawX Helper executable not found');
+    expect(() => getOpenClawEmbeddedForkSpec(['acp'])).toThrow('Morpheus Helper executable not found');
   });
 });

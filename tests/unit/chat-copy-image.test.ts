@@ -23,6 +23,7 @@ describe('copyImageToClipboard', () => {
   });
 
   it('copies image bytes from a data URL preview', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const pngBytes = Uint8Array.from([137, 80, 78, 71]);
     const base64 = btoa(String.fromCharCode(...pngBytes));
     const preview = `data:image/png;base64,${base64}`;
@@ -34,7 +35,9 @@ describe('copyImageToClipboard', () => {
 
     expect(ok).toBe(true);
     expect(navigator.clipboard.write).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).not.toHaveBeenCalled();
     expect(readBinaryFileMock).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
   });
 
   it('copies image bytes from a local file path', async () => {

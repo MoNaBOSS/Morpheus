@@ -25,7 +25,7 @@
   <a href="https://discord.com/invite/84Kex3GGAh" target="_blank">
   <img src="https://img.shields.io/discord/1399603591471435907?logo=discord&labelColor=%20%235462eb&logoColor=%20%23f5f5f5&color=%20%235462eb" alt="chat on Discord" />
   </a>
-  <img src="https://img.shields.io/github/downloads/ValueCell-ai/ClawX/total?color=%23027DEB" alt="Downloads" />
+  <img src="https://img.shields.io/github/downloads/MoNaBOSS/Morpheus/total?color=%23027DEB" alt="Downloads" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 </p>
 
@@ -82,7 +82,7 @@
 | 复杂的命令行配置 | 一键安装，配合引导式设置向导 |
 | 手动编辑配置文件 | 可视化设置界面，实时校验 |
 | 进程管理繁琐 | 自动管理网关生命周期 |
-| 应用更新 | 启动时检查新版本，并在下载或安装前提示确认 |
+| 应用更新 | 在配置已签名的 Morpheus 更新端点前保持禁用 |
 | 多 AI 供应商切换 | 统一的供应商配置面板 |
 | 技能/插件安装复杂 | 内置技能市场与管理界面 |
 
@@ -145,18 +145,20 @@ Z.AI（国内站 / 国际站）会映射到 OpenClaw 内置的 `zai` 供应商�
 在 **设置 → 通用** 中，你可以开启 **开机自动启动**，让 Morpheus 在系统登录后自动启动。
 
 ### 🔔 更新提示
-Morpheus 可以在启动时自动检查新版本。发现更新后会显示应用内提示；只有在你选择操作后，才会下载或安装更新。
+Morpheus 当前会如实显示“未配置更新”。应用不会访问或安装继承自 ClawX 的更新源；只有显式配置已签名的 Morpheus 更新端点后才会启用更新检查。
 
 ---
 
-### 🟢 Morpheus 0.5 基础版本
+### 🟢 Morpheus Windows 1.0 基础版本
 
 Morpheus 默认打开 `/` 的**指挥中心**；`Ctrl+Shift+Space` 可从任何位置调用**快捷命令**；
-OpenClaw 聊天在 `/chat` 保持完整可用。三个入口都进入同一套由主进程拥有的执行管线。
+**语音命令**拥有独立全局快捷键；OpenClaw 聊天在 `/chat` 保持完整可用。语音、快捷命令、
+指挥中心和聊天中的显式执行都会进入同一套由主进程拥有的 Objective Core。
 在聊天中，普通的**发送**仍走 ACP 对话通道；独立的**执行**操作（`Ctrl+Enter`）会把文本目标交给 Morpheus。
 指挥中心与快捷命令共享逻辑工作区和 Agent Profile 上下文，目标解析与执行权限始终由主进程掌控。
 
 - **多步骤类型化计划** —— 依赖、状态、结果、错误和产物均来自真实的顺序执行；失败只跳过其传递依赖项。
+- **供应商驱动的 Objective Core** —— 已配置供应商可通过类型化、模式校验的边界进行目标理解、计划审查与重新规划。供应商输出始终是不可信输入，不会获得直接系统权限；确定性规划保留为真实回退。
 - **计划级信任评估** —— Strict、Balanced（默认）和 Autonomous 会评估完整计划，只为真正新增的范围询问一次，
   并复用精确的会话或持久授权。关键风险不可绕过，审计降级时会阻止写入与进程启动。
 - **19 项受控 Windows 能力** —— 文件与文件夹、已批准应用、独立的剪贴板读写范围、通知、可授权截图、
@@ -165,9 +167,10 @@ OpenClaw 聊天在 `/chat` 保持完整可用。三个入口都进入同一套�
 - **受信任工作区** —— 通过原生文件夹选择器注册精确规范根目录，支持只读/读写策略和逻辑选择；删除、停用或降级根目录时立即撤销其授权。
 - **真实可观察性** —— 主进程实时事件、从隐私安全审计元数据重建的持久产物，以及跨日只追加 Activity 历史。
 - **永久视觉系统** —— 新配置默认深色，在 1280×800 下保持紧凑；Matrix 风格仅用于真实的实时/已验证状态和启动序列。
+- **Windows 原生操作体验** —— 托盘展示真实 Gateway 状态、运行暂停/恢复、权限配置、快捷命令与语音命令。语音转写仅使用已配置的兼容供应商，朗读使用 Windows 语音服务，凭证不会暴露给渲染器。
 
 操作策略、授权、调度、目标解析、执行和审计持久化均由 Electron 主进程拥有。详见
-[`docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md`](docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md)
+[`docs/architecture/MORPHEUS_WINDOWS_1.0_ARCHITECTURE.md`](docs/architecture/MORPHEUS_WINDOWS_1.0_ARCHITECTURE.md)
 与 [`docs/security/PERMISSION_MODEL.md`](docs/security/PERMISSION_MODEL.md)。
 
 ---
@@ -184,13 +187,13 @@ OpenClaw 聊天在 `/chat` 保持完整可用。三个入口都进入同一套�
 
 #### 预构建版本（推荐）
 
-从 [Releases](https://github.com/ValueCell-ai/ClawX/releases) 页面下载适用于你平台的最新版本。
+从 [Morpheus Releases](https://github.com/MoNaBOSS/Morpheus/releases) 页面下载适用于你平台的最新版本。
 
 #### 从源码构建
 
 ```bash
 # 克隆仓库
-git clone https://github.com/ValueCell-ai/ClawX.git morpheus-core
+git clone https://github.com/MoNaBOSS/Morpheus.git morpheus-core
 cd morpheus-core
 
 # 初始化项目
@@ -279,7 +282,7 @@ ACP Chat 也可在 runtime 以可信结构化媒体投递图像生成结果时�
 │  │  • 窗口与应用生命周期管理                                       │  │
 │  │  • 网关进程监控                                               │  │
 │  │  • 系统集成（托盘、通知、密钥链）                                │  │
-│  │  • 自动更新编排                                               │  │
+│  │  • Morpheus 更新策略（当前未配置）                              │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 │                              │                                    │
 │                              │ IPC (权威控制面)                     │
@@ -513,7 +516,7 @@ Morpheus 构建于以下优秀的开源项目之上：
 ## Stars 历史
 
 <p align="center">
-  <img src="https://api.star-history.com/svg?repos=ValueCell-ai/ClawX&type=Date" alt="Stars 历史图表" />
+  <img src="https://api.star-history.com/svg?repos=MoNaBOSS/Morpheus&type=Date" alt="Stars 历史图表" />
 </p>
 
 ---

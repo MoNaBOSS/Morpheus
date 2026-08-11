@@ -383,10 +383,10 @@
       "provider": "Провайдер",
       "trust": "Профиль доверия",
       "workspace": "Рабочая область",
-      "runtimeReady": "Среда готова",
-      "runtimeStarting": "Среда запускается",
-      "runtimeStopped": "Среда остановлена",
-      "providerUnknown": "Провайдер не настроен",
+      "runtimeReady": "Готова",
+      "runtimeStarting": "Запуск",
+      "runtimeStopped": "Остановлена",
+      "providerUnknown": "Не настроен",
       "auditDegraded": "Аудит недоступен"
     },
     "artifacts": {

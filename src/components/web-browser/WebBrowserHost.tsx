@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { hostApi } from '@/lib/host-api';
 import { htmlPreviewFileUrl } from '@/lib/local-html-browser';
 import { useArtifactPanel } from '@/stores/artifact-panel';
-import type { WebBrowserWebviewElement } from '@/types/web-browser';
+import type { WebBrowserDidFailLoadEvent, WebBrowserWebviewElement } from '@/types/web-browser';
 
 interface WebviewElementProps extends HTMLAttributes<HTMLElement>, RefAttributes<WebBrowserWebviewElement> {
   partition: string;
@@ -25,11 +25,6 @@ interface HostGeometry {
   width: number;
   height: number;
   fullscreen: boolean;
-}
-
-interface DidFailLoadEvent extends Event {
-  errorCode: number;
-  isMainFrame: boolean;
 }
 
 const WebviewElement = 'webview' as unknown as ComponentType<WebviewElementProps>;
@@ -137,7 +132,7 @@ export function WebBrowserHost(): React.ReactElement | null {
     };
     const onDidStartLoading = () => setLoading(true);
     const onDidStopLoading = () => setLoading(false);
-    const onDidFailLoad = (event: DidFailLoadEvent) => {
+    const onDidFailLoad = (event: WebBrowserDidFailLoadEvent) => {
       if (!event.isMainFrame || event.errorCode === -3) return;
       setLoading(false);
       toast.error(t('filePreview.errors.htmlLoadFailed', 'Could not load HTML preview'));
@@ -151,13 +146,13 @@ export function WebBrowserHost(): React.ReactElement | null {
     node.addEventListener('did-attach', onDidAttach);
     node.addEventListener('did-start-loading', onDidStartLoading);
     node.addEventListener('did-stop-loading', onDidStopLoading);
-    node.addEventListener('did-fail-load', onDidFailLoad);
+    node.addEventListener('did-fail-load', onDidFailLoad as EventListener);
     node.addEventListener('render-process-gone', onRenderProcessGone);
     removeListenersRef.current = () => {
       node.removeEventListener('did-attach', onDidAttach);
       node.removeEventListener('did-start-loading', onDidStartLoading);
       node.removeEventListener('did-stop-loading', onDidStopLoading);
-      node.removeEventListener('did-fail-load', onDidFailLoad);
+      node.removeEventListener('did-fail-load', onDidFailLoad as EventListener);
       node.removeEventListener('render-process-gone', onRenderProcessGone);
     };
   }, [navigateToPreview, t]);

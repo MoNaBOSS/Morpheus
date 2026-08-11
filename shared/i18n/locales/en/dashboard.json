@@ -396,10 +396,10 @@
       "provider": "Provider",
       "trust": "Trust profile",
       "workspace": "Workspace",
-      "runtimeReady": "Runtime ready",
-      "runtimeStarting": "Runtime starting",
-      "runtimeStopped": "Runtime stopped",
-      "providerUnknown": "No provider configured",
+      "runtimeReady": "Ready",
+      "runtimeStarting": "Starting",
+      "runtimeStopped": "Stopped",
+      "providerUnknown": "Not configured",
       "auditDegraded": "Audit unavailable"
     },
     "artifacts": {

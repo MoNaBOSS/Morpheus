@@ -70,12 +70,12 @@ describe('launch-at-startup integration', () => {
     setPlatform('linux');
     const { applyLaunchAtStartupSetting } = await import('@electron/main/launch-at-startup');
 
-    const autostartPath = join(testHome, '.config', 'autostart', 'clawx.desktop');
+    const autostartPath = join(testHome, '.config', 'autostart', 'morpheus.desktop');
     await applyLaunchAtStartupSetting(true);
 
     const content = await readFile(autostartPath, 'utf8');
     expect(content).toContain('[Desktop Entry]');
-    expect(content).toContain('Name=ClawX');
+    expect(content).toContain('Name=Morpheus');
     expect(content).toContain('Exec=');
 
     await applyLaunchAtStartupSetting(false);

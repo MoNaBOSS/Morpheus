@@ -21,7 +21,7 @@ sequence, and three deterministic Windows capabilities.
   persistent grants, revocation, and Permission Center.
 - Command Center at `/`; OpenClaw chat at `/chat`.
 
-### 0.5 — Execution platform foundation *(current)*
+### 0.5 — Execution platform foundation
 
 - Main-owned sequential multi-step executor with dependency validation,
   transitive skipping, partial completion, cancellation, and real step results.
@@ -41,9 +41,7 @@ sequence, and three deterministic Windows capabilities.
 - OpenClaw gateway, chat, Agents, Skills, Channels, Cron, and provider/model
   surfaces remain separate and functional.
 
-## In progress
-
-### Windows 1.0 Foundation
+### Windows 1.0 Foundation *(release verification in progress)*
 
 One coherent campaign: centralized objective orchestration, provider-backed
 planning, structured observation/replanning, bounded context/memory, first-class
@@ -53,6 +51,15 @@ security hardening and packaged end-to-end verification.
 
 This is deliberately not four disconnected 0.x mini-products. It reuses the 0.5
 executor and trust chassis and judges completion by real packaged user journeys.
+
+Implemented source now includes the shared Objective Core for Command Center,
+Quick Command, explicit Chat execution, workflows and schedules; provider-backed
+planning and bounded review/replanning; secure voice transcription and Windows
+speech output; Main-owned workspace and runtime controls; real system-builder
+authoring; a compact Matrix-accented Windows interface; and hardened desktop,
+Gateway, file, navigation and installer boundaries. Final release status is
+recorded in `docs/releases/1.0.0-FOUNDATION-ACCEPTANCE.md` after packaging and
+normal-production smoke verification.
 
 ## Later
 

@@ -383,10 +383,10 @@
       "provider": "提供方",
       "trust": "信任模式",
       "workspace": "工作区",
-      "runtimeReady": "运行时就绪",
-      "runtimeStarting": "运行时启动中",
-      "runtimeStopped": "运行时已停止",
-      "providerUnknown": "未配置提供方",
+      "runtimeReady": "就绪",
+      "runtimeStarting": "启动中",
+      "runtimeStopped": "已停止",
+      "providerUnknown": "未配置",
       "auditDegraded": "审计不可用"
     },
     "artifacts": {

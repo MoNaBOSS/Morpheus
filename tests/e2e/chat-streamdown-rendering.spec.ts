@@ -261,7 +261,7 @@ test.describe('ClawX streaming Markdown rendering', () => {
       await expect(activeMessage).toContainText('Final streamed text.');
       await expect(copyCode).toBeEnabled();
       await copyCode.click();
-      await expect.poll(() => page.evaluate(async () => (await navigator.clipboard.readText()).trim()))
+      await expect.poll(() => app.evaluate(({ clipboard }) => clipboard.readText().trim()))
         .toBe('const answer = 42;');
     } finally {
       await closeElectronApp(app);

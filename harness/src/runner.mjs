@@ -7,7 +7,7 @@ export async function runStep(step) {
     const child = spawn(step.command, step.args, {
       cwd: ROOT,
       stdio: 'inherit',
-      shell: process.platform === 'win32',
+      shell: false,
     });
 
     child.on('close', (exitCode) => {

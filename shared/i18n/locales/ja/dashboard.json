@@ -383,10 +383,10 @@
       "provider": "プロバイダー",
       "trust": "信頼プロファイル",
       "workspace": "ワークスペース",
-      "runtimeReady": "ランタイム準備完了",
-      "runtimeStarting": "ランタイム起動中",
-      "runtimeStopped": "ランタイム停止",
-      "providerUnknown": "プロバイダー未設定",
+      "runtimeReady": "準備完了",
+      "runtimeStarting": "起動中",
+      "runtimeStopped": "停止",
+      "providerUnknown": "未設定",
       "auditDegraded": "監査利用不可"
     },
     "artifacts": {
