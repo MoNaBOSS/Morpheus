@@ -125,7 +125,7 @@ Morpheus may register multiple exact workspace roots. Main obtains each root
 from a native directory picker, stores it atomically, and accepts only its
 logical id from Renderer and planners. Grants never cross roots. Read-only
 workspace policy is enforced at execution time on every entry path, and
-removing a workspace registration revokes grants for that exact root without
+removing, disabling, or downgrading a workspace registration revokes grants for that exact root without
 deleting any user files.
 
 ### Current capabilities

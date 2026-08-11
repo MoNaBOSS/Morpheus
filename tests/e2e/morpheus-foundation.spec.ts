@@ -100,6 +100,60 @@ test.describe('Morpheus 0.5 foundation', () => {
     }
   });
 
+  test('authors Agent Profiles, typed workflows and workspace-bound schedules through Main APIs', async ({
+    launchElectronApp,
+  }) => {
+    const app = await launchElectronApp({ skipSetup: true });
+    try {
+      const page = await getStableWindow(app);
+      await openCommandCenter(page);
+
+      await page.getByTestId('sidebar-nav-agent-profiles').click();
+      await page.getByTestId('agent-profile-create').click();
+      await expect(page.getByTestId('agent-profile-editor')).toBeVisible();
+      await page.getByTestId('agent-profile-name').fill('Verification Operator');
+      await page.getByTestId('agent-profile-description').fill('A bounded verification profile.');
+      await page.getByTestId('agent-profile-instructions').fill('Verify the requested objective and report only real results.');
+      await page.getByTestId('agent-profile-save').click();
+      await expect(page.getByTestId('agent-profile-editor')).toHaveCount(0);
+      await expect(page.getByText('Verification Operator', { exact: true })).toBeVisible();
+
+      await page.getByTestId('sidebar-nav-workflows').click();
+      await page.getByTestId('workflow-create').click();
+      await expect(page.getByTestId('workflow-editor')).toBeVisible();
+      await page.getByTestId('workflow-name').fill('Verification system brief');
+      await page.getByTestId('workflow-description').fill('Produces a real privacy-safe system report.');
+      await page.getByTestId('workflow-agent-profile').selectOption({ label: 'Verification Operator' });
+      await page.getByTestId('workflow-trigger-schedule').check();
+      await page.getByTestId('workflow-save').click();
+      await expect(page.getByTestId('workflow-editor')).toHaveCount(0);
+
+      const workflowCard = page.locator('[data-testid^="workflow-"]').filter({ hasText: 'Verification system brief' }).first();
+      await expect(workflowCard).toBeVisible();
+      await workflowCard.getByRole('button', { name: /run workflow/i }).click();
+      await page.getByTestId('sidebar-nav-command-center').click();
+      await expect(page.getByTestId('plan-status')).toContainText(/completed/i, { timeout: 20_000 });
+      await expect(page.getByTestId('morpheus-workspace-control')).toBeVisible();
+
+      await page.getByTestId('sidebar-nav-schedules').click();
+      await page.getByTestId('schedule-name').fill('Verification every hour');
+      await page.getByTestId('schedule-workflow').selectOption({ label: 'Verification system brief' });
+      await expect(page.getByTestId('schedule-workspace')).not.toHaveValue('');
+      await page.getByTestId('schedule-trigger').selectOption('interval');
+      await page.getByTestId('schedule-trigger-value').fill('60');
+      await page.getByTestId('schedule-save').click();
+
+      const schedule = page.getByTestId('schedules-list').locator('li')
+        .filter({ hasText: 'Verification every hour' });
+      await expect(schedule).toBeVisible();
+      await schedule.getByRole('button', { name: /run now/i }).click();
+      await expect(schedule.locator('[data-testid^="schedule-objective-"]')).toBeVisible({ timeout: 20_000 });
+      await expect(schedule).toContainText(/completed/i);
+    } finally {
+      await closeElectronApp(app);
+    }
+  });
+
   test('reconstructs durable artifacts from the privacy-safe audit ledger after restart', async ({
     launchElectronApp,
   }) => {

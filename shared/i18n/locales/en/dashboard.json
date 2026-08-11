@@ -440,6 +440,37 @@
     "workflow": {
       "step": "{{summary}}"
     },
+    "common": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "edit": "Edit",
+      "remove": "Remove",
+      "enable": "Enable",
+      "disable": "Disable",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "loading": "Loading Morpheus configuration…"
+    },
+    "risk": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "workspaces": {
+      "title": "Trusted workspaces",
+      "description": "Choose where Morpheus may work. Paths come only from the Windows folder picker; trust stays bound to one exact canonical root.",
+      "active": "Active workspace",
+      "selected": "Active",
+      "managed": "Morpheus managed",
+      "unavailable": "Unavailable",
+      "add": "Add workspace",
+      "open": "Open workspace",
+      "access": "Access",
+      "read": "Read only",
+      "readWrite": "Read and write",
+      "authorityNote": "Selecting a workspace does not grant authority. Morpheus evaluates the complete plan against its exact root and reuses only matching trust. Downgrading or disabling a workspace revokes remembered grants for that root."
+    },
     "agentProfiles": {
       "title": "Agent Profiles",
       "description": "Reusable planning identities that constrain provider, context, workspace, capabilities and risk. They never bypass Main-owned policy.",
@@ -449,7 +480,48 @@
       "workspace": "Workspace",
       "capabilities": "Capabilities",
       "maxRisk": "Maximum risk",
-      "authorityNote": "This profile narrows plan construction. Every real target is still resolved, permissioned and audited by Morpheus Main."
+      "authorityNote": "This profile narrows plan construction. Every real target is still resolved, permissioned and audited by Morpheus Main.",
+      "create": "Create profile",
+      "reset": "Restore built-ins",
+      "builtIn": "Built-in",
+      "custom": "Custom",
+      "removeTitle": "Remove Agent Profile?",
+      "removeDescription": "This removes the custom profile definition only. Morpheus blocks removal while a workflow still uses it.",
+      "resetTitle": "Restore built-in Agent Profiles?",
+      "resetDescription": "Built-in profiles return to their shipped configuration. Custom profiles remain untouched.",
+      "editor": {
+        "builtIn": "Built-in execution identity",
+        "custom": "Custom execution identity",
+        "editTitle": "Edit Agent Profile",
+        "createTitle": "Create Agent Profile",
+        "description": "Configure how Morpheus plans and which boundaries this profile may propose. Main policy remains authoritative.",
+        "enabled": "Profile enabled",
+        "identity": "Identity and reasoning",
+        "name": "Name",
+        "profileDescription": "Description",
+        "instructions": "Operating instructions",
+        "planner": "Planner strategy",
+        "workspaceAccess": "Workspace policy",
+        "readOnly": "Read only",
+        "readWrite": "Read and write",
+        "providerAccount": "Provider account",
+        "model": "Planning model",
+        "memory": "Context policy",
+        "contextItems": "Maximum context items",
+        "boundary": "Capability boundary",
+        "boundaryDescription": "This allowlist can narrow execution only. It never creates a permission grant.",
+        "revert": "Revert edits",
+        "planners": {
+          "auto": "Automatic · provider with safe fallback",
+          "deterministic": "Deterministic interpreter",
+          "provider": "Exact provider and model"
+        },
+        "memoryModes": {
+          "none": "No retained context",
+          "session": "Current session",
+          "workspace": "Trusted workspace"
+        }
+      }
     },
     "workflows": {
       "title": "Workflows",
@@ -458,7 +530,59 @@
       "run": "Run workflow",
       "running": "Running…",
       "agent": "Agent Profile",
-      "steps": "steps"
+      "steps": "steps",
+      "create": "Create workflow",
+      "removeTitle": "Remove workflow?",
+      "removeDescription": "This removes the custom workflow definition. Schedules that still reference it must be removed first.",
+      "editor": {
+        "builtIn": "Built-in system",
+        "custom": "Custom system",
+        "editTitle": "Edit workflow",
+        "createTitle": "Create workflow",
+        "description": "Build a bounded, reusable sequence. Every run enters the same Objective Core and plan-level trust evaluation.",
+        "name": "Workflow name",
+        "workflowDescription": "Description",
+        "triggers": "Allowed triggers",
+        "triggersDescription": "A trigger may start this workflow; it never bypasses trust or policy.",
+        "trigger": {
+          "manual": "Manual",
+          "schedule": "Schedule",
+          "app-startup": "Application startup"
+        },
+        "planSteps": "Typed plan steps",
+        "sequentialNote": "Windows 1.0 executes ready steps sequentially. Dependencies still define ordering and skip behavior.",
+        "addStep": "Add step",
+        "removeStep": "Remove step",
+        "stepId": "Step id",
+        "capability": "Capability",
+        "summary": "User-facing summary",
+        "dependsOn": "Depends on",
+        "condition": "Condition",
+        "conditions": {
+          "always": "Run when dependencies finish",
+          "succeeded": "Only if {{id}} succeeded"
+        },
+        "optional": "optional",
+        "outputs": "Outputs",
+        "collectArtifacts": "Collect artifacts",
+        "retainHistory": "Retain objective history",
+        "stepCount": "{{count}} typed step",
+        "stepCount_other": "{{count}} typed steps",
+        "defaultStep": "Step {{number}}",
+        "params": {
+          "applicationKey": "Approved application",
+          "fileName": "File name",
+          "content": "Text content",
+          "path": "Workspace-relative path",
+          "query": "Search query",
+          "limit": "Maximum results",
+          "destination": "Destination path",
+          "title": "Title",
+          "body": "Message",
+          "url": "Approved web URL",
+          "templateKey": "Developer launcher"
+        }
+      }
     },
     "schedules": {
       "title": "Schedules",
@@ -475,8 +599,13 @@
       "once": "Run once",
       "startup": "Application startup",
       "save": "Save schedule",
+      "update": "Update schedule",
+      "edit": "Edit schedule",
+      "workspace": "Workspace",
       "runNow": "Run now",
-      "remove": "Remove schedule"
+      "remove": "Remove schedule",
+      "removeTitle": "Remove schedule?",
+      "removeDescription": "The schedule definition will be removed. Existing objective and audit history remains append-only."
     },
     "activity": {
       "history": "Observable execution",

@@ -89,6 +89,10 @@ import {
   type WorkflowTriggerType,
 } from '@shared/morpheus/workflow-types';
 
+const MORPHEUS_RISK_ORDER: Record<MorpheusRiskTier, number> = {
+  low: 0, medium: 1, high: 2, critical: 3,
+};
+
 export class MorpheusValidationError extends Error {
   constructor(message: string) {
     super(message);
@@ -370,6 +374,12 @@ export function validateAgentProfileDraft(payload: unknown): MorpheusAgentProfil
   if (!['low', 'medium', 'high', 'critical'].includes(String(permission.maxRiskTier))) {
     throw new MorpheusValidationError('invalid Agent Profile maximum risk');
   }
+  const maxRiskTier = permission.maxRiskTier as MorpheusRiskTier;
+  if (capabilityIds.some((id) => (
+    MORPHEUS_RISK_ORDER[getMorpheusActionDescriptor(id).riskTier] > MORPHEUS_RISK_ORDER[maxRiskTier]
+  ))) {
+    throw new MorpheusValidationError('Agent Profile capability exceeds maximum risk');
+  }
   return {
     ...(record.profileId ? { profileId: record.profileId } : {}),
     name: boundedText(record.name, 'Agent Profile name', 80, false).trim(),
@@ -383,7 +393,7 @@ export function validateAgentProfileDraft(payload: unknown): MorpheusAgentProfil
     },
     permissionBoundary: {
       capabilityIds,
-      maxRiskTier: permission.maxRiskTier as MorpheusRiskTier,
+      maxRiskTier,
     },
     enabled: record.enabled,
   };
@@ -830,7 +840,8 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     },
     updateWorkspace: async (payload) => {
       const input = validateUpdateWorkspacePayload(payload);
-      if (!workspaces.get(input.workspaceId)) throw new MorpheusValidationError('Unknown Morpheus workspace');
+      const existing = workspaces.get(input.workspaceId);
+      if (!existing) throw new MorpheusValidationError('Unknown Morpheus workspace');
       await audit.recordControl({
         category: 'workspace', event: 'update-requested', subjectId: input.workspaceId,
         details: {
@@ -840,6 +851,9 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
         },
         appVersion,
       });
+      if ((input.access === 'read' && existing.access === 'read-write') || input.enabled === false) {
+        grants.revokeForResourceScope(existing.rootPath);
+      }
       return { workspace: workspaces.update(input) };
     },
     removeWorkspace: async (payload) => {
@@ -892,6 +906,22 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
         }),
       };
     },
+    removeAgentProfile: async (payload) => {
+      const id = validateIdPayload(payload, 'Agent Profile').id;
+      const profile = agentProfiles.get(id);
+      if (!profile) return { ok: false };
+      if (profile.builtIn) {
+        throw new MorpheusValidationError('Built-in Morpheus Agent Profiles cannot be removed');
+      }
+      if (workflows.list().workflows.some((workflow) => workflow.agentProfileId === id)) {
+        throw new MorpheusValidationError('Remove workflows that use this Agent Profile first');
+      }
+      await audit.recordControl({
+        category: 'agent-profile', event: 'removal-requested', subjectId: id,
+        details: {}, appVersion,
+      });
+      return { ok: agentProfiles.remove(id) };
+    },
     resetAgentProfiles: async () => {
       await audit.recordControl({
         category: 'agent-profile', event: 'built-ins-reset', details: {}, appVersion,
@@ -904,8 +934,19 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     }),
     saveWorkflow: async (payload) => {
       const draft = validateWorkflowDraft(payload);
-      if (!agentProfiles.get(draft.agentProfileId)) {
+      const profile = agentProfiles.get(draft.agentProfileId);
+      if (!profile) {
         throw new MorpheusValidationError('Unknown workflow Agent Profile');
+      }
+      const allowed = new Set(profile.permissionBoundary.capabilityIds);
+      for (const step of draft.steps) {
+        if (!allowed.has(step.capabilityId)) {
+          throw new MorpheusValidationError(`Agent Profile does not allow ${step.capabilityId}`);
+        }
+        const risk = getMorpheusActionDescriptor(step.capabilityId).riskTier;
+        if (MORPHEUS_RISK_ORDER[risk] > MORPHEUS_RISK_ORDER[profile.permissionBoundary.maxRiskTier]) {
+          throw new MorpheusValidationError(`${step.capabilityId} exceeds the Agent Profile risk boundary`);
+        }
       }
       const workflowId = draft.workflowId ?? `workflow-${randomUUID()}`;
       const existing = workflows.get(workflowId);

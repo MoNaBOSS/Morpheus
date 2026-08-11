@@ -1155,6 +1155,7 @@ export type HostApiContract = {
     agentProfiles: () => AgentProfilesSnapshot;
     agentProfile: (payload: MorpheusIdPayload) => MorpheusAgentProfileResult;
     saveAgentProfile: (payload: MorpheusAgentProfileDraft) => MorpheusAgentProfileResult;
+    removeAgentProfile: (payload: MorpheusIdPayload) => PermissionAcknowledgement;
     resetAgentProfiles: () => AgentProfilesSnapshot;
     workflows: () => WorkflowsSnapshot;
     workflow: (payload: MorpheusIdPayload) => MorpheusWorkflowResult;

@@ -21,6 +21,7 @@ export interface MorpheusAgentProfileStore {
   list(): AgentProfilesSnapshot;
   get(profileId: string): MorpheusAgentProfile | undefined;
   save(profile: MorpheusAgentProfile): MorpheusAgentProfile;
+  remove(profileId: string): boolean;
   resetBuiltIns(): AgentProfilesSnapshot;
 }
 
@@ -124,6 +125,19 @@ export function createMorpheusAgentProfileStore(options: { userDataDir: string }
         throw error;
       }
       return copyProfile(next);
+    },
+    remove(profileId) {
+      const existing = byId.get(profileId);
+      if (!existing) return false;
+      if (existing.builtIn) throw new Error('Built-in Morpheus Agent Profiles cannot be removed');
+      byId.delete(profileId);
+      try {
+        flush();
+      } catch (error) {
+        byId.set(profileId, existing);
+        throw error;
+      }
+      return true;
     },
     resetBuiltIns() {
       const previous = new Map(

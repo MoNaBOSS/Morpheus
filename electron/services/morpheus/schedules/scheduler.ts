@@ -67,6 +67,8 @@ export function createMorpheusScheduler(options: {
       lastRunAt: stamp.toISOString(),
       lastStatus: result.status,
       lastError: result.error,
+      lastObjectiveRunId: result.objectiveRunId,
+      lastPlanId: result.planId,
       nextRunAt: nextRunFor(schedule.trigger, stamp, true),
       enabled: schedule.trigger.type === 'once' ? false : schedule.enabled,
     });
@@ -159,6 +161,8 @@ export function createMorpheusScheduler(options: {
         nextRunAt: draft.enabled ? nextRunFor(draft.trigger, stamp) : undefined,
         lastRunAt: existing?.lastRunAt, lastStatus: existing?.lastStatus ?? 'never',
         lastError: existing?.lastError,
+        ...(existing?.lastObjectiveRunId ? { lastObjectiveRunId: existing.lastObjectiveRunId } : {}),
+        ...(existing?.lastPlanId ? { lastPlanId: existing.lastPlanId } : {}),
       };
       return options.store.save(schedule);
     },

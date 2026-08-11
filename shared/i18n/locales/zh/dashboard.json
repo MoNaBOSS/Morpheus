@@ -440,6 +440,19 @@
     "workflow": {
       "step": "{{summary}}"
     },
+    "common": {
+      "cancel": "取消", "save": "保存", "edit": "编辑", "remove": "删除",
+      "enable": "启用", "disable": "停用", "enabled": "已启用", "disabled": "已停用",
+      "loading": "正在加载 Morpheus 配置…"
+    },
+    "risk": { "low": "低", "medium": "中", "high": "高", "critical": "关键" },
+    "workspaces": {
+      "title": "受信任工作区",
+      "description": "选择 Morpheus 可工作的范围。路径只能来自 Windows 文件夹选择器，信任绑定到一个精确的规范根目录。",
+      "active": "活动工作区", "selected": "活动", "managed": "Morpheus 管理", "unavailable": "不可用",
+      "add": "添加工作区", "open": "打开工作区", "access": "访问权限", "read": "只读", "readWrite": "读写",
+      "authorityNote": "选择工作区并不授予权限。Morpheus 会针对精确根目录评估完整计划，并只复用匹配的信任。降级或停用工作区会撤销该根目录的已记住授权。"
+    },
     "agentProfiles": {
       "title": "Agent 配置档",
       "description": "可复用的规划身份，用于约束提供方、上下文、工作区、能力和风险，绝不会绕过主进程策略。",
@@ -449,7 +462,20 @@
       "workspace": "工作区",
       "capabilities": "能力",
       "maxRisk": "最高风险",
-      "authorityNote": "配置档只会收窄计划。所有真实目标仍由 Morpheus 主进程解析、授权并审计。"
+      "authorityNote": "配置档只会收窄计划。所有真实目标仍由 Morpheus 主进程解析、授权并审计。",
+      "create": "创建配置档", "reset": "恢复内置配置", "builtIn": "内置", "custom": "自定义",
+      "removeTitle": "删除 Agent 配置档？", "removeDescription": "只删除自定义配置档定义。仍被工作流使用时，Morpheus 会阻止删除。",
+      "resetTitle": "恢复内置 Agent 配置档？", "resetDescription": "内置配置档将恢复为发布配置，自定义配置档不受影响。",
+      "editor": {
+        "builtIn": "内置执行身份", "custom": "自定义执行身份", "editTitle": "编辑 Agent 配置档", "createTitle": "创建 Agent 配置档",
+        "description": "配置 Morpheus 的规划方式及该配置档可提出的边界。主进程策略始终拥有最终决定权。",
+        "enabled": "启用配置档", "identity": "身份与推理", "name": "名称", "profileDescription": "描述", "instructions": "操作指令",
+        "planner": "规划策略", "workspaceAccess": "工作区策略", "readOnly": "只读", "readWrite": "读写",
+        "providerAccount": "提供方账户", "model": "规划模型", "memory": "上下文策略", "contextItems": "最大上下文项目",
+        "boundary": "能力边界", "boundaryDescription": "此允许列表只能收窄执行，绝不会创建权限授权。", "revert": "还原编辑",
+        "planners": { "auto": "自动 · 提供方并安全回退", "deterministic": "确定性解释器", "provider": "指定提供方和模型" },
+        "memoryModes": { "none": "不保留上下文", "session": "当前会话", "workspace": "受信任工作区" }
+      }
     },
     "workflows": {
       "title": "工作流",
@@ -458,7 +484,25 @@
       "run": "运行工作流",
       "running": "运行中…",
       "agent": "Agent 配置档",
-      "steps": "个步骤"
+      "steps": "个步骤", "create": "创建工作流",
+      "removeTitle": "删除工作流？", "removeDescription": "将删除自定义工作流定义。必须先删除仍引用它的计划任务。",
+      "editor": {
+        "builtIn": "内置系统", "custom": "自定义系统", "editTitle": "编辑工作流", "createTitle": "创建工作流",
+        "description": "构建受限、可复用的顺序。每次运行都进入同一 Objective Core 和计划级信任评估。",
+        "name": "工作流名称", "workflowDescription": "描述", "triggers": "允许的触发器",
+        "triggersDescription": "触发器可以启动工作流，但不能绕过信任或策略。",
+        "trigger": { "manual": "手动", "schedule": "计划任务", "app-startup": "应用启动" },
+        "planSteps": "类型化计划步骤", "sequentialNote": "Windows 1.0 按顺序执行就绪步骤，依赖关系仍决定顺序与跳过行为。",
+        "addStep": "添加步骤", "removeStep": "删除步骤", "stepId": "步骤 id", "capability": "能力", "summary": "面向用户的摘要",
+        "dependsOn": "依赖于", "condition": "条件", "conditions": { "always": "依赖完成后运行", "succeeded": "仅当 {{id}} 成功" },
+        "optional": "可选", "outputs": "输出", "collectArtifacts": "收集产物", "retainHistory": "保留目标历史",
+        "stepCount": "{{count}} 个类型化步骤", "stepCount_other": "{{count}} 个类型化步骤", "defaultStep": "步骤 {{number}}",
+        "params": {
+          "applicationKey": "已批准应用", "fileName": "文件名", "content": "文本内容", "path": "工作区相对路径",
+          "query": "搜索查询", "limit": "最大结果数", "destination": "目标路径", "title": "标题", "body": "消息",
+          "url": "已批准网页 URL", "templateKey": "开发启动器"
+        }
+      }
     },
     "schedules": {
       "title": "计划任务",
@@ -474,9 +518,9 @@
       "daily": "每天本地时间",
       "once": "运行一次",
       "startup": "应用启动时",
-      "save": "保存计划",
+      "save": "保存计划", "update": "更新计划", "edit": "编辑计划", "workspace": "工作区",
       "runNow": "立即运行",
-      "remove": "删除计划"
+      "remove": "删除计划", "removeTitle": "删除计划？", "removeDescription": "计划定义将被删除，现有目标与审计历史仍保持仅追加。"
     },
     "activity": {
       "history": "可观察执行",

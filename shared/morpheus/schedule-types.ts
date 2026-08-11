@@ -29,6 +29,9 @@ export type MorpheusSchedule = {
   lastRunAt?: string;
   lastStatus: MorpheusScheduleRunStatus;
   lastError?: string;
+  /** Durable link into Objective history for the most recent real run. */
+  lastObjectiveRunId?: string;
+  lastPlanId?: string;
 };
 
 export type MorpheusScheduleDraft = Pick<MorpheusSchedule, 'name' | 'workflowId' | 'enabled' | 'trigger'> & {

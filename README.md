@@ -173,8 +173,12 @@ globally with `Ctrl+Shift+Space`; OpenClaw chat remains fully functional at
   sensitive-but-grantable screenshots, privacy-safe system/storage/process
   reports, approved URLs, and a bounded VS Code project launcher. No generic
   shell, PowerShell, arbitrary executable, argv, or unrestricted path surface.
-- **System builder foundation** — reusable Agent Profiles, two real starter
-  workflows, Morpheus-owned schedules, and a provider-neutral planner contract.
+- **System builder** — editable provider-aware Agent Profiles, Main-validated
+  typed workflows, workspace-bound Morpheus schedules, and a provider-neutral
+  planner contract. Definitions narrow authority; they never create grants.
+- **Trusted workspaces** — native-folder-picker registration, exact canonical
+  roots, read/read-write policy, logical Renderer selection, and immediate grant
+  revocation when a root is removed, disabled, or downgraded.
 - **Real observability** — live Main events, durable artifacts reconstructed from
   privacy-safe audit metadata, and a cursor-based Activity ledger across daily
   append-only audit files. Text, clipboard payloads, notification copy, process

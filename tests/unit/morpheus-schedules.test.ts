@@ -77,6 +77,8 @@ describe('Morpheus scheduling', () => {
     }));
     expect(waitForTerminal).toHaveBeenCalledWith('objective-scheduled');
     expect(store.get('schedule-1')?.lastStatus).toBe('completed');
+    expect(store.get('schedule-1')?.lastObjectiveRunId).toBe('objective-scheduled');
+    expect(store.get('schedule-1')?.lastPlanId).toBe('plan-scheduled');
   });
 
   it('runs an app-startup schedule at most once per application session', async () => {

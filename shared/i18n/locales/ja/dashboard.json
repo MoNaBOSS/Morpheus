@@ -440,6 +440,19 @@
     "workflow": {
       "step": "{{summary}}"
     },
+    "common": {
+      "cancel": "キャンセル", "save": "保存", "edit": "編集", "remove": "削除",
+      "enable": "有効化", "disable": "無効化", "enabled": "有効", "disabled": "無効",
+      "loading": "Morpheus 設定を読み込み中…"
+    },
+    "risk": { "low": "低", "medium": "中", "high": "高", "critical": "重大" },
+    "workspaces": {
+      "title": "信頼済みワークスペース",
+      "description": "Morpheus が作業できる場所を選択します。パスは Windows のフォルダ選択からのみ取得され、信頼は正確な正規ルートに結びつきます。",
+      "active": "アクティブなワークスペース", "selected": "アクティブ", "managed": "Morpheus 管理", "unavailable": "利用不可",
+      "add": "ワークスペースを追加", "open": "ワークスペースを開く", "access": "アクセス", "read": "読み取り専用", "readWrite": "読み書き",
+      "authorityNote": "ワークスペースの選択だけでは権限を付与しません。Morpheus は正確なルートに対してプラン全体を評価し、一致する信頼のみ再利用します。降格または無効化すると、そのルートの記憶済み許可を取り消します。"
+    },
     "agentProfiles": {
       "title": "エージェントプロファイル",
       "description": "プロバイダー、コンテキスト、ワークスペース、機能、リスクを制約する再利用可能な計画 ID です。Main のポリシーを迂回しません。",
@@ -449,7 +462,20 @@
       "workspace": "ワークスペース",
       "capabilities": "機能",
       "maxRisk": "最大リスク",
-      "authorityNote": "プロファイルは計画を狭めるだけです。実際の対象は Morpheus Main が解決、許可、監査します。"
+      "authorityNote": "プロファイルは計画を狭めるだけです。実際の対象は Morpheus Main が解決、許可、監査します。",
+      "create": "プロファイルを作成", "reset": "組み込みを復元", "builtIn": "組み込み", "custom": "カスタム",
+      "removeTitle": "エージェントプロファイルを削除しますか？", "removeDescription": "カスタム定義のみ削除します。ワークフローが使用中の場合、Morpheus は削除を拒否します。",
+      "resetTitle": "組み込みプロファイルを復元しますか？", "resetDescription": "組み込みプロファイルを出荷時設定に戻します。カスタムプロファイルは維持されます。",
+      "editor": {
+        "builtIn": "組み込み実行 ID", "custom": "カスタム実行 ID", "editTitle": "エージェントプロファイルを編集", "createTitle": "エージェントプロファイルを作成",
+        "description": "Morpheus の計画方法と、このプロファイルが提案できる境界を設定します。Main ポリシーが常に最終権限を持ちます。",
+        "enabled": "プロファイルを有効化", "identity": "ID と推論", "name": "名前", "profileDescription": "説明", "instructions": "操作指示",
+        "planner": "プランナー戦略", "workspaceAccess": "ワークスペースポリシー", "readOnly": "読み取り専用", "readWrite": "読み書き",
+        "providerAccount": "プロバイダーアカウント", "model": "計画モデル", "memory": "コンテキストポリシー", "contextItems": "最大コンテキスト項目",
+        "boundary": "機能境界", "boundaryDescription": "この許可リストは実行を狭めるだけで、許可を作成しません。", "revert": "編集を戻す",
+        "planners": { "auto": "自動 · プロバイダーと安全なフォールバック", "deterministic": "決定論的インタープリター", "provider": "指定プロバイダーとモデル" },
+        "memoryModes": { "none": "保持しない", "session": "現在のセッション", "workspace": "信頼済みワークスペース" }
+      }
     },
     "workflows": {
       "title": "ワークフロー",
@@ -458,7 +484,25 @@
       "run": "ワークフローを実行",
       "running": "実行中…",
       "agent": "エージェントプロファイル",
-      "steps": "ステップ"
+      "steps": "ステップ", "create": "ワークフローを作成",
+      "removeTitle": "ワークフローを削除しますか？", "removeDescription": "カスタム定義を削除します。参照しているスケジュールを先に削除してください。",
+      "editor": {
+        "builtIn": "組み込みシステム", "custom": "カスタムシステム", "editTitle": "ワークフローを編集", "createTitle": "ワークフローを作成",
+        "description": "境界付きの再利用可能な順序を構築します。すべての実行は同じ Objective Core とプラン単位の信頼評価を通ります。",
+        "name": "ワークフロー名", "workflowDescription": "説明", "triggers": "許可するトリガー",
+        "triggersDescription": "トリガーは開始できますが、信頼やポリシーを迂回しません。",
+        "trigger": { "manual": "手動", "schedule": "スケジュール", "app-startup": "アプリ起動" },
+        "planSteps": "型付きプランステップ", "sequentialNote": "Windows 1.0 は準備済みステップを順次実行し、依存関係が順序とスキップを定義します。",
+        "addStep": "ステップを追加", "removeStep": "ステップを削除", "stepId": "ステップ id", "capability": "機能", "summary": "ユーザー向け要約",
+        "dependsOn": "依存先", "condition": "条件", "conditions": { "always": "依存完了後に実行", "succeeded": "{{id}} 成功時のみ" },
+        "optional": "任意", "outputs": "出力", "collectArtifacts": "成果物を収集", "retainHistory": "目標履歴を保持",
+        "stepCount": "型付きステップ {{count}} 件", "stepCount_other": "型付きステップ {{count}} 件", "defaultStep": "ステップ {{number}}",
+        "params": {
+          "applicationKey": "承認済みアプリ", "fileName": "ファイル名", "content": "テキスト内容", "path": "ワークスペース相対パス",
+          "query": "検索クエリ", "limit": "最大結果数", "destination": "移動先パス", "title": "タイトル", "body": "メッセージ",
+          "url": "承認済み Web URL", "templateKey": "開発ランチャー"
+        }
+      }
     },
     "schedules": {
       "title": "スケジュール",
@@ -474,9 +518,9 @@
       "daily": "毎日（ローカル時刻）",
       "once": "一度だけ実行",
       "startup": "アプリ起動時",
-      "save": "スケジュールを保存",
+      "save": "スケジュールを保存", "update": "スケジュールを更新", "edit": "スケジュールを編集", "workspace": "ワークスペース",
       "runNow": "今すぐ実行",
-      "remove": "スケジュールを削除"
+      "remove": "スケジュールを削除", "removeTitle": "スケジュールを削除しますか？", "removeDescription": "定義を削除します。既存の目標と監査履歴は追記専用のまま残ります。"
     },
     "activity": {
       "history": "観測可能な実行",

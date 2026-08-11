@@ -143,6 +143,13 @@ Main-authored ids and timestamps, and are written atomically. Store failures rol
 back in-memory state. Definitions may narrow capability/workspace authority but
 cannot create grants or bypass policy.
 
+The Windows surfaces now author these real records: Agent Profiles bind a real
+configured provider/model or the automatic/deterministic planner; the workflow
+editor emits validated typed steps, dependencies, conditions, triggers and output
+policy; the schedule editor binds a workflow to one logical workspace and stores
+the resulting objective/plan ids after execution. These are configuration
+surfaces over the one core, not alternate execution paths.
+
 ## Voice
 
 Voice is one input/output adapter around the objective pipeline:

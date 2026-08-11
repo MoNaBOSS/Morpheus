@@ -31,6 +31,7 @@ export type MorpheusFoundationState = {
   loadModels: () => Promise<void>;
   getAgentProfile: (profileId: string) => Promise<MorpheusAgentProfile | null>;
   saveAgentProfile: (draft: MorpheusAgentProfileDraft) => Promise<MorpheusAgentProfile | null>;
+  removeAgentProfile: (profileId: string) => Promise<void>;
   resetAgentProfiles: () => Promise<void>;
   saveWorkflow: (draft: MorpheusWorkflowDraft) => Promise<MorpheusWorkflow | null>;
   removeWorkflow: (workflowId: string) => Promise<void>;
@@ -82,6 +83,15 @@ export const useMorpheusFoundationStore = create<MorpheusFoundationState>((set, 
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Agent Profile could not be saved' });
       return null;
+    }
+  },
+
+  removeAgentProfile: async (profileId) => {
+    try {
+      await hostApi.morpheus.removeAgentProfile(profileId);
+      await get().loadModels();
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Agent Profile could not be removed' });
     }
   },
 

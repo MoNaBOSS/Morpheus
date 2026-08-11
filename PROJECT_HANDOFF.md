@@ -7,9 +7,9 @@ the runtime.
 
 > **Windows 1.0 campaign in progress:** development continues on
 > `windows-1.0-foundation` from the committed 0.5 checkpoint `d6a03f8`. The
-> provider-backed Objective Core, secure voice entry, and Main-owned workspace
-> registry are committed on that branch. Workflow and schedule execution is now
-> being converged on the same Objective Core; this document will be finalized
+> provider-backed Objective Core, secure voice entry, Main-owned workspace
+> registry, unified workflow/schedule execution, and real system-builder authoring
+> surfaces are committed on that branch. This document will be finalized
 > again before the Windows 1.0 packaging checkpoint.
 
 ## Current project status

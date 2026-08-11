@@ -16,6 +16,7 @@ import { useGatewayStore } from '@/stores/gateway';
 import { useUpdateStore } from '@/stores/update';
 import { UpdateSettings } from '@/components/settings/UpdateSettings';
 import { PermissionCenter } from '@/components/morpheus/PermissionCenter';
+import { MorpheusWorkspaceControl } from '@/components/morpheus/MorpheusWorkspaceControl';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { toUserMessage } from '@/lib/error-message';
 import {
@@ -652,6 +653,14 @@ export function Settings() {
               {tDashboard('morpheus.permission.centerTitle')}
             </h2>
             <PermissionCenter />
+          </div>
+
+          <Separator className="bg-black/5 dark:bg-white/5" />
+          <div data-testid="settings-workspaces-section">
+            <h2 className="mb-6 font-serif text-3xl font-normal tracking-tight text-foreground">
+              {tDashboard('morpheus.workspaces.title')}
+            </h2>
+            <MorpheusWorkspaceControl />
           </div>
 
           {/* Developer */}

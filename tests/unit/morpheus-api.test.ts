@@ -45,6 +45,7 @@ function stubOptions(runtime = stubRuntime()) {
       list: vi.fn(() => ({ profiles: [] })),
       get: vi.fn(),
       save: vi.fn(),
+      remove: vi.fn(() => true),
       resetBuiltIns: vi.fn(() => ({ profiles: [] })),
     } as never,
     workflows: {
@@ -262,6 +263,7 @@ describe('workspace trust boundary validation', () => {
     options.selectWorkspaceDirectory = vi.fn(async () => 'C:\\Trusted\\Client');
     options.workspaces.add = vi.fn(() => workspace);
     options.workspaces.get = vi.fn(() => workspace);
+    options.workspaces.update = vi.fn(() => ({ ...workspace, access: 'read' }));
     options.workspaces.remove = vi.fn(() => workspace);
     const api = createMorpheusApi(options);
 
@@ -274,6 +276,10 @@ describe('workspace trust boundary validation', () => {
       .resolves.toEqual({ workspace });
     expect(options.grants.revokeForResourceScope).toHaveBeenCalledWith('C:\\Trusted\\Client');
     expect(options.workspaces.remove).toHaveBeenCalledWith('workspace-client');
+
+    options.grants.revokeForResourceScope.mockClear();
+    await api.updateWorkspace({ workspaceId: 'workspace-client', access: 'read' });
+    expect(options.grants.revokeForResourceScope).toHaveBeenCalledWith('C:\\Trusted\\Client');
   });
 });
 
@@ -352,6 +358,7 @@ describe('createMorpheusApi', () => {
       'openFilesRoot',
       'openWorkspace',
       'permissionCenter',
+      'removeAgentProfile',
       'removeSchedule',
       'removeWorkflow',
       'removeWorkspace',
@@ -468,6 +475,40 @@ describe('createMorpheusApi', () => {
       preparedPlan: plan,
     });
   });
+
+  it('removes only unreferenced custom Agent Profiles', async () => {
+    const options = stubOptions();
+    const custom = { profileId: 'agent-custom', builtIn: false };
+    options.agentProfiles.get = vi.fn(() => custom);
+    options.workflows.list = vi.fn(() => ({ workflows: [] }));
+    const api = createMorpheusApi(options);
+
+    await expect(api.removeAgentProfile({ id: 'agent-custom' })).resolves.toEqual({ ok: true });
+    expect(options.agentProfiles.remove).toHaveBeenCalledWith('agent-custom');
+
+    options.workflows.list = vi.fn(() => ({
+      workflows: [{ workflowId: 'using-agent', agentProfileId: 'agent-custom' }],
+    }));
+    await expect(api.removeAgentProfile({ id: 'agent-custom' })).rejects.toThrow(/Remove workflows/);
+  });
+
+  it('rejects workflow definitions outside their Agent Profile boundary', async () => {
+    const options = stubOptions();
+    options.agentProfiles.get = vi.fn(() => ({
+      profileId: 'research',
+      permissionBoundary: { capabilityIds: ['system.report'], maxRiskTier: 'low' },
+    }));
+    const api = createMorpheusApi(options);
+    await expect(api.saveWorkflow({
+      name: 'Unsafe mismatch', description: '', agentProfileId: 'research', enabled: true,
+      allowedTriggers: ['manual'], outputs: { collectArtifacts: true, retainHistory: true },
+      steps: [{
+        stepId: 'launch', capabilityId: 'app.launch', params: { applicationKey: 'notepad' },
+        dependsOn: [], summary: 'Launch Notepad',
+      }],
+    })).rejects.toThrow(/does not allow app\.launch/);
+    expect(options.workflows.save).not.toHaveBeenCalled();
+  });
 });
 
 describe('Agent Profile and workflow draft validation', () => {
@@ -494,6 +535,10 @@ describe('Agent Profile and workflow draft validation', () => {
       ...agentDraft,
       planner: { kind: 'provider', providerId: 'provider-1', modelId: 'model', apiKey: 'secret' },
     })).toThrow(/unsupported key: apiKey/);
+    expect(() => validateAgentProfileDraft({
+      ...agentDraft,
+      permissionBoundary: { capabilityIds: ['screen.capture'], maxRiskTier: 'medium' },
+    })).toThrow(/exceeds maximum risk/);
   });
 
   it('normalizes capability params and rejects executable-shaped workflow fields', () => {

@@ -36,6 +36,10 @@ export function validateMorpheusSchedule(value: unknown): MorpheusSchedule | nul
   if (value.lastRunAt !== undefined && !validIso(value.lastRunAt)) return null;
   if (!['never', 'running', 'completed', 'partially-completed', 'failed', 'rejected'].includes(String(value.lastStatus))) return null;
   if (value.lastError !== undefined && (typeof value.lastError !== 'string' || value.lastError.length > 500)) return null;
+  if (value.lastObjectiveRunId !== undefined
+    && (typeof value.lastObjectiveRunId !== 'string' || value.lastObjectiveRunId.length > 100)) return null;
+  if (value.lastPlanId !== undefined
+    && (typeof value.lastPlanId !== 'string' || value.lastPlanId.length > 100)) return null;
   if (!isRecord(value.trigger) || !['once', 'interval', 'daily', 'app-startup'].includes(String(value.trigger.type))) return null;
   if (value.trigger.type === 'once' && !validIso(value.trigger.runAt)) return null;
   if (value.trigger.type === 'interval'
@@ -68,14 +72,28 @@ export function createMorpheusScheduleStore(options: { userDataDir: string }): M
     save(schedule) {
       const valid = validateMorpheusSchedule(schedule);
       if (!valid) throw new Error('Invalid Morpheus schedule');
+      const existing = byId.get(valid.scheduleId);
       byId.set(valid.scheduleId, structuredClone(valid));
-      flush();
+      try {
+        flush();
+      } catch (error) {
+        if (existing) byId.set(existing.scheduleId, existing);
+        else byId.delete(valid.scheduleId);
+        throw error;
+      }
       return structuredClone(valid);
     },
     remove(scheduleId) {
-      const removed = byId.delete(scheduleId);
-      if (removed) flush();
-      return removed;
+      const existing = byId.get(scheduleId);
+      if (!existing) return false;
+      byId.delete(scheduleId);
+      try {
+        flush();
+      } catch (error) {
+        byId.set(scheduleId, existing);
+        throw error;
+      }
+      return true;
     },
   };
 }

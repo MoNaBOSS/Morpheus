@@ -496,6 +496,7 @@ export const hostApi = {
     saveAgentProfile: (payload: MorpheusAgentProfileDraft) => (
       invokeHost('morpheus', 'saveAgentProfile', payload)
     ),
+    removeAgentProfile: (id: string) => invokeHost('morpheus', 'removeAgentProfile', { id }),
     resetAgentProfiles: () => invokeHost('morpheus', 'resetAgentProfiles'),
     workflows: () => invokeHost('morpheus', 'workflows'),
     workflow: (id: string) => invokeHost('morpheus', 'workflow', { id }),
