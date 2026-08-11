@@ -56,7 +56,7 @@ describe('workspace-scoped files api', () => {
     await rm(testDir, { recursive: true, force: true });
   });
 
-  async function getApi() {
+  async function getApi(allowedReadRoots?: () => readonly string[]) {
     const { createFilesApi } = await import('../../electron/services/files-api');
     return createFilesApi({
       workspaceFs: {
@@ -79,6 +79,7 @@ describe('workspace-scoped files api', () => {
         list: mocks.listOpenHandlers,
         open: mocks.openWithHandler,
       },
+      allowedReadRoots,
     });
   }
 
@@ -285,6 +286,37 @@ describe('workspace-scoped files api', () => {
       size: 5,
       readOnly: true,
     });
+  });
+
+  it('rejects direct reads and workspace references outside Main-approved roots', async () => {
+    const outsideRoot = join(testDir, 'outside-untrusted');
+    await mkdir(outsideRoot);
+    const outsideFile = join(outsideRoot, 'secret.txt');
+    await writeFile(outsideFile, 'secret');
+    const api = await getApi();
+
+    await expect(api.readText({ path: outsideFile })).resolves.toEqual({
+      ok: false,
+      error: 'outsideSandbox',
+    });
+    await expect(api.readWorkspaceText({
+      workspaceRoot: outsideRoot,
+      relativePath: 'secret.txt',
+    })).resolves.toEqual({ ok: false, error: 'outsideSandbox' });
+  });
+
+  it('accepts an external workspace only when Main supplies its exact root', async () => {
+    const trustedRoot = join(testDir, 'trusted-external');
+    await mkdir(trustedRoot);
+    await writeFile(join(trustedRoot, 'notes.txt'), 'trusted notes');
+    const api = await getApi(() => [trustedRoot]);
+
+    await expect(api.readWorkspaceText({
+      workspaceRoot: trustedRoot,
+      relativePath: 'notes.txt',
+    })).resolves.toMatchObject({ ok: true, content: 'trusted notes' });
+    await expect(api.readText({ path: join(trustedRoot, 'notes.txt') }))
+      .resolves.toMatchObject({ ok: true, content: 'trusted notes', readOnly: true });
   });
 
   it.each([

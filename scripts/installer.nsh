@@ -1,7 +1,8 @@
-; ClawX Custom NSIS Installer/Uninstaller Script
+; Morpheus Custom NSIS Installer/Uninstaller Script
 ;
-; Install: enables long paths, adds resources\cli to user PATH for openclaw CLI.
-; Uninstall: removes the PATH entry and optionally deletes user data.
+; Installation never changes security settings or PATH silently. CLI integration
+; is enabled only through Morpheus setup/settings. Uninstall removes a stale CLI
+; PATH entry if one exists and can optionally delete Morpheus-owned user data.
 
 !include "LogicLib.nsh"
 
@@ -29,7 +30,7 @@ Function ClawXMoveLegacyInstallDir
   ${endIf}
 
   IfFileExists "$R6\" 0 _clawx_legacy_move_done
-    DetailPrint "Moving previous ClawX installation at $R6 out of the way..."
+    DetailPrint "Moving previous Morpheus installation at $R6 out of the way..."
     SetOutPath $TEMP
     nsExec::ExecToStack `"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Get-CimInstance -ClassName Win32_Process | Where-Object { $$_.ExecutablePath -and $$_.ExecutablePath.StartsWith('$R6', [System.StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { Stop-Process -Id $$_.ProcessId -Force -ErrorAction SilentlyContinue }"`
     Pop $0
@@ -54,7 +55,7 @@ Function ClawXMoveLegacyInstallDir
       ClearErrors
       Rename "$R6" "$R6._stale_$R8"
       IfErrors 0 _clawx_legacy_stale_moved
-      DetailPrint "Removing previous ClawX installation at $R6..."
+      DetailPrint "Removing previous Morpheus installation at $R6..."
       nsExec::ExecToStack 'cmd.exe /c rd /s /q "$R6"'
       Pop $0
       Pop $1
@@ -79,7 +80,7 @@ FunctionEnd
   ; Make stage logs visible on assisted installers (defaults to hidden).
   SetDetailsPrint both
   DetailPrint "Preparing installation..."
-  DetailPrint "Extracting ClawX runtime files. This can take a few minutes on slower disks or while antivirus scanning is active."
+  DetailPrint "Extracting Morpheus runtime files. This can take a few minutes on slower disks or while antivirus scanning is active."
 
   ${nsProcess::FindProcess} "${APP_EXECUTABLE_FILENAME}" $R0
 
@@ -93,11 +94,8 @@ FunctionEnd
       Sleep 8000
       ${nsProcess::FindProcess} "${APP_EXECUTABLE_FILENAME}" $R0
       ${if} $R0 != 0
-        # App exited cleanly. Still kill long-lived child processes (gateway,
-        # uv, python) which may not have followed the app's graceful exit.
-        nsExec::ExecToStack 'taskkill /F /IM openclaw-gateway.exe'
-        Pop $0
-        Pop $1
+        # App exited cleanly. The later install-directory-owned process sweep
+        # handles any child that still owns files inside this installation.
         Goto done_killing
       ${endIf}
       # App didn't exit in time; fall through to force-kill
@@ -107,7 +105,7 @@ FunctionEnd
     DetailPrint `Closing running "${PRODUCT_NAME}"...`
 
     # Kill ALL processes whose executable lives inside $INSTDIR.
-    # This covers ClawX.exe (multiple Electron processes), openclaw-gateway.exe,
+    # This covers Morpheus.exe (multiple Electron processes), the bundled gateway,
     # python.exe (skills runtime), uv.exe (package manager), and any other
     # child process that might hold file locks in the installation directory.
     #
@@ -125,12 +123,6 @@ FunctionEnd
       Pop $1
     ${endIf}
 
-    # Also kill well-known child processes that may have detached from the
-    # Electron process tree or run from outside $INSTDIR (e.g. system python).
-    nsExec::ExecToStack 'taskkill /F /IM openclaw-gateway.exe'
-    Pop $0
-    Pop $1
-
     # Wait for Windows to fully release file handles after process termination.
     # 5 seconds accommodates slow antivirus scanners and filesystem flush delays.
     Sleep 5000
@@ -140,22 +132,18 @@ FunctionEnd
       ${nsProcess::Unload}
   ${endIf}
 
-  ; Even if ClawX.exe was not detected as running, orphan child processes
-  ; (python.exe, openclaw-gateway.exe, uv.exe, etc.) from a previous crash
+  ; Even if Morpheus.exe was not detected as running, orphan child processes
+  ; from a previous crash
   ; or unclean shutdown may still hold file locks inside $INSTDIR.
   ; Unconditionally kill any process whose executable lives in the install dir.
   nsExec::ExecToStack `"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Get-CimInstance -ClassName Win32_Process | Where-Object { $$_.ExecutablePath -and $$_.ExecutablePath.StartsWith('$INSTDIR', [System.StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { Stop-Process -Id $$_.ProcessId -Force -ErrorAction SilentlyContinue }"`
   Pop $0
   Pop $1
 
-  ; Always kill known process names as a belt-and-suspenders approach.
-  ; PowerShell path-based kill may miss processes if the old ClawX was installed
-  ; in a different directory than $INSTDIR (e.g., per-machine -> per-user migration).
-  ; taskkill is name-based and catches processes regardless of their install location.
+  ; Kill only the product executable by its architecture-aware builder name.
+  ; Child processes are terminated by install-path ownership above; never kill
+  ; a globally named OpenClaw process that may belong to another installation.
   nsExec::ExecToStack 'taskkill /F /T /IM "${APP_EXECUTABLE_FILENAME}"'
-  Pop $0
-  Pop $1
-  nsExec::ExecToStack 'taskkill /F /IM openclaw-gateway.exe'
   Pop $0
   Pop $1
   ; Note: we intentionally do NOT kill uv.exe globally — it is a popular
@@ -168,7 +156,7 @@ FunctionEnd
   ; Do not continue while the old UI process is still alive. Continuing in that
   ; state can leave the running old process/window in place, making the user see
   ; the old version after an otherwise successful extract.  Use process-list
-  ; commands instead of nsProcess here: field diagnostics showed ClawX.exe can
+  ; commands instead of nsProcess here: field diagnostics showed Morpheus.exe can
   ; remain alive while the old installer still reports success; this check must
   ; fail closed even when taskkill or the nsProcess plugin misses/elevates poorly.
   StrCpy $R7 0
@@ -194,7 +182,7 @@ FunctionEnd
       ${if} $R7 < 5
         Goto _clawx_verify_closed
       ${endIf}
-      MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "ClawX is still running and cannot be replaced safely. Please close ClawX and retry installation." /SD IDCANCEL IDRETRY _clawx_verify_closed
+      MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "Morpheus is still running and cannot be replaced safely. Please close Morpheus and retry installation." /SD IDCANCEL IDRETRY _clawx_verify_closed
       SetErrorLevel 2
       Quit
     ${endIf}
@@ -218,7 +206,7 @@ FunctionEnd
   ; locked files.  electron-builder's extractUsing7za macro extracts to a
   ; temp folder first, then uses `CopyFiles /SILENT` to copy into $INSTDIR.
   ; If ANY file in $INSTDIR is still locked, CopyFiles fails and triggers a
-  ; "Can't modify ClawX's files" retry loop -> "ClawX 无法关闭" dialog.
+  ; "Can't modify Morpheus files" retry loop.
   ;
   ; Strategy: rename (move) the old $INSTDIR out of the way.  Rename works
   ; even when AV/indexer have files open for reading (they use
@@ -249,9 +237,6 @@ FunctionEnd
       nsExec::ExecToStack 'taskkill /F /T /IM "${APP_EXECUTABLE_FILENAME}"'
       Pop $0
       Pop $1
-      nsExec::ExecToStack 'taskkill /F /IM openclaw-gateway.exe'
-      Pop $0
-      Pop $1
       Sleep 3000
       nsExec::ExecToStack 'cmd.exe /c rd /s /q "$INSTDIR"'
       Pop $0
@@ -260,7 +245,7 @@ FunctionEnd
       RMDir "$INSTDIR"
       IfFileExists "$INSTDIR\" 0 _recreate_clean_instdir
         DetailPrint "Failed to remove previous installation directory; aborting to avoid leaving the old version installed."
-        MessageBox MB_OK|MB_ICONEXCLAMATION "Unable to replace the previous ClawX installation because files are still locked. Please close ClawX and retry installation." /SD IDOK
+        MessageBox MB_OK|MB_ICONEXCLAMATION "Unable to replace the previous Morpheus installation because files are still locked. Please close Morpheus and retry installation." /SD IDOK
         SetErrorLevel 2
         Quit
       _recreate_clean_instdir:
@@ -291,7 +276,7 @@ FunctionEnd
 !macroend
 
 ; Override electron-builder's handleUninstallResult to prevent the
-; "ClawX 无法关闭" retry dialog when the old uninstaller fails.
+; misleading retry dialog when the old uninstaller fails.
 ;
 ; During upgrades, electron-builder copies the old uninstaller to a temp dir
 ; and runs it silently.  The old uninstaller uses atomicRMDir to rename every
@@ -326,7 +311,7 @@ FunctionEnd
   ; Now that the new files and current-hive registry entries have been written,
   ; remove stale entries from the opposite hive so Windows Apps & Features does
   ; not continue showing the old version after cross-hive upgrades.
-  DetailPrint "Clearing stale ClawX registry entries from the opposite install scope..."
+  DetailPrint "Clearing stale Morpheus registry entries from the opposite install scope..."
   ${if} $installMode == "all"
     DeleteRegKey HKCU "${UNINSTALL_REGISTRY_KEY}"
     DeleteRegKey HKCU "${INSTALL_REGISTRY_KEY}"
@@ -343,7 +328,7 @@ FunctionEnd
   ClearErrors
 
   ; Async cleanup of old dirs left by the rename loop in customCheckAppRunning.
-  ; Wait 60s before starting deletion to avoid I/O contention with ClawX's
+  ; Wait 60s before starting deletion to avoid I/O contention with Morpheus's
   ; first launch (Windows Defender scan, ASAR mapping, etc.).
   ; ExecShell SW_HIDE is completely detached from NSIS and avoids pipe blocking.
   IfFileExists "$INSTDIR._stale_0\" 0 _ci_stale_cleaned
@@ -352,52 +337,13 @@ FunctionEnd
     ; E.g. $INSTDIR = D:\Apps\MyClaw → glob = MyClaw._stale_*
     ExecShell "" "cmd.exe" `/c ping -n 61 127.0.0.1 >nul & cd /d "$INSTDIR\.." & for /d %D in ("$INSTDIR._stale_*") do rd /s /q "%D"` SW_HIDE
   _ci_stale_cleaned:
-  DetailPrint "Core files extracted. Finalizing system integration..."
-
-  ; Enable Windows long path support (Windows 10 1607+ / Windows 11).
-  ; pnpm virtual store paths can exceed the default MAX_PATH limit of 260 chars.
-  ; Writing to HKLM requires admin privileges; on per-user installs without
-  ; elevation this call silently fails — no crash, just no key written.
-  DetailPrint "Enabling long-path support (if permissions allow)..."
-  WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\FileSystem" "LongPathsEnabled" 1
-
-  ; Add $INSTDIR to Windows Defender exclusion list so that real-time scanning
-  ; doesn't block the first app launch (Defender scans every newly-created file,
-  ; causing 10-30s startup delay on a fresh install).  Requires elevation;
-  ; silently fails on non-admin per-user installs (no harm done).
-  DetailPrint "Configuring Windows Defender exclusion..."
-  nsExec::ExecToStack `"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Add-MpPreference -ExclusionPath '$INSTDIR' -ErrorAction SilentlyContinue"`
-  Pop $0
-  Pop $1
-
-  ; Use PowerShell to update the current user's PATH.
-  ; This avoids NSIS string-buffer limits and preserves long PATH values.
-  DetailPrint "Updating user PATH for the OpenClaw CLI..."
-  InitPluginsDir
-  ClearErrors
-  File "/oname=$PLUGINSDIR\update-user-path.ps1" "${PROJECT_DIR}\resources\cli\win32\update-user-path.ps1"
-  nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\update-user-path.ps1" -Action add -CliDir "$INSTDIR\resources\cli"'
-  Pop $0
-  Pop $1
-  StrCmp $0 "error" 0 +2
-    DetailPrint "Warning: Failed to launch PowerShell while updating PATH."
-  StrCmp $0 "timeout" 0 +2
-    DetailPrint "Warning: PowerShell PATH update timed out."
-  StrCmp $0 "0" 0 +2
-    Goto _ci_done
-  DetailPrint "Warning: PowerShell PATH update exited with code $0."
-
-  _ci_done:
+  DetailPrint "Core files extracted. Finalizing Morpheus installation..."
   DetailPrint "Installation steps complete."
 !macroend
 
 !macro customUnInstall
-  ; Remove Windows Defender exclusion added during install
-  nsExec::ExecToStack `"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Remove-MpPreference -ExclusionPath '$INSTDIR' -ErrorAction SilentlyContinue"`
-  Pop $0
-  Pop $1
-
-  ; Remove resources\cli from user PATH via PowerShell so long PATH values are handled safely
+  ; Remove resources\cli from user PATH if the user explicitly enabled CLI
+  ; integration while Morpheus was installed. This is cleanup, never opt-in.
   InitPluginsDir
   ClearErrors
   File "/oname=$PLUGINSDIR\update-user-path.ps1" "${PROJECT_DIR}\resources\cli\win32\update-user-path.ps1"
@@ -416,11 +362,11 @@ FunctionEnd
 
   ; Ask user if they want to remove AppData (preserves .openclaw)
   MessageBox MB_YESNO|MB_ICONQUESTION \
-    "Do you want to remove ClawX application data?$\r$\n$\r$\nThis will delete:$\r$\n  • AppData\Local\clawx (local app data)$\r$\n  • AppData\Roaming\clawx (roaming app data)$\r$\n$\r$\nYour .openclaw folder (configuration & skills) will be preserved.$\r$\nSelect 'No' to keep all data for future reinstallation." \
+    "Do you want to remove Morpheus application data?$\r$\n$\r$\nThis will delete Morpheus-owned data from AppData.$\r$\n$\r$\nYour .openclaw folder and original ClawX profile will be preserved.$\r$\nSelect 'No' to keep all data for future reinstallation." \
     /SD IDNO IDYES _cu_removeData IDNO _cu_skipRemove
 
   _cu_removeData:
-    ; Kill any lingering ClawX processes (and their child process trees) to
+    ; Kill any lingering Morpheus processes (and their child process trees) to
     ; release file locks on electron-store JSON files, Gateway sockets, etc.
     ${nsProcess::FindProcess} "${APP_EXECUTABLE_FILENAME}" $R0
     ${if} $R0 == 0
@@ -435,37 +381,37 @@ FunctionEnd
 
     ; --- Always remove current user's AppData first ---
     ; NOTE: .openclaw directory is intentionally preserved (user configuration & skills)
-    RMDir /r "$LOCALAPPDATA\clawx"
-    RMDir /r "$APPDATA\clawx"
+    RMDir /r "$LOCALAPPDATA\Morpheus"
+    RMDir /r "$APPDATA\Morpheus"
 
     ; --- Retry: if directories still exist (locked files), wait and try again ---
 
-    ; Check AppData\Local\clawx
-    IfFileExists "$LOCALAPPDATA\clawx\*.*" 0 _cu_localDone
+    ; Check AppData\Local\Morpheus
+    IfFileExists "$LOCALAPPDATA\Morpheus\*.*" 0 _cu_localDone
       Sleep 3000
-      RMDir /r "$LOCALAPPDATA\clawx"
-      IfFileExists "$LOCALAPPDATA\clawx\*.*" 0 _cu_localDone
-        nsExec::ExecToStack 'cmd.exe /c rd /s /q "$LOCALAPPDATA\clawx"'
+      RMDir /r "$LOCALAPPDATA\Morpheus"
+      IfFileExists "$LOCALAPPDATA\Morpheus\*.*" 0 _cu_localDone
+        nsExec::ExecToStack 'cmd.exe /c rd /s /q "$LOCALAPPDATA\Morpheus"'
         Pop $0
         Pop $1
     _cu_localDone:
 
-    ; Check AppData\Roaming\clawx
-    IfFileExists "$APPDATA\clawx\*.*" 0 _cu_roamingDone
+    ; Check AppData\Roaming\Morpheus
+    IfFileExists "$APPDATA\Morpheus\*.*" 0 _cu_roamingDone
       Sleep 3000
-      RMDir /r "$APPDATA\clawx"
-      IfFileExists "$APPDATA\clawx\*.*" 0 _cu_roamingDone
-        nsExec::ExecToStack 'cmd.exe /c rd /s /q "$APPDATA\clawx"'
+      RMDir /r "$APPDATA\Morpheus"
+      IfFileExists "$APPDATA\Morpheus\*.*" 0 _cu_roamingDone
+        nsExec::ExecToStack 'cmd.exe /c rd /s /q "$APPDATA\Morpheus"'
         Pop $0
         Pop $1
     _cu_roamingDone:
 
     ; --- Final check: warn user if any directories could not be removed ---
     StrCpy $R3 ""
-    IfFileExists "$LOCALAPPDATA\clawx\*.*" 0 +2
-      StrCpy $R3 "$R3$\r$\n  • $LOCALAPPDATA\clawx"
-    IfFileExists "$APPDATA\clawx\*.*" 0 +2
-      StrCpy $R3 "$R3$\r$\n  • $APPDATA\clawx"
+    IfFileExists "$LOCALAPPDATA\Morpheus\*.*" 0 +2
+      StrCpy $R3 "$R3$\r$\n  • $LOCALAPPDATA\Morpheus"
+    IfFileExists "$APPDATA\Morpheus\*.*" 0 +2
+      StrCpy $R3 "$R3$\r$\n  • $APPDATA\Morpheus"
     StrCmp $R3 "" _cu_cleanupOk
       MessageBox MB_OK|MB_ICONEXCLAMATION \
         "Some data directories could not be removed (files may be in use):$\r$\n$R3$\r$\n$\r$\nPlease delete them manually after restarting your computer."
@@ -486,8 +432,8 @@ FunctionEnd
     StrCmp $R3 $PROFILE _cu_enumNext
 
     ; NOTE: .openclaw directory is intentionally preserved for all users
-    RMDir /r "$R3\AppData\Local\clawx"
-    RMDir /r "$R3\AppData\Roaming\clawx"
+    RMDir /r "$R3\AppData\Local\Morpheus"
+    RMDir /r "$R3\AppData\Roaming\Morpheus"
 
   _cu_enumNext:
     IntOp $R0 $R0 + 1

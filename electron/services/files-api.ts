@@ -141,6 +141,8 @@ type FilesApiDependencies = {
   attachmentAccess?: AttachmentAccess;
   openWith?: AttachmentOpenWithService;
   stagedAttachments?: StagedAttachmentRegistry;
+  /** Additional Main-owned roots, such as trusted Morpheus/ACP workspaces. */
+  allowedReadRoots?: () => readonly string[] | Promise<readonly string[]>;
   stagingHooks?: {
     beforeDestinationOpen?: (input: { stagingDir: string; destinationPath: string }) => Promise<void>;
   };
@@ -264,6 +266,7 @@ function isSamePath(left: string, right: string): boolean {
 async function resolveWorkspaceTarget(
   ref: WorkspaceFileRef,
   fsP: WorkspaceFs,
+  allowedRoots: readonly string[],
 ): Promise<ResolvedWorkspaceTarget> {
   if (!ref || typeof ref.workspaceRoot !== 'string' || !ref.workspaceRoot.trim()
     || typeof ref.relativePath !== 'string' || !ref.relativePath.trim()) {
@@ -279,6 +282,9 @@ async function resolveWorkspaceTarget(
   try {
     root = await fsP.realpath(expandPath(ref.workspaceRoot));
     if (!(await fsP.stat(root)).isDirectory()) throw new Error('outsideSandbox');
+    if (!allowedRoots.some((allowedRoot) => isPathInside(root, allowedRoot))) {
+      throw new Error('outsideSandbox');
+    }
   } catch (error) {
     if (error instanceof Error && error.message === 'outsideSandbox') throw error;
     throw new Error('outsideSandbox', { cause: error });
@@ -332,14 +338,19 @@ async function revalidateWorkspaceTarget(
 async function resolveWorkspaceRegularFile(
   ref: WorkspaceFileRef,
   fsP: WorkspaceFs,
+  allowedRoots: readonly string[],
 ): Promise<string> {
-  const resolvedTarget = await resolveWorkspaceTarget(ref, fsP);
+  const resolvedTarget = await resolveWorkspaceTarget(ref, fsP, allowedRoots);
   if (!(await fsP.stat(resolvedTarget.target)).isFile()) throw new Error('notFile');
   return resolvedTarget.target;
 }
 
-async function openWorkspaceTarget(ref: WorkspaceFileRef, fsP: WorkspaceFs): Promise<OpenWorkspaceTarget> {
-  const resolvedTarget = await resolveWorkspaceTarget(ref, fsP);
+async function openWorkspaceTarget(
+  ref: WorkspaceFileRef,
+  fsP: WorkspaceFs,
+  allowedRoots: readonly string[],
+): Promise<OpenWorkspaceTarget> {
+  const resolvedTarget = await resolveWorkspaceTarget(ref, fsP, allowedRoots);
   let handle: FileHandle | undefined;
   try {
     const noFollow = process.platform === 'win32' ? 0 : constants.O_NOFOLLOW;
@@ -390,6 +401,7 @@ function getFilePreviewWriteRoots(): string[] {
 
 async function resolveSandboxedPath(
   input: string,
+  readRoots: readonly string[],
   mode: 'read' | 'write' = 'read',
 ): Promise<ResolvedSandboxedPath> {
   if (!input.trim()) {
@@ -410,7 +422,10 @@ async function resolveSandboxedPath(
   if (mode === 'write') {
     throw new Error('readOnlyRoot');
   }
-  return { realPath: real, readOnly: true };
+  if (readRoots.some((root) => isPathInside(real, root))) {
+    return { realPath: real, readOnly: true };
+  }
+  throw new Error('outsideSandbox');
 }
 
 function looksLikeBinary(buf: Buffer): boolean {
@@ -445,6 +460,22 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
     ?? await import('node:fs/promises');
   const stagingAreaName = `clawx-${process.pid}-${crypto.randomUUID()}`;
   let stagingAreaPromise: Promise<PinnedStagingArea> | null = null;
+
+  const getAllowedReadRoots = async (): Promise<string[]> => {
+    const fsP = await getWorkspaceFs();
+    const configured = await dependencies.allowedReadRoots?.() ?? [];
+    const roots = [...getFilePreviewWriteRoots(), ...configured];
+    const canonical: string[] = [];
+    for (const root of roots) {
+      try {
+        const resolvedRoot = await fsP.realpath(expandPath(root));
+        if ((await fsP.stat(resolvedRoot)).isDirectory()) canonical.push(resolvedRoot);
+      } catch {
+        // Missing or changed roots do not retain authority.
+      }
+    }
+    return [...new Set(canonical)];
+  };
 
   const initializeStagingArea = async (): Promise<PinnedStagingArea> => {
     const fsP = await import('node:fs/promises');
@@ -694,7 +725,7 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
     readWorkspaceText: async (ref) => {
       let opened: OpenWorkspaceTarget | undefined;
       try {
-        opened = await openWorkspaceTarget(ref, await getWorkspaceFs());
+        opened = await openWorkspaceTarget(ref, await getWorkspaceFs(), await getAllowedReadRoots());
         const { stat, target } = opened;
         if (!stat.isFile()) return { ok: false, error: 'notFound' };
         if (stat.size > FILE_PREVIEW_MAX_TEXT_BYTES) {
@@ -719,7 +750,7 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
     readWorkspaceBinary: async (input) => {
       let opened: OpenWorkspaceTarget | undefined;
       try {
-        opened = await openWorkspaceTarget(input, await getWorkspaceFs());
+        opened = await openWorkspaceTarget(input, await getWorkspaceFs(), await getAllowedReadRoots());
         const { stat, target } = opened;
         if (!stat.isFile()) return { ok: false, error: 'notFound' };
         const cap = getWorkspaceBinaryCap(input.maxBytes);
@@ -742,7 +773,7 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
     statWorkspaceFile: async (ref) => {
       let opened: OpenWorkspaceTarget | undefined;
       try {
-        opened = await openWorkspaceTarget(ref, await getWorkspaceFs());
+        opened = await openWorkspaceTarget(ref, await getWorkspaceFs(), await getAllowedReadRoots());
         const { stat } = opened;
         return {
           ok: true,
@@ -762,7 +793,11 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
       try {
         const openWith = dependencies.openWith;
         if (!openWith) throw new Error('operationFailed');
-        const target = await resolveWorkspaceRegularFile(ref, await getWorkspaceFs());
+        const target = await resolveWorkspaceRegularFile(
+          ref,
+          await getWorkspaceFs(),
+          await getAllowedReadRoots(),
+        );
         if (openWith.platform === 'linux') {
           return { ok: true, platform: 'linux', handlers: [] };
         }
@@ -786,7 +821,8 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
         const openWith = dependencies.openWith;
         if (!openWith) throw new Error('operationFailed');
         const fsP = await getWorkspaceFs();
-        const target = await resolveWorkspaceRegularFile(payload?.ref, fsP);
+        const allowedRoots = await getAllowedReadRoots();
+        const target = await resolveWorkspaceRegularFile(payload?.ref, fsP, allowedRoots);
         if (typeof payload?.handlerId !== 'string'
           || !payload.handlerId.trim()
           || payload.handlerId.length > HANDLER_ID_MAX_LENGTH) {
@@ -798,7 +834,7 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
         await openWith.open(
           target,
           payload.handlerId,
-          () => resolveWorkspaceRegularFile(payload.ref, fsP),
+          () => resolveWorkspaceRegularFile(payload.ref, fsP, allowedRoots),
         );
         return { ok: true };
       } catch (error) {
@@ -808,8 +844,9 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
     revealWorkspaceFile: async (ref) => {
       try {
         const fsP = await getWorkspaceFs();
-        await resolveWorkspaceRegularFile(ref, fsP);
-        const target = await resolveWorkspaceRegularFile(ref, fsP);
+        const allowedRoots = await getAllowedReadRoots();
+        await resolveWorkspaceRegularFile(ref, fsP, allowedRoots);
+        const target = await resolveWorkspaceRegularFile(ref, fsP, allowedRoots);
         shell.showItemInFolder(target);
         return { ok: true };
       } catch (error) {
@@ -848,7 +885,11 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
     },
     readText: async (payload) => {
       try {
-        const { realPath: real, readOnly } = await resolveSandboxedPath(requirePath(payload), 'read');
+        const { realPath: real, readOnly } = await resolveSandboxedPath(
+          requirePath(payload),
+          await getAllowedReadRoots(),
+          'read',
+        );
         const fsP = await import('node:fs/promises');
         const stat = await fsP.stat(real);
         if (!stat.isFile()) return { ok: false, error: 'notFound' };
@@ -873,7 +914,11 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
       try {
         const body = isRecord(payload) ? payload as PathPayload : {};
         const opts = getBinaryOptions(body.opts);
-        const { realPath: real, readOnly } = await resolveSandboxedPath(requirePath(payload), 'read');
+        const { realPath: real, readOnly } = await resolveSandboxedPath(
+          requirePath(payload),
+          await getAllowedReadRoots(),
+          'read',
+        );
         const fsP = await import('node:fs/promises');
         const stat = await fsP.stat(real);
         if (!stat.isFile()) return { ok: false, error: 'notFound' };
@@ -903,7 +948,11 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
         if (Buffer.byteLength(body.content, 'utf8') > FILE_PREVIEW_MAX_TEXT_BYTES) {
           return { ok: false, error: 'tooLarge' };
         }
-        const { realPath: real } = await resolveSandboxedPath(requirePath(payload), 'write');
+        const { realPath: real } = await resolveSandboxedPath(
+          requirePath(payload),
+          await getAllowedReadRoots(),
+          'write',
+        );
         const fsP = await import('node:fs/promises');
         let stat;
         try {
@@ -923,7 +972,11 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
     },
     stat: async (payload) => {
       try {
-        const { realPath: real, readOnly } = await resolveSandboxedPath(requirePath(payload), 'read');
+        const { realPath: real, readOnly } = await resolveSandboxedPath(
+          requirePath(payload),
+          await getAllowedReadRoots(),
+          'read',
+        );
         const fsP = await import('node:fs/promises');
         const stat = await fsP.stat(real);
         return {
@@ -943,7 +996,11 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
     },
     listDir: async (payload) => {
       try {
-        const { realPath: real } = await resolveSandboxedPath(requirePath(payload), 'read');
+        const { realPath: real } = await resolveSandboxedPath(
+          requirePath(payload),
+          await getAllowedReadRoots(),
+          'read',
+        );
         const fsP = await import('node:fs/promises');
         const dirents = await fsP.readdir(real, { withFileTypes: true });
         const entries = await Promise.all(dirents.map(async (entry) => {
@@ -973,7 +1030,11 @@ export function createFilesApi(dependencies: FilesApiDependencies = {}): Complet
       try {
         const body = isRecord(payload) ? payload as PathPayload : {};
         const opts = getTreeOptions(body.opts);
-        const { realPath: real } = await resolveSandboxedPath(requirePath(payload), 'read');
+        const { realPath: real } = await resolveSandboxedPath(
+          requirePath(payload),
+          await getAllowedReadRoots(),
+          'read',
+        );
         const fsP = await import('node:fs/promises');
         const stat = await fsP.stat(real);
         if (!stat.isDirectory()) return { ok: false, error: 'notDirectory' };

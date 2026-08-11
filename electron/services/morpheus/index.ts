@@ -49,6 +49,10 @@ import {
   createMorpheusWorkspaceStore,
   type MorpheusWorkspaceStore,
 } from './workspaces/workspace-store';
+import {
+  createMorpheusRuntimeControl,
+  type MorpheusRuntimeControlService,
+} from './runtime-control';
 
 export type CreateMorpheusServiceOptions = {
   userDataDir: string;
@@ -73,6 +77,7 @@ export type MorpheusService = {
   voice: MorpheusVoiceService;
   workspaces: MorpheusWorkspaceStore;
   audit: MorpheusAuditSink;
+  runtimeControl: MorpheusRuntimeControlService;
   /** Current approved files root, for the Command Center's artifacts panel. */
   filesRoot: string;
   auditHealth: () => AuditHealth;
@@ -100,6 +105,11 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   });
   const audit = createMorpheusAuditSink({
     auditDir: join(options.userDataDir, 'morpheus', 'audit'),
+  });
+  const runtimeControl = createMorpheusRuntimeControl({
+    userDataDir: options.userDataDir,
+    audit,
+    appVersion: options.appVersion,
   });
 
   const grants = createMorpheusGrantStore({ userDataDir: options.userDataDir });
@@ -168,6 +178,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     audit,
     appVersion: options.appVersion,
     workspaces,
+    isRuntimePaused: () => runtimeControl.snapshot().paused,
     emit: (event) => options.emitObjective?.(event),
   });
   const workflowStore = createMorpheusWorkflowStore({ userDataDir: options.userDataDir });
@@ -184,6 +195,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     recordActivity: (event, subjectId, details) => audit.recordControl({
       category: 'schedule', event, subjectId, details, appVersion: options.appVersion,
     }),
+    isRuntimePaused: () => runtimeControl.snapshot().paused,
   });
 
   return {
@@ -199,6 +211,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     voice,
     workspaces,
     audit,
+    runtimeControl,
     filesRoot,
     auditHealth,
   };
@@ -215,3 +228,4 @@ export type { MorpheusObjectiveStore } from './core/objective-store';
 export type { MorpheusObjectiveOrchestrator } from './core/objective-orchestrator';
 export type { MorpheusVoiceService } from './voice/voice-service';
 export type { MorpheusWorkspaceStore } from './workspaces/workspace-store';
+export type { MorpheusRuntimeControlService } from './runtime-control';

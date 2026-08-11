@@ -1,14 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, Command, X } from 'lucide-react';
+import { ArrowRight, Command, Square, X } from 'lucide-react';
 
 import { hostEvents } from '@/lib/host-events';
+import { Button } from '@/components/ui/button';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { cn } from '@/lib/utils';
 import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
 import { MorpheusVoiceButton } from './MorpheusVoiceButton';
 import { MorpheusObjectiveContextPicker } from './MorpheusObjectiveContextPicker';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
 
 export function MorpheusQuickCommand() {
   const { t } = useTranslation('dashboard');
@@ -24,7 +26,14 @@ export function MorpheusQuickCommand() {
   const plan = useMorpheusCommandStore((state) => state.plan);
   const planResult = useMorpheusCommandStore((state) => state.planResult);
   const unsupported = useMorpheusCommandStore((state) => state.unsupported);
+  const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
+  const cancelObjective = useMorpheusCommandStore((state) => state.cancelObjective);
   const voicePhase = useMorpheusVoiceStore((state) => state.phase);
+  const cancelVoice = useMorpheusVoiceStore((state) => state.cancel);
+
+  const voiceBusy = voicePhase === 'requesting' || voicePhase === 'listening' || voicePhase === 'transcribing';
+  const objectiveActive = Boolean(objectiveRun && !isObjectiveTerminalState(objectiveRun.state));
+  const busy = interpreting || executing || voiceBusy || objectiveActive;
 
   useEffect(() => hostEvents.onMorpheusQuickCommand(show), [show]);
 
@@ -35,15 +44,18 @@ export function MorpheusQuickCommand() {
   useEffect(() => {
     if (!open) return;
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') hide();
+      if (event.key !== 'Escape') return;
+      if (voiceBusy) {
+        cancelVoice();
+        return;
+      }
+      if (!objectiveActive) hide();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [open, hide]);
+  }, [cancelVoice, hide, objectiveActive, open, voiceBusy]);
 
   if (!open) return null;
-  const voiceBusy = voicePhase === 'requesting' || voicePhase === 'listening' || voicePhase === 'transcribing';
-  const busy = interpreting || executing || voiceBusy;
 
   return (
     <div
@@ -119,12 +131,39 @@ export function MorpheusQuickCommand() {
           </div>
 
           <div className="mt-2 min-h-5 px-1 text-2xs text-muted-foreground" data-testid="quick-command-status">
-            {interpreting && t('morpheus.quickCommand.planning')}
-            {executing && t('morpheus.quickCommand.executing', { objective: plan?.objective ?? '' })}
-            {!busy && planResult && t('morpheus.quickCommand.finished', { status: planResult.status })}
+            {objectiveRun && (
+              <span data-testid="quick-command-objective-state">
+                {t('morpheus.quickCommand.objectiveState', {
+                  objective: objectiveRun.objective,
+                  state: t(`morpheus.objective.states.${objectiveRun.state}`),
+                })}
+              </span>
+            )}
+            {!objectiveRun && interpreting && t('morpheus.quickCommand.planning')}
+            {!objectiveRun && executing && t('morpheus.quickCommand.executing', { objective: plan?.objective ?? '' })}
+            {!objectiveRun && !busy && planResult && t('morpheus.quickCommand.finished', { status: planResult.status })}
             {!busy && unsupported && t('morpheus.quickCommand.unsupported')}
-            {!busy && !planResult && !unsupported && t('morpheus.quickCommand.hint')}
+            {!busy && !objectiveRun && !planResult && !unsupported && t('morpheus.quickCommand.hint')}
           </div>
+
+          {objectiveActive ? (
+            <div className="mt-2 flex items-center justify-between rounded-lg border border-border/60 bg-[hsl(var(--morpheus-surface-1))]/70 px-3 py-2">
+              <span className="truncate text-2xs text-muted-foreground">
+                {t('morpheus.quickCommand.running', { objective: objectiveRun?.objective ?? '' })}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                data-testid="quick-command-cancel-objective"
+                onClick={() => void cancelObjective()}
+                className="h-7 shrink-0 gap-1.5 text-2xs text-[hsl(var(--morpheus-danger))] hover:bg-[hsl(var(--morpheus-danger))]/10"
+              >
+                <Square className="h-3 w-3 fill-current" />
+                {t('morpheus.quickCommand.stop')}
+              </Button>
+            </div>
+          ) : null}
         </form>
       </section>
     </div>

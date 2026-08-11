@@ -53,6 +53,7 @@ import type {
   MorpheusAgentProfileStore,
   MorpheusWorkflowService,
   MorpheusScheduler,
+  MorpheusRuntimeControlService,
 } from './morpheus';
 import type { MorpheusScheduleDraft, MorpheusScheduleTrigger } from '@shared/morpheus/schedule-types';
 import type { MorpheusAuditSink } from './morpheus/audit';
@@ -70,6 +71,7 @@ import {
   type MorpheusVoiceSettingsPatch,
 } from '@shared/morpheus/voice-types';
 import type { MorpheusVoiceService } from './morpheus/voice/voice-service';
+import type { SetMorpheusRuntimePausedPayload } from '@shared/morpheus/runtime-control-types';
 import {
   isMorpheusWorkspaceId,
   type AddMorpheusWorkspacePayload,
@@ -212,6 +214,7 @@ export type CreateMorpheusApiOptions = {
   scheduler: MorpheusScheduler;
   objectives: MorpheusObjectiveOrchestrator;
   voice: MorpheusVoiceService;
+  runtimeControl: MorpheusRuntimeControlService;
   workspaces: MorpheusWorkspaceStore;
   audit: MorpheusAuditSink;
   filesRoot: string;
@@ -526,6 +529,13 @@ export function validateVoiceSettingsPatch(payload: unknown): MorpheusVoiceSetti
   return record as MorpheusVoiceSettingsPatch;
 }
 
+export function validateRuntimePausedPayload(payload: unknown): SetMorpheusRuntimePausedPayload {
+  const record = requireRecord(payload, 'setRuntimePaused payload');
+  assertNoUnknownKeys(record, ['paused'], 'setRuntimePaused payload');
+  if (typeof record.paused !== 'boolean') throw new MorpheusValidationError('paused must be a boolean');
+  return { paused: record.paused };
+}
+
 export function validateTranscribeAudioPayload(payload: unknown): MorpheusTranscribeAudioPayload {
   const record = requireRecord(payload, 'transcribeAudio payload');
   assertNoUnknownKeys(record, ['audioBase64', 'mimeType', 'durationMs'], 'transcribeAudio payload');
@@ -619,7 +629,7 @@ const AUDIT_PHASES = [
 ] as const;
 const AUDIT_CATEGORIES = [
   'execution', 'objective', 'planner', 'voice', 'permission', 'workspace',
-  'agent-profile', 'workflow', 'schedule',
+  'agent-profile', 'workflow', 'schedule', 'runtime',
 ] as const;
 
 export function validateAuditQueryPayload(payload: unknown): MorpheusAuditQueryPayload {
@@ -729,7 +739,7 @@ export function validateRevokePayload(payload: unknown): { grantId: string } {
 
 export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHostServiceRegistry['morpheus'] {
   const {
-    runtime, grants, agentProfiles, workflows, scheduler, objectives, voice,
+    runtime, grants, agentProfiles, workflows, scheduler, objectives, voice, runtimeControl,
     workspaces, audit, filesRoot, appVersion, auditHealth,
   } = options;
   const now = options.now ?? (() => new Date());
@@ -768,6 +778,10 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     voiceStatus: () => voice.status(),
     updateVoiceSettings: (payload) => voice.updateSettings(validateVoiceSettingsPatch(payload)),
     transcribeAudio: (payload) => voice.transcribe(validateTranscribeAudioPayload(payload)),
+    runtimeControl: () => runtimeControl.snapshot(),
+    setRuntimePaused: (payload) => (
+      runtimeControl.setPaused(validateRuntimePausedPayload(payload).paused, 'settings')
+    ),
 
     permissionCenter: (): PermissionCenterSnapshot => ({
       profile: grants.getProfile(),

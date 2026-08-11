@@ -30,15 +30,15 @@ function isCurrentOpenClawPath(p: string): boolean {
 
 export function buildDefaultClawXIdentityContent(): string {
   return [
-    '# IDENTITY.md - ClawX',
+    '# IDENTITY.md - Morpheus',
     '',
-    '- **Name:** ClawX',
-    '- **Creature:** desktop AI assistant',
-    '- **Vibe:** concise, capable, and practical',
-    '- **Emoji:** 🐾',
+    '- **Name:** Morpheus',
+    '- **Role:** AI execution platform and system builder',
+    '- **Vibe:** controlled, capable, calm, and practical',
+    '- **Emoji:** M',
     '- **Avatar:**',
     '',
-    'ClawX uses a default desktop identity instead of chat-first bootstrap.',
+    'Morpheus uses OpenClaw as its embedded agent and chat runtime. Morpheus owns planning, permissions, deterministic execution, artifacts, and auditability.',
     '',
   ].join('\n');
 }
@@ -100,12 +100,12 @@ export async function ensureClawXIdentityFile(
   if (await fileExists(bootstrapPath)) {
     try {
       await unlink(bootstrapPath);
-      logger.info(`Removed chat-first bootstrap file from ClawX workspace (${resolvedWorkspaceDir})`);
+      logger.info(`Removed chat-first bootstrap file from Morpheus workspace (${resolvedWorkspaceDir})`);
     } catch {
       logger.warn(`Failed to remove chat-first bootstrap file: ${bootstrapPath}`);
     }
   } else if (wroteIdentity) {
-    logger.info(`Seeded default ClawX identity for workspace (${resolvedWorkspaceDir})`);
+    logger.info(`Seeded default Morpheus identity for workspace (${resolvedWorkspaceDir})`);
   }
 }
 

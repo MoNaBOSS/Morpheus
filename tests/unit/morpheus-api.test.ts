@@ -17,6 +17,7 @@ import {
   validateWorkspaceIdPayload,
   validateWorkflowDraft,
   validateVoiceSettingsPatch,
+  validateRuntimePausedPayload,
 } from '@electron/services/morpheus-api';
 import type { MorpheusRuntime } from '@electron/services/morpheus';
 
@@ -80,10 +81,17 @@ function stubOptions(runtime = stubRuntime()) {
           speakResponses: true, autoSubmitTranscript: true,
         },
         transcriptionAvailable: false,
+        providers: [],
       })),
       updateSettings: vi.fn(),
       transcribe: vi.fn(),
     } as never,
+    runtimeControl: {
+      snapshot: vi.fn(() => ({ v: 1 as const, paused: false, updatedAt: '2026-08-11T00:00:00.000Z' })),
+      setPaused: vi.fn(async (paused: boolean) => ({
+        v: 1 as const, paused, updatedAt: '2026-08-11T00:00:01.000Z',
+      })),
+    },
     workspaces: {
       list: vi.fn(() => ({
         defaultWorkspaceId: 'morpheus-files',
@@ -339,6 +347,15 @@ describe('voice payload validation', () => {
   });
 });
 
+describe('runtime control validation', () => {
+  it('accepts only a logical paused flag', () => {
+    expect(validateRuntimePausedPayload({ paused: true })).toEqual({ paused: true });
+    expect(() => validateRuntimePausedPayload({ paused: true, command: 'taskkill' }))
+      .toThrow(/unsupported key/);
+    expect(() => validateRuntimePausedPayload({ paused: 'yes' })).toThrow(/paused must be a boolean/);
+  });
+});
+
 describe('createMorpheusApi', () => {
   it('exposes exactly the contract surface', () => {
     expect(Object.keys(createMorpheusApi(stubOptions())).sort()).toEqual([
@@ -371,11 +388,13 @@ describe('createMorpheusApi', () => {
       'revokeGrant',
       'runSchedule',
       'runWorkflow',
+      'runtimeControl',
       'saveAgentProfile',
       'saveSchedule',
       'saveWorkflow',
       'schedules',
       'setPermissionProfile',
+      'setRuntimePaused',
       'submitObjective',
       'systemInfo',
       'transcribeAudio',

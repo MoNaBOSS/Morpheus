@@ -6,6 +6,7 @@ import { StatusDot } from '@/components/morpheus/ui';
 import { useGatewayStore } from '@/stores/gateway';
 import { useProviderStore } from '@/stores/providers';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
+import { MorpheusRuntimeControl } from '@/components/morpheus/MorpheusRuntimeControl';
 
 type RuntimeCellProps = {
   icon: React.ReactNode;
@@ -64,7 +65,7 @@ export function RuntimeStatusBar() {
   return (
     <div
       data-testid="morpheus-runtime-status"
-      className="morpheus-runtime-strip grid min-w-0 flex-1 grid-cols-3 divide-x divide-border/50 overflow-hidden rounded-lg border border-border/60 bg-[hsl(var(--morpheus-surface-2))]/80 px-2"
+      className="morpheus-runtime-strip grid min-w-0 flex-1 grid-cols-[repeat(3,minmax(0,1fr))_auto] divide-x divide-border/50 overflow-hidden rounded-lg border border-border/60 bg-[hsl(var(--morpheus-surface-2))]/80 px-2"
     >
       <RuntimeCell
         testId="morpheus-runtime-gateway"
@@ -92,6 +93,9 @@ export function RuntimeStatusBar() {
       >
         <StatusDot tone={permission?.auditDegraded ? 'error' : 'ok'} />
       </RuntimeCell>
+      <div className="flex items-center pl-2">
+        <MorpheusRuntimeControl compact />
+      </div>
       {permission?.auditDegraded ? (
         <span data-testid="morpheus-audit-degraded" className="sr-only">{t('morpheus.status.auditDegraded')}</span>
       ) : null}

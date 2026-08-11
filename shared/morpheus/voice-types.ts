@@ -22,9 +22,18 @@ export type MorpheusVoiceSettings = {
   autoSubmitTranscript: boolean;
 };
 
+export type MorpheusVoiceProviderOption = {
+  accountId: string;
+  label: string;
+  isDefault: boolean;
+  configured: boolean;
+};
+
 export type MorpheusVoiceStatus = {
   settings: MorpheusVoiceSettings;
   transcriptionAvailable: boolean;
+  /** Safe provider metadata only. API keys never cross the Main boundary. */
+  providers: readonly MorpheusVoiceProviderOption[];
   providerLabel?: string;
   reason?: string;
 };

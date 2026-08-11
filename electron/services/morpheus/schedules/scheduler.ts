@@ -52,6 +52,7 @@ export function createMorpheusScheduler(options: {
   setIntervalFn?: typeof setInterval;
   clearIntervalFn?: typeof clearInterval;
   recordActivity?: (event: string, subjectId: string, details?: Record<string, string | number | boolean>) => Promise<void>;
+  isRuntimePaused?: () => boolean;
 }): MorpheusScheduler {
   const now = options.now ?? (() => new Date());
   const createId = options.createId ?? (() => `schedule-${randomUUID()}`);
@@ -78,6 +79,7 @@ export function createMorpheusScheduler(options: {
     const schedule = options.store.get(scheduleId);
     if (!schedule) return { scheduleId, status: 'rejected', error: 'Unknown schedule' };
     if (!schedule.enabled) return { scheduleId, status: 'rejected', error: 'Schedule is disabled' };
+    if (options.isRuntimePaused?.()) return { scheduleId, status: 'rejected', error: 'Morpheus is paused' };
     if (running.has(scheduleId)) return { scheduleId, status: 'rejected', error: 'Schedule is already running' };
     running.add(scheduleId);
     await options.recordActivity?.('run-started', scheduleId, { workflowId: schedule.workflowId });
@@ -169,6 +171,7 @@ export function createMorpheusScheduler(options: {
     remove: (scheduleId) => options.store.remove(scheduleId),
     runNow: run,
     async tick() {
+      if (options.isRuntimePaused?.()) return;
       const stamp = now().getTime();
       for (const schedule of options.store.list().schedules) {
         if (!schedule.enabled || running.has(schedule.scheduleId)) continue;

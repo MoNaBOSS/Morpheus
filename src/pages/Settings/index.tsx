@@ -17,6 +17,8 @@ import { useUpdateStore } from '@/stores/update';
 import { UpdateSettings } from '@/components/settings/UpdateSettings';
 import { PermissionCenter } from '@/components/morpheus/PermissionCenter';
 import { MorpheusWorkspaceControl } from '@/components/morpheus/MorpheusWorkspaceControl';
+import { MorpheusRuntimeControl } from '@/components/morpheus/MorpheusRuntimeControl';
+import { MorpheusVoiceSettings } from '@/components/morpheus/MorpheusVoiceSettings';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { toUserMessage } from '@/lib/error-message';
 import {
@@ -645,6 +647,17 @@ export function Settings() {
           {/* Permission Center — full grant management. The Command Center
               carries a compact summary of the same Main-owned state. */}
           <Separator className="bg-black/5 dark:bg-white/5" />
+          <div data-testid="settings-morpheus-runtime-section">
+            <h2 className="mb-6 font-serif text-3xl font-normal tracking-tight text-foreground">
+              {tDashboard('morpheus.runtimeControl.settingsTitle')}
+            </h2>
+            <div className="space-y-4">
+              <MorpheusRuntimeControl />
+              <MorpheusVoiceSettings />
+            </div>
+          </div>
+
+          <Separator className="bg-black/5 dark:bg-white/5" />
           <div data-testid="settings-permissions-section">
             <h2
               data-testid="settings-permissions-title"
@@ -1098,14 +1111,14 @@ export function Settings() {
                 <Button
                   variant="link"
                   className="h-auto p-0 text-sm text-blue-500 hover:text-blue-600 font-medium"
-                  onClick={() => window.electron.openExternal('https://claw-x.com')}
+                  onClick={() => window.electron.openExternal('https://github.com/MoNaBOSS/Morpheus')}
                 >
                   {t('about.docs')}
                 </Button>
                 <Button
                   variant="link"
                   className="h-auto p-0 text-sm text-blue-500 hover:text-blue-600 font-medium"
-                  onClick={() => window.electron.openExternal('https://github.com/ValueCell-ai/morpheus')}
+                  onClick={() => window.electron.openExternal('https://github.com/MoNaBOSS/Morpheus')}
                 >
                   {t('about.github')}
                 </Button>
@@ -1113,7 +1126,7 @@ export function Settings() {
                   variant="link"
                   className="h-auto p-0 text-sm text-blue-500 hover:text-blue-600 font-medium"
                   onClick={() =>
-                    window.electron.openExternal('https://icnnp7d0dymg.feishu.cn/wiki/UyfOwQ2cAiJIP6kqUW8cte5Bnlc')
+                    window.electron.openExternal('https://github.com/MoNaBOSS/Morpheus#readme')
                   }
                 >
                   {t('about.faq')}

@@ -32,7 +32,11 @@ function plan(id: string, capabilityId: 'system.report' | 'system.storage' = 'sy
   };
 }
 
-function setup(planner: MorpheusPlanner, execute?: MorpheusRuntime['executePlan']) {
+function setup(
+  planner: MorpheusPlanner,
+  execute?: MorpheusRuntime['executePlan'],
+  isRuntimePaused?: () => boolean,
+) {
   const root = mkdtempSync(join(tmpdir(), 'morpheus-orchestrator-'));
   roots.push(root);
   const events: MorpheusObjectiveEvent[] = [];
@@ -74,6 +78,7 @@ function setup(planner: MorpheusPlanner, execute?: MorpheusRuntime['executePlan'
       resolveRoot: vi.fn(() => join(root, 'files')),
     },
     platform: 'win32',
+    isRuntimePaused,
     createId: (() => { let id = 0; return () => `objective-${++id}`; })(),
     emit: (event) => {
       // Audit completes before every state emission.
@@ -85,6 +90,20 @@ function setup(planner: MorpheusPlanner, execute?: MorpheusRuntime['executePlan'
 }
 
 describe('Main-owned objective orchestration', () => {
+  it('rejects new objectives while paused without creating a run or calling a planner', async () => {
+    const planner: MorpheusPlanner = {
+      plannerId: 'provider:test', plannedBy: 'provider',
+      plan: vi.fn(async () => ({ ok: true, plan: plan('plan-paused') })),
+    };
+    const { orchestrator, runtime } = setup(planner, undefined, () => true);
+    await expect(orchestrator.submit({ objective: 'show info', originType: 'command-bar' }))
+      .resolves.toMatchObject({ accepted: false, message: expect.stringContaining('paused') });
+    expect(planner.plan).not.toHaveBeenCalled();
+    expect(runtime.executePlan).not.toHaveBeenCalled();
+    expect(orchestrator.snapshot().runOrder).toEqual([]);
+    orchestrator.dispose();
+  });
+
   it('plans, executes, observes, replans once, and completes through one pipeline', async () => {
     let reviewCount = 0;
     const planner: MorpheusPlanner = {

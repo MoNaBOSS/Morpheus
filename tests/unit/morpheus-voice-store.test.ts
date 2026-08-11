@@ -61,6 +61,7 @@ beforeEach(() => {
       speakResponses: true, autoSubmitTranscript: true,
     },
     transcriptionAvailable: true,
+    providers: [{ accountId: 'openai', label: 'OpenAI Voice', isDefault: true, configured: true }],
     providerLabel: 'OpenAI Voice',
   });
   mocks.transcribeAudio.mockResolvedValue({
@@ -84,6 +85,7 @@ describe('Morpheus renderer voice controller', () => {
         speakResponses: true, autoSubmitTranscript: true,
       },
       transcriptionAvailable: false,
+      providers: [],
       reason: 'Configure a provider.',
     });
     await useMorpheusVoiceStore.getState().startListening();

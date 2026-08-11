@@ -1,172 +1,178 @@
-/**
- * System Tray Management
- * Creates and manages the system tray icon and menu
- */
-import { Tray, Menu, BrowserWindow, app, nativeImage } from 'electron';
-import { join } from 'path';
+/** Windows-native Morpheus tray controls backed by real Main-owned state. */
+import {
+  Tray,
+  Menu,
+  BrowserWindow,
+  app,
+  nativeImage,
+  type MenuItemConstructorOptions,
+} from 'electron';
+import { join } from 'node:path';
+
+import type { GatewayStatus } from '../gateway/manager';
+import type { MorpheusDesktopControls } from './ipc-handlers';
+import type { PermissionProfile } from '@shared/morpheus/permission-types';
+
+export type MorpheusTrayOptions = {
+  getGatewayStatus(): GatewayStatus;
+  controls: MorpheusDesktopControls;
+  showQuickCommand(): void;
+  showVoiceCommand(): void;
+};
 
 let tray: Tray | null = null;
+let activeWindow: BrowserWindow | null = null;
+let activeOptions: MorpheusTrayOptions | null = null;
 
-/**
- * Resolve the icons directory path (works in both dev and packaged mode)
- */
 function getIconsDir(): string {
-  if (app.isPackaged) {
-    return join(process.resourcesPath, 'resources', 'icons');
-  }
-  return join(__dirname, '../../resources/icons');
+  return app.isPackaged
+    ? join(process.resourcesPath, 'resources', 'icons')
+    : join(__dirname, '../../resources/icons');
 }
 
-/**
- * Create system tray icon and menu
- */
-export function createTray(mainWindow: BrowserWindow): Tray {
-  // Use platform-appropriate icon for system tray
-  const iconsDir = getIconsDir();
-  let iconPath: string;
+function showWindow(mainWindow: BrowserWindow): void {
+  if (mainWindow.isDestroyed()) return;
+  mainWindow.show();
+  mainWindow.focus();
+}
 
-  if (process.platform === 'win32') {
-    // Windows: use .ico for best quality in system tray
-    iconPath = join(iconsDir, 'icon.ico');
-  } else if (process.platform === 'darwin') {
-    // macOS: use Template.png for proper status bar icon
-    // The "Template" suffix tells macOS to treat it as a template image
-    iconPath = join(iconsDir, 'tray-icon-Template.png');
-  } else {
-    // Linux: use 32x32 PNG
-    iconPath = join(iconsDir, '32x32.png');
-  }
+function showRoute(mainWindow: BrowserWindow, route: string): void {
+  showWindow(mainWindow);
+  mainWindow.webContents.send('navigate', route);
+}
 
-  let icon = nativeImage.createFromPath(iconPath);
+function gatewayLabel(status: GatewayStatus): string {
+  if (status.state === 'running' && status.gatewayReady !== false) return 'OpenClaw runtime · Ready';
+  if (status.state === 'running') return 'OpenClaw runtime · Starting';
+  if (status.state === 'starting' || status.state === 'reconnecting') return 'OpenClaw runtime · Starting';
+  if (status.state === 'error') return 'OpenClaw runtime · Error';
+  return 'OpenClaw runtime · Stopped';
+}
 
-  // Fallback to icon.png if platform-specific icon not found
-  if (icon.isEmpty()) {
-    icon = nativeImage.createFromPath(join(iconsDir, 'icon.png'));
-    // Still try to set as template for macOS
-    if (process.platform === 'darwin') {
-      icon.setTemplateImage(true);
-    }
-  }
+function profileLabel(profile: PermissionProfile): string {
+  return profile[0].toUpperCase() + profile.slice(1);
+}
 
-  // Note: Using "Template" suffix in filename automatically marks it as template image
-  // But we can also explicitly set it for safety
-  if (process.platform === 'darwin') {
-    icon.setTemplateImage(true);
-  }
-  
-  tray = new Tray(icon);
-  
-  // Set tooltip
-  tray.setToolTip('ClawX - AI Assistant');
-  
-  const showWindow = () => {
-    if (mainWindow.isDestroyed()) return;
-    mainWindow.show();
-    mainWindow.focus();
-  };
+function runAndRefresh(operation: () => Promise<unknown>): void {
+  void operation()
+    .catch((error) => console.error('[Morpheus] Tray action failed', error))
+    .finally(() => refreshTray());
+}
 
-  // Create context menu
-  const contextMenu = Menu.buildFromTemplate([
+export function buildTrayMenuTemplate(
+  mainWindow: BrowserWindow,
+  options: MorpheusTrayOptions,
+): MenuItemConstructorOptions[] {
+  const gateway = options.getGatewayStatus();
+  const runtime = options.controls.runtimeControl();
+  const profile = options.controls.permissionProfile();
+  const profiles: PermissionProfile[] = ['strict', 'balanced', 'autonomous'];
+
+  return [
     {
-      label: 'Show ClawX',
-      click: showWindow,
+      label: 'Show Morpheus',
+      click: () => showRoute(mainWindow, '/'),
     },
     {
-      type: 'separator',
+      label: 'Quick Command',
+      accelerator: 'CommandOrControl+Shift+Space',
+      click: () => {
+        showWindow(mainWindow);
+        options.showQuickCommand();
+      },
     },
     {
-      label: 'Gateway Status',
+      label: 'Voice Command',
+      accelerator: 'CommandOrControl+Alt+Space',
+      click: () => {
+        showWindow(mainWindow);
+        options.showVoiceCommand();
+      },
+    },
+    { type: 'separator' },
+    {
+      label: gatewayLabel(gateway),
       enabled: false,
     },
     {
-      label: '  Running',
+      label: 'Pause new Morpheus work',
       type: 'checkbox',
-      checked: true,
-      enabled: false,
+      checked: runtime.paused,
+      click: () => runAndRefresh(() => options.controls.setRuntimePaused(!runtime.paused)),
     },
     {
-      type: 'separator',
+      label: `Permission profile · ${profileLabel(profile)}`,
+      submenu: profiles.map((candidate) => ({
+        label: profileLabel(candidate),
+        type: 'radio' as const,
+        checked: candidate === profile,
+        click: () => runAndRefresh(() => options.controls.setPermissionProfile(candidate)),
+      })),
+    },
+    { type: 'separator' },
+    {
+      label: 'Command Center',
+      click: () => showRoute(mainWindow, '/'),
     },
     {
-      label: 'Quick Actions',
-      submenu: [
-        {
-          label: 'Open Chat',
-          click: () => {
-            if (mainWindow.isDestroyed()) return;
-            mainWindow.show();
-            mainWindow.webContents.send('navigate', '/chat');
-          },
-        },
-        {
-          label: 'Open Settings',
-          click: () => {
-            if (mainWindow.isDestroyed()) return;
-            mainWindow.show();
-            mainWindow.webContents.send('navigate', '/settings');
-          },
-        },
-      ],
+      label: 'Chat',
+      click: () => showRoute(mainWindow, '/chat'),
     },
     {
-      type: 'separator',
+      label: 'Settings',
+      click: () => showRoute(mainWindow, '/settings'),
     },
+    { type: 'separator' },
     {
-      label: 'Check for Updates...',
-      click: () => {
-        if (mainWindow.isDestroyed()) return;
-        mainWindow.webContents.send('update:check');
-      },
+      label: 'Quit Morpheus',
+      click: () => app.quit(),
     },
-    {
-      type: 'separator',
-    },
-    {
-      label: 'Quit ClawX',
-      click: () => {
-        app.quit();
-      },
-    },
-  ]);
-  
-  tray.setContextMenu(contextMenu);
-  
-  // Click to show window (Windows/Linux)
+  ];
+}
+
+export function refreshTray(): void {
+  if (!tray || !activeWindow || activeWindow.isDestroyed() || !activeOptions) return;
+  const gateway = activeOptions.getGatewayStatus();
+  const runtime = activeOptions.controls.runtimeControl();
+  const profile = activeOptions.controls.permissionProfile();
+  const state = runtime.paused
+    ? 'New work paused'
+    : gateway.state === 'running' && gateway.gatewayReady !== false
+      ? 'Ready'
+      : 'Starting';
+  tray.setToolTip(`Morpheus · ${state} · ${profileLabel(profile)}`);
+  tray.setContextMenu(Menu.buildFromTemplate(buildTrayMenuTemplate(activeWindow, activeOptions)));
+}
+
+export function createTray(mainWindow: BrowserWindow, options: MorpheusTrayOptions): Tray {
+  const iconsDir = getIconsDir();
+  const platformIcon = process.platform === 'win32'
+    ? 'icon.ico'
+    : process.platform === 'darwin'
+      ? 'tray-icon-Template.png'
+      : '32x32.png';
+  let icon = nativeImage.createFromPath(join(iconsDir, platformIcon));
+  if (icon.isEmpty()) icon = nativeImage.createFromPath(join(iconsDir, 'icon.png'));
+  if (process.platform === 'darwin') icon.setTemplateImage(true);
+
+  activeWindow = mainWindow;
+  activeOptions = options;
+  tray = new Tray(icon);
+  refreshTray();
+
   tray.on('click', () => {
     if (mainWindow.isDestroyed()) return;
-    if (mainWindow.isVisible()) {
-      mainWindow.hide();
-    } else {
-      mainWindow.show();
-      mainWindow.focus();
-    }
+    if (mainWindow.isVisible()) mainWindow.hide();
+    else showWindow(mainWindow);
   });
-  
-  // Double-click to show window (Windows)
-  tray.on('double-click', () => {
-    if (mainWindow.isDestroyed()) return;
-    mainWindow.show();
-    mainWindow.focus();
-  });
-  
+  tray.on('double-click', () => showWindow(mainWindow));
+  tray.on('right-click', () => refreshTray());
   return tray;
 }
 
-/**
- * Update tray tooltip with Gateway status
- */
-export function updateTrayStatus(status: string): void {
-  if (tray) {
-    tray.setToolTip(`ClawX - ${status}`);
-  }
-}
-
-/**
- * Destroy tray icon
- */
 export function destroyTray(): void {
-  if (tray) {
-    tray.destroy();
-    tray = null;
-  }
+  tray?.destroy();
+  tray = null;
+  activeWindow = null;
+  activeOptions = null;
 }

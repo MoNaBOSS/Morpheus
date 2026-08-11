@@ -77,9 +77,22 @@ describe('Morpheus voice service', () => {
     const harness = createHarness({ accounts: [] });
     await expect(harness.service.status()).resolves.toMatchObject({
       transcriptionAvailable: false,
+      providers: [],
       reason: expect.stringContaining('Configure'),
     });
     expect(harness.providerService.getAccountRuntimeApiKey).not.toHaveBeenCalled();
+  });
+
+  it('returns safe provider choices without returning any credential material', async () => {
+    const harness = createHarness();
+    const status = await harness.service.status();
+    expect(status.providers).toEqual([{
+      accountId: ACCOUNT.id,
+      label: ACCOUNT.label,
+      isDefault: true,
+      configured: true,
+    }]);
+    expect(JSON.stringify(status)).not.toContain('sk-voice-secret');
   });
 
   it('audits metadata before provider disclosure and never audits audio, transcript or credentials', async () => {

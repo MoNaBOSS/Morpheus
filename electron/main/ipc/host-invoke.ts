@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { ipcMain, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import {
   type HostApiContribution,
   type HostResponse,
@@ -128,7 +128,33 @@ export function createHostInvokeDispatcher(registryOrServices: HostApiRegistry |
   };
 }
 
-export function registerHostInvokeHandler(registry: HostApiRegistry): void {
+export function createTrustedHostInvokeHandler(
+  registry: HostApiRegistry,
+  getTrustedSender: () => WebContents | null,
+) {
   const dispatch = createHostInvokeDispatcher(registry);
-  ipcMain.handle('host:invoke', async (_event, request: unknown) => dispatch(request));
+  return async function handleHostInvoke(
+    event: Pick<IpcMainInvokeEvent, 'sender'>,
+    request: unknown,
+  ): Promise<HostResponse> {
+    const trustedSender = getTrustedSender();
+    if (!trustedSender || event.sender !== trustedSender || trustedSender.isDestroyed()) {
+      const requestId = request && typeof request === 'object'
+        ? String((request as Record<string, unknown>).id ?? '')
+        : undefined;
+      return {
+        id: requestId,
+        ok: false,
+        error: { code: 'VALIDATION', message: 'Untrusted host request sender' },
+      };
+    }
+    return dispatch(request);
+  };
+}
+
+export function registerHostInvokeHandler(
+  registry: HostApiRegistry,
+  getTrustedSender: () => WebContents | null,
+): void {
+  ipcMain.handle('host:invoke', createTrustedHostInvokeHandler(registry, getTrustedSender));
 }

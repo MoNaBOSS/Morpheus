@@ -4,11 +4,12 @@
  */
 import { app, BrowserWindow, globalShortcut, nativeImage, session, shell, type Session } from 'electron';
 import { join } from 'path';
+import { pathToFileURL } from 'node:url';
 import { GatewayManager } from '../gateway/manager';
 import { registerOpenClawConfigCoordinator } from '../gateway/config-delivery';
 import { registerIpcHandlers } from './ipc-handlers';
 import { HostApiRegistry } from './ipc/host-invoke';
-import { createTray } from './tray';
+import { createTray, refreshTray } from './tray';
 import { createMenu } from './menu';
 import { registerZoomShortcuts } from './zoom-shortcuts';
 
@@ -60,6 +61,7 @@ import { HOST_EVENT_CHANNELS } from '@shared/host-events/contract';
 import { createMorpheusQuickCommandRegistration } from './morpheus-quick-command';
 import { createMorpheusVoiceCommandRegistration } from './morpheus-voice-command';
 import { installMorpheusMediaPermissionPolicy } from './morpheus-media-permissions';
+import { classifyMainNavigation } from './navigation-policy';
 
 const WINDOWS_APP_USER_MODEL_ID = 'app.morpheus.desktop';
 const isE2EMode = process.env.CLAWX_E2E === '1';
@@ -90,7 +92,7 @@ if (process.platform === 'linux') {
 // The losing process must exit immediately so it never reaches Gateway startup.
 const gotElectronLock = isE2EMode ? true : app.requestSingleInstanceLock();
 if (!gotElectronLock) {
-  console.info('[ClawX] Another instance already holds the single-instance lock; exiting duplicate process');
+  console.info('[Morpheus] Another instance already holds the single-instance lock; exiting duplicate process');
   app.exit(0);
 }
 let releaseProcessInstanceFileLock: () => void = () => {};
@@ -111,12 +113,12 @@ if (gotElectronLock && !isE2EMode) {
           ? 'unknown lock format/content'
           : 'unknown owner';
       console.info(
-        `[ClawX] Another instance already holds process lock (${fileLock.lockPath}, ${ownerDescriptor}); exiting duplicate process`,
+        `[Morpheus] Another instance already holds process lock (${fileLock.lockPath}, ${ownerDescriptor}); exiting duplicate process`,
       );
       app.exit(0);
     }
   } catch (error) {
-    console.warn('[ClawX] Failed to acquire process instance file lock; continuing with Electron single-instance lock only', error);
+    console.warn('[Morpheus] Failed to acquire process instance file lock; continuing with Electron single-instance lock only', error);
   }
 }
 const gotTheLock = gotElectronLock && gotFileLock;
@@ -236,6 +238,25 @@ function createWindow(): BrowserWindow {
     }
     return { action: 'deny' };
   });
+
+  const rendererUrls = [
+    ...(process.env.VITE_DEV_SERVER_URL ? [process.env.VITE_DEV_SERVER_URL] : []),
+    pathToFileURL(join(__dirname, '../../dist/index.html')).toString(),
+  ];
+  const guardTopLevelNavigation = (event: Electron.Event, url: string): void => {
+    const decision = classifyMainNavigation(url, rendererUrls);
+    if (decision === 'allow') return;
+    event.preventDefault();
+    if (decision === 'external') {
+      void shell.openExternal(url).catch((error) => {
+        logger.warn(`Failed to open external navigation: ${String(error)}`);
+      });
+      return;
+    }
+    logger.warn(`Blocked top-level navigation from Morpheus renderer: ${url}`);
+  };
+  win.webContents.on('will-navigate', guardTopLevelNavigation);
+  win.webContents.on('will-redirect', guardTopLevelNavigation);
 
   return win;
 }
@@ -418,7 +439,7 @@ async function initialize(): Promise<void> {
   );
 
   // Register IPC handlers
-  registerIpcHandlers(
+  const morpheusControls = registerIpcHandlers(
     gatewayManager,
     clawHubService,
     window,
@@ -438,7 +459,18 @@ async function initialize(): Promise<void> {
 
   // Create system tray
   if (!isE2EMode) {
-    createTray(window);
+    createTray(window, {
+      getGatewayStatus: () => gatewayManager.getStatus(),
+      controls: morpheusControls,
+      showQuickCommand: () => window.webContents.send(
+        HOST_EVENT_CHANNELS.morpheus.quickCommand,
+        { trigger: 'tray' },
+      ),
+      showVoiceCommand: () => window.webContents.send(
+        HOST_EVENT_CHANNELS.morpheus.voiceCommand,
+        { trigger: 'tray' },
+      ),
+    });
   }
 
   // Initialize extension system
@@ -522,6 +554,7 @@ async function initialize(): Promise<void> {
   // renderer subscribers observe the full startup lifecycle.
   gatewayManager.on('status', (status: { state: string }) => {
     sendMainWindowEvent('gateway:status-changed', status);
+    if (!isE2EMode) refreshTray();
     if (status.state === 'running' && !isE2EMode) {
       void ensureClawXContext().catch((error) => {
         logger.warn('Failed to re-merge ClawX context after gateway reconnect:', error);
@@ -681,7 +714,7 @@ if (gotTheLock) {
 
   // When a second instance is launched, focus the existing window instead.
   app.on('second-instance', () => {
-    logger.info('Second ClawX instance detected; redirecting to the existing window');
+    logger.info('Second Morpheus instance detected; redirecting to the existing window');
 
     const focusRequest = requestSecondInstanceFocus(
       mainWindowFocusState,

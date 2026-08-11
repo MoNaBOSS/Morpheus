@@ -908,7 +908,7 @@ export function ensureClawXOpenAiImagePluginInstalled(): Promise<{ installed: bo
   return ensurePluginInstalled(
     'clawx-openai-image',
     buildCandidateSources('clawx-openai-image'),
-    'ClawX OpenAI Image',
+    'Morpheus OpenAI Image',
   );
 }
 
@@ -926,7 +926,7 @@ const ALL_BUNDLED_PLUGINS = [
   { fn: ensureDiscordPluginInstalled, label: 'Discord' },
   { fn: ensureQQBotPluginInstalled, label: 'QQBot' },
   { fn: ensureWhatsAppPluginInstalled, label: 'WhatsApp' },
-  { fn: ensureClawXOpenAiImagePluginInstalled, label: 'ClawX OpenAI Image' },
+  { fn: ensureClawXOpenAiImagePluginInstalled, label: 'Morpheus OpenAI Image' },
 ] as const;
 
 /**

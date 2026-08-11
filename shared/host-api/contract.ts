@@ -66,6 +66,10 @@ import type {
   MorpheusVoiceStatus,
 } from '../morpheus/voice-types';
 import type {
+  MorpheusRuntimeControlSnapshot,
+  SetMorpheusRuntimePausedPayload,
+} from '../morpheus/runtime-control-types';
+import type {
   AddMorpheusWorkspacePayload,
   MorpheusWorkspaceIdPayload,
   MorpheusWorkspaceResult,
@@ -998,7 +1002,6 @@ export type HostApiContract = {
     get: (payload: ProviderIdPayload) => ProviderConfig | null;
     getDefault: () => string | undefined;
     hasApiKey: (payload: ProviderIdPayload) => boolean;
-    getApiKey: (payload: ProviderIdPayload) => string | null;
     validateKey: (payload: ProviderValidationPayload) => ProviderValidationResult;
     save: (payload: ProviderSavePayload) => HostSuccess;
     delete: (payload: ProviderIdPayload) => HostSuccess;
@@ -1011,7 +1014,6 @@ export type HostApiContract = {
     accountKeyInfo: () => ProviderAccountKeyInfo[];
     getDefaultAccount: () => ProviderDefaultAccountResult;
     getAccount: (payload: ProviderAccountIdPayload) => ProviderAccount | null;
-    getAccountApiKey: (payload: ProviderAccountIdPayload) => string | null;
     hasAccountApiKey: (payload: ProviderAccountIdPayload) => boolean;
     createAccount: (payload: ProviderCreateAccountPayload) => HostSuccess;
     updateAccount: (payload: ProviderUpdateAccountPayload) => HostSuccess;
@@ -1138,6 +1140,8 @@ export type HostApiContract = {
     voiceStatus: () => MorpheusVoiceStatus;
     updateVoiceSettings: (payload: MorpheusVoiceSettingsPatch) => MorpheusVoiceStatus;
     transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => MorpheusTranscriptionResult;
+    runtimeControl: () => MorpheusRuntimeControlSnapshot;
+    setRuntimePaused: (payload: SetMorpheusRuntimePausedPayload) => MorpheusRuntimeControlSnapshot;
     permissionCenter: () => PermissionCenterSnapshot;
     setPermissionProfile: (payload: SetPermissionProfilePayload) => PermissionAcknowledgement;
     revokeGrant: (payload: RevokeGrantPayload) => PermissionAcknowledgement;

@@ -355,7 +355,7 @@ export async function applyOpenAiImageRelaySettings(params: {
   if (params.enabled) {
     const plugin = await ensureClawXOpenAiImagePluginInstalled();
     if (!plugin.installed) {
-      throw new Error(plugin.warning || 'Failed to install ClawX OpenAI Image plugin');
+      throw new Error(plugin.warning || 'Failed to install Morpheus OpenAI Image plugin');
     }
   }
   const imageModelIds: string[] = [];

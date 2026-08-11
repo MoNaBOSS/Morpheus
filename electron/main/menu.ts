@@ -130,7 +130,7 @@ export async function createMenu(language?: string): Promise<void> {
           accelerator: 'CmdOrCtrl+1',
           click: () => {
             const win = getMenuTargetWindow();
-            win?.webContents.send('navigate', '/chat');
+            win?.webContents.send('navigate', '/');
           },
         },
         {
@@ -201,13 +201,13 @@ export async function createMenu(language?: string): Promise<void> {
         {
           label: labels.help.documentation,
           click: async () => {
-            await shell.openExternal('https://claw-x.com');
+            await shell.openExternal('https://github.com/MoNaBOSS/Morpheus');
           },
         },
         {
           label: labels.help.reportIssue,
           click: async () => {
-            await shell.openExternal('https://github.com/ValueCell-ai/ClawX/issues');
+            await shell.openExternal('https://github.com/MoNaBOSS/Morpheus/issues');
           },
         },
         { type: 'separator' },

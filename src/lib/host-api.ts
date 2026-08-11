@@ -62,6 +62,7 @@ import type {
   MorpheusTranscribeAudioPayload,
   MorpheusVoiceSettingsPatch,
 } from '@shared/morpheus/voice-types';
+import type { SetMorpheusRuntimePausedPayload } from '@shared/morpheus/runtime-control-types';
 import type {
   AddMorpheusWorkspacePayload,
   UpdateMorpheusWorkspacePayload,
@@ -265,9 +266,6 @@ export const hostApi = {
     hasApiKey: (providerId: string) => (
       invokeHost('providers', 'hasApiKey', { providerId })
     ),
-    getApiKey: (providerId: string) => (
-      invokeHost('providers', 'getApiKey', { providerId })
-    ),
     validateKey: (input: ProviderValidationPayload) => invokeHost('providers', 'validateKey', input),
     save: (input: { config: ProviderConfig; apiKey?: string }) => invokeHost('providers', 'save', input),
     delete: (providerId: string) => invokeHost('providers', 'delete', { providerId }),
@@ -287,9 +285,6 @@ export const hostApi = {
     getDefaultAccount: () => invokeHost('providers', 'getDefaultAccount'),
     getAccount: (accountId: string) => (
       invokeHost('providers', 'getAccount', { accountId })
-    ),
-    getAccountApiKey: (accountId: string) => (
-      invokeHost('providers', 'getAccountApiKey', { accountId })
     ),
     hasAccountApiKey: (accountId: string) => (
       invokeHost('providers', 'hasAccountApiKey', { accountId })
@@ -468,6 +463,12 @@ export const hostApi = {
     ),
     transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => (
       invokeHost('morpheus', 'transcribeAudio', payload)
+    ),
+    runtimeControl: () => invokeHost('morpheus', 'runtimeControl'),
+    setRuntimePaused: (paused: boolean) => (
+      invokeHost('morpheus', 'setRuntimePaused', {
+        paused,
+      } satisfies SetMorpheusRuntimePausedPayload)
     ),
     permissionCenter: () => invokeHost('morpheus', 'permissionCenter'),
     setPermissionProfile: (profile: PermissionProfile) => (

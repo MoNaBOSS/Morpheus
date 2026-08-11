@@ -213,7 +213,7 @@ function getOpenClawEmbeddedExecPath(): { execPath: string; electronRunAsNode: b
   if (app.isPackaged && process.platform === 'darwin') {
     const helperPath = getPackagedMacOSHelperPath();
     if (!helperPath) {
-      throw new Error('ClawX Helper executable not found for embedded OpenClaw launch');
+      throw new Error('Morpheus Helper executable not found for embedded OpenClaw launch');
     }
     return { execPath: helperPath, electronRunAsNode: true };
   }
@@ -226,7 +226,7 @@ export function getOpenClawEmbeddedForkSpec(args: string[] = []): OpenClawEmbedd
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     OPENCLAW_NO_RESPAWN: '1',
-    OPENCLAW_EMBEDDED_IN: 'ClawX',
+    OPENCLAW_EMBEDDED_IN: 'Morpheus',
     OPENCLAW_EXEC_SHELL_SNAPSHOT: '0',
   };
 
@@ -438,8 +438,8 @@ function ensureLocalBinInPath(): void {
     if (content.includes(marker)) return;
 
     const line = shell.includes('fish')
-      ? '\n# Added by ClawX\nfish_add_path "$HOME/.local/bin"\n'
-      : '\n# Added by ClawX\nexport PATH="$HOME/.local/bin:$PATH"\n';
+      ? '\n# Added by Morpheus\nfish_add_path "$HOME/.local/bin"\n'
+      : '\n# Added by Morpheus\nexport PATH="$HOME/.local/bin:$PATH"\n';
 
     appendFileSync(profileFile, line);
     logger.info(`Added ~/.local/bin to PATH in ${profileFile}`);
@@ -512,7 +512,7 @@ export function generateCompletionCache(): void {
       ...process.env,
       ELECTRON_RUN_AS_NODE: '1',
       OPENCLAW_NO_RESPAWN: '1',
-      OPENCLAW_EMBEDDED_IN: 'ClawX',
+      OPENCLAW_EMBEDDED_IN: 'Morpheus',
     },
     stdio: 'ignore',
     detached: false,
@@ -549,7 +549,7 @@ export function installCompletionToProfile(): void {
         ...process.env,
         ELECTRON_RUN_AS_NODE: '1',
         OPENCLAW_NO_RESPAWN: '1',
-        OPENCLAW_EMBEDDED_IN: 'ClawX',
+        OPENCLAW_EMBEDDED_IN: 'Morpheus',
       },
       stdio: 'ignore',
       detached: false,

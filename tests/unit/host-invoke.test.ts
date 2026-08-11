@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createHostInvokeDispatcher, HostApiRegistry } from '../../electron/main/ipc/host-invoke';
+import {
+  createHostInvokeDispatcher,
+  createTrustedHostInvokeHandler,
+  HostApiRegistry,
+} from '../../electron/main/ipc/host-invoke';
 
 describe('host invoke dispatcher', () => {
   it('dispatches a typed request to the matching service action', async () => {
@@ -149,5 +153,41 @@ describe('host invoke dispatcher', () => {
       module: 'settings',
       actions: { getAll: vi.fn() },
     }])).toThrow('Host API action already registered: settings.getAll');
+  });
+
+  it('dispatches only for the registered main renderer webContents', async () => {
+    const registry = new HostApiRegistry();
+    const getAll = vi.fn(() => ({ theme: 'dark' }));
+    registry.registerCoreServices({ settings: { getAll } });
+    const trustedSender = { isDestroyed: () => false };
+    const untrustedSender = { isDestroyed: () => false };
+    const handle = createTrustedHostInvokeHandler(registry, () => trustedSender as never);
+    const request = { id: 'trusted-1', module: 'settings', action: 'getAll' };
+
+    await expect(handle({ sender: trustedSender } as never, request)).resolves.toMatchObject({
+      id: 'trusted-1',
+      ok: true,
+    });
+    await expect(handle({ sender: untrustedSender } as never, request)).resolves.toEqual({
+      id: 'trusted-1',
+      ok: false,
+      error: { code: 'VALIDATION', message: 'Untrusted host request sender' },
+    });
+    expect(getAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails closed after the trusted renderer is destroyed', async () => {
+    const registry = new HostApiRegistry();
+    const getAll = vi.fn();
+    registry.registerCoreServices({ settings: { getAll } });
+    const destroyedSender = { isDestroyed: () => true };
+    const handle = createTrustedHostInvokeHandler(registry, () => destroyedSender as never);
+
+    await expect(handle({ sender: destroyedSender } as never, {
+      id: 'destroyed-1',
+      module: 'settings',
+      action: 'getAll',
+    })).resolves.toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
+    expect(getAll).not.toHaveBeenCalled();
   });
 });

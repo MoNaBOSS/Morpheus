@@ -111,4 +111,32 @@ describe('Morpheus scheduling', () => {
     await scheduler.tick();
     expect(submitInternal).toHaveBeenCalledOnce();
   });
+
+  it('does not start manual, due, or app-startup schedule work while paused', async () => {
+    const store = createMorpheusScheduleStore({ userDataDir: root() });
+    const submitInternal = vi.fn();
+    const prepare = vi.fn();
+    const scheduler = createMorpheusScheduler({
+      store,
+      workflows: { get: vi.fn(), prepare } as never,
+      objectives: {
+        submitInternal, waitForTerminal: vi.fn(), waitForIdle: vi.fn(),
+      } as never,
+      now: () => new Date('2026-08-10T10:00:00.000Z'),
+      createId: () => 'paused-1',
+      isRuntimePaused: () => true,
+    });
+    scheduler.save({
+      name: 'Paused startup', workflowId: 'system-brief', enabled: true,
+      trigger: { type: 'app-startup' },
+    });
+
+    await expect(scheduler.runNow('paused-1')).resolves.toMatchObject({
+      status: 'rejected', error: 'Morpheus is paused',
+    });
+    await scheduler.tick();
+    expect(prepare).not.toHaveBeenCalled();
+    expect(submitInternal).not.toHaveBeenCalled();
+    expect(store.get('paused-1')?.lastStatus).toBe('never');
+  });
 });

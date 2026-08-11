@@ -40,7 +40,6 @@ interface ProviderState {
     apiKey: string,
     options?: { baseUrl?: string; apiProtocol?: ProviderAccount['apiProtocol']; modelId?: string }
   ) => Promise<{ valid: boolean; error?: string }>;
-  getAccountApiKey: (accountId: string) => Promise<string | null>;
 
   // Legacy compatibility aliases
   fetchProviders: () => Promise<void>;
@@ -64,7 +63,6 @@ interface ProviderState {
     apiKey: string,
     options?: { baseUrl?: string; apiProtocol?: ProviderAccount['apiProtocol'] }
   ) => Promise<{ valid: boolean; error?: string }>;
-  getApiKey: (providerId: string) => Promise<string | null>;
 }
 
 export const useProviderStore = create<ProviderState>((set, get) => ({
@@ -281,13 +279,4 @@ export const useProviderStore = create<ProviderState>((set, get) => ({
 
   validateApiKey: async (providerId, apiKey, options) => get().validateAccountApiKey(providerId, apiKey, options),
 
-  getAccountApiKey: async (providerId) => {
-    try {
-      return await hostApi.providers.getAccountApiKey(providerId);
-    } catch {
-      return null;
-    }
-  },
-
-  getApiKey: async (providerId) => get().getAccountApiKey(providerId),
 }));

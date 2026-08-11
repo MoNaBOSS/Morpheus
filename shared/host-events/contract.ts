@@ -112,9 +112,9 @@ export type HostEventContract = {
   morpheus: {
     actionEvent: (payload: MorpheusActionEvent) => void;
     /** Fixed global shortcut requested the trusted Quick Command surface. */
-    quickCommand: (payload: { trigger: 'global-shortcut' }) => void;
+    quickCommand: (payload: { trigger: 'global-shortcut' | 'tray' }) => void;
     /** Fixed global shortcut requested the trusted microphone surface. */
-    voiceCommand: (payload: { trigger: 'global-shortcut' }) => void;
+    voiceCommand: (payload: { trigger: 'global-shortcut' | 'tray' }) => void;
     /**
      * ONE batched consent request per plan, carrying only the trust boundaries
      * that are genuinely new. Separate from the run lifecycle because it is a

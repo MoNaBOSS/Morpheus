@@ -564,6 +564,14 @@
       "recent": "最近活动",
       "open": "打开完整活动"
     },
+    "runtimeControl": {
+      "settingsTitle": "操作运行时",
+      "active": "可接受新任务",
+      "paused": "已暂停新任务",
+      "description": "暂停后不会启动新的目标和计划任务。当前任务可安全完成，普通聊天仍可使用。",
+      "pause": "暂停新任务",
+      "resume": "恢复新任务"
+    },
     "quickCommand": {
       "title": "快捷命令",
       "close": "关闭快捷命令",
@@ -571,6 +579,9 @@
       "planning": "正在构建类型化计划…",
       "executing": "正在执行：{{objective}}",
       "finished": "执行状态：{{status}}。",
+      "objectiveState": "{{state}} · {{objective}}",
+      "running": "当前目标：{{objective}}",
+      "stop": "停止",
       "unsupported": "暂不支持该目标。",
       "hint": "按 Enter 执行。只有信任边界变化时才会询问。"
     },
@@ -581,6 +592,22 @@
       "dismiss": "关闭语音状态",
       "speaking": "Morpheus 正在说话",
       "errorBody": "语音输入无法继续。请在设置中检查麦克风和转录提供商。",
+      "settings": {
+        "title": "语音操作员",
+        "loading": "正在加载语音配置…",
+        "ready": "已通过 {{provider}} 就绪。音频和转录内容不会写入审计历史。",
+        "unavailable": "尚未配置兼容的转录提供商。",
+        "enabled": "启用语音输入",
+        "enabledDescription": "允许麦克风控件和全局语音快捷键获取目标。",
+        "provider": "转录提供商",
+        "providerAutomatic": "自动 · 默认兼容提供商",
+        "notConfigured": "需要 API 密钥",
+        "model": "转录模型",
+        "autoSubmit": "转录后运行",
+        "autoSubmitDescription": "转录成功后无需再次点击，直接进入同一目标核心。",
+        "speakResponses": "朗读最终响应",
+        "speakResponsesDescription": "通过 Windows 语音合成朗读简洁的完成或澄清消息。"
+      },
       "states": {
         "idle": "语音已就绪",
         "requesting": "正在请求麦克风权限…",

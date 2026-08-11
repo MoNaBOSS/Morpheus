@@ -33,8 +33,6 @@ const electronAPI = {
         'openclaw:status',
         // Shell
         'shell:openExternal',
-        'shell:showItemInFolder',
-        'shell:openPath',
         // Dialog
         'dialog:open',
         'dialog:message',
@@ -78,17 +76,9 @@ const electronAPI = {
         'provider:updateWithKey',
         'provider:deleteApiKey',
         'provider:hasApiKey',
-        'provider:getApiKey',
         'provider:setDefault',
         'provider:getDefault',
         'provider:validateKey',
-        // File preview (sandboxed read/write/list/tree)
-        'file:readText',
-        'file:readBinary',
-        'file:writeText',
-        'file:stat',
-        'file:listDir',
-        'file:listTree',
         // OpenClaw extras
         'openclaw:getSkillsDir',
         'openclaw:getCliCommand',

@@ -12,7 +12,12 @@ touchedAreas:
   - electron/services/morpheus/**
   - electron/services/morpheus-api.ts
   - electron/services/providers/**
+  - electron/services/files-api.ts
+  - electron/services/gateway-api.ts
+  - electron/services/shell-api.ts
+  - electron/services/providers-api.ts
   - electron/main/**
+  - electron/preload/**
   - src/lib/host-api.ts
   - src/lib/host-events.ts
   - src/stores/morpheus-**
@@ -26,6 +31,11 @@ touchedAreas:
   - src/pages/Settings/**
   - src/components/layout/**
   - src/styles/globals.css
+  - index.html
+  - scripts/installer.nsh
+  - scripts/patch-nsis-*.mjs
+  - resources/cli/**
+  - resources/context/**
   - tests/unit/morpheus-**
   - tests/e2e/morpheus-**
   - docs/**
@@ -71,6 +81,10 @@ requiredTests:
 acceptance:
   - Main owns objective state, context selection, planner choice, proposal validation, trust, execution, observation, replanning and durable history.
   - Provider output is parsed as untrusted proposal data and cannot invent capabilities, targets, grants or results.
+  - Only the active Main renderer may invoke the typed host bridge; provider secrets never return to Renderer.
+  - Generic Gateway RPC is restricted to the existing Chat and Channels compatibility methods.
+  - File and native shell paths are accepted only inside Main-owned roots, and external URLs are HTTP(S)-only.
+  - The installer never adds security exclusions, changes system long-path policy or enables CLI PATH integration without explicit in-app consent.
   - Planning and replanning have strict step, iteration, time and cycle bounds and support cancellation.
   - Voice recordings are bounded, ephemeral by default and never persisted to Audit; credentials remain in Main.
   - A continuation plan reuses matching exact grants and evaluates only newly introduced boundaries.

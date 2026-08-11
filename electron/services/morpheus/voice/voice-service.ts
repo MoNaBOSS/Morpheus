@@ -12,6 +12,7 @@ import {
   type MorpheusTranscriptionResult,
   type MorpheusVoiceSettings,
   type MorpheusVoiceSettingsPatch,
+  type MorpheusVoiceProviderOption,
   type MorpheusVoiceStatus,
 } from '@shared/morpheus/voice-types';
 
@@ -112,8 +113,11 @@ export function createMorpheusVoiceService(options: {
   let settings = readValidatedJson(settingsPath, validateSettings) ?? structuredClone(DEFAULT_VOICE_SETTINGS);
   const save = (): void => writeJsonAtomically(settingsPath, settings);
 
-  const resolveAccount = async (): Promise<{ account: ProviderAccount; apiKey: string } | null> => {
-    const accounts = (await options.providerService.listAccounts()).filter(eligibleAccount);
+  const resolveAccount = async (
+    accountCandidates?: ProviderAccount[],
+  ): Promise<{ account: ProviderAccount; apiKey: string } | null> => {
+    const accounts = accountCandidates
+      ?? (await options.providerService.listAccounts()).filter(eligibleAccount);
     const selected = settings.providerAccountId
       ? accounts.find((account) => account.id === settings.providerAccountId)
       : accounts.find((account) => account.isDefault) ?? accounts[0];
@@ -123,13 +127,33 @@ export function createMorpheusVoiceService(options: {
   };
 
   const status = async (): Promise<MorpheusVoiceStatus> => {
-    if (!settings.enabled) return { settings: structuredClone(settings), transcriptionAvailable: false, reason: 'Voice input is disabled.' };
-    const resolved = await resolveAccount();
+    const accounts = (await options.providerService.listAccounts()).filter(eligibleAccount);
+    const providers: MorpheusVoiceProviderOption[] = await Promise.all(accounts.map(async (account) => ({
+      accountId: account.id,
+      label: account.label,
+      isDefault: Boolean(account.isDefault),
+      configured: Boolean(await options.providerService.getAccountRuntimeApiKey(account.id)),
+    })));
+    if (!settings.enabled) {
+      return {
+        settings: structuredClone(settings),
+        transcriptionAvailable: false,
+        providers,
+        reason: 'Voice input is disabled.',
+      };
+    }
+    const resolved = await resolveAccount(accounts);
     return resolved
-      ? { settings: structuredClone(settings), transcriptionAvailable: true, providerLabel: resolved.account.label }
+      ? {
+          settings: structuredClone(settings),
+          transcriptionAvailable: true,
+          providers,
+          providerLabel: resolved.account.label,
+        }
       : {
           settings: structuredClone(settings),
           transcriptionAvailable: false,
+          providers,
           reason: 'Configure an API-key OpenAI or compatible transcription provider.',
         };
   };

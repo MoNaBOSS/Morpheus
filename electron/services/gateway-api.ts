@@ -17,6 +17,29 @@ type RpcPayload = {
   timeoutMs?: unknown;
 };
 
+/**
+ * Renderer-visible Gateway RPC is compatibility glue for the existing Chat and
+ * Channels stores. Keep this list narrow: privileged or newly introduced
+ * methods must receive a typed Main-owned host route instead of becoming a
+ * generic renderer-controlled RPC.
+ */
+export const RENDERER_GATEWAY_RPC_METHODS = Object.freeze([
+  'sessions.subscribe',
+  'sessions.list',
+  'channels.status',
+  'channels.add',
+  'channels.delete',
+  'channels.connect',
+  'channels.disconnect',
+  'channels.requestQr',
+] as const);
+
+const rendererGatewayRpcMethods = new Set<string>(RENDERER_GATEWAY_RPC_METHODS);
+
+export function isRendererGatewayRpcMethod(method: string): boolean {
+  return rendererGatewayRpcMethods.has(method);
+}
+
 function parseTimeoutMs(timeoutMs: unknown): number | undefined {
   if (timeoutMs === undefined) return undefined;
   if (typeof timeoutMs !== 'number' || !Number.isFinite(timeoutMs) || timeoutMs <= 0) {
@@ -59,6 +82,9 @@ export function createGatewayApi(gatewayManager: GatewayManager): CompleteHostSe
       const method = typeof body.method === 'string' ? body.method.trim() : '';
       if (!method) {
         throw new Error('Invalid gateway RPC method');
+      }
+      if (!isRendererGatewayRpcMethod(method)) {
+        throw new Error(`Gateway RPC method is not available to the renderer: ${method}`);
       }
       const timeoutMs = parseTimeoutMs(body.timeoutMs);
       return gatewayManager.rpc(method, body.params, timeoutMs);

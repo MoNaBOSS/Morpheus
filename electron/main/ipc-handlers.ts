@@ -43,7 +43,7 @@ import { appUpdater } from './updater';
 import { HostApiRegistry, registerHostInvokeHandler } from './ipc/host-invoke';
 import { createAppApi } from '../services/app-api';
 import { createOpenClawApi } from '../services/openclaw-api';
-import { createShellApi } from '../services/shell-api';
+import { createShellApi, requireSafeExternalUrl } from '../services/shell-api';
 import { createDialogApi } from '../services/dialog-api';
 import { createWindowApi } from '../services/window-api';
 import { createUpdatesApi } from '../services/updates-api';
@@ -77,6 +77,15 @@ import {
   type AppResponse,
 } from './ipc/request-helpers';
 import { createMenu } from './menu';
+import type { PermissionProfile } from '@shared/morpheus/permission-types';
+import type { MorpheusRuntimeControlSnapshot } from '@shared/morpheus/runtime-control-types';
+
+export type MorpheusDesktopControls = {
+  permissionProfile(): PermissionProfile;
+  setPermissionProfile(profile: PermissionProfile): Promise<void>;
+  runtimeControl(): MorpheusRuntimeControlSnapshot;
+  setRuntimePaused(paused: boolean): Promise<MorpheusRuntimeControlSnapshot>;
+};
 
 /**
  * Register all IPC handlers
@@ -88,12 +97,12 @@ export function registerIpcHandlers(
   hostApiRegistry: HostApiRegistry,
   browserSession: Session,
   registry: WebBrowserGuestRegistry,
-): void {
+): MorpheusDesktopControls {
   // Unified request protocol (non-breaking: legacy channels remain available)
   registerUnifiedRequestHandlers(gatewayManager);
 
   // Typed host invoke handlers (new renderer facade; legacy channels remain available)
-  registerTypedHostHandlers(
+  const morpheusControls = registerTypedHostHandlers(
     gatewayManager,
     clawHubService,
     mainWindow,
@@ -137,6 +146,8 @@ export function registerIpcHandlers(
 
   // File preview handlers (sandboxed read/write/list for inline viewer)
   registerFilePreviewHandlers();
+
+  return morpheusControls;
 }
 
 function registerTypedHostHandlers(
@@ -146,7 +157,7 @@ function registerTypedHostHandlers(
   hostApiRegistry: HostApiRegistry,
   browserSession: Session,
   registry: WebBrowserGuestRegistry,
-): void {
+): MorpheusDesktopControls {
   const acpSessionAccessRegistry = new AcpSessionAccessRegistry();
   const stagedAttachments = new StagedAttachmentRegistry();
   const attachmentOpenWith = createAttachmentOpenWithService();
@@ -174,10 +185,42 @@ function registerTypedHostHandlers(
       mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.objectiveEvent, event);
     },
   });
+  const morpheusApi = createMorpheusApi({
+    runtime: morpheusService.runtime,
+    grants: morpheusService.grants,
+    agentProfiles: morpheusService.agentProfiles,
+    workflows: morpheusService.workflows,
+    scheduler: morpheusService.scheduler,
+    objectives: morpheusService.objectives,
+    voice: morpheusService.voice,
+    runtimeControl: morpheusService.runtimeControl,
+    workspaces: morpheusService.workspaces,
+    audit: morpheusService.audit,
+    filesRoot: morpheusService.filesRoot,
+    appVersion: app.getVersion(),
+    auditHealth: morpheusService.auditHealth,
+    selectWorkspaceDirectory: async () => {
+      const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openDirectory'],
+      });
+      return result.canceled ? null : result.filePaths[0] ?? null;
+    },
+  });
   hostApiRegistry.registerCoreServices({
     app: createAppApi(),
     openclaw: createOpenClawApi(),
-    shell: createShellApi(),
+    shell: createShellApi({
+      allowedPathRoots: () => {
+        const acp = acpSessionAccessRegistry.snapshot();
+        return [
+          app.getPath('userData'),
+          ...morpheusService.workspaces.list().workspaces
+            .filter((workspace) => workspace.enabled && workspace.available)
+            .map((workspace) => workspace.rootPath),
+          ...(acp ? [acp.workspaceRoot, acp.executionCwd] : []),
+        ];
+      },
+    }),
     webBrowser: createWebBrowserApi({ browserSession, registry }),
     dialog: createDialogApi(),
     window: createWindowApi(mainWindow),
@@ -193,6 +236,15 @@ function registerTypedHostHandlers(
       attachmentAccess,
       openWith: attachmentOpenWith,
       stagedAttachments,
+      allowedReadRoots: () => {
+        const acp = acpSessionAccessRegistry.snapshot();
+        return [
+          ...morpheusService.workspaces.list().workspaces
+            .filter((workspace) => workspace.enabled && workspace.available)
+            .map((workspace) => workspace.rootPath),
+          ...(acp ? [acp.workspaceRoot, acp.executionCwd] : []),
+        ];
+      },
     }),
     media: createMediaApi({ attachmentAccess }),
     sessions: createSessionsApi(),
@@ -200,26 +252,7 @@ function registerTypedHostHandlers(
     cron: createCronApi({ gatewayManager }),
     skills: createSkillsApi({ clawHubService, gatewayManager }),
     usage: createUsageApi(),
-    morpheus: createMorpheusApi({
-      runtime: morpheusService.runtime,
-      grants: morpheusService.grants,
-      agentProfiles: morpheusService.agentProfiles,
-      workflows: morpheusService.workflows,
-      scheduler: morpheusService.scheduler,
-      objectives: morpheusService.objectives,
-      voice: morpheusService.voice,
-      workspaces: morpheusService.workspaces,
-      audit: morpheusService.audit,
-      filesRoot: morpheusService.filesRoot,
-      appVersion: app.getVersion(),
-      auditHealth: morpheusService.auditHealth,
-      selectWorkspaceDirectory: async () => {
-        const result = await dialog.showOpenDialog(mainWindow, {
-          properties: ['openDirectory'],
-        });
-        return result.canceled ? null : result.filePaths[0] ?? null;
-      },
-    }),
+    morpheus: morpheusApi,
   });
   // Start only after the renderer can receive a batched consent request. An
   // app-startup schedule must never begin before the UI exists and then time
@@ -230,7 +263,17 @@ function registerTypedHostHandlers(
     morpheusService.objectives.dispose();
     morpheusService.runtime.dispose();
   });
-  registerHostInvokeHandler(hostApiRegistry);
+  registerHostInvokeHandler(hostApiRegistry, () => (
+    mainWindow.isDestroyed() ? null : mainWindow.webContents
+  ));
+  return {
+    permissionProfile: () => morpheusService.grants.getProfile(),
+    async setPermissionProfile(profile) {
+      await morpheusApi.setPermissionProfile({ profile });
+    },
+    runtimeControl: () => morpheusService.runtimeControl.snapshot(),
+    setRuntimePaused: (paused) => morpheusService.runtimeControl.setPaused(paused, 'tray'),
+  };
 }
 
 function registerUnifiedRequestHandlers(gatewayManager: GatewayManager): void {
@@ -293,13 +336,6 @@ function registerUnifiedRequestHandlers(gatewayManager: GatewayManager): void {
             const providerId = typeof payload === 'string' ? payload : payload?.providerId;
             if (!providerId) throw new Error('Invalid provider.hasApiKey payload');
             data = await providerService.hasLegacyProviderApiKey(providerId);
-            break;
-          }
-          if (request.action === 'getApiKey') {
-            const payload = request.payload as { providerId?: string } | string | undefined;
-            const providerId = typeof payload === 'string' ? payload : payload?.providerId;
-            if (!providerId) throw new Error('Invalid provider.getApiKey payload');
-            data = await providerService.getLegacyProviderApiKey(providerId);
             break;
           }
           if (request.action === 'validateKey') {
@@ -993,12 +1029,6 @@ function registerProviderHandlers(gatewayManager: GatewayManager): void {
     return await providerService.hasLegacyProviderApiKey(providerId);
   });
 
-  // Get the actual API key (for internal use only - be careful!)
-  ipcMain.handle('provider:getApiKey', async (_, providerId: string) => {
-    logLegacyProviderChannel('provider:getApiKey');
-    return await providerService.getLegacyProviderApiKey(providerId);
-  });
-
   // Set default provider and update OpenClaw default model
   ipcMain.handle('provider:setDefault', async (_, providerId: string) => {
     logLegacyProviderChannel('provider:setDefault');
@@ -1073,7 +1103,7 @@ function expandShellPath(input: string): string {
 function registerShellHandlers(): void {
   // Open external URL
   ipcMain.handle('shell:openExternal', async (_, url: string) => {
-    await shell.openExternal(url);
+    await shell.openExternal(requireSafeExternalUrl(url));
   });
 
   // Open path in file explorer

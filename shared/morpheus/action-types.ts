@@ -348,7 +348,8 @@ export type MorpheusControlAuditCategory =
   | 'workspace'
   | 'agent-profile'
   | 'workflow'
-  | 'schedule';
+  | 'schedule'
+  | 'runtime';
 
 /** Non-capability policy/configuration fact in the same append-only ledger. */
 export type MorpheusControlAuditEntry = {

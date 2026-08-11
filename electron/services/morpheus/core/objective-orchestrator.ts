@@ -181,6 +181,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
   audit: MorpheusAuditSink;
   appVersion: string;
   workspaces: Pick<MorpheusWorkspaceStore, 'get' | 'resolveRoot'>;
+  isRuntimePaused?: () => boolean;
   emit: (event: MorpheusObjectiveEvent) => void;
   platform?: string;
   now?: () => Date;
@@ -616,6 +617,13 @@ export function createMorpheusObjectiveOrchestrator(options: {
 
   const submitInternal = async (payload: ObjectiveSubmission): Promise<SubmitMorpheusObjectiveResult> => {
     if (disposed) return { objectiveRunId: '', accepted: false, message: 'Morpheus is shutting down.' };
+    if (options.isRuntimePaused?.()) {
+      return {
+        objectiveRunId: '',
+        accepted: false,
+        message: 'Morpheus is paused. Resume new work from the Command Center, Settings, or tray.',
+      };
+    }
     const snapshot = options.store.snapshot();
     if (snapshot.activeObjectiveRunId) {
       return {

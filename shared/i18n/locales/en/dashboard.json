@@ -667,6 +667,14 @@
       "recent": "Recent activity",
       "open": "Open full activity"
     },
+    "runtimeControl": {
+      "settingsTitle": "Operator runtime",
+      "active": "New work is active",
+      "paused": "New work is paused",
+      "description": "Pause prevents new objectives and schedules from starting. Active work may finish safely, and normal Chat remains available.",
+      "pause": "Pause new work",
+      "resume": "Resume new work"
+    },
     "quickCommand": {
       "title": "Quick Command",
       "close": "Close Quick Command",
@@ -674,6 +682,9 @@
       "planning": "Building a typed plan…",
       "executing": "Executing: {{objective}}",
       "finished": "Execution {{status}}.",
+      "objectiveState": "{{state}} · {{objective}}",
+      "running": "Active objective: {{objective}}",
+      "stop": "Stop",
       "unsupported": "That objective is not supported yet.",
       "hint": "Enter runs the objective. Morpheus asks only when trust changes."
     },
@@ -684,6 +695,22 @@
       "dismiss": "Dismiss voice status",
       "speaking": "Morpheus is speaking",
       "errorBody": "Voice input could not continue. Check the microphone and transcription provider in Settings.",
+      "settings": {
+        "title": "Voice operator",
+        "loading": "Loading voice configuration…",
+        "ready": "Ready through {{provider}}. Audio and transcripts are never written to audit history.",
+        "unavailable": "No compatible transcription provider is configured.",
+        "enabled": "Enable voice input",
+        "enabledDescription": "Allow the microphone controls and global voice shortcut to capture an objective.",
+        "provider": "Transcription provider",
+        "providerAutomatic": "Automatic · default compatible provider",
+        "notConfigured": "API key required",
+        "model": "Transcription model",
+        "autoSubmit": "Run after transcription",
+        "autoSubmitDescription": "Send a successful transcript into the same Objective Core without another click.",
+        "speakResponses": "Speak final responses",
+        "speakResponsesDescription": "Read concise completion or clarification messages through Windows speech synthesis."
+      },
       "states": {
         "idle": "Voice ready",
         "requesting": "Requesting microphone access…",
