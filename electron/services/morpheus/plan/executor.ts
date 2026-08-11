@@ -134,14 +134,25 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
     graph.order.map((stepId) => [stepId, { stepId, status: 'pending' as const }]),
   );
 
+  const cancelPending = async (): Promise<ExecutePlanResult> => {
+    for (const stepId of graph.order) {
+      if (results.get(stepId)?.status !== 'pending') continue;
+      results.set(stepId, { stepId, status: 'cancelled' });
+      await runner.skip?.(byId.get(stepId) as ExecutionStep, 'the objective was cancelled');
+    }
+    return { status: 'cancelled', steps: finalise(graph.order, results) };
+  };
+
   // 2. Prepare everything first. A preparation failure is a plan-level problem:
   //    the user would otherwise approve a plan whose later steps cannot run.
   const preparedByStep = new Map<string, PreparedStep>();
   const scopesByStep = new Map<string, PermissionScope>();
   const targetsByStep = new Map<string, string>();
   for (const stepId of graph.order) {
+    if (signal?.aborted) return cancelPending();
     const step = byId.get(stepId) as ExecutionStep;
     const outcome = await runner.prepare(step);
+    if (signal?.aborted) return cancelPending();
     if (!outcome.ok) {
       results.set(stepId, { stepId, status: 'failed', error: outcome.error });
       return {
@@ -191,6 +202,7 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
 
   if (trust.outcome === 'needs-consent') {
     const decisions = await requestConsent(trust.consentRequired);
+    if (signal?.aborted) return cancelPending();
 
     for (const boundary of trust.consentRequired) {
       const decision = decisions.get(boundary.boundaryId);

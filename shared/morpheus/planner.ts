@@ -10,8 +10,27 @@
 import type {
   ExecutionOrigin,
   ExecutionPlan,
+  ExecutionPlanStatus,
+  ExecutionStepResult,
   InterpretationResult,
 } from './execution-types';
+import type { MorpheusActionId, MorpheusRiskTier } from './actions/registry';
+import type { MorpheusParamDescriptor } from './capabilities/params';
+import type { MorpheusContextItem, MorpheusObjectiveLimits } from './core/objective-types';
+
+export type MorpheusPlanningCapability = {
+  capabilityId: MorpheusActionId;
+  riskTier: MorpheusRiskTier;
+  description: string;
+  params: readonly MorpheusParamDescriptor[];
+};
+
+export type MorpheusPlanningAgent = {
+  profileId: string;
+  name: string;
+  instructions: string;
+  capabilityIds: readonly MorpheusActionId[];
+};
 
 export type MorpheusPlanningRequest = {
   objective: string;
@@ -19,11 +38,39 @@ export type MorpheusPlanningRequest = {
   platform: string;
   /** Canonical approved root supplied by Main, never by the Renderer. */
   filesRoot: string;
+  objectiveRunId?: string;
+  iteration?: number;
+  capabilities?: readonly MorpheusPlanningCapability[];
+  context?: readonly MorpheusContextItem[];
+  agent?: MorpheusPlanningAgent;
+  limits?: MorpheusObjectiveLimits;
+  signal?: AbortSignal;
 };
+
+export type MorpheusPlannerReviewRequest = {
+  objectiveRunId: string;
+  objective: string;
+  origin: ExecutionOrigin;
+  iteration: number;
+  plan: ExecutionPlan;
+  planStatus: ExecutionPlanStatus;
+  stepResults: readonly ExecutionStepResult[];
+  context: readonly MorpheusContextItem[];
+  capabilities: readonly MorpheusPlanningCapability[];
+  limits: MorpheusObjectiveLimits;
+  signal?: AbortSignal;
+};
+
+export type MorpheusPlannerReviewResult =
+  | { outcome: 'complete'; summary: string }
+  | { outcome: 'clarify'; question: string }
+  | { outcome: 'continue'; reason: string; plan: ExecutionPlan };
 
 export interface MorpheusPlanner {
   /** Stable adapter identity for diagnostics and future planner selection. */
   readonly plannerId: string;
   readonly plannedBy: ExecutionPlan['plannedBy'];
   plan(request: MorpheusPlanningRequest): InterpretationResult | Promise<InterpretationResult>;
+  /** Optional for deterministic/offline planners that cannot honestly replan. */
+  review?(request: MorpheusPlannerReviewRequest): MorpheusPlannerReviewResult | Promise<MorpheusPlannerReviewResult>;
 }

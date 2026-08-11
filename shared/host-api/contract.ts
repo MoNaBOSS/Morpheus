@@ -50,6 +50,13 @@ import type {
   RevokeGrantPayload,
   SetPermissionProfilePayload,
 } from '../morpheus/permission-types';
+import type {
+  CancelMorpheusObjectivePayload,
+  CorrectMorpheusObjectivePayload,
+  MorpheusObjectiveSnapshot,
+  SubmitMorpheusObjectivePayload,
+  SubmitMorpheusObjectiveResult,
+} from '../morpheus/core/objective-types';
 import type { WebBrowserNavigatePayload } from '../web-browser';
 
 export type JsonRecord = Record<string, unknown>;
@@ -1109,6 +1116,11 @@ export type HostApiContract = {
     executePlan: (payload: MorpheusExecutePlanPayload) => MorpheusPlanExecutionResult;
     /** Answers the batched consent request for a plan. */
     respondPlanPermission: (payload: MorpheusPlanDecisionsPayload) => MorpheusAcknowledgement;
+    /** Unified Main-owned entry point for Command Center, Quick Command and Chat execution. */
+    submitObjective: (payload: SubmitMorpheusObjectivePayload) => SubmitMorpheusObjectiveResult;
+    objectiveSnapshot: () => MorpheusObjectiveSnapshot;
+    correctObjective: (payload: CorrectMorpheusObjectivePayload) => MorpheusAcknowledgement;
+    cancelObjective: (payload: CancelMorpheusObjectivePayload) => MorpheusAcknowledgement;
     permissionCenter: () => PermissionCenterSnapshot;
     setPermissionProfile: (payload: SetPermissionProfilePayload) => PermissionAcknowledgement;
     revokeGrant: (payload: RevokeGrantPayload) => PermissionAcknowledgement;

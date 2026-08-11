@@ -5,8 +5,11 @@ import {
   createMorpheusApi,
   validateAuditRecentPayload,
   validateCancelActionPayload,
+  validateCancelObjectivePayload,
+  validateCorrectObjectivePayload,
   validateRequestActionPayload,
   validateRespondPermissionPayload,
+  validateSubmitObjectivePayload,
 } from '@electron/services/morpheus-api';
 import type { MorpheusRuntime } from '@electron/services/morpheus';
 
@@ -50,6 +53,12 @@ function stubOptions(runtime = stubRuntime()) {
       start: vi.fn(),
       stop: vi.fn(),
     } as never,
+    objectives: {
+      submit: vi.fn(async () => ({ objectiveRunId: 'objective-1', accepted: true })),
+      snapshot: vi.fn(() => ({ activeObjectiveRunId: null, runOrder: [], runsById: {}, plansByObjectiveRunId: {} })),
+      correct: vi.fn(async () => ({ accepted: true })),
+      cancel: vi.fn(async () => ({ accepted: true })),
+    } as never,
     audit: {
       recordControl: vi.fn(async () => undefined),
       query: vi.fn(async () => ({ entries: [], truncated: false })),
@@ -71,6 +80,7 @@ function stubRuntime(): MorpheusRuntime {
     registerPlan: vi.fn((plan) => plan),
     executePlan: vi.fn(async () => ({ planId: 'plan-1', status: 'completed' as const, steps: [] })),
     respondPlanPermission: vi.fn(async () => ({ accepted: true })),
+    cancelPlan: vi.fn(async () => ({ accepted: true })),
     dispose: vi.fn(),
   };
 }
@@ -183,6 +193,26 @@ describe('validateCancelActionPayload', () => {
   });
 });
 
+describe('objective payload validation', () => {
+  it('accepts only bounded logical objective fields', () => {
+    expect(validateSubmitObjectivePayload({ objective: 'Open Notepad', originType: 'quick-command' }))
+      .toEqual({ objective: 'Open Notepad', originType: 'quick-command' });
+    expect(validateCorrectObjectivePayload({ objectiveRunId: 'objective-1', correction: 'Use notes.txt' }))
+      .toEqual({ objectiveRunId: 'objective-1', correction: 'Use notes.txt' });
+    expect(validateCancelObjectivePayload({ objectiveRunId: 'objective-1' }))
+      .toEqual({ objectiveRunId: 'objective-1' });
+  });
+
+  it('rejects renderer authority smuggling', () => {
+    expect(() => validateSubmitObjectivePayload({ objective: 'test', executablePath: 'cmd.exe' }))
+      .toThrow(/unsupported key/);
+    expect(() => validateSubmitObjectivePayload({ objective: 'test', originType: 'schedule' }))
+      .toThrow(/unsupported objective originType/);
+    expect(() => validateCorrectObjectivePayload({ objectiveRunId: 'objective-1', correction: 'x', plan: {} }))
+      .toThrow(/unsupported key/);
+  });
+});
+
 describe('validateAuditRecentPayload', () => {
   it('defaults, clamps and rejects', () => {
     expect(validateAuditRecentPayload(undefined)).toEqual({});
@@ -204,10 +234,13 @@ describe('createMorpheusApi', () => {
       'auditQuery',
       'auditRecent',
       'cancelAction',
+      'cancelObjective',
+      'correctObjective',
       'describeActions',
       'executePlan',
       'filesRoot',
       'interpretCommand',
+      'objectiveSnapshot',
       'openFilesRoot',
       'permissionCenter',
       'prepareWorkflow',
@@ -222,6 +255,7 @@ describe('createMorpheusApi', () => {
       'saveSchedule',
       'schedules',
       'setPermissionProfile',
+      'submitObjective',
       'systemInfo',
       'workflow',
       'workflows',

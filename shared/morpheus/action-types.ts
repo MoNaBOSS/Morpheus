@@ -337,6 +337,8 @@ export type MorpheusAuditRecentResult = {
 };
 
 export type MorpheusControlAuditCategory =
+  | 'objective'
+  | 'planner'
   | 'permission'
   | 'agent-profile'
   | 'workflow'

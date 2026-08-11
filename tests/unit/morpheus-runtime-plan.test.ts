@@ -176,6 +176,7 @@ describe('runtime plan execution', () => {
     expect(result.rejection).toBeUndefined();
     expect(result.status).toBe('completed');
     expect(executed).toEqual(['a.txt', 'b.txt', 'c.txt']);
+    expect(result.steps.every((entry) => entry.artifact?.kind === 'file')).toBe(true);
     expect(consentRequests).toEqual([]);
     runtime.dispose();
   });
@@ -251,6 +252,22 @@ describe('runtime plan execution', () => {
 
     expect(executed).toEqual([]);
     expect(result.status).toBe('rejected');
+    runtime.dispose();
+  });
+
+  it('cancels an active plan immediately while it is awaiting consent', async () => {
+    const runtime = makeRuntime();
+    runtime.registerPlan(plan([step('a'), step('b')]));
+
+    const execution = runtime.executePlan({ planId: 'plan-1' });
+    await vi.waitFor(() => expect(consentRequests).toHaveLength(1));
+    expect(await runtime.cancelPlan({ planId: 'plan-1' })).toEqual({ accepted: true });
+
+    const result = await execution;
+    expect(result.status).toBe('cancelled');
+    expect(result.steps.every((entry) => entry.status === 'cancelled')).toBe(true);
+    expect(executed).toEqual([]);
+    expect(await runtime.cancelPlan({ planId: 'plan-1' })).toEqual({ accepted: false });
     runtime.dispose();
   });
 

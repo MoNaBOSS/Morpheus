@@ -10,6 +10,7 @@ import type { MorpheusActionId, MorpheusRiskTier, MorpheusRootKey } from './acti
 export const MORPHEUS_AGENT_PROFILE_VERSION = 1 as const;
 
 export type AgentPlannerBinding =
+  | { kind: 'auto' }
   | { kind: 'deterministic' }
   | { kind: 'openclaw'; agentId: string; modelId?: string }
   | { kind: 'provider'; providerId: string; modelId: string };
@@ -55,4 +56,3 @@ export type AgentProfileSummary = Pick<
 export type AgentProfilesSnapshot = {
   profiles: readonly AgentProfileSummary[];
 };
-

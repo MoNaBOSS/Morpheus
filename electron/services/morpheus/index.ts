@@ -9,6 +9,7 @@ import { join } from 'node:path';
 
 import type { MorpheusActionEvent } from '@shared/morpheus/action-types';
 import type { MorpheusPlanConsentEvent } from '@shared/host-events/contract';
+import type { MorpheusObjectiveEvent } from '@shared/morpheus/core/objective-types';
 
 import { createMorpheusAuditSink, type MorpheusAuditSink } from './audit';
 import { createMorpheusCapabilityRegistry } from './capability-registry';
@@ -36,6 +37,13 @@ import { createMorpheusWorkflowStore, type MorpheusWorkflowStore } from './workf
 import { createMorpheusWorkflowService, type MorpheusWorkflowService } from './workflows/workflow-service';
 import { createMorpheusScheduleStore, type MorpheusScheduleStore } from './schedules/schedule-store';
 import { createMorpheusScheduler, type MorpheusScheduler } from './schedules/scheduler';
+import { createMorpheusObjectiveStore, type MorpheusObjectiveStore } from './core/objective-store';
+import {
+  createMorpheusObjectiveOrchestrator,
+  type MorpheusObjectiveOrchestrator,
+} from './core/objective-orchestrator';
+import { createMorpheusPlannerSelector } from './planning/planner-selector';
+import { getProviderService, type ProviderService } from '../providers/provider-service';
 
 export type CreateMorpheusServiceOptions = {
   userDataDir: string;
@@ -43,6 +51,8 @@ export type CreateMorpheusServiceOptions = {
   emit: (event: MorpheusActionEvent) => void;
   /** Delivers the one batched consent request a plan may raise. */
   emitPlanConsent?: (event: MorpheusPlanConsentEvent) => void;
+  emitObjective?: (event: MorpheusObjectiveEvent) => void;
+  providerService?: ProviderService;
 };
 
 export type MorpheusService = {
@@ -53,6 +63,8 @@ export type MorpheusService = {
   workflows: MorpheusWorkflowService;
   scheduleStore: MorpheusScheduleStore;
   scheduler: MorpheusScheduler;
+  objectiveStore: MorpheusObjectiveStore;
+  objectives: MorpheusObjectiveOrchestrator;
   audit: MorpheusAuditSink;
   /** Current approved files root, for the Command Center's artifacts panel. */
   filesRoot: string;
@@ -87,6 +99,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   // the product into degraded-security mode rather than continuing silently.
   const auditHealth = (): AuditHealth => (audit.isHealthy() ? 'healthy' : 'degraded');
 
+  let objectives: MorpheusObjectiveOrchestrator | undefined;
   const runtime = createMorpheusRuntime({
     registry,
     roots,
@@ -96,6 +109,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     auditHealth,
     appVersion: options.appVersion,
     emit: options.emit,
+    onPlanLifecycle: (event) => objectives?.onPlanLifecycle(event),
 
     /**
      * Flattens the plan's trust boundaries into wire shape.
@@ -122,12 +136,27 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   });
 
   const agentProfiles = createMorpheusAgentProfileStore({ userDataDir: options.userDataDir });
+  const filesRoot = roots.resolve('morpheusFiles');
+  const objectiveStore = createMorpheusObjectiveStore({ userDataDir: options.userDataDir });
+  const plannerSelector = createMorpheusPlannerSelector({
+    providerService: options.providerService ?? getProviderService(),
+  });
+  objectives = createMorpheusObjectiveOrchestrator({
+    store: objectiveStore,
+    runtime,
+    agents: agentProfiles,
+    planners: plannerSelector,
+    audit,
+    appVersion: options.appVersion,
+    filesRoot,
+    emit: (event) => options.emitObjective?.(event),
+  });
   const workflowStore = createMorpheusWorkflowStore({ userDataDir: options.userDataDir });
   const workflows = createMorpheusWorkflowService({
     store: workflowStore,
     profiles: agentProfiles,
     runtime,
-    filesRoot: roots.resolve('morpheusFiles'),
+    filesRoot,
   });
   const scheduleStore = createMorpheusScheduleStore({ userDataDir: options.userDataDir });
   const scheduler = createMorpheusScheduler({
@@ -147,8 +176,10 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     workflows,
     scheduleStore,
     scheduler,
+    objectiveStore,
+    objectives,
     audit,
-    filesRoot: roots.resolve('morpheusFiles'),
+    filesRoot,
     auditHealth,
   };
 }
@@ -160,3 +191,5 @@ export type { MorpheusWorkflowStore } from './workflows/workflow-store';
 export type { MorpheusWorkflowService } from './workflows/workflow-service';
 export type { MorpheusScheduleStore } from './schedules/schedule-store';
 export type { MorpheusScheduler } from './schedules/scheduler';
+export type { MorpheusObjectiveStore } from './core/objective-store';
+export type { MorpheusObjectiveOrchestrator } from './core/objective-orchestrator';

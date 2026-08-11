@@ -42,7 +42,9 @@ function starter(
     name,
     description,
     instructions,
-    planner: Object.freeze({ kind: 'deterministic' as const }),
+    // Prefer a configured real provider, with the deterministic interpreter as
+    // an honest offline fallback. Both produce the same typed plan contract.
+    planner: Object.freeze({ kind: 'auto' as const }),
     workspace: Object.freeze({ rootKey: 'morpheusFiles' as const, access: 'read-write' as const }),
     memory: Object.freeze({ mode: 'workspace' as const, maxContextItems: 32 }),
     permissionBoundary: Object.freeze({
@@ -83,4 +85,3 @@ export const MORPHEUS_STARTER_AGENT_PROFILES: readonly MorpheusAgentProfile[] = 
 export function getStarterAgentProfile(profileId: string): MorpheusAgentProfile | undefined {
   return MORPHEUS_STARTER_AGENT_PROFILES.find((profile) => profile.profileId === profileId);
 }
-

@@ -5,6 +5,7 @@ import type {
 import type { UpdateStatusSnapshot } from '../host-api/contract';
 import type { ChatRuntimeEvent } from '../chat-runtime-events';
 import type { MorpheusActionEvent } from '../morpheus/action-types';
+import type { MorpheusObjectiveEvent } from '../morpheus/core/objective-types';
 import type { MorpheusRiskTier } from '../morpheus/actions/registry';
 import type {
   GatewayNotification,
@@ -118,6 +119,8 @@ export type HostEventContract = {
      * plan-level question, not a phase of any single run.
      */
     planConsent: (payload: MorpheusPlanConsentEvent) => void;
+    /** Truthful Main-owned state of the unified objective pipeline. */
+    objectiveEvent: (payload: MorpheusObjectiveEvent) => void;
   };
 };
 
@@ -200,6 +203,7 @@ export const HOST_EVENT_CHANNELS = {
     actionEvent: 'morpheus:action-event',
     quickCommand: 'morpheus:quick-command',
     planConsent: 'morpheus:plan-consent',
+    objectiveEvent: 'morpheus:objective-event',
   },
 } as const satisfies {
   [M in Exclude<HostEventModule, 'channel'>]: {

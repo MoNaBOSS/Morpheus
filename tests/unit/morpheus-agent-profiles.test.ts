@@ -24,7 +24,7 @@ describe('Morpheus Agent Profiles', () => {
       'general', 'research', 'developer',
     ]);
     for (const profile of MORPHEUS_STARTER_AGENT_PROFILES) {
-      expect(profile.planner.kind).toBe('deterministic');
+      expect(profile.planner.kind).toBe('auto');
       expect(profile.permissionBoundary.capabilityIds.length).toBeGreaterThan(0);
       expect(profile.permissionBoundary.capabilityIds).not.toContain('file.delete');
       for (const capabilityId of profile.permissionBoundary.capabilityIds) {
@@ -47,4 +47,3 @@ describe('Morpheus Agent Profiles', () => {
     expect(() => readFileSync(join(root, 'morpheus', 'agent-profiles.json.tmp'), 'utf8')).toThrow();
   });
 });
-

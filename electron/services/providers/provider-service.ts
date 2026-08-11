@@ -512,6 +512,22 @@ export class ProviderService {
     return this._getProviderApiKeyInternal(accountId);
   }
 
+  /**
+   * Main-only credential resolution for provider adapters.
+   *
+   * Morpheus Core depends on this provider-service boundary rather than on
+   * OpenClaw config or secure-storage internals. The value is never exposed by
+   * the typed Renderer API.
+   */
+  async getAccountRuntimeApiKey(accountId: string): Promise<string | null> {
+    const account = await this.getAccount(accountId);
+    if (!account) return null;
+    const runtimeProviderKey = resolveOpenClawProviderKey(account);
+    return (await getProviderApiKeyFromOpenClaw(runtimeProviderKey))
+      ?? (await getApiKey(account.id))
+      ?? (runtimeProviderKey !== account.id ? await getApiKey(runtimeProviderKey) : null);
+  }
+
   /** Check whether an account has an API key stored. */
   async hasAccountApiKey(accountId: string): Promise<boolean> {
     const account = await this.getAccount(accountId);

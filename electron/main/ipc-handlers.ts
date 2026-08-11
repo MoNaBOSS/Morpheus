@@ -169,6 +169,10 @@ function registerTypedHostHandlers(
       if (mainWindow.isDestroyed()) return;
       mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.planConsent, event);
     },
+    emitObjective: (event) => {
+      if (mainWindow.isDestroyed()) return;
+      mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.objectiveEvent, event);
+    },
   });
   hostApiRegistry.registerCoreServices({
     app: createAppApi(),
@@ -202,6 +206,7 @@ function registerTypedHostHandlers(
       agentProfiles: morpheusService.agentProfiles,
       workflows: morpheusService.workflows,
       scheduler: morpheusService.scheduler,
+      objectives: morpheusService.objectives,
       audit: morpheusService.audit,
       filesRoot: morpheusService.filesRoot,
       appVersion: app.getVersion(),
@@ -212,7 +217,11 @@ function registerTypedHostHandlers(
   // app-startup schedule must never begin before the UI exists and then time
   // out invisibly.
   mainWindow.webContents.once('did-finish-load', () => morpheusService.scheduler.start());
-  app.once('before-quit', () => morpheusService.scheduler.stop());
+  app.once('before-quit', () => {
+    morpheusService.scheduler.stop();
+    morpheusService.objectives.dispose();
+    morpheusService.runtime.dispose();
+  });
   registerHostInvokeHandler(hostApiRegistry);
 }
 

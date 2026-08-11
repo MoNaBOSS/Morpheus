@@ -53,6 +53,11 @@ import type {
   MorpheusRespondPermissionPayload,
 } from '@shared/morpheus/action-types';
 import type { ExecutionOriginType } from '@shared/morpheus/execution-types';
+import type {
+  CancelMorpheusObjectivePayload,
+  CorrectMorpheusObjectivePayload,
+  SubmitMorpheusObjectivePayload,
+} from '@shared/morpheus/core/objective-types';
 import type { PermissionProfile } from '@shared/morpheus/permission-types';
 import { invokeHost } from './host-api-client';
 
@@ -436,6 +441,16 @@ export const hostApi = {
     executePlan: (planId: string) => invokeHost('morpheus', 'executePlan', { planId }),
     respondPlanPermission: (planId: string, decisions: Record<string, string>) => (
       invokeHost('morpheus', 'respondPlanPermission', { planId, decisions })
+    ),
+    submitObjective: (payload: SubmitMorpheusObjectivePayload) => (
+      invokeHost('morpheus', 'submitObjective', payload)
+    ),
+    objectiveSnapshot: () => invokeHost('morpheus', 'objectiveSnapshot'),
+    correctObjective: (payload: CorrectMorpheusObjectivePayload) => (
+      invokeHost('morpheus', 'correctObjective', payload)
+    ),
+    cancelObjective: (payload: CancelMorpheusObjectivePayload) => (
+      invokeHost('morpheus', 'cancelObjective', payload)
     ),
     permissionCenter: () => invokeHost('morpheus', 'permissionCenter'),
     setPermissionProfile: (profile: PermissionProfile) => (

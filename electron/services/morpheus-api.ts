@@ -53,6 +53,12 @@ import type {
 } from './morpheus';
 import type { MorpheusScheduleDraft, MorpheusScheduleTrigger } from '@shared/morpheus/schedule-types';
 import type { MorpheusAuditSink } from './morpheus/audit';
+import type { MorpheusObjectiveOrchestrator } from './morpheus/core/objective-orchestrator';
+import type {
+  CancelMorpheusObjectivePayload,
+  CorrectMorpheusObjectivePayload,
+  SubmitMorpheusObjectivePayload,
+} from '@shared/morpheus/core/objective-types';
 
 export class MorpheusValidationError extends Error {
   constructor(message: string) {
@@ -167,6 +173,7 @@ export type CreateMorpheusApiOptions = {
   agentProfiles: MorpheusAgentProfileStore;
   workflows: MorpheusWorkflowService;
   scheduler: MorpheusScheduler;
+  objectives: MorpheusObjectiveOrchestrator;
   audit: MorpheusAuditSink;
   filesRoot: string;
   appVersion: string;
@@ -174,6 +181,50 @@ export type CreateMorpheusApiOptions = {
   /** Main-owned adapter boundary; raw provider output never enters here directly. */
   planner?: MorpheusPlanner;
 };
+
+export function validateSubmitObjectivePayload(payload: unknown): SubmitMorpheusObjectivePayload {
+  const record = requireRecord(payload, 'submitObjective payload');
+  assertNoUnknownKeys(record, ['objective', 'originType', 'workspaceId', 'agentProfileId'], 'submitObjective payload');
+  const objective = requireNonEmptyString(record.objective, 'objective').trim();
+  if (!objective || objective.length > 4_000) throw new MorpheusValidationError('objective must be between 1 and 4000 characters');
+  const originType = record.originType ?? 'command-bar';
+  if (!['command-bar', 'quick-command', 'chat'].includes(String(originType))) {
+    throw new MorpheusValidationError('unsupported objective originType');
+  }
+  const optionalId = (value: unknown, label: string): string | undefined => {
+    if (value === undefined) return undefined;
+    if (typeof value !== 'string' || !/^[a-z][a-z0-9-]{1,63}$/.test(value)) {
+      throw new MorpheusValidationError(`invalid ${label}`);
+    }
+    return value;
+  };
+  return {
+    objective,
+    originType: originType as SubmitMorpheusObjectivePayload['originType'],
+    ...(optionalId(record.workspaceId, 'workspaceId') ? { workspaceId: record.workspaceId as string } : {}),
+    ...(optionalId(record.agentProfileId, 'agentProfileId') ? { agentProfileId: record.agentProfileId as string } : {}),
+  };
+}
+
+function validateObjectiveId(value: unknown): string {
+  const id = requireNonEmptyString(value, 'objectiveRunId');
+  if (id.length > 128 || !/^[A-Za-z0-9-]+$/.test(id)) throw new MorpheusValidationError('invalid objectiveRunId');
+  return id;
+}
+
+export function validateCorrectObjectivePayload(payload: unknown): CorrectMorpheusObjectivePayload {
+  const record = requireRecord(payload, 'correctObjective payload');
+  assertNoUnknownKeys(record, ['objectiveRunId', 'correction'], 'correctObjective payload');
+  const correction = requireNonEmptyString(record.correction, 'correction').trim();
+  if (!correction || correction.length > 2_000) throw new MorpheusValidationError('correction must be between 1 and 2000 characters');
+  return { objectiveRunId: validateObjectiveId(record.objectiveRunId), correction };
+}
+
+export function validateCancelObjectivePayload(payload: unknown): CancelMorpheusObjectivePayload {
+  const record = requireRecord(payload, 'cancelObjective payload');
+  assertNoUnknownKeys(record, ['objectiveRunId'], 'cancelObjective payload');
+  return { objectiveRunId: validateObjectiveId(record.objectiveRunId) };
+}
 
 function validateIdPayload(payload: unknown, label: string): { id: string } {
   const record = requireRecord(payload, `${label} payload`);
@@ -236,7 +287,7 @@ const AUDIT_PHASES = [
   'requested', 'awaiting-permission', 'denied', 'running', 'succeeded', 'failed',
   'cancelled', 'timed-out', 'unsupported-platform',
 ] as const;
-const AUDIT_CATEGORIES = ['execution', 'permission', 'agent-profile', 'workflow', 'schedule'] as const;
+const AUDIT_CATEGORIES = ['execution', 'objective', 'planner', 'permission', 'agent-profile', 'workflow', 'schedule'] as const;
 
 export function validateAuditQueryPayload(payload: unknown): MorpheusAuditQueryPayload {
   if (payload === undefined || payload === null) return { limit: 50 };
@@ -344,7 +395,7 @@ export function validateRevokePayload(payload: unknown): { grantId: string } {
 }
 
 export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHostServiceRegistry['morpheus'] {
-  const { runtime, grants, agentProfiles, workflows, scheduler, audit, filesRoot, appVersion, auditHealth } = options;
+  const { runtime, grants, agentProfiles, workflows, scheduler, objectives, audit, filesRoot, appVersion, auditHealth } = options;
   const planner = options.planner ?? createDeterministicMorpheusPlanner();
   return {
     interpretCommand: async (payload) => {
@@ -372,6 +423,11 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     respondPlanPermission: (payload) => (
       runtime.respondPlanPermission(validatePlanDecisionsPayload(payload))
     ),
+
+    submitObjective: (payload) => objectives.submit(validateSubmitObjectivePayload(payload)),
+    objectiveSnapshot: () => objectives.snapshot(),
+    correctObjective: (payload) => objectives.correct(validateCorrectObjectivePayload(payload)),
+    cancelObjective: (payload) => objectives.cancel(validateCancelObjectivePayload(payload)),
 
     permissionCenter: (): PermissionCenterSnapshot => ({
       profile: grants.getProfile(),

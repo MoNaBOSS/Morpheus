@@ -45,7 +45,7 @@ function validateProfile(value: unknown): MorpheusAgentProfile | null {
   if (!isPlainObject(value.memory) || !['none', 'session', 'workspace'].includes(String(value.memory.mode))
     || typeof value.memory.maxContextItems !== 'number'
     || value.memory.maxContextItems < 0 || value.memory.maxContextItems > 200) return null;
-  if (!isPlainObject(value.planner) || !['deterministic', 'openclaw', 'provider'].includes(String(value.planner.kind))) return null;
+  if (!isPlainObject(value.planner) || !['auto', 'deterministic', 'openclaw', 'provider'].includes(String(value.planner.kind))) return null;
   if (value.planner.kind === 'openclaw' && (typeof value.planner.agentId !== 'string' || !value.planner.agentId)) return null;
   if (value.planner.kind === 'provider'
     && (typeof value.planner.providerId !== 'string' || !value.planner.providerId
@@ -86,6 +86,12 @@ export function createMorpheusAgentProfileStore(options: { userDataDir: string }
       // A profile cannot turn itself from built-in into an unrelated object.
       builtIn: Boolean(starter),
       createdAt: starter?.createdAt ?? stored.createdAt,
+      // 0.5 built-ins were read-only and all persisted as deterministic. Move
+      // those inherited records to the 1.0 auto binding; custom profiles keep
+      // the exact planner the user selected.
+      planner: starter && stored.planner.kind === 'deterministic'
+        ? copyProfile(starter).planner
+        : stored.planner,
     });
   }
 
@@ -122,4 +128,3 @@ export function createMorpheusAgentProfileStore(options: { userDataDir: string }
 }
 
 export { validateProfile as validateMorpheusAgentProfile };
-
