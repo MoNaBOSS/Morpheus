@@ -167,6 +167,23 @@ In Chat, ordinary **Send** remains conversational ACP traffic; the separate
 Center and Quick Command share logical workspace and Agent Profile context while
 Main retains target resolution and execution authority.
 
+The companion and Mission foundation extends that runtime into a persistent
+operating experience:
+
+- a one-time, skippable cinematic activation introduces Morpheus from real
+  capability, Gateway, provider, and voice availability signals;
+- tray and global shortcuts summon a focused companion surface and restore the
+  user's previous window state exactly when dismissed or expanded;
+- every accepted objective becomes a durable **Mission** with route, run
+  lineage, status, results, errors, and real artifacts that survive restart;
+- **Projects & Context** bind objectives to a logical trusted workspace and
+  inspectable user-managed memory. Sensitive or local-only memory never enters
+  provider planning context;
+- known objectives route directly to registered capabilities before provider
+  selection, while broad objectives continue through the same provider-neutral
+  Objective Core. Voice, Quick Command, Command Center, workflows, schedules,
+  and Chat execution do not create separate automation paths.
+
 - **Sequential typed plans** — multi-step plans honour dependencies, expose real
   step status/results/errors/artifacts, and skip only transitive dependants after
   failure. No Renderer path can submit executable paths or fabricate events.

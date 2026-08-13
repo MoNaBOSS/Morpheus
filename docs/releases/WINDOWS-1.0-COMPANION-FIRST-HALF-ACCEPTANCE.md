@@ -61,3 +61,14 @@ The first half is complete only when the following real flows work together.
 Always-on wake-word detection, unrestricted shell access, autonomous financial
 execution, and the remaining second-half proactive intelligence systems are not
 part of this acceptance boundary.
+
+## Verified checkpoint
+
+The acceptance boundary above was verified from committed runtime source
+`19b8087` on Windows. Morpheus unit tests passed 589/589, focused companion E2E
+passed, the full Electron suite passed 182 tests with three platform skips and
+one unrelated load-only failure that passed in isolation, and the NSIS package
+completed. A normal-production smoke of `win-unpacked\Morpheus.exe` verified
+boot and activation READY, live Gateway, Command Center execution, durable
+Mission history, Quick Command, Chat reachability, and clean smoke-owned process
+shutdown. Evidence is intentionally retained under ignored `test-results/`.
