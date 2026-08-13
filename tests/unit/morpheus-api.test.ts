@@ -18,6 +18,12 @@ import {
   validateWorkflowDraft,
   validateVoiceSettingsPatch,
   validateRuntimePausedPayload,
+  validateMissionIdPayload,
+  validateProjectDraft,
+  validateProjectIdPayload,
+  validateMemoryDraft,
+  validateMemoryIdPayload,
+  validateCompleteOnboardingPayload,
 } from '@electron/services/morpheus-api';
 import type { MorpheusRuntime } from '@electron/services/morpheus';
 
@@ -74,6 +80,38 @@ function stubOptions(runtime = stubRuntime()) {
       waitForTerminal: vi.fn(),
       waitForIdle: vi.fn(),
     } as never,
+    missions: {
+      snapshot: vi.fn(() => ({ activeMissionId: null, missionOrder: [], missionsById: {} })),
+      get: vi.fn(),
+      projectObjective: vi.fn(),
+      reconcile: vi.fn(),
+    } as never,
+    projects: {
+      list: vi.fn(() => ({ defaultProjectId: 'personal', projects: [] })),
+      get: vi.fn(),
+      save: vi.fn(),
+      remove: vi.fn(),
+    } as never,
+    memory: {
+      list: vi.fn(() => ({ memories: [] })),
+      eligibleForPlanning: vi.fn(() => []),
+      get: vi.fn(),
+      save: vi.fn(),
+      remove: vi.fn(),
+      countForProject: vi.fn(() => 0),
+    } as never,
+    onboarding: {
+      status: vi.fn(() => ({
+        v: 1, completed: false, preferences: { speakResponses: true, personality: 'adaptive' },
+      })),
+      complete: vi.fn(),
+      reset: vi.fn(),
+    } as never,
+    companionSurface: {
+      status: vi.fn(() => ({ mode: 'full' as const })),
+      dismiss: vi.fn(() => ({ mode: 'full' as const })),
+      expand: vi.fn(() => ({ mode: 'full' as const })),
+    },
     voice: {
       status: vi.fn(async () => ({
         settings: {
@@ -293,8 +331,9 @@ describe('workspace trust boundary validation', () => {
 
 describe('objective payload validation', () => {
   it('accepts only bounded logical objective fields', () => {
-    expect(validateSubmitObjectivePayload({ objective: 'Open Notepad', originType: 'quick-command' }))
-      .toEqual({ objective: 'Open Notepad', originType: 'quick-command' });
+    expect(validateSubmitObjectivePayload({
+      objective: 'Open Notepad', originType: 'quick-command', projectId: 'project-client',
+    })).toEqual({ objective: 'Open Notepad', originType: 'quick-command', projectId: 'project-client' });
     expect(validateCorrectObjectivePayload({ objectiveRunId: 'objective-1', correction: 'Use notes.txt' }))
       .toEqual({ objectiveRunId: 'objective-1', correction: 'Use notes.txt' });
     expect(validateCancelObjectivePayload({ objectiveRunId: 'objective-1' }))
@@ -308,6 +347,49 @@ describe('objective payload validation', () => {
       .toThrow(/unsupported objective originType/);
     expect(() => validateCorrectObjectivePayload({ objectiveRunId: 'objective-1', correction: 'x', plan: {} }))
       .toThrow(/unsupported key/);
+  });
+});
+
+describe('Mission and explicit context validation', () => {
+  it('accepts logical ids and rejects renderer filesystem authority', () => {
+    expect(validateMissionIdPayload({ missionId: 'mission-client-research' }))
+      .toEqual({ missionId: 'mission-client-research' });
+    expect(validateProjectIdPayload({ projectId: 'project-client' }))
+      .toEqual({ projectId: 'project-client' });
+    expect(validateMemoryIdPayload({ memoryId: 'memory-client-tone' }))
+      .toEqual({ memoryId: 'memory-client-tone' });
+
+    expect(() => validateProjectDraft({
+      name: 'Client', description: '', workspaceId: 'workspace-client', instructions: '',
+      enabled: true, rootPath: 'C:\\outside',
+    })).toThrow(/unsupported key: rootPath/);
+    expect(() => validateMemoryDraft({
+      title: 'Preference', text: 'Be concise', kind: 'preference', sensitivity: 'normal',
+      providerUse: 'allowed', enabled: true, executablePath: 'cmd.exe',
+    })).toThrow(/unsupported key: executablePath/);
+  });
+
+  it('keeps activation preferences bounded and non-authoritative', () => {
+    expect(validateCompleteOnboardingPayload({ speakResponses: true, personality: 'warm' }))
+      .toEqual({ speakResponses: true, personality: 'warm' });
+    expect(() => validateCompleteOnboardingPayload({
+      speakResponses: true, personality: 'warm', alwaysAllow: true,
+    })).toThrow(/unsupported key: alwaysAllow/);
+  });
+
+  it('audits memory metadata without persisting memory text', async () => {
+    const options = stubOptions();
+    const api = createMorpheusApi(options);
+    await api.saveMemory({
+      title: 'Client preference', text: 'Never include this value in the ledger',
+      kind: 'preference', sensitivity: 'normal', providerUse: 'allowed', enabled: true,
+    });
+
+    expect(options.audit.recordControl).toHaveBeenCalledWith(expect.objectContaining({
+      category: 'memory',
+      details: expect.objectContaining({ kind: 'preference', sensitivity: 'normal' }),
+    }));
+    expect(JSON.stringify(options.audit.recordControl.mock.calls)).not.toContain('Never include this value');
   });
 });
 
@@ -366,21 +448,35 @@ describe('createMorpheusApi', () => {
       'auditRecent',
       'cancelAction',
       'cancelObjective',
+      'companionSurfaceStatus',
+      'completeOnboarding',
       'correctObjective',
       'describeActions',
+      'dismissCompanionSurface',
       'executePlan',
+      'expandCompanionSurface',
       'filesRoot',
       'interpretCommand',
+      'memories',
+      'mission',
+      'missions',
       'objectiveSnapshot',
+      'onboardingStatus',
       'openFilesRoot',
       'openWorkspace',
       'permissionCenter',
+      'project',
+      'projects',
       'removeAgentProfile',
+      'removeMemory',
+      'removeProject',
       'removeSchedule',
       'removeWorkflow',
       'removeWorkspace',
       'requestAction',
+      'rerunMission',
       'resetAgentProfiles',
+      'resetOnboarding',
       'resetPermissionPolicy',
       'respondPermission',
       'respondPlanPermission',
@@ -390,6 +486,8 @@ describe('createMorpheusApi', () => {
       'runWorkflow',
       'runtimeControl',
       'saveAgentProfile',
+      'saveMemory',
+      'saveProject',
       'saveSchedule',
       'saveWorkflow',
       'schedules',

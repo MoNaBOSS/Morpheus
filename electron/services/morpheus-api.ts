@@ -54,6 +54,10 @@ import type {
   MorpheusWorkflowService,
   MorpheusScheduler,
   MorpheusRuntimeControlService,
+  MorpheusMissionStore,
+  MorpheusProjectStore,
+  MorpheusMemoryStore,
+  MorpheusOnboardingStore,
 } from './morpheus';
 import type { MorpheusScheduleDraft, MorpheusScheduleTrigger } from '@shared/morpheus/schedule-types';
 import type { MorpheusAuditSink } from './morpheus/audit';
@@ -90,6 +94,22 @@ import {
   type MorpheusWorkflowStep,
   type WorkflowTriggerType,
 } from '@shared/morpheus/workflow-types';
+import {
+  isMorpheusMissionId,
+  type MorpheusMissionIdPayload,
+} from '@shared/morpheus/mission-types';
+import {
+  isMorpheusProjectId,
+  type MorpheusProjectDraft,
+  type MorpheusProjectIdPayload,
+} from '@shared/morpheus/project-types';
+import {
+  isMorpheusMemoryId,
+  type MorpheusMemoryDraft,
+  type MorpheusMemoryIdPayload,
+} from '@shared/morpheus/memory-types';
+import type { CompleteMorpheusOnboardingPayload } from '@shared/morpheus/onboarding-types';
+import type { MorpheusCompanionSurfaceStatus } from '@shared/morpheus/companion-types';
 
 const MORPHEUS_RISK_ORDER: Record<MorpheusRiskTier, number> = {
   low: 0, medium: 1, high: 2, critical: 3,
@@ -213,6 +233,15 @@ export type CreateMorpheusApiOptions = {
   workflows: MorpheusWorkflowService;
   scheduler: MorpheusScheduler;
   objectives: MorpheusObjectiveOrchestrator;
+  missions: MorpheusMissionStore;
+  projects: MorpheusProjectStore;
+  memory: MorpheusMemoryStore;
+  onboarding: MorpheusOnboardingStore;
+  companionSurface: {
+    status(): MorpheusCompanionSurfaceStatus;
+    dismiss(): MorpheusCompanionSurfaceStatus;
+    expand(): MorpheusCompanionSurfaceStatus;
+  };
   voice: MorpheusVoiceService;
   runtimeControl: MorpheusRuntimeControlService;
   workspaces: MorpheusWorkspaceStore;
@@ -229,7 +258,7 @@ export type CreateMorpheusApiOptions = {
 
 export function validateSubmitObjectivePayload(payload: unknown): SubmitMorpheusObjectivePayload {
   const record = requireRecord(payload, 'submitObjective payload');
-  assertNoUnknownKeys(record, ['objective', 'originType', 'workspaceId', 'agentProfileId'], 'submitObjective payload');
+  assertNoUnknownKeys(record, ['objective', 'originType', 'workspaceId', 'agentProfileId', 'projectId'], 'submitObjective payload');
   const objective = requireNonEmptyString(record.objective, 'objective').trim();
   if (!objective || objective.length > 4_000) throw new MorpheusValidationError('objective must be between 1 and 4000 characters');
   const originType = record.originType ?? 'command-bar';
@@ -247,11 +276,102 @@ export function validateSubmitObjectivePayload(payload: unknown): SubmitMorpheus
     throw new MorpheusValidationError('invalid workspaceId');
   }
   const agentProfileId = optionalId(record.agentProfileId, 'agentProfileId');
+  if (record.projectId !== undefined && !isMorpheusProjectId(record.projectId)) {
+    throw new MorpheusValidationError('invalid projectId');
+  }
   return {
     objective,
     originType: originType as SubmitMorpheusObjectivePayload['originType'],
     ...(record.workspaceId ? { workspaceId: record.workspaceId } : {}),
     ...(agentProfileId ? { agentProfileId } : {}),
+    ...(record.projectId ? { projectId: record.projectId } : {}),
+  };
+}
+
+export function validateMissionIdPayload(payload: unknown): MorpheusMissionIdPayload {
+  const record = requireRecord(payload, 'Mission payload');
+  assertNoUnknownKeys(record, ['missionId'], 'Mission payload');
+  if (!isMorpheusMissionId(record.missionId)) throw new MorpheusValidationError('invalid Mission id');
+  return { missionId: record.missionId };
+}
+
+export function validateProjectIdPayload(payload: unknown): MorpheusProjectIdPayload {
+  const record = requireRecord(payload, 'Project payload');
+  assertNoUnknownKeys(record, ['projectId'], 'Project payload');
+  if (!isMorpheusProjectId(record.projectId)) throw new MorpheusValidationError('invalid Project id');
+  return { projectId: record.projectId };
+}
+
+export function validateProjectDraft(payload: unknown): MorpheusProjectDraft {
+  const record = requireRecord(payload, 'saveProject payload');
+  assertNoUnknownKeys(record, [
+    'projectId', 'name', 'description', 'workspaceId', 'instructions', 'enabled',
+  ], 'saveProject payload');
+  if (record.projectId !== undefined && !isMorpheusProjectId(record.projectId)) {
+    throw new MorpheusValidationError('invalid Project id');
+  }
+  if (!isMorpheusWorkspaceId(record.workspaceId)) throw new MorpheusValidationError('invalid Project workspaceId');
+  if (typeof record.enabled !== 'boolean') throw new MorpheusValidationError('Project enabled must be boolean');
+  return {
+    ...(record.projectId ? { projectId: record.projectId } : {}),
+    name: boundedText(record.name, 'Project name', 80, false).trim(),
+    description: boundedText(record.description, 'Project description', 400).trim(),
+    workspaceId: record.workspaceId,
+    instructions: boundedText(record.instructions, 'Project context', 2_000).trim(),
+    enabled: record.enabled,
+  };
+}
+
+export function validateMemoryIdPayload(payload: unknown): MorpheusMemoryIdPayload {
+  const record = requireRecord(payload, 'memory payload');
+  assertNoUnknownKeys(record, ['memoryId'], 'memory payload');
+  if (!isMorpheusMemoryId(record.memoryId)) throw new MorpheusValidationError('invalid memory id');
+  return { memoryId: record.memoryId };
+}
+
+export function validateMemoryDraft(payload: unknown): MorpheusMemoryDraft {
+  const record = requireRecord(payload, 'saveMemory payload');
+  assertNoUnknownKeys(record, [
+    'memoryId', 'title', 'text', 'kind', 'sensitivity', 'providerUse', 'projectId', 'enabled',
+  ], 'saveMemory payload');
+  if (record.memoryId !== undefined && !isMorpheusMemoryId(record.memoryId)) {
+    throw new MorpheusValidationError('invalid memory id');
+  }
+  if (record.projectId !== undefined && !isMorpheusProjectId(record.projectId)) {
+    throw new MorpheusValidationError('invalid memory Project id');
+  }
+  if (!['preference', 'project-context', 'routine', 'decision'].includes(String(record.kind))) {
+    throw new MorpheusValidationError('invalid memory kind');
+  }
+  if (!['normal', 'sensitive'].includes(String(record.sensitivity))) {
+    throw new MorpheusValidationError('invalid memory sensitivity');
+  }
+  if (!['allowed', 'local-only'].includes(String(record.providerUse))) {
+    throw new MorpheusValidationError('invalid memory provider policy');
+  }
+  if (typeof record.enabled !== 'boolean') throw new MorpheusValidationError('memory enabled must be boolean');
+  return {
+    ...(record.memoryId ? { memoryId: record.memoryId } : {}),
+    title: boundedText(record.title, 'memory title', 80, false).trim(),
+    text: boundedText(record.text, 'memory text', 1_000, false).trim(),
+    kind: record.kind as MorpheusMemoryDraft['kind'],
+    sensitivity: record.sensitivity as MorpheusMemoryDraft['sensitivity'],
+    providerUse: record.providerUse as MorpheusMemoryDraft['providerUse'],
+    ...(record.projectId ? { projectId: record.projectId } : {}),
+    enabled: record.enabled,
+  };
+}
+
+export function validateCompleteOnboardingPayload(payload: unknown): CompleteMorpheusOnboardingPayload {
+  const record = requireRecord(payload, 'completeOnboarding payload');
+  assertNoUnknownKeys(record, ['speakResponses', 'personality'], 'completeOnboarding payload');
+  if (typeof record.speakResponses !== 'boolean') throw new MorpheusValidationError('speakResponses must be boolean');
+  if (!['adaptive', 'concise', 'warm'].includes(String(record.personality))) {
+    throw new MorpheusValidationError('invalid companion personality');
+  }
+  return {
+    speakResponses: record.speakResponses,
+    personality: record.personality as CompleteMorpheusOnboardingPayload['personality'],
   };
 }
 
@@ -628,7 +748,8 @@ const AUDIT_PHASES = [
   'cancelled', 'timed-out', 'unsupported-platform',
 ] as const;
 const AUDIT_CATEGORIES = [
-  'execution', 'objective', 'planner', 'voice', 'permission', 'workspace',
+  'execution', 'objective', 'mission', 'project', 'memory', 'onboarding',
+  'planner', 'voice', 'permission', 'workspace',
   'agent-profile', 'workflow', 'schedule', 'runtime',
 ] as const;
 
@@ -740,7 +861,7 @@ export function validateRevokePayload(payload: unknown): { grantId: string } {
 export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHostServiceRegistry['morpheus'] {
   const {
     runtime, grants, agentProfiles, workflows, scheduler, objectives, voice, runtimeControl,
-    workspaces, audit, filesRoot, appVersion, auditHealth,
+    missions, projects, memory, onboarding, companionSurface, workspaces, audit, filesRoot, appVersion, auditHealth,
   } = options;
   const now = options.now ?? (() => new Date());
   const planner = options.planner ?? createDeterministicMorpheusPlanner();
@@ -775,6 +896,92 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     objectiveSnapshot: () => objectives.snapshot(),
     correctObjective: (payload) => objectives.correct(validateCorrectObjectivePayload(payload)),
     cancelObjective: (payload) => objectives.cancel(validateCancelObjectivePayload(payload)),
+    missions: () => missions.snapshot(),
+    mission: (payload) => ({ mission: missions.get(validateMissionIdPayload(payload).missionId) ?? null }),
+    rerunMission: (payload) => {
+      const mission = missions.get(validateMissionIdPayload(payload).missionId);
+      if (!mission) throw new MorpheusValidationError('Unknown Morpheus Mission');
+      return objectives.submitInternal({
+        objective: mission.objective,
+        origin: { type: 'command-bar', commandText: mission.objective },
+        workspaceId: mission.workspaceId,
+        agentProfileId: mission.agentProfileId,
+        projectId: mission.projectId,
+        missionId: mission.missionId,
+      });
+    },
+    projects: () => projects.list(),
+    project: (payload) => ({ project: projects.get(validateProjectIdPayload(payload).projectId) ?? null }),
+    saveProject: async (payload) => {
+      const draft = validateProjectDraft(payload);
+      const workspace = workspaces.get(draft.workspaceId);
+      if (!workspace?.enabled || !workspace.available) {
+        throw new MorpheusValidationError('Project workspace is unavailable');
+      }
+      const projectId = draft.projectId ?? `project-${randomUUID()}`;
+      await audit.recordControl({
+        category: 'project', event: draft.projectId ? 'updated' : 'created', subjectId: projectId,
+        details: { workspaceId: draft.workspaceId, enabled: draft.enabled }, appVersion,
+      });
+      return { project: projects.save({ ...draft, projectId }) };
+    },
+    removeProject: async (payload) => {
+      const { projectId } = validateProjectIdPayload(payload);
+      if (memory.countForProject(projectId) > 0) {
+        throw new MorpheusValidationError('Delete this Project\'s memory entries first');
+      }
+      await audit.recordControl({
+        category: 'project', event: 'removed', subjectId: projectId, details: {}, appVersion,
+      });
+      return { project: projects.remove(projectId) };
+    },
+    memories: () => memory.list(),
+    saveMemory: async (payload) => {
+      const draft = validateMemoryDraft(payload);
+      if (draft.projectId && !projects.get(draft.projectId)?.enabled) {
+        throw new MorpheusValidationError('Memory Project is unavailable');
+      }
+      const memoryId = draft.memoryId ?? `memory-${randomUUID()}`;
+      await audit.recordControl({
+        category: 'memory', event: draft.memoryId ? 'updated' : 'created', subjectId: memoryId,
+        details: {
+          kind: draft.kind,
+          sensitivity: draft.sensitivity,
+          providerUse: draft.providerUse,
+          scopedToProject: Boolean(draft.projectId),
+          enabled: draft.enabled,
+        },
+        appVersion,
+      });
+      return { memory: memory.save({ ...draft, memoryId }) };
+    },
+    removeMemory: async (payload) => {
+      const { memoryId } = validateMemoryIdPayload(payload);
+      await audit.recordControl({
+        category: 'memory', event: 'removed', subjectId: memoryId, details: {}, appVersion,
+      });
+      return { memory: memory.remove(memoryId) };
+    },
+    onboardingStatus: () => onboarding.status(),
+    completeOnboarding: async (payload) => {
+      const preferences = validateCompleteOnboardingPayload(payload);
+      await audit.recordControl({
+        category: 'onboarding', event: 'completed',
+        details: { speakResponses: preferences.speakResponses, personality: preferences.personality },
+        appVersion,
+      });
+      await voice.updateSettings({ speakResponses: preferences.speakResponses });
+      return onboarding.complete(preferences);
+    },
+    resetOnboarding: async () => {
+      await audit.recordControl({
+        category: 'onboarding', event: 'reset', details: {}, appVersion,
+      });
+      return onboarding.reset();
+    },
+    companionSurfaceStatus: () => companionSurface.status(),
+    dismissCompanionSurface: () => companionSurface.dismiss(),
+    expandCompanionSurface: () => companionSurface.expand(),
     voiceStatus: () => voice.status(),
     updateVoiceSettings: (payload) => voice.updateSettings(validateVoiceSettingsPatch(payload)),
     transcribeAudio: (payload) => voice.transcribe(validateTranscribeAudioPayload(payload)),

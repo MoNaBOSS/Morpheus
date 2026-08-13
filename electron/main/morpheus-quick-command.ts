@@ -15,6 +15,7 @@ export interface MorpheusQuickCommandRegistration {
 export function createMorpheusQuickCommandRegistration(options: {
   shortcuts: Pick<GlobalShortcut, 'register' | 'unregister'>;
   getMainWindow: () => BrowserWindow | null;
+  prepareSurface?: (window: BrowserWindow) => void;
   emit: (window: BrowserWindow) => void;
 }): MorpheusQuickCommandRegistration {
   let registered = false;
@@ -24,9 +25,12 @@ export function createMorpheusQuickCommandRegistration(options: {
       registered = options.shortcuts.register(MORPHEUS_QUICK_COMMAND_ACCELERATOR, () => {
         const window = options.getMainWindow();
         if (!window || window.isDestroyed()) return;
-        if (window.isMinimized()) window.restore();
-        window.show();
-        window.focus();
+        if (options.prepareSurface) options.prepareSurface(window);
+        else {
+          if (window.isMinimized()) window.restore();
+          window.show();
+          window.focus();
+        }
         options.emit(window);
       });
       return registered;

@@ -33,6 +33,12 @@ import type {
   MorpheusPlannerReviewResult,
   MorpheusPlanningCapability,
 } from '@shared/morpheus/planner';
+import type { MorpheusProject } from '@shared/morpheus/project-types';
+import type { MorpheusMemory } from '@shared/morpheus/memory-types';
+import {
+  isMorpheusMissionId,
+  type MorpheusObjectiveRoute,
+} from '@shared/morpheus/mission-types';
 import {
   MORPHEUS_DEFAULT_WORKSPACE_ID,
   type MorpheusWorkspaceAccess,
@@ -51,6 +57,7 @@ import type {
   MorpheusPlannerSelector,
 } from '../planning/planner-selector';
 import type { MorpheusWorkspaceStore } from '../workspaces/workspace-store';
+import type { MorpheusMissionStore } from '../missions/mission-store';
 
 const CAPABILITY_DESCRIPTIONS: Record<MorpheusActionId, string> = {
   'app.launch': 'Launch one compiled-in approved Windows application by logical key.',
@@ -79,6 +86,8 @@ type ObjectiveSubmission = {
   origin: ExecutionOrigin;
   workspaceId?: string;
   agentProfileId?: string;
+  projectId?: string;
+  missionId?: string;
   /** Main-compiled workflow plan. Never accepted from Renderer. */
   preparedPlan?: ExecutionPlan;
 };
@@ -181,16 +190,21 @@ export function createMorpheusObjectiveOrchestrator(options: {
   audit: MorpheusAuditSink;
   appVersion: string;
   workspaces: Pick<MorpheusWorkspaceStore, 'get' | 'resolveRoot'>;
+  missions: MorpheusMissionStore;
+  projects?: { get(projectId: string): MorpheusProject | undefined };
+  memory?: { eligibleForPlanning(projectId?: string, limit?: number): MorpheusMemory[] };
   isRuntimePaused?: () => boolean;
   emit: (event: MorpheusObjectiveEvent) => void;
   platform?: string;
   now?: () => Date;
   createId?: () => string;
+  createMissionId?: () => string;
   limits?: MorpheusObjectiveLimits;
 }): MorpheusObjectiveOrchestrator {
   const platform = options.platform ?? process.platform;
   const now = options.now ?? (() => new Date());
   const createId = options.createId ?? (() => randomUUID());
+  const createMissionId = options.createMissionId ?? (() => `mission-${randomUUID()}`);
   const limits = options.limits ?? DEFAULT_OBJECTIVE_LIMITS;
   const active = new Map<string, ActiveObjective>();
   const planOwners = new Map<string, { objectiveRunId: string; generation: number }>();
@@ -257,11 +271,26 @@ export function createMorpheusObjectiveOrchestrator(options: {
           },
           appVersion: options.appVersion,
         });
+        await options.audit.recordControl({
+          category: 'mission',
+          event: 'objective-state-projected',
+          subjectId: run.missionId ?? objectiveRunId,
+          details: { state, objectiveRunId },
+          appVersion: options.appVersion,
+        });
       } catch {
         // The runtime policy independently observes the audit sink and blocks
         // unsafe execution. The UI still receives truthful degraded state.
       }
       output = options.store.put(run);
+      try {
+        options.missions.projectObjective(run);
+      } catch {
+        // Objective Core remains the source of truth. A failed Mission
+        // projection cannot be presented as success, but it must not duplicate
+        // or replay a native operation either. Reconciliation repairs it on the
+        // next healthy load.
+      }
       seq += 1;
       options.emit({
         v: MORPHEUS_OBJECTIVE_VERSION,
@@ -393,11 +422,14 @@ export function createMorpheusObjectiveOrchestrator(options: {
         const entry = historySnapshot.runsById[id];
         return entry ? [entry] : [];
       });
+      const contextProject = run.projectId ? options.projects?.get(run.projectId) : undefined;
       const context = selectMorpheusContext({
         current: run,
         history,
         agent,
         workspaceLabel: workspace.name,
+        ...(contextProject ? { project: contextProject } : {}),
+        memories: options.memory?.eligibleForPlanning(run.projectId),
       });
       if (owner.preparedPlan) {
         const preparedPlan: ExecutionPlan = {
@@ -411,22 +443,69 @@ export function createMorpheusObjectiveOrchestrator(options: {
           plan: async () => ({ ok: true, plan: preparedPlan }),
         };
         proposed = { ok: true, plan: preparedPlan };
-        await transition(objectiveRunId, 'planning', { plannerId: planner.plannerId });
-      } else {
-        const plannerSelection: MorpheusPlannerSelection = await options.planners.select(agent);
-        if (!isCurrent(objectiveRunId, generation)) return;
-        if (!plannerSelection.ok) {
-          await transition(objectiveRunId, 'needs-clarification', { clarification: plannerSelection.reason });
-          finishActive(objectiveRunId);
-          return;
-        }
-        planner = plannerSelection.planner;
-        await transition(objectiveRunId, 'planning', {
+        const route: MorpheusObjectiveRoute = {
+          kind: 'prepared-workflow',
           plannerId: planner.plannerId,
-          providerAccountId: plannerSelection.providerAccountId,
-          modelId: plannerSelection.modelId,
-          plannerNotice: plannerSelection.fallbackReason,
-        });
+          selectedAt: now().toISOString(),
+          reason: 'Using a Main-compiled workflow plan.',
+        };
+        await transition(objectiveRunId, 'planning', { plannerId: planner.plannerId, route });
+      } else {
+        const directPlanner = createDeterministicMorpheusPlanner();
+        const direct = await Promise.resolve(directPlanner.plan({
+          objective: effectiveObjective(run),
+          origin: run.origin,
+          platform,
+          filesRoot,
+          objectiveRunId,
+          iteration: 1,
+          capabilities,
+          context,
+          agent: {
+            profileId: agent.profileId,
+            name: agent.name,
+            instructions: agent.instructions,
+            capabilityIds: agent.permissionBoundary.capabilityIds,
+          },
+          limits,
+          signal: owner.controller.signal,
+        }));
+        const allowedCapabilityIds = new Set(capabilities.map((capability) => capability.capabilityId));
+        if (direct.ok && direct.plan.steps.every((step) => allowedCapabilityIds.has(step.capabilityId))) {
+          planner = directPlanner;
+          proposed = direct;
+          const route: MorpheusObjectiveRoute = {
+            kind: 'direct-capability',
+            plannerId: planner.plannerId,
+            selectedAt: now().toISOString(),
+            reason: 'Matched a registered capability before provider selection.',
+          };
+          await transition(objectiveRunId, 'planning', { plannerId: planner.plannerId, route });
+        } else {
+          const plannerSelection: MorpheusPlannerSelection = await options.planners.select(agent);
+          if (!isCurrent(objectiveRunId, generation)) return;
+          if (!plannerSelection.ok) {
+            await transition(objectiveRunId, 'needs-clarification', { clarification: plannerSelection.reason });
+            finishActive(objectiveRunId);
+            return;
+          }
+          planner = plannerSelection.planner;
+          const route: MorpheusObjectiveRoute = {
+            kind: planner.plannedBy === 'provider' ? 'provider-plan' : 'deterministic-fallback',
+            plannerId: planner.plannerId,
+            selectedAt: now().toISOString(),
+            reason: planner.plannedBy === 'provider'
+              ? 'The objective requires provider-backed planning.'
+              : 'No configured provider was available; using the bounded offline interpreter.',
+          };
+          await transition(objectiveRunId, 'planning', {
+            plannerId: planner.plannerId,
+            providerAccountId: plannerSelection.providerAccountId,
+            modelId: plannerSelection.modelId,
+            plannerNotice: plannerSelection.fallbackReason,
+            route,
+          });
+        }
       }
 
       for (let iteration = 1; iteration <= limits.maxIterations; iteration += 1) {
@@ -466,9 +545,16 @@ export function createMorpheusObjectiveOrchestrator(options: {
               objectiveRunId, iteration, capabilities, context, limits,
             });
             planner = deterministic;
+            const route: MorpheusObjectiveRoute = {
+              kind: 'deterministic-fallback',
+              plannerId: deterministic.plannerId,
+              selectedAt: now().toISOString(),
+              reason: 'Provider planning failed; using the bounded offline interpreter.',
+            };
             await transition(objectiveRunId, 'planning', {
               plannerId: deterministic.plannerId,
               plannerNotice: `Provider planning was unavailable (${error instanceof Error ? error.message : String(error)}). Used the deterministic offline interpreter.`,
+              route,
             });
           }
         }
@@ -636,17 +722,31 @@ export function createMorpheusObjectiveOrchestrator(options: {
     const agentProfileId = payload.agentProfileId ?? 'general';
     const agent = options.agents.get(agentProfileId);
     if (!agent?.enabled) return { objectiveRunId: '', accepted: false, message: 'The selected Agent Profile is unavailable.' };
-    const workspaceId = payload.workspaceId ?? MORPHEUS_DEFAULT_WORKSPACE_ID;
+    const projectId = payload.projectId;
+    const project = projectId ? options.projects?.get(projectId) : undefined;
+    if (projectId && (!project || !project.enabled)) {
+      return { objectiveRunId: '', accepted: false, message: 'The selected Project is unavailable.' };
+    }
+    if (project && payload.workspaceId && payload.workspaceId !== project.workspaceId) {
+      return { objectiveRunId: '', accepted: false, message: 'The selected Project belongs to a different workspace.' };
+    }
+    const workspaceId = project?.workspaceId ?? payload.workspaceId ?? MORPHEUS_DEFAULT_WORKSPACE_ID;
     const workspace = options.workspaces.get(workspaceId);
     if (!workspace?.enabled || !workspace.available) {
       return { objectiveRunId: '', accepted: false, message: 'The selected workspace is unavailable.' };
     }
 
     const objectiveRunId = createId();
+    const missionId = payload.missionId ?? createMissionId();
+    if (!isMorpheusMissionId(missionId)) {
+      return { objectiveRunId: '', accepted: false, message: 'Morpheus could not create a valid Mission identity.' };
+    }
     const timestamp = now().toISOString();
     const run: MorpheusObjectiveRun = {
       v: MORPHEUS_OBJECTIVE_VERSION,
       objectiveRunId,
+      missionId,
+      ...(projectId ? { projectId } : {}),
       objective,
       origin: payload.origin,
       state: 'understanding',
@@ -670,7 +770,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
     active.set(objectiveRunId, owner);
     await transition(objectiveRunId, 'understanding');
     void processObjective(objectiveRunId, owner.generation, agent);
-    return { objectiveRunId, accepted: true };
+    return { objectiveRunId, missionId, accepted: true };
   };
 
   return {
@@ -680,6 +780,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
         origin: originFromPayload(payload),
         workspaceId: payload.workspaceId,
         agentProfileId: payload.agentProfileId,
+        projectId: payload.projectId,
       });
     },
 

@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createMorpheusObjectiveOrchestrator } from '@electron/services/morpheus/core/objective-orchestrator';
 import { createMorpheusObjectiveStore } from '@electron/services/morpheus/core/objective-store';
+import { createMorpheusMissionStore } from '@electron/services/morpheus/missions/mission-store';
 import { createMorpheusAgentProfileStore } from '@electron/services/morpheus/agents/profile-store';
 import type { MorpheusAuditSink } from '@electron/services/morpheus/audit';
 import type { MorpheusRuntime } from '@electron/services/morpheus/runtime';
@@ -77,6 +78,7 @@ function setup(
       })),
       resolveRoot: vi.fn(() => join(root, 'files')),
     },
+    missions: createMorpheusMissionStore({ userDataDir: root }),
     platform: 'win32',
     isRuntimePaused,
     createId: (() => { let id = 0; return () => `objective-${++id}`; })(),
@@ -117,7 +119,7 @@ describe('Main-owned objective orchestration', () => {
       }),
     };
     const { orchestrator, runtime, events } = setup(planner);
-    const submitted = await orchestrator.submit({ objective: 'show info', originType: 'command-bar' });
+    const submitted = await orchestrator.submit({ objective: 'Conduct a platform readiness analysis', originType: 'command-bar' });
     expect(submitted.accepted).toBe(true);
     await vi.waitFor(() => expect(orchestrator.snapshot().runsById[submitted.objectiveRunId]?.state).toBe('complete'));
 
@@ -133,6 +135,26 @@ describe('Main-owned objective orchestration', () => {
     expect(events.map((event) => event.state)).toEqual(expect.arrayContaining([
       'understanding', 'planning', 'executing', 'observing', 'replanning', 'complete',
     ]));
+    orchestrator.dispose();
+  });
+
+  it('routes a known capability before provider selection and still executes through the plan runtime', async () => {
+    const planner: MorpheusPlanner = {
+      plannerId: 'provider:must-not-run', plannedBy: 'provider', plan: vi.fn(),
+    };
+    const execute = vi.fn(async ({ planId }: { planId: string }) => ({
+      planId,
+      status: 'completed' as const,
+      steps: [{ stepId: 'step-1', status: 'succeeded' as const, durationMs: 1 }],
+    }));
+    const { orchestrator, runtime } = setup(planner, execute as MorpheusRuntime['executePlan']);
+    const submitted = await orchestrator.submit({ objective: 'Show system information', originType: 'quick-command' });
+    const terminal = await orchestrator.waitForTerminal(submitted.objectiveRunId);
+
+    expect(terminal.state).toBe('complete');
+    expect(terminal.route).toMatchObject({ kind: 'direct-capability', plannerId: 'deterministic-v1' });
+    expect(planner.plan).not.toHaveBeenCalled();
+    expect(runtime.executePlan).toHaveBeenCalledTimes(1);
     orchestrator.dispose();
   });
 

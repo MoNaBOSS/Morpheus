@@ -1,4 +1,6 @@
 import type { MorpheusAgentProfile } from '@shared/morpheus/agent-profile-types';
+import type { MorpheusMemory } from '@shared/morpheus/memory-types';
+import type { MorpheusProject } from '@shared/morpheus/project-types';
 import type {
   MorpheusContextItem,
   MorpheusObjectiveRun,
@@ -13,6 +15,8 @@ export type MorpheusContextSelectionInput = {
   history: readonly MorpheusObjectiveRun[];
   agent: MorpheusAgentProfile;
   workspaceLabel: string;
+  project?: MorpheusProject;
+  memories?: readonly MorpheusMemory[];
   maxItems?: number;
   maxChars?: number;
 };
@@ -45,6 +49,29 @@ export function selectMorpheusContext(input: MorpheusContextSelectionInput): Mor
     sensitivity: 'normal',
     workspaceId: input.current.workspaceId,
   }];
+
+  if (input.project?.instructions.trim()) {
+    candidates.push({
+      contextId: `project:${input.project.projectId}`,
+      source: 'project',
+      text: input.project.instructions.trim().slice(0, MAX_ITEM_CHARS),
+      createdAt: input.project.updatedAt,
+      sensitivity: 'normal',
+      workspaceId: input.project.workspaceId,
+    });
+  }
+
+  for (const memory of input.memories ?? []) {
+    if (!memory.enabled || memory.providerUse !== 'allowed' || memory.sensitivity !== 'normal') continue;
+    candidates.push({
+      contextId: `memory:${memory.memoryId}`,
+      source: memory.kind === 'preference' ? 'preference' : 'memory',
+      text: memory.text.slice(0, MAX_ITEM_CHARS),
+      createdAt: memory.updatedAt,
+      sensitivity: 'normal',
+      workspaceId: input.current.workspaceId,
+    });
+  }
 
   if (input.agent.memory.mode === 'session' || input.agent.memory.mode === 'workspace') {
     for (const run of input.history) {

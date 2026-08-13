@@ -79,6 +79,13 @@ import {
 import { createMenu } from './menu';
 import type { PermissionProfile } from '@shared/morpheus/permission-types';
 import type { MorpheusRuntimeControlSnapshot } from '@shared/morpheus/runtime-control-types';
+import type { MorpheusCompanionSurfaceStatus } from '@shared/morpheus/companion-types';
+
+type MorpheusCompanionSurfaceControls = {
+  status(): MorpheusCompanionSurfaceStatus;
+  dismiss(): MorpheusCompanionSurfaceStatus;
+  expand(): MorpheusCompanionSurfaceStatus;
+};
 
 export type MorpheusDesktopControls = {
   permissionProfile(): PermissionProfile;
@@ -97,6 +104,7 @@ export function registerIpcHandlers(
   hostApiRegistry: HostApiRegistry,
   browserSession: Session,
   registry: WebBrowserGuestRegistry,
+  companionSurface: MorpheusCompanionSurfaceControls,
 ): MorpheusDesktopControls {
   // Unified request protocol (non-breaking: legacy channels remain available)
   registerUnifiedRequestHandlers(gatewayManager);
@@ -109,6 +117,7 @@ export function registerIpcHandlers(
     hostApiRegistry,
     browserSession,
     registry,
+    companionSurface,
   );
 
   // Gateway handlers
@@ -157,6 +166,7 @@ function registerTypedHostHandlers(
   hostApiRegistry: HostApiRegistry,
   browserSession: Session,
   registry: WebBrowserGuestRegistry,
+  companionSurface: MorpheusCompanionSurfaceControls,
 ): MorpheusDesktopControls {
   const acpSessionAccessRegistry = new AcpSessionAccessRegistry();
   const stagedAttachments = new StagedAttachmentRegistry();
@@ -192,6 +202,11 @@ function registerTypedHostHandlers(
     workflows: morpheusService.workflows,
     scheduler: morpheusService.scheduler,
     objectives: morpheusService.objectives,
+    missions: morpheusService.missions,
+    projects: morpheusService.projects,
+    memory: morpheusService.memory,
+    onboarding: morpheusService.onboarding,
+    companionSurface,
     voice: morpheusService.voice,
     runtimeControl: morpheusService.runtimeControl,
     workspaces: morpheusService.workspaces,

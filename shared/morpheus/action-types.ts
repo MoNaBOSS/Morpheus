@@ -342,6 +342,10 @@ export type MorpheusAuditRecentResult = {
 
 export type MorpheusControlAuditCategory =
   | 'objective'
+  | 'mission'
+  | 'project'
+  | 'memory'
+  | 'onboarding'
   | 'planner'
   | 'voice'
   | 'permission'

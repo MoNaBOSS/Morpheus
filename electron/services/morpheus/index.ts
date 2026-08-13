@@ -53,6 +53,10 @@ import {
   createMorpheusRuntimeControl,
   type MorpheusRuntimeControlService,
 } from './runtime-control';
+import { createMorpheusMissionStore, type MorpheusMissionStore } from './missions/mission-store';
+import { createMorpheusProjectStore, type MorpheusProjectStore } from './projects/project-store';
+import { createMorpheusMemoryStore, type MorpheusMemoryStore } from './memory/memory-store';
+import { createMorpheusOnboardingStore, type MorpheusOnboardingStore } from './onboarding/onboarding-store';
 
 export type CreateMorpheusServiceOptions = {
   userDataDir: string;
@@ -74,6 +78,10 @@ export type MorpheusService = {
   scheduler: MorpheusScheduler;
   objectiveStore: MorpheusObjectiveStore;
   objectives: MorpheusObjectiveOrchestrator;
+  missions: MorpheusMissionStore;
+  projects: MorpheusProjectStore;
+  memory: MorpheusMemoryStore;
+  onboarding: MorpheusOnboardingStore;
   voice: MorpheusVoiceService;
   workspaces: MorpheusWorkspaceStore;
   audit: MorpheusAuditSink;
@@ -159,7 +167,12 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
 
   const agentProfiles = createMorpheusAgentProfileStore({ userDataDir: options.userDataDir });
   const filesRoot = workspaces.resolveRoot();
+  const projects = createMorpheusProjectStore({ userDataDir: options.userDataDir });
+  const memory = createMorpheusMemoryStore({ userDataDir: options.userDataDir });
+  const missions = createMorpheusMissionStore({ userDataDir: options.userDataDir });
+  const onboarding = createMorpheusOnboardingStore({ userDataDir: options.userDataDir });
   const objectiveStore = createMorpheusObjectiveStore({ userDataDir: options.userDataDir });
+  missions.reconcile(objectiveStore.snapshot());
   const providerService = options.providerService ?? getProviderService();
   const plannerSelector = createMorpheusPlannerSelector({
     providerService,
@@ -178,6 +191,9 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     audit,
     appVersion: options.appVersion,
     workspaces,
+    missions,
+    projects,
+    memory,
     isRuntimePaused: () => runtimeControl.snapshot().paused,
     emit: (event) => options.emitObjective?.(event),
   });
@@ -208,6 +224,10 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     scheduler,
     objectiveStore,
     objectives,
+    missions,
+    projects,
+    memory,
+    onboarding,
     voice,
     workspaces,
     audit,
@@ -226,6 +246,10 @@ export type { MorpheusScheduleStore } from './schedules/schedule-store';
 export type { MorpheusScheduler } from './schedules/scheduler';
 export type { MorpheusObjectiveStore } from './core/objective-store';
 export type { MorpheusObjectiveOrchestrator } from './core/objective-orchestrator';
+export type { MorpheusMissionStore } from './missions/mission-store';
+export type { MorpheusProjectStore } from './projects/project-store';
+export type { MorpheusMemoryStore } from './memory/memory-store';
+export type { MorpheusOnboardingStore } from './onboarding/onboarding-store';
 export type { MorpheusVoiceService } from './voice/voice-service';
 export type { MorpheusWorkspaceStore } from './workspaces/workspace-store';
 export type { MorpheusRuntimeControlService } from './runtime-control';

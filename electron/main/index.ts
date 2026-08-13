@@ -2,7 +2,7 @@
  * Electron Main Process Entry
  * Manages window creation, system tray, and IPC handlers
  */
-import { app, BrowserWindow, globalShortcut, nativeImage, session, shell, type Session } from 'electron';
+import { app, BrowserWindow, globalShortcut, nativeImage, screen, session, shell, type Session } from 'electron';
 import { join } from 'path';
 import { pathToFileURL } from 'node:url';
 import { GatewayManager } from '../gateway/manager';
@@ -62,6 +62,7 @@ import { createMorpheusQuickCommandRegistration } from './morpheus-quick-command
 import { createMorpheusVoiceCommandRegistration } from './morpheus-voice-command';
 import { installMorpheusMediaPermissionPolicy } from './morpheus-media-permissions';
 import { classifyMainNavigation } from './navigation-policy';
+import { createMorpheusCompanionSurfaceController } from './morpheus-companion-surface';
 
 const WINDOWS_APP_USER_MODEL_ID = 'app.morpheus.desktop';
 const isE2EMode = process.env.CLAWX_E2E === '1';
@@ -132,9 +133,15 @@ const webBrowserGuestRegistry = new WebBrowserGuestRegistry();
 let webBrowserSession!: Session;
 const mainWindowFocusState = createMainWindowFocusState();
 const quitLifecycleState = createQuitLifecycleState();
+const companionSurfaceController = createMorpheusCompanionSurfaceController({
+  getWorkArea: (bounds) => screen.getDisplayMatching(bounds).workArea,
+});
 const quickCommandRegistration = createMorpheusQuickCommandRegistration({
   shortcuts: globalShortcut,
   getMainWindow: () => mainWindow,
+  prepareSurface: (window) => {
+    companionSurfaceController.show(window, 'global-shortcut');
+  },
   emit: (window) => window.webContents.send(
     HOST_EVENT_CHANNELS.morpheus.quickCommand,
     { trigger: 'global-shortcut' },
@@ -143,6 +150,9 @@ const quickCommandRegistration = createMorpheusQuickCommandRegistration({
 const voiceCommandRegistration = createMorpheusVoiceCommandRegistration({
   shortcuts: globalShortcut,
   getMainWindow: () => mainWindow,
+  prepareSurface: (window) => {
+    companionSurfaceController.show(window, 'global-shortcut');
+  },
   emit: (window) => window.webContents.send(
     HOST_EVENT_CHANNELS.morpheus.voiceCommand,
     { trigger: 'global-shortcut' },
@@ -274,9 +284,16 @@ function shouldPlayMorpheusBoot(): boolean {
   return process.argv.includes('--morpheus-boot=on');
 }
 
+/** Normal launches may show the one-time activation. E2E opts in explicitly. */
+function shouldShowMorpheusOnboarding(): boolean {
+  if (!isE2EMode) return true;
+  return process.argv.includes('--morpheus-onboarding=on');
+}
+
 function loadMainWindow(win: BrowserWindow): void {
   const shouldSkipSetupForE2E = process.env.CLAWX_E2E_SKIP_SETUP === '1';
   const morpheusBoot = shouldPlayMorpheusBoot() ? 'on' : 'off';
+  const morpheusOnboarding = shouldShowMorpheusOnboarding() ? 'on' : 'off';
 
   if (process.env.VITE_DEV_SERVER_URL) {
     const rendererUrl = new URL(process.env.VITE_DEV_SERVER_URL);
@@ -284,6 +301,7 @@ function loadMainWindow(win: BrowserWindow): void {
       rendererUrl.searchParams.set('e2eSkipSetup', '1');
     }
     rendererUrl.searchParams.set('morpheusBoot', morpheusBoot);
+    rendererUrl.searchParams.set('morpheusOnboarding', morpheusOnboarding);
     win.loadURL(rendererUrl.toString());
     if (!isE2EMode) {
       win.webContents.openDevTools();
@@ -291,14 +309,19 @@ function loadMainWindow(win: BrowserWindow): void {
   } else {
     win.loadFile(join(__dirname, '../../dist/index.html'), {
       query: shouldSkipSetupForE2E
-        ? { e2eSkipSetup: '1', morpheusBoot }
-        : { morpheusBoot },
+        ? { e2eSkipSetup: '1', morpheusBoot, morpheusOnboarding }
+        : { morpheusBoot, morpheusOnboarding },
     });
   }
 }
 
 function focusWindow(win: BrowserWindow): void {
   if (win.isDestroyed()) {
+    return;
+  }
+
+  if (companionSurfaceController.status().mode === 'compact') {
+    companionSurfaceController.expand(win);
     return;
   }
 
@@ -345,11 +368,13 @@ function createMainWindow(): BrowserWindow {
   win.on('close', (event) => {
     if (!isQuitting() && !isE2EMode) {
       event.preventDefault();
+      companionSurfaceController.dismiss(win);
       win.hide();
     }
   });
 
   win.on('closed', () => {
+    companionSurfaceController.reset(win);
     if (mainWindow === win) {
       mainWindow = null;
     }
@@ -446,6 +471,11 @@ async function initialize(): Promise<void> {
     hostApiRegistry,
     webBrowserSession,
     webBrowserGuestRegistry,
+    {
+      status: () => companionSurfaceController.status(),
+      dismiss: () => companionSurfaceController.dismiss(window),
+      expand: () => companionSurfaceController.expand(window),
+    },
   );
 
   loadMainWindow(window);
@@ -462,14 +492,14 @@ async function initialize(): Promise<void> {
     createTray(window, {
       getGatewayStatus: () => gatewayManager.getStatus(),
       controls: morpheusControls,
-      showQuickCommand: () => window.webContents.send(
-        HOST_EVENT_CHANNELS.morpheus.quickCommand,
-        { trigger: 'tray' },
-      ),
-      showVoiceCommand: () => window.webContents.send(
-        HOST_EVENT_CHANNELS.morpheus.voiceCommand,
-        { trigger: 'tray' },
-      ),
+      showQuickCommand: () => {
+        companionSurfaceController.show(window, 'tray');
+        window.webContents.send(HOST_EVENT_CHANNELS.morpheus.quickCommand, { trigger: 'tray' });
+      },
+      showVoiceCommand: () => {
+        companionSurfaceController.show(window, 'tray');
+        window.webContents.send(HOST_EVENT_CHANNELS.morpheus.voiceCommand, { trigger: 'tray' });
+      },
     });
   }
 

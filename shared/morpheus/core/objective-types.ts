@@ -7,6 +7,7 @@ import type {
   ExecutionPlanStatus,
   ExecutionStepStatus,
 } from '../execution-types';
+import type { MorpheusObjectiveRoute } from '../mission-types';
 
 export const MORPHEUS_OBJECTIVE_VERSION = 1 as const;
 
@@ -41,6 +42,7 @@ export function isObjectiveTerminalState(state: MorpheusSystemState): boolean {
 export type MorpheusContextSource =
   | 'session'
   | 'workspace'
+  | 'project'
   | 'preference'
   | 'memory'
   | 'agent-profile';
@@ -101,6 +103,9 @@ export type MorpheusObjectiveRun = {
   updatedAt: string;
   startedAt?: string;
   completedAt?: string;
+  /** Durable work identity projected into the Missions product surface. */
+  missionId?: string;
+  projectId?: string;
   workspaceId?: string;
   agentProfileId?: string;
   plannerId?: string;
@@ -108,6 +113,7 @@ export type MorpheusObjectiveRun = {
   modelId?: string;
   /** Truthful explanation when the preferred planner could not be used. */
   plannerNotice?: string;
+  route?: MorpheusObjectiveRoute;
   iteration: number;
   corrections: readonly { text: string; createdAt: string }[];
   planIds: readonly string[];
@@ -131,10 +137,12 @@ export type SubmitMorpheusObjectivePayload = {
   originType: 'command-bar' | 'quick-command' | 'voice' | 'chat';
   workspaceId?: string;
   agentProfileId?: string;
+  projectId?: string;
 };
 
 export type SubmitMorpheusObjectiveResult = {
   objectiveRunId: string;
+  missionId?: string;
   accepted: boolean;
   message?: string;
 };

@@ -76,6 +76,28 @@ import type {
   MorpheusWorkspacesSnapshot,
   UpdateMorpheusWorkspacePayload,
 } from '../morpheus/workspace-types';
+import type {
+  MorpheusMissionIdPayload,
+  MorpheusMissionResult,
+  MorpheusMissionsSnapshot,
+} from '../morpheus/mission-types';
+import type {
+  MorpheusProjectDraft,
+  MorpheusProjectIdPayload,
+  MorpheusProjectResult,
+  MorpheusProjectsSnapshot,
+} from '../morpheus/project-types';
+import type {
+  MorpheusMemoryDraft,
+  MorpheusMemoryIdPayload,
+  MorpheusMemoryResult,
+  MorpheusMemorySnapshot,
+} from '../morpheus/memory-types';
+import type {
+  CompleteMorpheusOnboardingPayload,
+  MorpheusOnboardingStatus,
+} from '../morpheus/onboarding-types';
+import type { MorpheusCompanionSurfaceStatus } from '../morpheus/companion-types';
 import type { WebBrowserNavigatePayload } from '../web-browser';
 
 export type JsonRecord = Record<string, unknown>;
@@ -1137,6 +1159,22 @@ export type HostApiContract = {
     objectiveSnapshot: () => MorpheusObjectiveSnapshot;
     correctObjective: (payload: CorrectMorpheusObjectivePayload) => MorpheusAcknowledgement;
     cancelObjective: (payload: CancelMorpheusObjectivePayload) => MorpheusAcknowledgement;
+    missions: () => MorpheusMissionsSnapshot;
+    mission: (payload: MorpheusMissionIdPayload) => MorpheusMissionResult;
+    rerunMission: (payload: MorpheusMissionIdPayload) => SubmitMorpheusObjectiveResult;
+    projects: () => MorpheusProjectsSnapshot;
+    project: (payload: MorpheusProjectIdPayload) => MorpheusProjectResult;
+    saveProject: (payload: MorpheusProjectDraft) => MorpheusProjectResult;
+    removeProject: (payload: MorpheusProjectIdPayload) => MorpheusProjectResult;
+    memories: () => MorpheusMemorySnapshot;
+    saveMemory: (payload: MorpheusMemoryDraft) => MorpheusMemoryResult;
+    removeMemory: (payload: MorpheusMemoryIdPayload) => MorpheusMemoryResult;
+    onboardingStatus: () => MorpheusOnboardingStatus;
+    completeOnboarding: (payload: CompleteMorpheusOnboardingPayload) => MorpheusOnboardingStatus;
+    resetOnboarding: () => MorpheusOnboardingStatus;
+    companionSurfaceStatus: () => MorpheusCompanionSurfaceStatus;
+    dismissCompanionSurface: () => MorpheusCompanionSurfaceStatus;
+    expandCompanionSurface: () => MorpheusCompanionSurfaceStatus;
     voiceStatus: () => MorpheusVoiceStatus;
     updateVoiceSettings: (payload: MorpheusVoiceSettingsPatch) => MorpheusVoiceStatus;
     transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => MorpheusTranscriptionResult;

@@ -15,6 +15,7 @@ export interface MorpheusVoiceCommandRegistration {
 export function createMorpheusVoiceCommandRegistration(options: {
   shortcuts: Pick<GlobalShortcut, 'register' | 'unregister'>;
   getMainWindow: () => BrowserWindow | null;
+  prepareSurface?: (window: BrowserWindow) => void;
   emit: (window: BrowserWindow) => void;
 }): MorpheusVoiceCommandRegistration {
   let registered = false;
@@ -24,9 +25,12 @@ export function createMorpheusVoiceCommandRegistration(options: {
       registered = options.shortcuts.register(MORPHEUS_VOICE_COMMAND_ACCELERATOR, () => {
         const window = options.getMainWindow();
         if (!window || window.isDestroyed()) return;
-        if (window.isMinimized()) window.restore();
-        window.show();
-        window.focus();
+        if (options.prepareSurface) options.prepareSurface(window);
+        else {
+          if (window.isMinimized()) window.restore();
+          window.show();
+          window.focus();
+        }
         options.emit(window);
       });
       return registered;
