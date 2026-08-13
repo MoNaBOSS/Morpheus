@@ -10,6 +10,7 @@ const STARTER_OBJECTIVES = [
   { key: 'system', objective: 'Show system information' },
   { key: 'file', objective: 'Create a text file named notes.txt' },
   { key: 'notepad', objective: 'Open Notepad' },
+  { key: 'web', objective: 'Open browser and search for passive income ideas' },
 ] as const;
 
 export function CommandBar() {

@@ -354,7 +354,7 @@
     "command": {
       "label": "命令",
       "operator": "Morpheus 智能执行",
-      "placeholder": "描述一个目标，例如“显示系统信息”",
+      "placeholder": "告诉 Morpheus 你想完成什么…",
       "run": "运行",
       "question": "Morpheus 应该处理什么？",
       "promise": "Morpheus 会构建类型化计划，仅在信任变化时询问，然后逐步执行。",
@@ -362,7 +362,8 @@
       "examples": {
         "system": "显示系统信息",
         "file": "创建 notes.txt",
-        "notepad": "打开记事本"
+        "notepad": "打开记事本",
+        "web": "研究一个想法"
       },
       "unsupportedTitle": "Morpheus 暂时无法执行该操作",
       "unsupportedBody": "该命令未映射到 Morpheus 实际具备的能力。当前支持："
@@ -415,6 +416,7 @@
         "systemStorage": "检查批准的存储空间",
         "systemProcesses": "检查运行中的进程",
         "webOpenUrl": "打开 {{url}}",
+        "webSearch": "在网络上搜索 {{query}}",
         "devLaunchProject": "在 VS Code 中打开 {{path}}"
       },
       "title": "执行计划",
@@ -552,10 +554,19 @@
       "all": "全部",
       "categories": {
         "execution": "执行",
+        "objective": "目标",
+        "mission": "任务",
+        "project": "项目",
+        "memory": "记忆",
+        "onboarding": "激活",
+        "planner": "规划",
+        "voice": "语音",
         "permission": "权限",
+        "workspace": "工作区",
         "agent-profile": "Agent 配置档",
         "workflow": "工作流",
-        "schedule": "计划任务"
+        "schedule": "计划任务",
+        "runtime": "运行时"
       },
       "ledger": "活动账本",
       "ledgerDescription": "最新优先，绝不保留有效载荷和秘密。",
@@ -583,7 +594,30 @@
       "running": "当前目标：{{objective}}",
       "stop": "停止",
       "unsupported": "暂不支持该目标。",
-      "hint": "按 Enter 执行。只有信任边界变化时才会询问。"
+      "hint": "按 Enter 执行。只有信任边界变化时才会询问。",
+      "awaiting": "等待目标",
+      "sameCore": "同一目标核心",
+      "voiceHint": "自然说话，然后停顿",
+      "openCommandCenter": "打开指挥中心"
+    },
+    "context": { "title": "执行上下文" },
+    "missions": {
+      "eyebrow": "持久工作", "title": "任务", "description": "由真实 Morpheus 目标核心投射的持久目标。", "new": "新目标", "empty": "暂无任务。向 Morpheus 提出目标即可开始。", "emptyCompact": "活动和已完成的目标将显示在这里。", "select": "选择任务以查看真实状态。", "activeRail": "任务流", "open": "打开全部任务", "rerun": "再次运行", "route": "执行路线", "routeUnknown": "未记录路线", "runs": "目标运行", "updated": "最后更新", "result": "结果", "noSummary": "此任务尚未产生最终结果。", "artifacts": "任务产物", "noArtifacts": "此任务尚未产生任何产物。",
+      "status": { "planning": "规划中", "waiting-for-permission": "等待信任", "running": "执行中", "observing": "观察中", "needs-input": "需要输入", "completed": "已完成", "failed": "失败", "cancelled": "已取消" },
+      "routes": { "direct-capability": "直接能力", "provider-plan": "提供商规划", "deterministic-fallback": "确定性回退", "prepared-workflow": "预备工作流" }
+    },
+    "projects": {
+      "eyebrow": "个人智能", "title": "项目与上下文", "description": "围绕精确可信工作区和可检查上下文组织目标。", "active": "活动项目", "none": "无项目", "manage": "管理上下文", "create": "创建项目", "newProject": "新项目", "projectContext": "项目上下文", "untitled": "未命名项目", "name": "项目名称", "descriptionLabel": "说明", "workspace": "可信工作区", "instructions": "规划上下文", "instructionsPlaceholder": "Morpheus 在此项目中工作时应了解什么？", "noDescription": "尚无说明。", "noActiveDescription": "选择项目，为 Morpheus 提供聚焦上下文。"
+    },
+    "memory": {
+      "title": "Morpheus 记忆", "description": "可检查、编辑、禁用或删除的明确上下文。敏感条目保留在本地。", "context": "上下文记忆", "disclosure": "只有启用、普通且允许提供商使用的条目才会进入规划上下文。", "saveProjectFirst": "请先保存项目再添加记忆。", "titlePlaceholder": "Morpheus 应该记住什么？", "textPlaceholder": "输入简洁的上下文、偏好、惯例或决定。", "sensitive": "敏感 — 仅保留在本地并排除在提供商规划之外", "add": "添加记忆", "entries": "{{count}} 条记忆", "empty": "此项目没有关联记忆。", "emptyCompact": "当前上下文没有可用记忆。", "remove": "删除记忆",
+      "kinds": { "preference": "偏好", "project-context": "项目上下文", "routine": "惯例", "decision": "决定" },
+      "providerUse": { "allowed": "可供规划器使用", "local-only": "仅本地" }
+    },
+    "activation": {
+      "eyebrow": "智能操作伙伴", "title": "认识 Morpheus", "introduction": "我把目标转化为计划、可信操作和持久任务。自然地说或输入；我会处理日常工作，只在信任边界真正变化时打断。", "spokenIntroduction": "你好，我是 Morpheus，你的智能操作伙伴。告诉我你想完成什么，我会规划并处理工作。", "begin": "激活 Morpheus", "skip": "跳过激活", "calibrating": "真实系统校准", "systemsTitle": "正在连接智能层", "checking": "正在检查此系统可用的能力…", "continue": "个性化伙伴", "personalize": "伙伴行为", "preferenceTitle": "Morpheus 应如何与你协作？", "preferenceBody": "这些偏好会影响沟通，但不会绕过能力政策或信任。", "speak": "朗读最终响应", "speakDescription": "语音目标完成后使用 Windows 语音。", "finish": "完成激活", "readyLabel": "系统就绪", "readyTitle": "Morpheus 已就绪。", "readyBody": "在指挥中心管理任务；随时按 Ctrl+Shift+Space 打开快捷命令，或按 Ctrl+Alt+Space 说话。", "enter": "进入指挥中心", "replay": "伙伴激活", "replayDescription": "重新播放真实系统介绍并选择伙伴行为。", "replayAction": "重播激活",
+      "personalities": { "adaptive": { "name": "自适应", "description": "根据目标调整细节、语气和节奏。" }, "concise": { "name": "简洁", "description": "偏好简短直接的状态与结果。" }, "warm": { "name": "温暖", "description": "使用自然、乐于助人且略带幽默的语气。" } },
+      "signal": { "core": "执行核心", "runtime": "代理运行时", "provider": "推理提供商", "voice": "语音通道", "capabilities": "{{count}} 项真实能力", "unavailable": "不可用", "connected": "已连接", "starting": "正在后台启动", "optionalProvider": "需要开放式规划时配置", "available": "可用", "voiceSetup": "配置兼容转录的提供商" }
     },
     "voice": {
       "start": "对 Morpheus 说话",

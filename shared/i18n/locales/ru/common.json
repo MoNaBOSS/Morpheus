@@ -8,6 +8,8 @@
         "channels": "Каналы",
         "commandCenter": "Командный центр",
         "quickCommand": "Быстрая команда",
+        "missions": "Миссии",
+        "projects": "Проекты и контекст",
         "groups": {
             "product": "Morpheus",
             "builder": "Конструктор систем",

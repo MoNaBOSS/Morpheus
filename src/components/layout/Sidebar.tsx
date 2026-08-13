@@ -34,6 +34,8 @@ import {
   CalendarClock,
   Activity,
   Zap,
+  Target,
+  FolderKanban,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isGatewayRestarting } from '@/lib/gateway-status';
@@ -435,6 +437,20 @@ export function Sidebar() {
       section: 'product',
     },
     {
+      to: '/missions',
+      icon: <Target className="h-4 w-4" strokeWidth={2} />,
+      label: t('sidebar.missions'),
+      testId: 'sidebar-nav-missions',
+      section: 'product',
+    },
+    {
+      to: '/projects',
+      icon: <FolderKanban className="h-4 w-4" strokeWidth={2} />,
+      label: t('sidebar.projects'),
+      testId: 'sidebar-nav-projects',
+      section: 'product',
+    },
+    {
       to: '/agent-profiles',
       icon: <Bot className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.agentProfiles'),
@@ -593,7 +609,7 @@ export function Sidebar() {
         <button
           type="button"
           data-testid="sidebar-quick-command"
-          onClick={showQuickCommand}
+          onClick={() => showQuickCommand()}
           className={cn(
             'sidebar-nav-text flex items-center gap-2 rounded-lg border border-[hsl(var(--morpheus-accent-dim))]/60 bg-[hsl(var(--morpheus-accent))]/[0.05] px-2.5 py-1.5 text-foreground/85 transition-colors',
             'hover:bg-[hsl(var(--morpheus-accent))]/[0.09]',

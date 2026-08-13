@@ -5,7 +5,10 @@ import { Activity as ActivityIcon, ChevronDown, Shield, Timer } from 'lucide-rea
 import { EmptyState, Panel, StatusDot } from '@/components/morpheus/ui';
 import { useMorpheusFoundationStore } from '@/stores/morpheus-foundation';
 
-const CATEGORY_OPTIONS = ['', 'execution', 'permission', 'agent-profile', 'workflow', 'schedule'] as const;
+const CATEGORY_OPTIONS = [
+  '', 'execution', 'objective', 'mission', 'project', 'memory', 'onboarding',
+  'planner', 'voice', 'permission', 'workspace', 'agent-profile', 'workflow', 'schedule', 'runtime',
+] as const;
 
 export function Activity() {
   const { t } = useTranslation('dashboard');

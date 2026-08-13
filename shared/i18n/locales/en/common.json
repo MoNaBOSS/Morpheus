@@ -8,6 +8,8 @@
         "channels": "Channels",
         "commandCenter": "Command Center",
         "quickCommand": "Quick Command",
+        "missions": "Missions",
+        "projects": "Projects & Context",
         "groups": {
             "product": "Morpheus",
             "builder": "System Builder",

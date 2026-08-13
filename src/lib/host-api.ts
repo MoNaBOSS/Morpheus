@@ -70,6 +70,9 @@ import type {
 import type { MorpheusAgentProfileDraft } from '@shared/morpheus/agent-profile-types';
 import type { MorpheusWorkflowDraft } from '@shared/morpheus/workflow-types';
 import type { PermissionProfile } from '@shared/morpheus/permission-types';
+import type { MorpheusProjectDraft } from '@shared/morpheus/project-types';
+import type { MorpheusMemoryDraft } from '@shared/morpheus/memory-types';
+import type { CompleteMorpheusOnboardingPayload } from '@shared/morpheus/onboarding-types';
 import { invokeHost } from './host-api-client';
 
 export type {
@@ -457,6 +460,24 @@ export const hostApi = {
     cancelObjective: (payload: CancelMorpheusObjectivePayload) => (
       invokeHost('morpheus', 'cancelObjective', payload)
     ),
+    missions: () => invokeHost('morpheus', 'missions'),
+    mission: (missionId: string) => invokeHost('morpheus', 'mission', { missionId }),
+    rerunMission: (missionId: string) => invokeHost('morpheus', 'rerunMission', { missionId }),
+    projects: () => invokeHost('morpheus', 'projects'),
+    project: (projectId: string) => invokeHost('morpheus', 'project', { projectId }),
+    saveProject: (payload: MorpheusProjectDraft) => invokeHost('morpheus', 'saveProject', payload),
+    removeProject: (projectId: string) => invokeHost('morpheus', 'removeProject', { projectId }),
+    memories: () => invokeHost('morpheus', 'memories'),
+    saveMemory: (payload: MorpheusMemoryDraft) => invokeHost('morpheus', 'saveMemory', payload),
+    removeMemory: (memoryId: string) => invokeHost('morpheus', 'removeMemory', { memoryId }),
+    onboardingStatus: () => invokeHost('morpheus', 'onboardingStatus'),
+    completeOnboarding: (payload: CompleteMorpheusOnboardingPayload) => (
+      invokeHost('morpheus', 'completeOnboarding', payload)
+    ),
+    resetOnboarding: () => invokeHost('morpheus', 'resetOnboarding'),
+    companionSurfaceStatus: () => invokeHost('morpheus', 'companionSurfaceStatus'),
+    dismissCompanionSurface: () => invokeHost('morpheus', 'dismissCompanionSurface'),
+    expandCompanionSurface: () => invokeHost('morpheus', 'expandCompanionSurface'),
     voiceStatus: () => invokeHost('morpheus', 'voiceStatus'),
     updateVoiceSettings: (payload: MorpheusVoiceSettingsPatch) => (
       invokeHost('morpheus', 'updateVoiceSettings', payload)

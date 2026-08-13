@@ -22,6 +22,8 @@ import { AgentProfiles } from './pages/AgentProfiles';
 import { Workflows } from './pages/Workflows';
 import { Schedules } from './pages/Schedules';
 import { Activity } from './pages/Activity';
+import { Missions } from './pages/Missions';
+import { Projects } from './pages/Projects';
 import { Setup } from './pages/Setup';
 import { useSettingsStore } from './stores/settings';
 import { useUpdateStore } from './stores/update';
@@ -35,6 +37,7 @@ import { MorpheusBoot } from './components/morpheus/boot/MorpheusBoot';
 import { hostEvents } from './lib/host-events';
 import { MorpheusGlobalRuntime } from './components/morpheus/MorpheusGlobalRuntime';
 import { MorpheusQuickCommand } from './components/morpheus/MorpheusQuickCommand';
+import { MorpheusActivation } from './components/morpheus/onboarding/MorpheusActivation';
 
 
 /**
@@ -113,6 +116,10 @@ function App() {
     typeof window === 'undefined'
       ? false
       : new URLSearchParams(window.location.search).get('morpheusBoot') !== 'off'
+  ));
+  const [morpheusOnboardingEnabled] = useState(() => (
+    typeof window !== 'undefined'
+      && new URLSearchParams(window.location.search).get('morpheusOnboarding') !== 'off'
   ));
   const initSettings = useSettingsStore((state) => state.init);
   const theme = useSettingsStore((state) => state.theme);
@@ -230,6 +237,8 @@ function App() {
             <Route path="/workflows" element={<Workflows />} />
             <Route path="/schedules" element={<Schedules />} />
             <Route path="/activity" element={<Activity />} />
+            <Route path="/missions" element={<Missions />} />
+            <Route path="/projects" element={<Projects />} />
             <Route path="/channels" element={<Channels />} />
             <Route path="/skills" element={<Skills />} />
             <Route path="/cron" element={<Cron />} />
@@ -251,6 +260,9 @@ function App() {
           Kept below the Toaster's z-index.
         */}
         <MorpheusBoot enabled={morpheusBootEnabled} />
+        <MorpheusActivation
+          enabled={morpheusOnboardingEnabled && (Boolean(setupComplete) || skipSetupForE2E)}
+        />
 
         {/* Global toast notifications */}
         <Toaster

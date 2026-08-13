@@ -8,6 +8,8 @@
         "channels": "频道",
         "commandCenter": "指挥中心",
         "quickCommand": "快捷命令",
+        "missions": "任务",
+        "projects": "项目与上下文",
         "groups": {
             "product": "Morpheus",
             "builder": "系统构建器",

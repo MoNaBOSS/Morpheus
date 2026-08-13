@@ -16,6 +16,8 @@ import { objectivePassNumber } from '@/pages/CommandCenter/objective-presentatio
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import type { ExecutionStep, ExecutionStepResult } from '@shared/morpheus/execution-types';
 
+import { ExecutionReadiness } from './ExecutionReadiness';
+
 /**
  * Merges the plan's declared steps with whatever outcome Main reported.
  *
@@ -73,6 +75,9 @@ export function PlanPanel({ className }: { className?: string }) {
               </li>
             ))}
           </ol>
+          <div className="mt-4 max-w-xl">
+            <ExecutionReadiness />
+          </div>
         </div>
       </Panel>
     );

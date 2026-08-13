@@ -357,7 +357,7 @@
     "command": {
       "label": "Command",
       "operator": "Morpheus operator",
-      "placeholder": "Describe an objective, e.g. \"Show system information\"",
+      "placeholder": "Tell Morpheus what you want to accomplish…",
       "run": "Run",
       "question": "What should Morpheus handle?",
       "promise": "Morpheus builds a typed plan, asks only when trust changes, then executes it step by step.",
@@ -365,7 +365,8 @@
       "examples": {
         "system": "Show system information",
         "file": "Create notes.txt",
-        "notepad": "Open Notepad"
+        "notepad": "Open Notepad",
+        "web": "Research an idea"
       },
       "unsupportedTitle": "Morpheus cannot do that yet",
       "unsupportedBody": "That command does not map to a capability Morpheus actually has. It supports:"
@@ -428,6 +429,7 @@
         "systemStorage": "Inspect approved storage",
         "systemProcesses": "Inspect running processes",
         "webOpenUrl": "Open {{url}}",
+        "webSearch": "Search the web for {{query}}",
         "devLaunchProject": "Open {{path}} in VS Code"
       },
       "title": "Execution plan",
@@ -655,10 +657,19 @@
       "all": "All",
       "categories": {
         "execution": "Executions",
+        "objective": "Objectives",
+        "mission": "Missions",
+        "project": "Projects",
+        "memory": "Memory",
+        "onboarding": "Activation",
+        "planner": "Planning",
+        "voice": "Voice",
         "permission": "Permissions",
+        "workspace": "Workspaces",
         "agent-profile": "Agent Profiles",
         "workflow": "Workflows",
-        "schedule": "Schedules"
+        "schedule": "Schedules",
+        "runtime": "Runtime"
       },
       "ledger": "Activity ledger",
       "ledgerDescription": "Newest first. Payloads and secrets are never retained.",
@@ -686,7 +697,137 @@
       "running": "Active objective: {{objective}}",
       "stop": "Stop",
       "unsupported": "That objective is not supported yet.",
-      "hint": "Enter runs the objective. Morpheus asks only when trust changes."
+      "hint": "Enter runs the objective. Morpheus asks only when trust changes.",
+      "awaiting": "Awaiting objective",
+      "sameCore": "Same Objective Core",
+      "voiceHint": "Speak naturally, then pause",
+      "openCommandCenter": "Open Command Center"
+    },
+    "context": {
+      "title": "Execution context"
+    },
+    "missions": {
+      "eyebrow": "Persistent work",
+      "title": "Missions",
+      "description": "Durable objectives projected from the real Morpheus Objective Core.",
+      "new": "New objective",
+      "empty": "No Missions yet. Give Morpheus an objective to begin.",
+      "emptyCompact": "Your completed and active objectives will appear here.",
+      "select": "Select a Mission to inspect its real state.",
+      "activeRail": "Mission stream",
+      "open": "Open all Missions",
+      "rerun": "Run again",
+      "route": "Execution route",
+      "routeUnknown": "Route not recorded",
+      "runs": "Objective runs",
+      "updated": "Last update",
+      "result": "Result",
+      "noSummary": "This Mission has not produced a final result yet.",
+      "artifacts": "Mission artifacts",
+      "noArtifacts": "This Mission has not produced artifacts.",
+      "status": {
+        "planning": "Planning",
+        "waiting-for-permission": "Waiting for trust",
+        "running": "Executing",
+        "observing": "Observing",
+        "needs-input": "Needs input",
+        "completed": "Completed",
+        "failed": "Failed",
+        "cancelled": "Cancelled"
+      },
+      "routes": {
+        "direct-capability": "Direct capability",
+        "provider-plan": "Provider planned",
+        "deterministic-fallback": "Deterministic fallback",
+        "prepared-workflow": "Prepared workflow"
+      }
+    },
+    "projects": {
+      "eyebrow": "Personal intelligence",
+      "title": "Projects & Context",
+      "description": "Organize objectives around an exact trusted workspace and inspectable context.",
+      "active": "Active Project",
+      "none": "No Project",
+      "manage": "Manage context",
+      "create": "Create Project",
+      "newProject": "New Project",
+      "projectContext": "Project context",
+      "untitled": "Untitled Project",
+      "name": "Project name",
+      "descriptionLabel": "Description",
+      "workspace": "Trusted workspace",
+      "instructions": "Planning context",
+      "instructionsPlaceholder": "What should Morpheus understand whenever it works in this Project?",
+      "noDescription": "No description yet.",
+      "noActiveDescription": "Choose a Project to give Morpheus focused context."
+    },
+    "memory": {
+      "title": "Morpheus Memory",
+      "description": "Explicit context you can inspect, edit, disable or remove. Sensitive entries stay local.",
+      "context": "Context memory",
+      "disclosure": "Only enabled, normal entries marked for provider use may enter planning context.",
+      "saveProjectFirst": "Save the Project before adding memory.",
+      "titlePlaceholder": "What should Morpheus remember?",
+      "textPlaceholder": "Enter concise context, a preference, routine or decision.",
+      "sensitive": "Sensitive — keep local and exclude from provider planning",
+      "add": "Add memory",
+      "entries": "{{count}} memory entries",
+      "empty": "No memory is attached to this Project.",
+      "emptyCompact": "No eligible memory is active for this context.",
+      "remove": "Remove memory",
+      "kinds": {
+        "preference": "Preference",
+        "project-context": "Project context",
+        "routine": "Routine",
+        "decision": "Decision"
+      },
+      "providerUse": {
+        "allowed": "Available to planner",
+        "local-only": "Local only"
+      }
+    },
+    "activation": {
+      "eyebrow": "Intelligent operating companion",
+      "title": "Meet Morpheus",
+      "introduction": "I turn objectives into plans, trusted actions and lasting Missions. Speak or type naturally; I will handle routine work and interrupt only when the trust boundary genuinely changes.",
+      "spokenIntroduction": "Hello. I am Morpheus, your intelligent operating companion. Tell me what you want to accomplish, and I will plan and handle the work.",
+      "begin": "Activate Morpheus",
+      "skip": "Skip activation",
+      "calibrating": "Real system calibration",
+      "systemsTitle": "Connecting your intelligence layer",
+      "checking": "Inspecting the capabilities available on this system…",
+      "continue": "Personalize companion",
+      "personalize": "Companion behavior",
+      "preferenceTitle": "How should Morpheus work with you?",
+      "preferenceBody": "These preferences shape communication. They never bypass capability policy or trust.",
+      "speak": "Speak final responses",
+      "speakDescription": "Use Windows speech after completed voice objectives.",
+      "finish": "Complete activation",
+      "readyLabel": "System ready",
+      "readyTitle": "Morpheus is ready.",
+      "readyBody": "Use the Command Center for Missions, press Ctrl+Shift+Space from anywhere for Quick Command, or press Ctrl+Alt+Space to speak.",
+      "enter": "Enter Command Center",
+      "replay": "Companion activation",
+      "replayDescription": "Replay the real system introduction and choose companion behavior again.",
+      "replayAction": "Replay activation",
+      "personalities": {
+        "adaptive": { "name": "Adaptive", "description": "Match detail, tone and pace to the objective." },
+        "concise": { "name": "Concise", "description": "Prefer brief, direct status and results." },
+        "warm": { "name": "Warm", "description": "Use a conversational, helpful and lightly humorous voice." }
+      },
+      "signal": {
+        "core": "Execution core",
+        "runtime": "Agent runtime",
+        "provider": "Reasoning provider",
+        "voice": "Voice channel",
+        "capabilities": "{{count}} real capabilities",
+        "unavailable": "Unavailable",
+        "connected": "Connected",
+        "starting": "Starting in background",
+        "optionalProvider": "Configure when you need open-ended planning",
+        "available": "Available",
+        "voiceSetup": "Configure a transcription-compatible provider"
+      }
     },
     "voice": {
       "start": "Speak to Morpheus",

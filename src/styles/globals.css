@@ -829,8 +829,98 @@
   animation: morpheus-boot-fade-out 320ms ease-out forwards;
 }
 
+/* One-time companion activation. Every signal shown here is populated from a
+ * real Main/runtime query; the visual field is atmosphere, never telemetry. */
+.morpheus-activation {
+  background:
+    radial-gradient(circle at 50% 45%, hsl(var(--morpheus-glow)), transparent 34%),
+    hsl(var(--morpheus-surface-1));
+}
+
+.morpheus-activation-grid {
+  opacity: 0.2;
+  background-image:
+    linear-gradient(hsl(var(--morpheus-grid)) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--morpheus-grid)) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(circle at center, black, transparent 70%);
+}
+
+.morpheus-activation-orbit {
+  border: 1px solid hsl(var(--morpheus-grid));
+  box-shadow:
+    inset 0 0 90px hsl(var(--morpheus-glow)),
+    0 0 80px hsl(var(--morpheus-glow));
+  animation: morpheus-orbit-breathe 5.5s ease-in-out infinite;
+}
+
+.morpheus-activation-orbit::before,
+.morpheus-activation-orbit::after {
+  position: absolute;
+  content: '';
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--morpheus-grid));
+}
+
+.morpheus-activation-orbit::before { inset: 13%; }
+.morpheus-activation-orbit::after { inset: 31%; }
+
+.morpheus-activation-core {
+  box-shadow:
+    inset 0 0 34px hsl(var(--morpheus-glow)),
+    0 0 70px hsl(var(--morpheus-glow));
+}
+
+@keyframes morpheus-orbit-breathe {
+  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.985); }
+  50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.015); }
+}
+
+/* Quick Command is the same trusted renderer in either a modal overlay or the
+ * Main-owned compact BrowserWindow presentation. */
+.morpheus-companion-console {
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.04),
+    0 0 70px hsl(var(--morpheus-glow));
+}
+
+.morpheus-companion-console-grid {
+  pointer-events: none;
+  opacity: 0.18;
+  background-image:
+    linear-gradient(hsl(var(--morpheus-grid)) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--morpheus-grid)) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(to bottom, black, transparent 78%);
+}
+
+.morpheus-companion-input {
+  box-shadow: inset 0 0 0 1px hsl(var(--morpheus-grid));
+}
+
+.morpheus-companion-input:focus-within {
+  box-shadow:
+    inset 0 0 0 1px hsl(var(--morpheus-accent-dim)),
+    0 0 32px hsl(var(--morpheus-glow));
+}
+
+.morpheus-voice-bar {
+  height: 8px;
+  animation: morpheus-voice-level 720ms ease-in-out infinite alternate;
+}
+
+@keyframes morpheus-voice-level {
+  from { height: 7px; opacity: 0.45; }
+  to { height: 24px; opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .morpheus-boot-leaving {
     animation-duration: 1ms;
+  }
+
+  .morpheus-activation-orbit,
+  .morpheus-voice-bar {
+    animation: none;
   }
 }

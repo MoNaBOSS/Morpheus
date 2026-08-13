@@ -8,6 +8,8 @@
         "channels": "チャンネル",
         "commandCenter": "コマンドセンター",
         "quickCommand": "クイックコマンド",
+        "missions": "ミッション",
+        "projects": "プロジェクトとコンテキスト",
         "groups": {
             "product": "Morpheus",
             "builder": "システムビルダー",

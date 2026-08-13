@@ -354,7 +354,7 @@
     "command": {
       "label": "コマンド",
       "operator": "Morpheus オペレーター",
-      "placeholder": "目的を入力（例：「システム情報を表示」）",
+      "placeholder": "Morpheus に達成したいことを伝えてください…",
       "run": "実行",
       "question": "Morpheus に何を任せますか？",
       "promise": "型付きプランを作成し、信頼が変わる時だけ確認して順番に実行します。",
@@ -362,7 +362,8 @@
       "examples": {
         "system": "システム情報を表示",
         "file": "notes.txt を作成",
-        "notepad": "メモ帳を開く"
+        "notepad": "メモ帳を開く",
+        "web": "アイデアを調べる"
       },
       "unsupportedTitle": "Morpheus はまだそれを実行できません",
       "unsupportedBody": "そのコマンドは Morpheus が実際に持つ機能に対応していません。現在の対応："
@@ -415,6 +416,7 @@
         "systemStorage": "承認済みストレージを確認",
         "systemProcesses": "実行中のプロセスを確認",
         "webOpenUrl": "{{url}} を開く",
+        "webSearch": "ウェブで {{query}} を検索",
         "devLaunchProject": "{{path}} を VS Code で開く"
       },
       "title": "実行プラン",
@@ -552,10 +554,19 @@
       "all": "すべて",
       "categories": {
         "execution": "実行",
+        "objective": "目的",
+        "mission": "ミッション",
+        "project": "プロジェクト",
+        "memory": "メモリ",
+        "onboarding": "起動設定",
+        "planner": "計画",
+        "voice": "音声",
         "permission": "許可",
+        "workspace": "ワークスペース",
         "agent-profile": "エージェントプロファイル",
         "workflow": "ワークフロー",
-        "schedule": "スケジュール"
+        "schedule": "スケジュール",
+        "runtime": "ランタイム"
       },
       "ledger": "アクティビティ台帳",
       "ledgerDescription": "新しい順。ペイロードや秘密は保持しません。",
@@ -583,7 +594,30 @@
       "running": "実行中の目的：{{objective}}",
       "stop": "停止",
       "unsupported": "その目的はまだサポートされていません。",
-      "hint": "Enter で実行。信頼境界が変わる場合のみ確認します。"
+      "hint": "Enter で実行。信頼境界が変わる場合のみ確認します。",
+      "awaiting": "目的を待機中",
+      "sameCore": "同じ Objective Core",
+      "voiceHint": "自然に話してから一息置いてください",
+      "openCommandCenter": "コマンドセンターを開く"
+    },
+    "context": { "title": "実行コンテキスト" },
+    "missions": {
+      "eyebrow": "継続する作業", "title": "ミッション", "description": "実際の Morpheus Objective Core から投影された永続的な目的です。", "new": "新しい目的", "empty": "ミッションはまだありません。Morpheus に目的を伝えてください。", "emptyCompact": "実行中・完了済みの目的がここに表示されます。", "select": "ミッションを選んで実際の状態を確認してください。", "activeRail": "ミッションストリーム", "open": "すべてのミッションを開く", "rerun": "もう一度実行", "route": "実行ルート", "routeUnknown": "ルート未記録", "runs": "目的の実行", "updated": "最終更新", "result": "結果", "noSummary": "このミッションはまだ最終結果を生成していません。", "artifacts": "ミッション成果物", "noArtifacts": "このミッションには成果物がありません。",
+      "status": { "planning": "計画中", "waiting-for-permission": "信頼待ち", "running": "実行中", "observing": "観察中", "needs-input": "入力が必要", "completed": "完了", "failed": "失敗", "cancelled": "キャンセル済み" },
+      "routes": { "direct-capability": "直接能力", "provider-plan": "プロバイダー計画", "deterministic-fallback": "決定論的フォールバック", "prepared-workflow": "準備済みワークフロー" }
+    },
+    "projects": {
+      "eyebrow": "パーソナル知能", "title": "プロジェクトとコンテキスト", "description": "正確に信頼されたワークスペースと確認可能なコンテキストで目的を整理します。", "active": "アクティブなプロジェクト", "none": "プロジェクトなし", "manage": "コンテキストを管理", "create": "プロジェクトを作成", "newProject": "新しいプロジェクト", "projectContext": "プロジェクトコンテキスト", "untitled": "無題のプロジェクト", "name": "プロジェクト名", "descriptionLabel": "説明", "workspace": "信頼済みワークスペース", "instructions": "計画コンテキスト", "instructionsPlaceholder": "このプロジェクトで作業するとき Morpheus が理解すべきことは？", "noDescription": "説明はまだありません。", "noActiveDescription": "Morpheus に焦点を絞ったコンテキストを与えるプロジェクトを選択してください。"
+    },
+    "memory": {
+      "title": "Morpheus メモリ", "description": "確認、編集、無効化、削除できる明示的なコンテキストです。機密項目はローカルに留まります。", "context": "コンテキストメモリ", "disclosure": "有効かつ通常で、プロバイダー利用を許可した項目だけが計画コンテキストに入ります。", "saveProjectFirst": "メモリを追加する前にプロジェクトを保存してください。", "titlePlaceholder": "Morpheus に何を覚えさせますか？", "textPlaceholder": "簡潔なコンテキスト、設定、習慣、決定を入力します。", "sensitive": "機密 — ローカルに保ち、プロバイダー計画から除外", "add": "メモリを追加", "entries": "{{count}} 件のメモリ", "empty": "このプロジェクトにメモリはありません。", "emptyCompact": "このコンテキストで有効なメモリはありません。", "remove": "メモリを削除",
+      "kinds": { "preference": "設定", "project-context": "プロジェクトコンテキスト", "routine": "ルーチン", "decision": "決定" },
+      "providerUse": { "allowed": "プランナーで利用可能", "local-only": "ローカルのみ" }
+    },
+    "activation": {
+      "eyebrow": "インテリジェント操作コンパニオン", "title": "Morpheus へようこそ", "introduction": "目的を計画、信頼された操作、継続するミッションへ変換します。自然に話すか入力してください。日常作業を処理し、信頼境界が本当に変わる場合だけ中断します。", "spokenIntroduction": "こんにちは。私は Morpheus、あなたのインテリジェント操作コンパニオンです。達成したいことを伝えてください。計画して作業を進めます。", "begin": "Morpheus を起動", "skip": "起動案内をスキップ", "calibrating": "実システムの調整", "systemsTitle": "知能レイヤーを接続中", "checking": "このシステムで利用可能な能力を確認中…", "continue": "コンパニオンを設定", "personalize": "コンパニオンの動作", "preferenceTitle": "Morpheus はどのように協働すべきですか？", "preferenceBody": "これらはコミュニケーションを調整します。能力ポリシーや信頼を迂回しません。", "speak": "最終応答を読み上げる", "speakDescription": "音声目的の完了後に Windows 音声を使います。", "finish": "起動設定を完了", "readyLabel": "システム準備完了", "readyTitle": "Morpheus の準備が整いました。", "readyBody": "コマンドセンターでミッションを管理し、どこからでも Ctrl+Shift+Space でクイックコマンド、Ctrl+Alt+Space で音声入力できます。", "enter": "コマンドセンターへ", "replay": "コンパニオン起動案内", "replayDescription": "実システムの紹介を再生し、コンパニオン動作を選び直します。", "replayAction": "起動案内を再生",
+      "personalities": { "adaptive": { "name": "適応", "description": "目的に合わせて詳細、口調、速度を調整します。" }, "concise": { "name": "簡潔", "description": "短く直接的な状態と結果を優先します。" }, "warm": { "name": "親しみやすい", "description": "会話的で役立ち、少しユーモアのある口調です。" } },
+      "signal": { "core": "実行コア", "runtime": "エージェントランタイム", "provider": "推論プロバイダー", "voice": "音声チャネル", "capabilities": "{{count}} 件の実能力", "unavailable": "利用不可", "connected": "接続済み", "starting": "バックグラウンドで起動中", "optionalProvider": "自由な計画が必要なときに設定", "available": "利用可能", "voiceSetup": "文字起こし対応プロバイダーを設定" }
     },
     "voice": {
       "start": "Morpheus に話しかける",

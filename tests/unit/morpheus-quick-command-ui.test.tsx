@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 
 const mocks = vi.hoisted(() => ({
   cancelObjective: vi.fn(),
@@ -10,6 +11,9 @@ vi.mock('@/lib/host-api', () => ({
   hostApi: {
     morpheus: {
       cancelObjective: mocks.cancelObjective,
+      companionSurfaceStatus: vi.fn(async () => ({ mode: 'full' })),
+      dismissCompanionSurface: vi.fn(async () => ({ mode: 'full' })),
+      expandCompanionSurface: vi.fn(async () => ({ mode: 'full' })),
     },
   },
 }));
@@ -62,7 +66,7 @@ function objective(state: MorpheusObjectiveRun['state']): MorpheusObjectiveRun {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.cancelObjective.mockResolvedValue({ accepted: true });
-  useMorpheusQuickCommandStore.setState({ open: true });
+  useMorpheusQuickCommandStore.setState({ open: true, trigger: null });
   useMorpheusVoiceStore.setState({ phase: 'idle' });
   useMorpheusCommandStore.setState({
     input: '', plan: null, unsupported: null, interpreting: false, executing: false,
@@ -72,7 +76,7 @@ beforeEach(() => {
 
 describe('Quick Command objective control', () => {
   it('shows the real objective state and provides an explicit Main cancellation', async () => {
-    render(<MorpheusQuickCommand />);
+    render(<MemoryRouter><MorpheusQuickCommand /></MemoryRouter>);
     expect(screen.getByTestId('quick-command-objective-state')).toHaveTextContent('Prepare the workspace brief');
     expect(screen.getByTestId('quick-command-close')).toBeDisabled();
 
@@ -87,7 +91,7 @@ describe('Quick Command objective control', () => {
 
   it('allows Escape to close after the objective reaches a terminal state', () => {
     useMorpheusCommandStore.setState({ objectiveRun: objective('complete') });
-    render(<MorpheusQuickCommand />);
+    render(<MemoryRouter><MorpheusQuickCommand /></MemoryRouter>);
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(useMorpheusQuickCommandStore.getState().open).toBe(false);
   });

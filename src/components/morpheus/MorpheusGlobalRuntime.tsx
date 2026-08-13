@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useMorpheusActionsStore } from '@/stores/morpheus-actions';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusWorkspacesStore } from '@/stores/morpheus-workspaces';
+import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { MorpheusCaptureIndicator } from './MorpheusCaptureIndicator';
 import { MorpheusPermissionDialog } from './MorpheusPermissionDialog';
 import { MorpheusPlanConsentDialog } from './MorpheusPlanConsentDialog';
@@ -22,6 +23,9 @@ export function MorpheusGlobalRuntime() {
   const loadArtifacts = useMorpheusCommandStore((state) => state.loadArtifacts);
   const captureArtifact = useMorpheusCommandStore((state) => state.captureArtifact);
   const loadWorkspaces = useMorpheusWorkspacesStore((state) => state.load);
+  const loadCompanion = useMorpheusCompanionStore((state) => state.loadAll);
+  const loadMissions = useMorpheusCompanionStore((state) => state.loadMissions);
+  const objectiveUpdatedAt = useMorpheusCommandStore((state) => state.objectiveRun?.updatedAt);
 
   useEffect(() => {
     const unsubscribe = subscribe();
@@ -29,6 +33,7 @@ export function MorpheusGlobalRuntime() {
     const unsubscribeObjectives = subscribeObjectives();
     void Promise.all([
       loadCapabilities(), loadPermissionCenter(), loadFilesRoot(), loadWorkspaces(), loadArtifacts(), loadObjectives(),
+      loadCompanion(),
     ]);
     return () => {
       unsubscribe();
@@ -45,7 +50,12 @@ export function MorpheusGlobalRuntime() {
     loadWorkspaces,
     loadArtifacts,
     loadObjectives,
+    loadCompanion,
   ]);
+
+  useEffect(() => {
+    if (objectiveUpdatedAt) void loadMissions();
+  }, [loadMissions, objectiveUpdatedAt]);
 
   useEffect(() => {
     const latestId = runOrder[runOrder.length - 1];

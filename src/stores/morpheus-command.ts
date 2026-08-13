@@ -356,11 +356,13 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
       // machine. Renderer never receives authority to execute plan steps.
       const workspaceId = useMorpheusWorkspacesStore.getState().selectedWorkspaceId;
       const agentProfileId = useMorpheusExecutionContextStore.getState().selectedAgentProfileId;
+      const projectId = useMorpheusExecutionContextStore.getState().selectedProjectId;
       const result = await hostApi.morpheus.submitObjective({
         objective,
         originType,
         workspaceId,
         ...(agentProfileId ? { agentProfileId } : {}),
+        ...(projectId ? { projectId } : {}),
       });
       if (!result.accepted) {
         set({

@@ -25,8 +25,8 @@ export function MorpheusVoiceRuntime() {
 
   useEffect(() => {
     void loadStatus();
-    return hostEvents.onMorpheusVoiceCommand(() => {
-      showQuickCommand();
+    return hostEvents.onMorpheusVoiceCommand((payload) => {
+      showQuickCommand(payload.trigger);
       void startListening('global-shortcut');
     });
   }, [loadStatus, showQuickCommand, startListening]);
