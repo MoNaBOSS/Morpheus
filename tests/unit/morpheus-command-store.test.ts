@@ -92,7 +92,10 @@ beforeEach(() => {
     planResult: null, consent: null, artifacts: [], objectiveRun: null,
     objectiveHistory: null,
   });
-  useMorpheusExecutionContextStore.setState({ selectedAgentProfileId: null });
+  useMorpheusExecutionContextStore.setState({
+    selectedAgentProfileId: null,
+    selectedProjectId: 'personal',
+  });
 });
 
 describe('unified Morpheus objective store', () => {
@@ -103,6 +106,7 @@ describe('unified Morpheus objective store', () => {
       objective: 'Show system information',
       originType: 'voice',
       workspaceId: 'morpheus-files',
+      projectId: 'personal',
     });
     expect(useMorpheusCommandStore.getState().input).toBe('');
   });
@@ -115,6 +119,7 @@ describe('unified Morpheus objective store', () => {
       originType: 'chat',
       workspaceId: 'morpheus-files',
       agentProfileId: 'developer',
+      projectId: 'personal',
     });
   });
 

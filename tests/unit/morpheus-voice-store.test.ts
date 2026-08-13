@@ -103,6 +103,7 @@ describe('Morpheus renderer voice controller', () => {
       objective: 'Open Notepad',
       originType: 'voice',
       workspaceId: 'morpheus-files',
+      projectId: 'personal',
     }));
     expect(track.stop).toHaveBeenCalled();
     expect(useMorpheusVoiceStore.getState()).toMatchObject({
