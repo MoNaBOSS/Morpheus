@@ -683,6 +683,21 @@
       "statuses": { "active": "アクティブ", "paused": "一時停止", "completed": "完了", "abandoned": "中止" },
       "milestoneStatuses": { "pending": "未着手", "inProgress": "進行中", "completed": "完了", "skipped": "スキップ" }
     },
+    "systems": {
+      "title": "システム", "description": "実際の Morpheus ワークフローから信頼できる AI システムを設計、検証、起動します。", "new": "新しいシステム", "search": "システムを検索…",
+      "empty": "システムはまだありません。レビュー済みワークフローまたは対象ミッションを再利用可能な作業にします。", "select": "システムを選択するか、新規作成してください。", "count": "システム", "capabilities": "機能", "noDescription": "説明がありません。",
+      "executionPlan": "実行計画", "steps": "ステップ", "dependsOn": "依存", "workflowUnavailable": "参照されたワークフローは利用できません。",
+      "trustDisclosure": "起動しても権限付与は作成されません。各実行は引き続き Objective Core に入り、現在の正確な信頼範囲で評価されます。", "runHistory": "実際の実行証拠",
+      "test": "一度テスト", "activate": "起動", "pause": "一時停止", "run": "今すぐ実行", "detailsHint": "保存済みシステムを選択して、正確な境界とテスト証拠を確認します。",
+      "agent": "割り当て済みエージェントプロファイル", "workspace": "信頼済みワークスペース", "project": "プロジェクトコンテキスト", "workflow": "ワークフロー", "schedules": "スケジュール", "manualOnly": "手動のみ",
+      "permissionBoundary": "正確な機能境界", "testEvidence": "テスト証拠", "notTested": "未テスト", "edit": "システムを編集", "name": "システム名", "descriptionLabel": "説明",
+      "editorDescription": "参照は論理的です。Main が選択したワークフローからエージェントプロファイルと正確な機能を導出します。", "noMatchingSchedules": "このワークフローとワークスペースに一致するスケジュールはありません。手動実行は可能です。",
+      "removeTitle": "このシステムを削除しますか？", "removeMessage": "システム記録を削除します。既存のミッション、ワークフロー、スケジュール、成果物は保持されます。", "createFromMission": "システムを作成", "conversionFailed": "このミッションは再利用可能なシステムにできません。",
+      "status": { "draft": "下書き", "tested": "テスト済み", "active": "稼働中", "paused": "一時停止", "invalid": "無効" },
+      "runKinds": { "test": "テスト", "manual": "手動実行" },
+      "runStatus": { "completed": "完了", "partially-completed": "一部完了", "failed": "失敗", "rejected": "拒否", "cancelled": "キャンセル" },
+      "outputs": { "collectArtifacts": "成果物", "retainHistory": "履歴" }
+    },
     "voice": {
       "start": "Morpheus に話しかける",
       "stop": "聞き取りを終了",

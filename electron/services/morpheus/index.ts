@@ -62,6 +62,8 @@ import { createMorpheusGoalStore, type MorpheusGoalStore } from './goals/goal-st
 import { createMorpheusGoalService, type MorpheusGoalService } from './goals/goal-service';
 import { createMorpheusProactiveStore, type MorpheusProactiveStore } from './proactive/proactive-store';
 import { createMorpheusProactiveService, type MorpheusProactiveService } from './proactive/proactive-service';
+import { createMorpheusSystemStore, type MorpheusSystemStore } from './systems/system-store';
+import { createMorpheusSystemService, type MorpheusSystemService } from './systems/system-service';
 
 export type CreateMorpheusServiceOptions = {
   userDataDir: string;
@@ -92,6 +94,8 @@ export type MorpheusService = {
   goals: MorpheusGoalService;
   proactiveStore: MorpheusProactiveStore;
   proactive: MorpheusProactiveService;
+  systemStore: MorpheusSystemStore;
+  systems: MorpheusSystemService;
   voice: MorpheusVoiceService;
   workspaces: MorpheusWorkspaceStore;
   audit: MorpheusAuditSink;
@@ -247,6 +251,12 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     store: proactiveStore, missions, goals: goalStore, schedules: scheduleStore,
     objectives, audit, appVersion: options.appVersion,
   });
+  const systemStore = createMorpheusSystemStore({ userDataDir: options.userDataDir });
+  const systems = createMorpheusSystemService({
+    store: systemStore, workflows, agents: agentProfiles, workspaces, projects,
+    schedules: scheduleStore, scheduler, objectives, missions, audit,
+    auditHealth, appVersion: options.appVersion,
+  });
 
   return {
     runtime,
@@ -266,6 +276,8 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     goals,
     proactiveStore,
     proactive,
+    systemStore,
+    systems,
     voice,
     workspaces,
     audit,
@@ -292,6 +304,8 @@ export type { MorpheusGoalStore } from './goals/goal-store';
 export type { MorpheusGoalService } from './goals/goal-service';
 export type { MorpheusProactiveStore } from './proactive/proactive-store';
 export type { MorpheusProactiveService } from './proactive/proactive-service';
+export type { MorpheusSystemStore } from './systems/system-store';
+export type { MorpheusSystemService } from './systems/system-service';
 export type { MorpheusVoiceService } from './voice/voice-service';
 export type { MorpheusWorkspaceStore } from './workspaces/workspace-store';
 export type { MorpheusRuntimeControlService } from './runtime-control';

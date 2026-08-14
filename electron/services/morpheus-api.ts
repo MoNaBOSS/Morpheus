@@ -60,6 +60,7 @@ import type {
   MorpheusOnboardingStore,
   MorpheusGoalService,
   MorpheusProactiveService,
+  MorpheusSystemService,
 } from './morpheus';
 import type { MorpheusScheduleDraft, MorpheusScheduleTrigger } from '@shared/morpheus/schedule-types';
 import type { MorpheusAuditSink } from './morpheus/audit';
@@ -126,6 +127,11 @@ import {
   type CreateMorpheusReminderPayload,
   type MorpheusProactiveSettingsPatch,
 } from '@shared/morpheus/proactive-types';
+import {
+  isMorpheusSystemId,
+  type CreateMorpheusSystemFromMissionPayload,
+  type MorpheusSystemDraft,
+} from '@shared/morpheus/system-types';
 
 const MORPHEUS_RISK_ORDER: Record<MorpheusRiskTier, number> = {
   low: 0, medium: 1, high: 2, critical: 3,
@@ -255,6 +261,7 @@ export type CreateMorpheusApiOptions = {
   onboarding: MorpheusOnboardingStore;
   goals: MorpheusGoalService;
   proactive: MorpheusProactiveService;
+  systems: MorpheusSystemService;
   companionSurface: {
     status(): MorpheusCompanionSurfaceStatus;
     dismiss(): MorpheusCompanionSurfaceStatus;
@@ -473,6 +480,64 @@ export function validateSnoozeAttentionPayload(payload: unknown): { attentionId:
     throw new MorpheusValidationError('until must be an ISO date');
   }
   return { attentionId: record.attentionId, until: new Date(record.until).toISOString() };
+}
+
+export function validateSystemIdPayload(payload: unknown): { systemId: string } {
+  const record = requireRecord(payload, 'System payload');
+  assertNoUnknownKeys(record, ['systemId'], 'System payload');
+  if (!isMorpheusSystemId(record.systemId)) throw new MorpheusValidationError('invalid System id');
+  return { systemId: record.systemId };
+}
+
+export function validateSystemDraft(payload: unknown): MorpheusSystemDraft {
+  const record = requireRecord(payload, 'saveSystem payload');
+  assertNoUnknownKeys(record, [
+    'systemId', 'name', 'description', 'workflowId', 'workspaceId', 'projectId',
+    'scheduleIds', 'outputs',
+  ], 'saveSystem payload');
+  if (record.systemId !== undefined && !isMorpheusSystemId(record.systemId)) {
+    throw new MorpheusValidationError('invalid System id');
+  }
+  if (typeof record.workflowId !== 'string' || !/^[a-z][a-z0-9-]{1,63}$/.test(record.workflowId)) {
+    throw new MorpheusValidationError('invalid System workflow id');
+  }
+  if (!isMorpheusWorkspaceId(record.workspaceId)) throw new MorpheusValidationError('invalid System workspace id');
+  if (record.projectId !== undefined && !isMorpheusProjectId(record.projectId)) {
+    throw new MorpheusValidationError('invalid System Project id');
+  }
+  if (!Array.isArray(record.scheduleIds) || record.scheduleIds.length > 32
+    || record.scheduleIds.some((id) => typeof id !== 'string' || !/^[a-z0-9][a-z0-9-]{1,80}$/.test(id))
+    || new Set(record.scheduleIds).size !== record.scheduleIds.length) {
+    throw new MorpheusValidationError('invalid System schedule ids');
+  }
+  const outputs = requireRecord(record.outputs, 'System outputs');
+  assertNoUnknownKeys(outputs, ['collectArtifacts', 'retainHistory'], 'System outputs');
+  for (const key of ['collectArtifacts', 'retainHistory'] as const) {
+    if (typeof outputs[key] !== 'boolean') throw new MorpheusValidationError(`${key} must be boolean`);
+  }
+  return {
+    ...(record.systemId ? { systemId: record.systemId } : {}),
+    name: boundedText(record.name, 'System name', 100, false).trim(),
+    description: boundedText(record.description, 'System description', 500).trim(),
+    workflowId: record.workflowId,
+    workspaceId: record.workspaceId,
+    ...(record.projectId ? { projectId: record.projectId } : {}),
+    scheduleIds: [...record.scheduleIds] as string[],
+    outputs: {
+      collectArtifacts: outputs.collectArtifacts as boolean,
+      retainHistory: outputs.retainHistory as boolean,
+    },
+  };
+}
+
+export function validateCreateSystemFromMissionPayload(payload: unknown): CreateMorpheusSystemFromMissionPayload {
+  const record = requireRecord(payload, 'createSystemFromMission payload');
+  assertNoUnknownKeys(record, ['missionId', 'name'], 'createSystemFromMission payload');
+  if (!isMorpheusMissionId(record.missionId)) throw new MorpheusValidationError('invalid Mission id');
+  return {
+    missionId: record.missionId,
+    ...(record.name !== undefined ? { name: boundedText(record.name, 'System name', 100, false).trim() } : {}),
+  };
 }
 
 export function validateMemoryIdPayload(payload: unknown): MorpheusMemoryIdPayload {
@@ -1043,7 +1108,7 @@ export function validateRevokePayload(payload: unknown): { grantId: string } {
 export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHostServiceRegistry['morpheus'] {
   const {
     runtime, grants, agentProfiles, workflows, scheduler, objectives, voice, runtimeControl,
-    missions, projects, memory, onboarding, goals, proactive, companionSurface, workspaces, audit, filesRoot, appVersion, auditHealth,
+    missions, projects, memory, onboarding, goals, proactive, systems, companionSurface, workspaces, audit, filesRoot, appVersion, auditHealth,
   } = options;
   const now = options.now ?? (() => new Date());
   const planner = options.planner ?? createDeterministicMorpheusPlanner();
@@ -1177,6 +1242,18 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     },
     removeReminder: (payload) => proactive.removeReminder(validateAttentionIdPayload(payload).attentionId),
     actOnAttention: (payload) => proactive.act(validateAttentionIdPayload(payload).attentionId),
+    systems: () => systems.list(),
+    system: (payload) => ({ system: systems.get(validateSystemIdPayload(payload).systemId) ?? null }),
+    saveSystem: async (payload) => ({ system: await systems.save(validateSystemDraft(payload)) }),
+    removeSystem: async (payload) => ({ system: await systems.remove(validateSystemIdPayload(payload).systemId) }),
+    createSystemFromMission: (payload) => {
+      const input = validateCreateSystemFromMissionPayload(payload);
+      return systems.createFromMission(input.missionId, input.name);
+    },
+    testSystem: (payload) => systems.test(validateSystemIdPayload(payload).systemId),
+    activateSystem: (payload) => systems.activate(validateSystemIdPayload(payload).systemId),
+    pauseSystem: (payload) => systems.pause(validateSystemIdPayload(payload).systemId),
+    runSystem: (payload) => systems.run(validateSystemIdPayload(payload).systemId),
     companionSurfaceStatus: () => companionSurface.status(),
     dismissCompanionSurface: () => companionSurface.dismiss(),
     expandCompanionSurface: () => companionSurface.expand(),

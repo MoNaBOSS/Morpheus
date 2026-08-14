@@ -25,6 +25,7 @@ import { Activity } from './pages/Activity';
 import { Missions } from './pages/Missions';
 import { Projects } from './pages/Projects';
 import { Goals } from './pages/Goals';
+import { Systems } from './pages/Systems';
 import { Setup } from './pages/Setup';
 import { useSettingsStore } from './stores/settings';
 import { useUpdateStore } from './stores/update';
@@ -241,6 +242,7 @@ function App() {
             <Route path="/missions" element={<Missions />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/goals" element={<Goals />} />
+            <Route path="/systems" element={<Systems />} />
             <Route path="/channels" element={<Channels />} />
             <Route path="/skills" element={<Skills />} />
             <Route path="/cron" element={<Cron />} />

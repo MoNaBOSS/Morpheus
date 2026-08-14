@@ -115,6 +115,15 @@ import type {
   MorpheusProactiveSnapshot,
   SnoozeMorpheusAttentionPayload,
 } from '../morpheus/proactive-types';
+import type {
+  CreateMorpheusSystemFromMissionPayload,
+  CreateMorpheusSystemFromMissionResult,
+  MorpheusSystemDraft,
+  MorpheusSystemExecutionResult,
+  MorpheusSystemIdPayload,
+  MorpheusSystemResult,
+  MorpheusSystemsSnapshot,
+} from '../morpheus/system-types';
 import type { WebBrowserNavigatePayload } from '../web-browser';
 
 export type JsonRecord = Record<string, unknown>;
@@ -1202,6 +1211,15 @@ export type HostApiContract = {
     snoozeAttention: (payload: SnoozeMorpheusAttentionPayload) => MorpheusAttentionItem;
     removeReminder: (payload: MorpheusAttentionIdPayload) => MorpheusAttentionItem | null;
     actOnAttention: (payload: MorpheusAttentionIdPayload) => SubmitMorpheusObjectiveResult;
+    systems: () => MorpheusSystemsSnapshot;
+    system: (payload: MorpheusSystemIdPayload) => MorpheusSystemResult;
+    saveSystem: (payload: MorpheusSystemDraft) => MorpheusSystemResult;
+    removeSystem: (payload: MorpheusSystemIdPayload) => MorpheusSystemResult;
+    createSystemFromMission: (payload: CreateMorpheusSystemFromMissionPayload) => CreateMorpheusSystemFromMissionResult;
+    testSystem: (payload: MorpheusSystemIdPayload) => MorpheusSystemExecutionResult;
+    activateSystem: (payload: MorpheusSystemIdPayload) => MorpheusSystemExecutionResult;
+    pauseSystem: (payload: MorpheusSystemIdPayload) => MorpheusSystemExecutionResult;
+    runSystem: (payload: MorpheusSystemIdPayload) => MorpheusSystemExecutionResult;
     companionSurfaceStatus: () => MorpheusCompanionSurfaceStatus;
     dismissCompanionSurface: () => MorpheusCompanionSurfaceStatus;
     expandCompanionSurface: () => MorpheusCompanionSurfaceStatus;

@@ -683,6 +683,21 @@
       "statuses": { "active": "进行中", "paused": "已暂停", "completed": "已完成", "abandoned": "已放弃" },
       "milestoneStatuses": { "pending": "待处理", "inProgress": "进行中", "completed": "已完成", "skipped": "已跳过" }
     },
+    "systems": {
+      "title": "系统", "description": "从真实的 Morpheus 工作流中设计、验证并激活可靠的 AI 系统。", "new": "新建系统", "search": "搜索系统…",
+      "empty": "暂无系统。将经过审查的工作流或符合条件的任务转化为可复用工作。", "select": "选择一个系统或新建系统。", "count": "个系统", "capabilities": "项能力", "noDescription": "未提供描述。",
+      "executionPlan": "执行计划", "steps": "个步骤", "dependsOn": "依赖", "workflowUnavailable": "引用的工作流不可用。",
+      "trustDisclosure": "激活不会创建权限授权。每次运行仍会进入目标核心，并根据当前精确信任进行评估。", "runHistory": "真实运行证据",
+      "test": "测试一次", "activate": "激活", "pause": "暂停", "run": "立即运行", "detailsHint": "选择已保存的系统以检查其精确边界和测试证据。",
+      "agent": "分配的 Agent 配置档", "workspace": "受信任工作区", "project": "项目上下文", "workflow": "工作流", "schedules": "计划", "manualOnly": "仅手动",
+      "permissionBoundary": "精确能力边界", "testEvidence": "测试证据", "notTested": "尚未测试", "edit": "编辑系统", "name": "系统名称", "descriptionLabel": "描述",
+      "editorDescription": "引用均为逻辑引用。Main 根据所选工作流推导 Agent 配置档和精确能力。", "noMatchingSchedules": "没有与此工作流和工作区匹配的计划。系统仍可手动运行。",
+      "removeTitle": "移除此系统？", "removeMessage": "系统记录将被移除。现有任务、工作流、计划和产物保持不变。", "createFromMission": "创建系统", "conversionFailed": "此任务无法转化为可复用系统。",
+      "status": { "draft": "草稿", "tested": "已测试", "active": "已激活", "paused": "已暂停", "invalid": "无效" },
+      "runKinds": { "test": "测试", "manual": "手动运行" },
+      "runStatus": { "completed": "已完成", "partially-completed": "部分完成", "failed": "失败", "rejected": "已拒绝", "cancelled": "已取消" },
+      "outputs": { "collectArtifacts": "产物", "retainHistory": "历史" }
+    },
     "voice": {
       "start": "对 Morpheus 说话",
       "stop": "结束聆听",

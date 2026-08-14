@@ -27,6 +27,9 @@ import {
   validateGoalDraft,
   validateProactiveSettingsPatch,
   validateCreateReminderPayload,
+  validateSystemDraft,
+  validateSystemIdPayload,
+  validateCreateSystemFromMissionPayload,
 } from '@electron/services/morpheus-api';
 import type { MorpheusRuntime } from '@electron/services/morpheus';
 
@@ -109,6 +112,17 @@ function stubOptions(runtime = stubRuntime()) {
       })),
       complete: vi.fn(),
       reset: vi.fn(),
+    } as never,
+    systems: {
+      list: vi.fn(() => ({ systems: [] })),
+      get: vi.fn(),
+      save: vi.fn(),
+      remove: vi.fn(),
+      createFromMission: vi.fn(),
+      test: vi.fn(),
+      activate: vi.fn(),
+      pause: vi.fn(),
+      run: vi.fn(),
     } as never,
     companionSurface: {
       status: vi.fn(() => ({ mode: 'full' as const })),
@@ -443,6 +457,46 @@ describe('Goal and proactive intelligence validation', () => {
   });
 });
 
+describe('System Builder validation', () => {
+  const draft = {
+    name: 'Weekly intelligence',
+    description: 'Run a reviewed workflow.',
+    workflowId: 'weekly-report',
+    workspaceId: 'morpheus-files',
+    projectId: 'personal',
+    scheduleIds: ['schedule-weekly'],
+    outputs: { collectArtifacts: true, retainHistory: true },
+  };
+
+  it('accepts logical references and rejects lifecycle, capability, or executable authority', () => {
+    expect(validateSystemDraft(draft)).toEqual(draft);
+    expect(validateSystemIdPayload({ systemId: 'system-weekly' })).toEqual({ systemId: 'system-weekly' });
+    for (const [key, value] of [
+      ['status', 'active'],
+      ['capabilityIds', ['shell.exec']],
+      ['agentProfileId', 'privileged'],
+      ['testFingerprint', 'injected'],
+      ['rootPath', 'C:\\outside'],
+      ['executablePath', 'cmd.exe'],
+      ['permissionGrant', 'always'],
+    ] as const) {
+      expect(() => validateSystemDraft({ ...draft, [key]: value })).toThrow(/unsupported key/);
+    }
+    expect(() => validateSystemDraft({
+      ...draft,
+      outputs: { ...draft.outputs, shell: true },
+    })).toThrow(/unsupported key/);
+  });
+
+  it('allows Mission identity only when requesting conversion', () => {
+    expect(validateCreateSystemFromMissionPayload({ missionId: 'mission-weekly', name: 'Weekly' }))
+      .toEqual({ missionId: 'mission-weekly', name: 'Weekly' });
+    expect(() => validateCreateSystemFromMissionPayload({
+      missionId: 'mission-weekly', workflowId: 'injected', params: {},
+    })).toThrow(/unsupported key/);
+  });
+});
+
 describe('validateAuditRecentPayload', () => {
   it('defaults, clamps and rejects', () => {
     expect(validateAuditRecentPayload(undefined)).toEqual({});
@@ -492,6 +546,7 @@ describe('createMorpheusApi', () => {
   it('exposes exactly the contract surface', () => {
     expect(Object.keys(createMorpheusApi(stubOptions())).sort()).toEqual([
       'actOnAttention',
+      'activateSystem',
       'addWorkspace',
       'agentProfile',
       'agentProfiles',
@@ -505,6 +560,7 @@ describe('createMorpheusApi', () => {
       'continueGoal',
       'correctObjective',
       'createReminder',
+      'createSystemFromMission',
       'describeActions',
       'dismissAttention',
       'dismissCompanionSurface',
@@ -522,6 +578,7 @@ describe('createMorpheusApi', () => {
       'onboardingStatus',
       'openFilesRoot',
       'openWorkspace',
+      'pauseSystem',
       'permissionCenter',
       'proactiveSnapshot',
       'project',
@@ -533,6 +590,7 @@ describe('createMorpheusApi', () => {
       'removeProject',
       'removeReminder',
       'removeSchedule',
+      'removeSystem',
       'removeWorkflow',
       'removeWorkspace',
       'requestAction',
@@ -545,6 +603,7 @@ describe('createMorpheusApi', () => {
       'revokeAllSessionGrants',
       'revokeGrant',
       'runSchedule',
+      'runSystem',
       'runWorkflow',
       'runtimeControl',
       'saveAgentProfile',
@@ -552,6 +611,7 @@ describe('createMorpheusApi', () => {
       'saveMemory',
       'saveProject',
       'saveSchedule',
+      'saveSystem',
       'saveWorkflow',
       'schedules',
       'setAmbientVoiceListening',
@@ -560,7 +620,10 @@ describe('createMorpheusApi', () => {
       'setVoiceSpeaking',
       'snoozeAttention',
       'submitObjective',
+      'system',
       'systemInfo',
+      'systems',
+      'testSystem',
       'transcribeAmbientAudio',
       'transcribeAudio',
       'updateProactiveSettings',

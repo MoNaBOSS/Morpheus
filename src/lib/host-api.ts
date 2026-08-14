@@ -79,6 +79,10 @@ import type {
   MorpheusProactiveSettingsPatch,
 } from '@shared/morpheus/proactive-types';
 import type { CompleteMorpheusOnboardingPayload } from '@shared/morpheus/onboarding-types';
+import type {
+  CreateMorpheusSystemFromMissionPayload,
+  MorpheusSystemDraft,
+} from '@shared/morpheus/system-types';
 import { invokeHost } from './host-api-client';
 
 export type {
@@ -498,6 +502,17 @@ export const hostApi = {
     ),
     removeReminder: (attentionId: string) => invokeHost('morpheus', 'removeReminder', { attentionId }),
     actOnAttention: (attentionId: string) => invokeHost('morpheus', 'actOnAttention', { attentionId }),
+    systems: () => invokeHost('morpheus', 'systems'),
+    system: (systemId: string) => invokeHost('morpheus', 'system', { systemId }),
+    saveSystem: (payload: MorpheusSystemDraft) => invokeHost('morpheus', 'saveSystem', payload),
+    removeSystem: (systemId: string) => invokeHost('morpheus', 'removeSystem', { systemId }),
+    createSystemFromMission: (payload: CreateMorpheusSystemFromMissionPayload) => (
+      invokeHost('morpheus', 'createSystemFromMission', payload)
+    ),
+    testSystem: (systemId: string) => invokeHost('morpheus', 'testSystem', { systemId }),
+    activateSystem: (systemId: string) => invokeHost('morpheus', 'activateSystem', { systemId }),
+    pauseSystem: (systemId: string) => invokeHost('morpheus', 'pauseSystem', { systemId }),
+    runSystem: (systemId: string) => invokeHost('morpheus', 'runSystem', { systemId }),
     companionSurfaceStatus: () => invokeHost('morpheus', 'companionSurfaceStatus'),
     dismissCompanionSurface: () => invokeHost('morpheus', 'dismissCompanionSurface'),
     expandCompanionSurface: () => invokeHost('morpheus', 'expandCompanionSurface'),

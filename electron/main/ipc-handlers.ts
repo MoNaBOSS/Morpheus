@@ -215,6 +215,7 @@ function registerTypedHostHandlers(
     onboarding: morpheusService.onboarding,
     goals: morpheusService.goals,
     proactive: morpheusService.proactive,
+    systems: morpheusService.systems,
     companionSurface,
     voice: morpheusService.voice,
     runtimeControl: morpheusService.runtimeControl,

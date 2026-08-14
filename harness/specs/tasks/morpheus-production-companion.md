@@ -18,6 +18,7 @@ touchedAreas:
   - src/components/morpheus/**
   - src/pages/CommandCenter/**
   - src/pages/Goals/**
+  - src/pages/Missions/**
   - src/pages/Systems/**
   - src/pages/Settings/**
   - src/components/layout/**

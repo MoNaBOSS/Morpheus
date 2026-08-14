@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   Clock3,
@@ -10,11 +10,13 @@ import {
   RotateCcw,
   Route,
   Square,
+  CircuitBoard,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { EmptyState, StatusDot, type StatusTone } from '@/components/morpheus/ui';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
+import { useMorpheusSystemsStore } from '@/stores/morpheus-systems';
 import type { MorpheusMission, MorpheusMissionStatus } from '@shared/morpheus/mission-types';
 
 function tone(status: MorpheusMissionStatus): StatusTone {
@@ -51,12 +53,16 @@ function MissionListItem({ mission, active, onSelect }: {
 
 export function Missions() {
   const { t } = useTranslation('dashboard');
+  const navigate = useNavigate();
   const snapshot = useMorpheusCompanionStore((state) => state.missions);
   const loadMissions = useMorpheusCompanionStore((state) => state.loadMissions);
   const rerunMission = useMorpheusCompanionStore((state) => state.rerunMission);
   const cancelMission = useMorpheusCompanionStore((state) => state.cancelMission);
+  const createSystemFromMission = useMorpheusSystemsStore((state) => state.createFromMission);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [rerunning, setRerunning] = useState(false);
+  const [converting, setConverting] = useState(false);
+  const [conversionError, setConversionError] = useState<string | null>(null);
 
   useEffect(() => { void loadMissions(); }, [loadMissions]);
 
@@ -94,10 +100,29 @@ export function Missions() {
                   <p className="mt-3 font-mono text-[10px] text-muted-foreground">{selected.missionId}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
+                  {selected.status === 'completed'
+                    && (selected.origin.type === 'workflow' || selected.origin.type === 'schedule') ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        data-testid="mission-create-system"
+                        disabled={converting}
+                        onClick={() => {
+                          setConverting(true);
+                          setConversionError(null);
+                          void createSystemFromMission(selected.missionId).then((result) => {
+                            if (result.eligible && result.system) navigate(`/systems?systemId=${result.system.systemId}`);
+                            else setConversionError(result.reason ?? t('morpheus.systems.conversionFailed'));
+                          }).finally(() => setConverting(false));
+                        }}
+                        className="gap-2"
+                      ><CircuitBoard className="h-3.5 w-3.5" />{t('morpheus.systems.createFromMission')}</Button>
+                    ) : null}
                   {selected.activeObjectiveRunId ? <Button variant="ghost" size="sm" data-testid="mission-cancel" onClick={() => void cancelMission(selected.missionId)} className="gap-2 text-[hsl(var(--morpheus-danger))]"><Square className="h-3 w-3 fill-current" />{t('morpheus.common.cancel')}</Button> : null}
                   <Button variant="outline" size="sm" data-testid="mission-rerun" disabled={rerunning || !['completed', 'failed', 'cancelled', 'needs-input'].includes(selected.status)} onClick={() => void (async () => { setRerunning(true); await rerunMission(selected.missionId); setRerunning(false); })()} className="gap-2"><RotateCcw className="h-3.5 w-3.5" />{t('morpheus.missions.rerun')}</Button>
                 </div>
               </div>
+              {conversionError ? <p className="mt-3 text-2xs text-[hsl(var(--morpheus-danger))]">{conversionError}</p> : null}
 
               <div className="grid grid-cols-3 divide-x divide-border/60 border-b border-border/60 py-5">
                 <div className="pr-5"><p className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-muted-foreground"><Route className="h-3.5 w-3.5" />{t('morpheus.missions.route')}</p><p data-testid="mission-route" className="mt-2 text-sm">{selected.route ? t(`morpheus.missions.routes.${selected.route.kind}`) : t('morpheus.missions.routeUnknown')}</p><p className="mt-1 truncate text-2xs text-muted-foreground">{selected.latestPlanId ?? selected.route?.reason ?? ''}</p></div>

@@ -37,6 +37,7 @@ import {
   Target,
   FolderKanban,
   Flag,
+  CircuitBoard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isGatewayRestarting } from '@/lib/gateway-status';
@@ -470,6 +471,13 @@ export function Sidebar() {
       icon: <Workflow className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.workflows'),
       testId: 'sidebar-nav-workflows',
+      section: 'builder',
+    },
+    {
+      to: '/systems',
+      icon: <CircuitBoard className="h-4 w-4" strokeWidth={2} />,
+      label: t('sidebar.systems'),
+      testId: 'sidebar-nav-systems',
       section: 'builder',
     },
     {
