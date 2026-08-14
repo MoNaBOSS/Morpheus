@@ -151,6 +151,28 @@ of equally weighted dashboard cards.
 The Matrix signal field may sit behind the command surface at very low contrast.
 It must never reduce input legibility or imply work that is not running.
 
+### Production companion patterns
+
+The companion adds state, not dashboard decoration.
+
+1. **Today attention** is a compact source-labelled list. Failed work, due Goals,
+   schedules and reminders share one row anatomy and never become a fake metric.
+2. **Goal progress** is computed from milestone completion. A progress bar may
+   use accent only when the underlying milestone state is verified.
+3. **Ambient voice** uses one intelligence core, one waveform and one state
+   label. Armed is muted; listening/working may use accent; permission or
+   provider failure uses semantic warning/error colour. The microphone indicator
+   remains visible whenever capture may occur.
+4. **Systems** use a compact ordered dependency graph and inspector. Avoid a
+   giant no-code canvas. Agent, workspace, schedule, trust and output references
+   remain readable at 1280x800.
+5. **Proactive items** state their source and next action. They never use badges,
+   urgency colour or claims that the runtime cannot substantiate.
+
+The compact voice surface uses the existing overlay elevation and restores the
+prior window presentation. It should feel present, not modal: approximately
+560–680px wide, one or two information rows, no chat transcript history.
+
 ## Writing
 
 - Say what happened, not what might have. "Created notes.txt" not "Operation completed."

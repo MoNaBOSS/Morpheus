@@ -65,6 +65,16 @@ release gate. Exact verification is recorded in
 
 ## Later
 
+### Windows production companion *(active campaign)*
+
+- Opt-in ambient voice with visible provider disclosure, wake phrase and
+  interruptible speech.
+- Source-backed Today attention, quiet hours and proactive reminders.
+- Durable long-horizon Goals linked to real Missions and checkpoints.
+- Reviewed reusable Systems composed from Agent Profiles, workflows, schedules,
+  exact workspaces and trust boundaries.
+- Final companion UX, regression protection and packaged production smoke.
+
 - Connected services with per-service trust scopes
 - Web companion
 - Android and iOS companions

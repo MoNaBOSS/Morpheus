@@ -21,6 +21,7 @@ Chat is one interface into Morpheus, not the product itself.
 | --- | --- |
 | [`docs/product/MORPHEUS_VISION.md`](docs/product/MORPHEUS_VISION.md) | What Morpheus is; honesty requirements |
 | [`docs/product/MORPHEUS_COMPANION_VISION.md`](docs/product/MORPHEUS_COMPANION_VISION.md) | Companion presence, autonomy, personality and memory |
+| [`docs/product/MORPHEUS_PRODUCTION_COMPANION.md`](docs/product/MORPHEUS_PRODUCTION_COMPANION.md) | Ambient voice, proactivity, Goals, Systems and Windows completion boundary |
 | [`docs/product/MORPHEUS_PRODUCT_BRAIN.md`](docs/product/MORPHEUS_PRODUCT_BRAIN.md) | Voice-first experience and durable product decisions |
 | [`docs/product/PRODUCT_PRINCIPLES.md`](docs/product/PRODUCT_PRINCIPLES.md) | Operating rules and definition of done |
 | [`docs/product/EDITIONS_AND_PLATFORMS.md`](docs/product/EDITIONS_AND_PLATFORMS.md) | Free vs Unrestricted; platform targets |
@@ -28,11 +29,13 @@ Chat is one interface into Morpheus, not the product itself.
 | [`docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md`](docs/architecture/MORPHEUS_0.5_ARCHITECTURE.md) | Plan executor, trust delta, 0.5 decisions |
 | [`docs/architecture/MORPHEUS_WINDOWS_1.0_ARCHITECTURE.md`](docs/architecture/MORPHEUS_WINDOWS_1.0_ARCHITECTURE.md) | Objective orchestration, planner/replanner, context and voice boundaries |
 | [`docs/architecture/MORPHEUS_COMPANION_MISSIONS_ARCHITECTURE.md`](docs/architecture/MORPHEUS_COMPANION_MISSIONS_ARCHITECTURE.md) | Companion surface, Missions, Projects, memory and direct routing |
+| [`docs/architecture/MORPHEUS_PRODUCTION_COMPANION_ARCHITECTURE.md`](docs/architecture/MORPHEUS_PRODUCTION_COMPANION_ARCHITECTURE.md) | Ambient voice, proactive service, Goals and Systems boundaries |
 | [`docs/design/MORPHEUS_DESIGN_SYSTEM.md`](docs/design/MORPHEUS_DESIGN_SYSTEM.md) | Tokens, primitives, accent discipline |
 | [`docs/architecture/MORPHEUS_ARCHITECTURE.md`](docs/architecture/MORPHEUS_ARCHITECTURE.md) | Layers, boundaries, extension recipes |
 | [`docs/roadmap/MORPHEUS_ROADMAP.md`](docs/roadmap/MORPHEUS_ROADMAP.md) | Sequencing and what is not planned |
 | [`docs/releases/0.5.0-ACCEPTANCE.md`](docs/releases/0.5.0-ACCEPTANCE.md) | Current milestone criteria |
 | [`docs/releases/1.0.0-FOUNDATION-ACCEPTANCE.md`](docs/releases/1.0.0-FOUNDATION-ACCEPTANCE.md) | Windows 1.0 Foundation end-to-end acceptance |
+| [`docs/releases/WINDOWS-1.0-PRODUCTION-COMPANION-ACCEPTANCE.md`](docs/releases/WINDOWS-1.0-PRODUCTION-COMPANION-ACCEPTANCE.md) | Windows production companion acceptance |
 
 If any of the above conflicts with this file, **those documents win**.
 
