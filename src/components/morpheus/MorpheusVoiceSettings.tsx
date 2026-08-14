@@ -169,7 +169,7 @@ export function MorpheusVoiceSettings() {
           testId="morpheus-voice-speak-responses"
           onChange={(speakResponses) => void updateSettings({ speakResponses })}
         />
-        {error ? <p className="text-xs text-[hsl(var(--morpheus-danger))]">{error}</p> : null}
+        {error ? <p data-testid="morpheus-voice-settings-error" className="text-xs text-[hsl(var(--morpheus-danger))]">{error}</p> : null}
       </div>
     </section>
   );

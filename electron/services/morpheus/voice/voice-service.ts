@@ -308,8 +308,19 @@ export function createMorpheusVoiceService(options: {
     presence: () => structuredClone(currentPresence),
 
     async updateSettings(patch) {
-      const next = validateSettings({ ...settings, ...patch, v: MORPHEUS_VOICE_VERSION });
+      const candidate = {
+        ...settings,
+        ...patch,
+        ...(patch.enabled === false ? { ambientEnabled: false } : {}),
+        v: MORPHEUS_VOICE_VERSION,
+      };
+      const next = validateSettings(candidate);
       if (!next) throw new Error('Invalid Morpheus voice settings.');
+      const enableAmbient = !settings.ambientEnabled && next.ambientEnabled;
+      if (enableAmbient) {
+        if (!options.audit.isHealthy()) throw new Error('Ambient voice is blocked while Audit is unavailable.');
+        if (!await resolveAccount()) throw new Error('No compatible transcription provider is configured.');
+      }
       await options.audit.recordControl({
         category: 'voice', event: 'settings-updated',
         details: {

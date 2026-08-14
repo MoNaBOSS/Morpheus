@@ -89,6 +89,17 @@ describe('Morpheus voice service', () => {
     expect(harness.providerService.getAccountRuntimeApiKey).not.toHaveBeenCalled();
   });
 
+  it('does not persist ambient capture when no compatible provider can arm it', async () => {
+    const harness = createHarness({ accounts: [] });
+    await expect(harness.service.updateSettings({ ambientEnabled: true })).rejects.toThrow(/No compatible/);
+
+    const status = await harness.service.status();
+    expect(status.settings.ambientEnabled).toBe(false);
+    expect(status.presence).toMatchObject({ state: 'asleep', ambientEnabled: false });
+    expect(existsSync(join(harness.userDataDir, 'morpheus', 'voice-settings.json'))).toBe(false);
+    expect(harness.recordControl).not.toHaveBeenCalled();
+  });
+
   it('returns safe provider choices without returning any credential material', async () => {
     const harness = createHarness();
     const status = await harness.service.status();
