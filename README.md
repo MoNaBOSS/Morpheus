@@ -155,7 +155,7 @@ Morpheus currently reports updates as **not configured**. It does not contact or
 
 ---
 
-### 🟢 Morpheus Windows 1.0 Foundation
+### 🟢 Morpheus Windows 1.0 Production Companion
 
 Morpheus opens on the **Command Center** at `/`; **Quick Command** is available
 globally with `Ctrl+Shift+Space`; **Voice Command** has its own global shortcut;
@@ -183,6 +183,15 @@ operating experience:
   selection, while broad objectives continue through the same provider-neutral
   Objective Core. Voice, Quick Command, Command Center, workflows, schedules,
   and Chat execution do not create separate automation paths.
+- opt-in ambient voice listens only after explicit disclosure, requires the exact
+  wake phrase, remains visibly observable, and enters the same Objective Core;
+- **Today** derives attention from real Missions, Goals, schedules and repeated
+  work, with durable dismiss/snooze state and bounded proactive notifications;
+- long-horizon **Goals** hold measurable milestones and exact execution context,
+  while **Systems** turn reviewed workflows or eligible Missions into tested,
+  reusable work without minting permission grants;
+- the first-run companion introduction reaches a real **SYSTEM READY** state and
+  explains Command Center, global Quick Command and voice entry points.
 
 - **Sequential typed plans** — multi-step plans honour dependencies, expose real
   step status/results/errors/artifacts, and skip only transitive dependants after

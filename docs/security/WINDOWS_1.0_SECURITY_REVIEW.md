@@ -1,17 +1,18 @@
 # Morpheus Windows 1.0 Security Review
 
-Status: implementation remediations and credential-independent release
+Status: production companion remediations and credential-independent release
 verification complete
-Baseline reviewed: `ffeeacf`
-Final verified packaged source: `445d95ec53e94cb65dbcd60707e5e8017b2ae513`
-Review date: 2026-08-11
+Production companion baseline reviewed: `b5cff47`
+Final verified packaged source: `d9a2ac8d5c7cde2e4b0582bc1b2c8e3f9feace66`
+Review date: 2026-08-14
 
 ## Scope
 
 The review focused on the Windows desktop trust boundary: preload exposure,
 typed host invocation, provider credentials, Gateway RPC, local-file preview,
-native shell operations, Morpheus permissions/audit, voice disclosure controls,
-webview isolation, and NSIS installation behavior.
+native shell operations, Morpheus permissions/audit, provider-backed Objective
+planning, ambient voice disclosure and capture ordering, proactive execution,
+Goal/System persistence, webview isolation, and NSIS installation behavior.
 
 The automated review covered the highest-risk desktop surfaces rather than all
 repository files. Its scan identifier was
@@ -42,6 +43,11 @@ outside the repository because it is a machine-specific verification artifact.
 6. **Installer globally terminated `openclaw-gateway.exe` — removed.** Upgrade
    cleanup is limited to the Morpheus executable tree and processes whose
    executable is owned by the installation directory.
+7. **Ambient capture could begin before its audit transition — remediated.**
+   Renderer now awaits the Main-owned, audit-persisted capture-start transition
+   before starting `MediaRecorder`. Every accepted start is balanced by an end
+   transition, including discarded or failed captures. If Main or audit rejects
+   the start, no audio capture begins.
 
 ## Existing controls retained
 
@@ -52,7 +58,12 @@ outside the repository because it is a machine-specific verification artifact.
   Main-owned.
 - Audit records are persisted before runtime events are emitted; degraded audit
   health blocks state-changing/process actions.
-- Voice audio is bounded, disclosure-aware and ephemeral by default.
+- Voice audio is bounded, disclosure-aware and ephemeral by default. Audio and
+  transcripts are neither persisted nor written to audit.
+- Ambient mode is opt-in, exact wake-phrase gated, visibly observable, and
+  blocked when provider disclosure cannot be audited.
+- Goals, attention items, Systems and voice settings use Main-owned validated
+  stores with atomic replacement; definitions do not create permission grants.
 - The live application renderer may perform sanitized clipboard writes for
   explicit copy controls. Chromium clipboard reads remain denied; Morpheus
   clipboard reads use the separate Main-owned, scoped and audited capability.
@@ -74,8 +85,25 @@ and must not appear as the normal Morpheus UI identity.
 
 ## Release gate
 
-The focused security tests, full typecheck/lint, targeted Morpheus unit suite,
-full Electron E2E suite, package build, and packaged production smoke completed.
+Typecheck passed. Lint completed with zero errors and 12 inherited Fast Refresh
+warnings. All 611 Morpheus unit tests passed. Harness validation/dry-run,
+communication replay/comparison, focused permission/Command Center E2E (13/13),
+and final voice/foundation/intelligence E2E (13/13) passed. The full Electron E2E
+run produced 184 passes, 3 platform skips, and 4 initial failures: the Morpheus
+regression was fixed, one inherited load flake passed alone, and two reproducible
+untouched Chat regressions remain documented in `PROJECT_HANDOFF.md`. The full
+unit run also retains 16 inherited Windows path/mock failures in three untouched
+OpenClaw test files; all Morpheus tests are green.
+
+The NSIS package and normal-production packaged smoke completed. First-run
+activation reached SYSTEM READY, the Main-owned system report produced real
+Mission/Activity records, Quick Command used the same Objective Core, and live
+OpenClaw Chat returned a real provider response. One expected Electron process
+tree ran without startup loops or current-launch fatal/error log patterns; every
+packaged-owned process and port 18789 was clean after shutdown. The reviewed
+installer is `Morpheus-1.0.0-win-x64.exe`, 263,669,614 bytes, SHA-256
+`2D2F2388D051BC2907FB15067815373C9EB6415C290591C5EE61B48A33815E98`.
+
 The review remains intentionally focused on the Windows desktop authority
 boundaries listed above; it is not a claim that every inherited repository file
 received an exhaustive security audit.

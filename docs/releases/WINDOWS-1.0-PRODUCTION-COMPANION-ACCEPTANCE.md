@@ -81,3 +81,23 @@ together. Contracts, placeholder pages and mocked providers do not count.
 - Windows NSIS packaging
 - normal-production packaged smoke
 - visual inspection at 1280x800 and the current desktop resolution
+
+## Verified release result — 2026-08-14
+
+- Packaged runtime source: `d9a2ac8d5c7cde2e4b0582bc1b2c8e3f9feace66`.
+- Morpheus unit tests: 611/611 pass; typecheck, harness, communication replay,
+  and focused production-companion E2E pass.
+- Lint: zero errors with 12 inherited Fast Refresh warnings.
+- The full inherited suites retain 16 Windows path/mock unit failures and two
+  reproducible Chat E2E regressions in untouched paths; exact files and results
+  are recorded in `PROJECT_HANDOFF.md`.
+- `pnpm package:win` produced
+  `release/Morpheus-1.0.0-win-x64.exe` (263,669,614 bytes), SHA-256
+  `2D2F2388D051BC2907FB15067815373C9EB6415C290591C5EE61B48A33815E98`.
+- Authenticode is `NotSigned`; release signing remains CI/credential-owned.
+- Normal-production smoke passed first-run SYSTEM READY, Command Center, real
+  system execution, Mission/Activity projection, Quick Command, Goals, Systems,
+  live Gateway, a real provider-backed Chat response, existing-session loading,
+  process stability, fatal-log scan, and complete owned-process cleanup.
+- Visual inspection passed at 1280x800 and 1920x1080. Screenshots remain outside
+  Git as verification artifacts.

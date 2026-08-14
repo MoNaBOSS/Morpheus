@@ -63,9 +63,7 @@ provider and microphone behavior remains a user-acceptance exercise, not a mock
 release gate. Exact verification is recorded in
 `docs/releases/1.0.0-FOUNDATION-ACCEPTANCE.md`.
 
-## Later
-
-### Windows production companion *(active campaign)*
+### Windows production companion *(release candidate built and verified)*
 
 - Opt-in ambient voice with visible provider disclosure, wake phrase and
   interruptible speech.
@@ -74,6 +72,17 @@ release gate. Exact verification is recorded in
 - Reviewed reusable Systems composed from Agent Profiles, workflows, schedules,
   exact workspaces and trust boundaries.
 - Final companion UX, regression protection and packaged production smoke.
+
+The release candidate is implemented end to end: every entry surface converges
+on the Objective Core; ambient capture is audited before recording; Goals,
+attention and Systems are durable Main-owned state; and the packaged build has
+passed normal-production Gateway, provider Chat, Quick Command, real capability,
+Mission, Activity and cleanup smoke testing. Exact evidence and inherited test
+debt are recorded in
+`docs/releases/WINDOWS-1.0-PRODUCTION-COMPANION-ACCEPTANCE.md` and
+`PROJECT_HANDOFF.md`.
+
+## Later
 
 - Connected services with per-service trust scopes
 - Web companion
