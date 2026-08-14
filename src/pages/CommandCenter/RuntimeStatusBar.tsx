@@ -95,7 +95,22 @@ export function RuntimeStatusBar() {
             : <ShieldCheck className="h-4 w-4" />}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-muted-foreground">{t('morpheus.status.trust')}</p>
+          <div className="flex min-w-0 items-center gap-1.5 text-[8px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            <span>{t('morpheus.status.trust')}</span>
+            {permission ? (
+              <span className="flex min-w-0 items-center gap-1 normal-case tracking-normal" aria-label={t('morpheus.status.trust')}>
+                <span data-testid="morpheus-session-grant-count">{t('morpheus.permission.sessionCount', { count: permission.sessionGrants.length })}</span>
+                <span aria-hidden>·</span>
+                <span data-testid="morpheus-persistent-grant-count">{t('morpheus.permission.persistentCount', { count: permission.persistentGrants.length })}</span>
+                {permission.deniedScopes.length > 0 ? (
+                  <>
+                    <span aria-hidden>·</span>
+                    <span data-testid="morpheus-denied-count" className="text-[hsl(var(--morpheus-danger))]">{t('morpheus.permission.deniedCount', { count: permission.deniedScopes.length })}</span>
+                  </>
+                ) : null}
+              </span>
+            ) : null}
+          </div>
           <div className="mt-0.5 flex items-center gap-1" role="group" aria-label={t('morpheus.permission.profileLabel')}>
             <StatusDot tone={permission?.auditDegraded ? 'error' : 'ok'} />
             {permission ? PERMISSION_PROFILES.map((profile: PermissionProfile) => (
