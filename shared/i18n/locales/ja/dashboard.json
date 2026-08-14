@@ -366,7 +366,8 @@
         "web": "アイデアを調べる"
       },
       "unsupportedTitle": "Morpheus はまだそれを実行できません",
-      "unsupportedBody": "そのコマンドは Morpheus が実際に持つ機能に対応していません。現在の対応："
+      "unsupportedBody": "そのコマンドは Morpheus が実際に持つ機能に対応していません。現在の対応：",
+      "configureProvider": "推論プロバイダーを設定"
     },
     "objective": {
       "iteration": "パス {{current}}",
@@ -424,6 +425,9 @@
       "empty": "プランはまだありません。コマンドバーに目的を入力してください。",
       "readyTitle": "目的を受け付ける準備ができました",
       "readyBody": "望む結果を説明してください。Morpheus が型付きプランを作成し、信頼境界全体を評価して、観察可能なステップを実行します。",
+      "objectiveCore": "ライブ Objective Core",
+      "liveBody": "Morpheus が目的全体を理解し、境界付きプランを構築しています。",
+      "noExecutablePlan": "この目的に対する実行可能なプランは生成されませんでした。",
       "flow": { "objective": "目的", "plan": "型付きプラン", "trust": "信頼確認", "execute": "実行" },
       "executing": "実行中…",
       "statusLabel": "プラン",

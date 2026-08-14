@@ -28,6 +28,7 @@ vi.mock('@/lib/host-events', () => ({
 
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusExecutionContextStore } from '@/stores/morpheus-execution-context';
+import { useMorpheusActionsStore } from '@/stores/morpheus-actions';
 import type { MorpheusObjectiveEvent, MorpheusObjectiveRun } from '@shared/morpheus/core/objective-types';
 import type { ExecutionPlan } from '@shared/morpheus/execution-types';
 
@@ -95,6 +96,9 @@ beforeEach(() => {
   useMorpheusExecutionContextStore.setState({
     selectedAgentProfileId: null,
     selectedProjectId: 'personal',
+  });
+  useMorpheusActionsStore.setState({
+    supportedActions: { 'system.report': true, 'file.createText': true, 'file.delete': false },
   });
 });
 
@@ -185,5 +189,27 @@ describe('unified Morpheus objective store', () => {
       objectiveRunId: 'objective-1',
       correction: 'Use Calculator instead',
     });
+  });
+
+  it('keeps truthful capability guidance and clears stale consent when an objective terminates', () => {
+    let handler: ((value: MorpheusObjectiveEvent) => void) | undefined;
+    mocks.onObjective.mockImplementation((next) => { handler = next; return vi.fn(); });
+    useMorpheusCommandStore.setState({ consent: {
+      v: 1,
+      planId: 'plan-1',
+      objective: 'Do something unsupported',
+      boundaries: [],
+      requestedAt: '2026-08-11T00:00:01.000Z',
+    } });
+    useMorpheusCommandStore.getState().subscribeObjectives();
+    handler?.(event(run({
+      objective: 'Do something unsupported',
+      state: 'needs-clarification',
+      clarification: 'A configured reasoning provider is required.',
+    })));
+
+    const state = useMorpheusCommandStore.getState();
+    expect(state.consent).toBeNull();
+    expect(state.unsupported?.supportedCapabilities).toEqual(['file.createText', 'system.report']);
   });
 });

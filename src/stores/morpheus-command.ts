@@ -28,10 +28,19 @@ import type {
   PermissionProfile,
 } from '@shared/morpheus/permission-types';
 import type { MorpheusAuditEntry, MorpheusRun } from '@shared/morpheus/action-types';
+import { isMorpheusActionId, type MorpheusActionId } from '@shared/morpheus/actions/registry';
 import { useMorpheusWorkspacesStore } from './morpheus-workspaces';
 import { useMorpheusExecutionContextStore } from './morpheus-execution-context';
+import { useMorpheusActionsStore } from './morpheus-actions';
 
 const MAX_ARTIFACTS = 50;
+
+function supportedCapabilityIds(): MorpheusActionId[] {
+  return Object.entries(useMorpheusActionsStore.getState().supportedActions)
+    .filter((entry): entry is [MorpheusActionId, boolean] => isMorpheusActionId(entry[0]) && entry[1])
+    .map(([capabilityId]) => capabilityId)
+    .sort();
+}
 
 export type MorpheusCommandState = {
   /** Raw text in the command bar. */
@@ -135,11 +144,12 @@ function objectiveStatePatch(
     planResult: executionResultFromObjective(event.run),
     interpreting,
     executing: !terminal && !interpreting,
+    consent: terminal ? null : previous.consent,
     unsupported: event.run.state === 'needs-clarification'
       ? {
           objective: event.run.objective,
           reason: 'not-understood',
-          supportedCapabilities: [],
+          supportedCapabilities: supportedCapabilityIds(),
         }
       : null,
     artifacts: mergeObjectiveArtifacts(previous.artifacts, event.run.artifacts),
@@ -369,7 +379,7 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
           unsupported: {
             objective,
             reason: 'not-understood',
-            supportedCapabilities: [],
+            supportedCapabilities: supportedCapabilityIds(),
           },
           plan: null,
           interpreting: false,
@@ -382,7 +392,7 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
       set({
         interpreting: false,
         executing: false,
-        unsupported: { objective, reason: 'not-understood', supportedCapabilities: [] },
+        unsupported: { objective, reason: 'not-understood', supportedCapabilities: supportedCapabilityIds() },
       });
       console.error('[morpheus] command failed', error);
       return false;
@@ -416,7 +426,7 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
         executing: run ? !isObjectiveTerminalState(run.state)
           && !['understanding', 'planning', 'replanning'].includes(run.state) : false,
         unsupported: run?.state === 'needs-clarification'
-          ? { objective: run.objective, reason: 'not-understood', supportedCapabilities: [] }
+          ? { objective: run.objective, reason: 'not-understood', supportedCapabilities: supportedCapabilityIds() }
           : null,
         artifacts: run ? mergeObjectiveArtifacts(state.artifacts, run.artifacts) : state.artifacts,
       }));

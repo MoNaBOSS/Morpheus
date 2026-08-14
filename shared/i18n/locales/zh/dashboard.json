@@ -366,7 +366,8 @@
         "web": "研究一个想法"
       },
       "unsupportedTitle": "Morpheus 暂时无法执行该操作",
-      "unsupportedBody": "该命令未映射到 Morpheus 实际具备的能力。当前支持："
+      "unsupportedBody": "该命令未映射到 Morpheus 实际具备的能力。当前支持：",
+      "configureProvider": "配置推理提供方"
     },
     "objective": {
       "iteration": "第 {{current}} 轮",
@@ -424,6 +425,9 @@
       "empty": "暂无计划。请在命令栏中描述你的需求。",
       "readyTitle": "已准备接收目标",
       "readyBody": "描述你想要的结果。Morpheus 将构建类型化计划、评估完整信任边界并执行可观察的步骤。",
+      "objectiveCore": "实时目标核心",
+      "liveBody": "Morpheus 正在理解完整目标并构建受限计划。",
+      "noExecutablePlan": "此目标未生成可执行计划。",
       "flow": { "objective": "目标", "plan": "类型化计划", "trust": "信任检查", "execute": "执行" },
       "executing": "正在执行…",
       "statusLabel": "计划",

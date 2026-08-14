@@ -133,4 +133,23 @@ test.describe('Morpheus Command Center', () => {
       await closeElectronApp(app);
     }
   });
+
+  test('keeps a pending objective observable and deniable at the visible trust boundary', async ({ launchElectronApp }) => {
+    const app = await launchElectronApp({ skipSetup: true });
+    try {
+      const page = await getStableWindow(app);
+      await page.getByTestId('morpheus-command-input').fill('Create a text file named cancellable.txt');
+      await page.getByTestId('morpheus-command-submit').click();
+      await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });
+
+      await expect(page.getByTestId('morpheus-command-input')).toBeDisabled();
+      await expect(page.getByTestId('morpheus-command-stop')).toBeVisible();
+      await page.getByTestId('morpheus-plan-consent-deny').click();
+
+      await expect(page.getByTestId('morpheus-plan-consent-dialog')).toHaveCount(0);
+      await expect(page.getByTestId('command-center-objective-state')).toContainText(/needs clarification/i);
+    } finally {
+      await closeElectronApp(app);
+    }
+  });
 });

@@ -1,10 +1,12 @@
 /** The primary interaction surface: an objective in, a typed plan out. */
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, Loader2, Orbit } from 'lucide-react';
+import { ArrowRight, Loader2, Orbit, Square } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { morpheusActionLabelKey } from '@/components/morpheus/morpheus-phase';
 import { MorpheusVoiceButton } from '@/components/morpheus/MorpheusVoiceButton';
+import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
 
 const STARTER_OBJECTIVES = [
   { key: 'system', objective: 'Show system information' },
@@ -20,6 +22,10 @@ export function CommandBar() {
   const submit = useMorpheusCommandStore((state) => state.submit);
   const interpreting = useMorpheusCommandStore((state) => state.interpreting);
   const unsupported = useMorpheusCommandStore((state) => state.unsupported);
+  const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
+  const cancelObjective = useMorpheusCommandStore((state) => state.cancelObjective);
+  const objectiveActive = Boolean(objectiveRun && !isObjectiveTerminalState(objectiveRun.state));
+  const busy = interpreting || objectiveActive;
 
   return (
     <section
@@ -53,22 +59,34 @@ export function CommandBar() {
         <input
           data-testid="morpheus-command-input"
           value={input}
-          disabled={interpreting}
+          disabled={busy}
           placeholder={t('morpheus.command.placeholder')}
           aria-label={t('morpheus.command.label')}
           onChange={(event) => setInput(event.target.value)}
           className="h-10 min-w-0 flex-1 bg-transparent px-1 text-sm text-foreground outline-none placeholder:text-muted-foreground/70 disabled:opacity-60"
         />
-        <MorpheusVoiceButton source="command-center" className="h-10 w-10 rounded-full" />
-        <button
-          type="submit"
-          data-testid="morpheus-command-submit"
-          disabled={interpreting || !input.trim()}
-          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-[hsl(var(--morpheus-accent-dim))] bg-[hsl(var(--morpheus-accent))]/12 px-5 text-2xs font-medium uppercase tracking-[0.14em] text-[hsl(var(--morpheus-accent))] transition-colors hover:bg-[hsl(var(--morpheus-accent))]/18 disabled:border-border disabled:bg-transparent disabled:text-muted-foreground/40"
-        >
-          {interpreting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
-          {interpreting ? t('morpheus.quickCommand.planning') : t('morpheus.command.run')}
-        </button>
+        <MorpheusVoiceButton source="command-center" disabled={objectiveActive} className="h-10 w-10 rounded-full" />
+        {objectiveActive ? (
+          <button
+            type="button"
+            data-testid="morpheus-command-stop"
+            onClick={() => void cancelObjective()}
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-[hsl(var(--morpheus-danger))]/40 bg-[hsl(var(--morpheus-danger))]/8 px-5 text-2xs font-medium uppercase tracking-[0.14em] text-[hsl(var(--morpheus-danger))] transition-colors hover:bg-[hsl(var(--morpheus-danger))]/14"
+          >
+            <Square className="h-3 w-3 fill-current" />
+            {t('morpheus.quickCommand.stop')}
+          </button>
+        ) : (
+          <button
+            type="submit"
+            data-testid="morpheus-command-submit"
+            disabled={interpreting || !input.trim()}
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-[hsl(var(--morpheus-accent-dim))] bg-[hsl(var(--morpheus-accent))]/12 px-5 text-2xs font-medium uppercase tracking-[0.14em] text-[hsl(var(--morpheus-accent))] transition-colors hover:bg-[hsl(var(--morpheus-accent))]/18 disabled:border-border disabled:bg-transparent disabled:text-muted-foreground/40"
+          >
+            {interpreting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
+            {interpreting ? t('morpheus.quickCommand.planning') : t('morpheus.command.run')}
+          </button>
+        )}
       </form>
 
       <div className="relative z-10 mt-2 flex flex-wrap items-center gap-1.5 text-2xs text-muted-foreground">
@@ -89,7 +107,9 @@ export function CommandBar() {
       {unsupported ? (
         <div data-testid="morpheus-command-unsupported" className="mt-3 border-l-2 border-[hsl(var(--morpheus-warn))] bg-[hsl(var(--morpheus-warn))]/5 px-3 py-2">
           <p className="text-tiny font-medium">{t('morpheus.command.unsupportedTitle')}</p>
-          <p className="mt-0.5 text-2xs text-muted-foreground">{t('morpheus.command.unsupportedBody')}</p>
+          <p className="mt-0.5 text-2xs text-muted-foreground">
+            {objectiveRun?.clarification ?? objectiveRun?.plannerNotice ?? t('morpheus.command.unsupportedBody')}
+          </p>
           <ul className="mt-1.5 flex max-h-14 flex-wrap gap-x-3 gap-y-1 overflow-hidden">
             {unsupported.supportedCapabilities.map((capabilityId) => (
               <li key={capabilityId} className="text-2xs text-foreground/70">
@@ -97,6 +117,9 @@ export function CommandBar() {
               </li>
             ))}
           </ul>
+          <Link to="/models" className="mt-2 inline-flex items-center gap-1 text-2xs text-[hsl(var(--morpheus-accent))] hover:underline">
+            {t('morpheus.command.configureProvider')}<ArrowRight className="h-3 w-3" />
+          </Link>
         </div>
       ) : null}
     </section>

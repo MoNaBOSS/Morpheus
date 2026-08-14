@@ -10,9 +10,11 @@ import {
 export function MorpheusVoiceButton({
   source,
   className,
+  disabled = false,
 }: {
   source: MorpheusVoiceSource;
   className?: string;
+  disabled?: boolean;
 }) {
   const { t } = useTranslation('dashboard');
   const phase = useMorpheusVoiceStore((state) => state.phase);
@@ -27,7 +29,7 @@ export function MorpheusVoiceButton({
       data-testid={`morpheus-voice-button-${source}`}
       aria-label={listening ? t('morpheus.voice.stop') : t('morpheus.voice.start')}
       aria-pressed={listening}
-      disabled={processing}
+      disabled={processing || disabled}
       onClick={() => {
         if (listening) stopListening();
         else void startListening(source);

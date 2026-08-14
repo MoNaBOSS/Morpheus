@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { objectivePassNumber } from '@/pages/CommandCenter/objective-presentation';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import type { ExecutionStep, ExecutionStepResult } from '@shared/morpheus/execution-types';
+import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
 
 import { ExecutionReadiness } from './ExecutionReadiness';
 
@@ -53,8 +54,55 @@ export function PlanPanel({ className }: { className?: string }) {
   const planResult = useMorpheusCommandStore((state) => state.planResult);
   const executing = useMorpheusCommandStore((state) => state.executing);
   const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
+  const cancelObjective = useMorpheusCommandStore((state) => state.cancelObjective);
 
   if (!plan) {
+    if (objectiveRun) {
+      const terminal = isObjectiveTerminalState(objectiveRun.state);
+      const tone: StatusTone = objectiveRun.state === 'complete'
+        ? 'ok'
+        : objectiveRun.state === 'error' || objectiveRun.state === 'degraded'
+          ? 'error'
+          : objectiveRun.state === 'needs-clarification' || objectiveRun.state === 'waiting-for-approval'
+            ? 'warn'
+            : 'running';
+      const detail = objectiveRun.clarification
+        ?? objectiveRun.error?.message
+        ?? objectiveRun.plannerNotice
+        ?? (terminal ? t('morpheus.plan.noExecutablePlan') : t('morpheus.plan.liveBody'));
+      return (
+        <Panel
+          title={t('morpheus.plan.title')}
+          description={objectiveRun.objective}
+          testId="command-center-plan"
+          className={cn('flex min-h-0 flex-col', className)}
+          actions={<StatusDot tone={tone} label={t(`morpheus.objective.states.${objectiveRun.state}`)} />}
+        >
+          <div data-testid="plan-timeline" className="flex min-h-0 flex-1 flex-col justify-center px-2">
+            <div className="rounded-xl border border-border/60 bg-[hsl(var(--morpheus-surface-3))]/55 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">{t('morpheus.plan.objectiveCore')}</p>
+                  <p className="mt-2 text-sm text-foreground/90">{detail}</p>
+                </div>
+                {!terminal ? (
+                  <button type="button" data-testid="plan-cancel-objective" onClick={() => void cancelObjective()} className="shrink-0 rounded border border-[hsl(var(--morpheus-danger))]/35 px-2.5 py-1.5 text-2xs text-[hsl(var(--morpheus-danger))] hover:bg-[hsl(var(--morpheus-danger))]/8">
+                    {t('morpheus.quickCommand.stop')}
+                  </button>
+                ) : null}
+              </div>
+              {!terminal ? <div className="mt-4 h-px overflow-hidden bg-border"><div className="h-full w-1/3 bg-[hsl(var(--morpheus-accent))] motion-safe:animate-pulse" /></div> : null}
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[9px] text-muted-foreground">
+                <span>{objectiveRun.route ? t(`morpheus.missions.routes.${objectiveRun.route.kind}`) : t('morpheus.objective.plannerAutomatic')}</span>
+                {objectiveRun.modelId ? <span>{objectiveRun.modelId}</span> : null}
+                <span>{t('morpheus.objective.iteration', { current: objectivePassNumber(objectiveRun.iteration) })}</span>
+              </div>
+            </div>
+            <div className="mt-4"><ExecutionReadiness /></div>
+          </div>
+        </Panel>
+      );
+    }
     return (
       <Panel
         title={t('morpheus.plan.title')}

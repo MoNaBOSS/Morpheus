@@ -369,7 +369,8 @@
         "web": "Research an idea"
       },
       "unsupportedTitle": "Morpheus cannot do that yet",
-      "unsupportedBody": "That command does not map to a capability Morpheus actually has. It supports:"
+      "unsupportedBody": "That command does not map to a capability Morpheus actually has. It supports:",
+      "configureProvider": "Configure reasoning provider"
     },
     "objective": {
       "iteration": "Pass {{current}}",
@@ -437,6 +438,9 @@
       "empty": "No plan yet. Describe what you want in the command bar.",
       "readyTitle": "Ready for an objective",
       "readyBody": "Describe the outcome. Morpheus will construct a typed plan, compare its complete trust boundary, and execute observable steps.",
+      "objectiveCore": "Live Objective Core",
+      "liveBody": "Morpheus is interpreting the complete objective and constructing a bounded plan.",
+      "noExecutablePlan": "No executable plan was produced for this objective.",
       "flow": {
         "objective": "Objective",
         "plan": "Typed plan",
