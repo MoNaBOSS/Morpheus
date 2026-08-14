@@ -28,6 +28,8 @@ describe('Morpheus Windows tray', () => {
         setPermissionProfile,
         runtimeControl: () => ({ v: 1, paused: false, updatedAt: '2026-08-11T00:00:00.000Z' }),
         setRuntimePaused,
+        voicePresence: () => ({ v: 2, state: 'asleep', ambientEnabled: false }),
+        setAmbientVoiceEnabled: vi.fn(async () => undefined),
       },
       showQuickCommand: vi.fn(),
       showVoiceCommand: vi.fn(),
@@ -37,6 +39,7 @@ describe('Morpheus Windows tray', () => {
     expect(serialized).toContain('Morpheus');
     expect(serialized).toContain('OpenClaw runtime · Ready');
     expect(serialized).toContain('Permission profile · Balanced');
+    expect(serialized).toContain('Ambient voice · Off');
     expect(serialized).not.toContain('ClawX');
     expect(serialized).not.toContain('Check for Updates');
 

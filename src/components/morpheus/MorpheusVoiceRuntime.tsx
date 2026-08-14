@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, Mic, Volume2, X } from 'lucide-react';
+import { Activity, Loader2, Mic, Radio, Volume2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { hostEvents } from '@/lib/host-events';
+import { hostApi } from '@/lib/host-api';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
@@ -14,6 +15,7 @@ export function MorpheusVoiceRuntime() {
   const transcript = useMorpheusVoiceStore((state) => state.transcript);
   const error = useMorpheusVoiceStore((state) => state.error);
   const status = useMorpheusVoiceStore((state) => state.status);
+  const presence = useMorpheusVoiceStore((state) => state.presence);
   const loadStatus = useMorpheusVoiceStore((state) => state.loadStatus);
   const startListening = useMorpheusVoiceStore((state) => state.startListening);
   const stopListening = useMorpheusVoiceStore((state) => state.stopListening);
@@ -40,9 +42,18 @@ export function MorpheusVoiceRuntime() {
 
     spokenRunId.current = objectiveRun.objectiveRunId;
     const utterance = new SpeechSynthesisUtterance(objectiveRun.summary);
-    utterance.onstart = () => setSpeaking(true);
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
+    utterance.onstart = () => {
+      setSpeaking(true);
+      void hostApi.morpheus.setVoiceSpeaking({ speaking: true });
+    };
+    utterance.onend = () => {
+      setSpeaking(false);
+      void hostApi.morpheus.setVoiceSpeaking({ speaking: false });
+    };
+    utterance.onerror = () => {
+      setSpeaking(false);
+      void hostApi.morpheus.setVoiceSpeaking({ speaking: false });
+    };
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
     return () => {
@@ -52,26 +63,57 @@ export function MorpheusVoiceRuntime() {
     };
   }, [objectiveRun, status?.settings.speakResponses]);
 
-  if (phase === 'idle' && !speaking) return null;
+  const ambientActive = Boolean(presence?.ambientEnabled && presence.state !== 'asleep');
+  if (phase === 'idle' && !speaking && !ambientActive) return null;
 
-  const listening = phase === 'listening';
-  const processing = phase === 'requesting' || phase === 'transcribing';
+  const listening = phase === 'listening' || presence?.state === 'listening';
+  const processing = phase === 'requesting' || phase === 'transcribing'
+    || presence?.state === 'transcribing' || presence?.state === 'understanding'
+    || presence?.state === 'working';
+  const ambientEngaged = ambientActive && presence?.state !== 'armed';
   const label = speaking
     ? t('morpheus.voice.speaking')
-    : t(`morpheus.voice.states.${phase}`);
+    : ambientActive
+      ? t(`morpheus.voice.presence.${presence?.state ?? 'armed'}`)
+      : t(`morpheus.voice.states.${phase}`);
+
+  if (ambientActive && !ambientEngaged && phase === 'idle' && !speaking) {
+    return (
+      <aside
+        data-morpheus
+        data-testid="morpheus-ambient-voice-indicator"
+        data-phase="armed"
+        role="status"
+        aria-live="polite"
+        className="pointer-events-auto fixed right-5 top-11 z-[100100] flex items-center gap-2 rounded-full border border-[hsl(var(--morpheus-accent-dim))]/40 bg-[hsl(var(--morpheus-surface-2))]/92 px-3 py-1.5 shadow-xl shadow-black/30 backdrop-blur-xl"
+      >
+        <span className="relative flex h-5 w-5 items-center justify-center text-[hsl(var(--morpheus-accent))]">
+          <Radio className="h-3.5 w-3.5" aria-hidden />
+          <span className="absolute inset-0 rounded-full border border-[hsl(var(--morpheus-accent))]/25 motion-safe:animate-pulse" aria-hidden />
+        </span>
+        <span className="text-2xs font-medium text-foreground">{label}</span>
+        <span className="h-1 w-1 rounded-full bg-[hsl(var(--morpheus-accent))]" aria-hidden />
+        <span className="text-2xs text-muted-foreground">
+          {t('morpheus.voice.wakeHint', { phrase: status?.settings.wakePhrase ?? 'Morpheus' })}
+        </span>
+      </aside>
+    );
+  }
 
   return (
     <aside
       data-morpheus
       data-testid="morpheus-voice-indicator"
-      data-phase={speaking ? 'speaking' : phase}
+      data-phase={speaking ? 'speaking' : ambientEngaged ? presence?.state : phase}
       role="status"
       aria-live="polite"
-      className="pointer-events-auto fixed left-1/2 top-11 z-[100100] w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-lg border border-border/80 bg-[hsl(var(--morpheus-surface-2))]/95 shadow-2xl shadow-black/50 backdrop-blur-xl"
+      className="pointer-events-auto fixed left-1/2 top-11 z-[100100] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-xl border border-[hsl(var(--morpheus-accent-dim))]/35 bg-[linear-gradient(135deg,hsl(var(--morpheus-surface-2))_0%,hsl(var(--morpheus-surface-1))_100%)]/95 shadow-2xl shadow-black/50 backdrop-blur-xl"
     >
       <div className="flex items-center gap-3 px-3 py-2.5">
         <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[hsl(var(--morpheus-accent-dim))]/60 bg-[hsl(var(--morpheus-accent))]/10 text-[hsl(var(--morpheus-accent))]">
-          {speaking ? <Volume2 className="h-4 w-4" aria-hidden /> : processing ? (
+          {speaking ? <Volume2 className="h-4 w-4" aria-hidden /> : presence?.state === 'working' ? (
+            <Activity className="h-4 w-4" aria-hidden />
+          ) : processing ? (
             <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden />
           ) : <Mic className="h-4 w-4" aria-hidden />}
           {listening ? (
@@ -84,6 +126,11 @@ export function MorpheusVoiceRuntime() {
           {transcript && phase === 'ready' ? (
             <p data-testid="morpheus-voice-transcript" className="mt-0.5 truncate text-2xs text-muted-foreground">
               {transcript}
+            </p>
+          ) : null}
+          {ambientActive && status?.providerLabel ? (
+            <p className="mt-0.5 truncate text-2xs text-muted-foreground">
+              {t('morpheus.voice.providerDisclosure', { provider: status.providerLabel })}
             </p>
           ) : null}
           {error ? (
@@ -111,6 +158,7 @@ export function MorpheusVoiceRuntime() {
             if (speaking) {
               window.speechSynthesis.cancel();
               setSpeaking(false);
+              void hostApi.morpheus.setVoiceSpeaking({ speaking: false });
             }
             if (processing || listening) cancel();
             else dismiss();

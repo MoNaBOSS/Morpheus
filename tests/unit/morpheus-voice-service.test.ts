@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   createMorpheusVoiceService,
   validateAndDecodeMorpheusAudio,
+  validateMorpheusVoiceSettings,
 } from '../../electron/services/morpheus/voice/voice-service';
 import type { ProviderAccount } from '../../electron/shared/providers/types';
 
@@ -48,6 +49,7 @@ function createHarness(options?: {
   const userDataDir = mkdtempSync(join(tmpdir(), 'morpheus-voice-'));
   temporaryDirectories.push(userDataDir);
   const auditOrder: string[] = [];
+  const presenceEvents: string[] = [];
   const recordControl = vi.fn(async (entry: { event: string }) => {
     auditOrder.push(`audit:${entry.event}`);
   });
@@ -68,8 +70,12 @@ function createHarness(options?: {
     } as never,
     appVersion: '1.0.0',
     fetchImpl,
+    emitPresence: (presence) => {
+      presenceEvents.push(presence.state);
+      auditOrder.push(`emit:${presence.state}`);
+    },
   });
-  return { userDataDir, service, providerService, fetchImpl, recordControl, auditOrder };
+  return { userDataDir, service, providerService, fetchImpl, recordControl, auditOrder, presenceEvents };
 }
 
 describe('Morpheus voice service', () => {
@@ -163,13 +169,51 @@ describe('Morpheus voice service', () => {
     const settingsPath = join(harness.userDataDir, 'morpheus', 'voice-settings.json');
     expect(existsSync(settingsPath)).toBe(true);
     expect(JSON.parse(readFileSync(settingsPath, 'utf8'))).toMatchObject({
-      v: 1,
+      v: 2,
       speakResponses: false,
       autoSubmitTranscript: true,
+      ambientEnabled: false,
     });
     expect(harness.recordControl).toHaveBeenCalledWith(expect.objectContaining({
       category: 'voice',
       event: 'settings-updated',
     }));
+  });
+
+  it('migrates prior push-to-talk settings without enabling ambient disclosure', () => {
+    expect(validateMorpheusVoiceSettings({
+      v: 1,
+      enabled: true,
+      providerAccountId: null,
+      modelId: 'whisper-1',
+      speakResponses: true,
+      autoSubmitTranscript: true,
+    })).toMatchObject({
+      v: 2,
+      ambientEnabled: false,
+      wakePhrase: 'Morpheus',
+    });
+  });
+
+  it('audits ambient session and capture transitions before presence emission', async () => {
+    const harness = createHarness();
+    await harness.service.updateSettings({ ambientEnabled: true, wakePhrase: 'Hey Morpheus' });
+    await harness.service.setAmbientListening(true);
+    await harness.service.setAmbientListening(false);
+    await harness.service.transcribeAmbient(PAYLOAD);
+    await harness.service.endAmbientSession();
+
+    expect(harness.presenceEvents).toEqual(['armed', 'listening', 'armed', 'transcribing', 'armed', 'asleep']);
+    expect(harness.auditOrder).toEqual([
+      'audit:settings-updated',
+      'audit:ambient-session-started', 'emit:armed',
+      'audit:ambient-capture-started', 'emit:listening',
+      'audit:ambient-capture-ended', 'emit:armed',
+      'audit:transcription-started', 'emit:transcribing',
+      'network', 'audit:transcription-completed', 'emit:armed',
+      'audit:ambient-session-ended', 'emit:asleep',
+    ]);
+    expect(JSON.stringify(harness.recordControl.mock.calls)).not.toContain('Hey Morpheus');
+    expect(JSON.stringify(harness.recordControl.mock.calls)).not.toContain('Open Notepad');
   });
 });

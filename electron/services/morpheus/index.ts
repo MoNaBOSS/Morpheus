@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import type { MorpheusActionEvent } from '@shared/morpheus/action-types';
 import type { MorpheusPlanConsentEvent } from '@shared/host-events/contract';
 import type { MorpheusObjectiveEvent } from '@shared/morpheus/core/objective-types';
+import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
 
 import { createMorpheusAuditSink, type MorpheusAuditSink } from './audit';
 import { createMorpheusCapabilityRegistry } from './capability-registry';
@@ -65,6 +66,7 @@ export type CreateMorpheusServiceOptions = {
   /** Delivers the one batched consent request a plan may raise. */
   emitPlanConsent?: (event: MorpheusPlanConsentEvent) => void;
   emitObjective?: (event: MorpheusObjectiveEvent) => void;
+  emitVoicePresence?: (presence: MorpheusVoicePresence) => void;
   providerService?: ProviderService;
 };
 
@@ -182,6 +184,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     providerService,
     audit,
     appVersion: options.appVersion,
+    emitPresence: options.emitVoicePresence,
   });
   objectives = createMorpheusObjectiveOrchestrator({
     store: objectiveStore,
@@ -195,7 +198,12 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     projects,
     memory,
     isRuntimePaused: () => runtimeControl.snapshot().paused,
-    emit: (event) => options.emitObjective?.(event),
+    emit: (event) => {
+      // Objective transitions have already been audit-persisted here. Voice
+      // presence is only a truthful projection of that state, never authority.
+      voice.observeObjective(event);
+      options.emitObjective?.(event);
+    },
   });
   const workflowStore = createMorpheusWorkflowStore({ userDataDir: options.userDataDir });
   const workflows = createMorpheusWorkflowService({

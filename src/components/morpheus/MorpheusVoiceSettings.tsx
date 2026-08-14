@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Mic2 } from 'lucide-react';
+import { Mic2, Radio, ShieldCheck } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -64,6 +64,55 @@ export function MorpheusVoiceSettings() {
           testId="morpheus-voice-enabled"
           onChange={(enabled) => void updateSettings({ enabled })}
         />
+
+        <div className="rounded-lg border border-[hsl(var(--morpheus-accent-dim))]/30 bg-[hsl(var(--morpheus-accent))]/[0.035] p-3.5">
+          <div className="flex items-start gap-3">
+            <Radio className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--morpheus-accent))]" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <SettingToggle
+                label={t('morpheus.voice.settings.ambient')}
+                description={t('morpheus.voice.settings.ambientDescription')}
+                checked={settings.ambientEnabled}
+                testId="morpheus-voice-ambient"
+                onChange={(ambientEnabled) => void updateSettings({ ambientEnabled })}
+              />
+              <div className="mt-3 flex items-start gap-2 rounded border border-border/50 bg-black/10 px-2.5 py-2 text-2xs leading-relaxed text-muted-foreground">
+                <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(var(--morpheus-accent))]" aria-hidden />
+                <span>{t('morpheus.voice.settings.ambientDisclosure', { provider: status.providerLabel ?? t('morpheus.voice.settings.selectedProvider') })}</span>
+              </div>
+              {settings.ambientEnabled ? (
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="morpheus-voice-wake-phrase" className="text-xs text-foreground/80">
+                      {t('morpheus.voice.settings.wakePhrase')}
+                    </Label>
+                    <Input
+                      id="morpheus-voice-wake-phrase"
+                      data-testid="morpheus-voice-wake-phrase"
+                      key={settings.wakePhrase}
+                      defaultValue={settings.wakePhrase}
+                      maxLength={48}
+                      onBlur={(event) => {
+                        const wakePhrase = event.currentTarget.value.trim();
+                        if (wakePhrase && wakePhrase !== settings.wakePhrase) void updateSettings({ wakePhrase });
+                      }}
+                      className="h-9 rounded-lg bg-surface-input text-sm"
+                    />
+                  </div>
+                  <div className="flex items-end pb-1">
+                    <SettingToggle
+                      label={t('morpheus.voice.settings.bargeIn')}
+                      description={t('morpheus.voice.settings.bargeInDescription')}
+                      checked={settings.bargeIn}
+                      testId="morpheus-voice-barge-in"
+                      onChange={(bargeIn) => void updateSettings({ bargeIn })}
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">

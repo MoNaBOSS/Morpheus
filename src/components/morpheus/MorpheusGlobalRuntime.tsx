@@ -5,6 +5,7 @@ import { useMorpheusActionsStore } from '@/stores/morpheus-actions';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusWorkspacesStore } from '@/stores/morpheus-workspaces';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
+import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { MorpheusCaptureIndicator } from './MorpheusCaptureIndicator';
 import { MorpheusPermissionDialog } from './MorpheusPermissionDialog';
 import { MorpheusPlanConsentDialog } from './MorpheusPlanConsentDialog';
@@ -26,19 +27,24 @@ export function MorpheusGlobalRuntime() {
   const loadCompanion = useMorpheusCompanionStore((state) => state.loadAll);
   const loadMissions = useMorpheusCompanionStore((state) => state.loadMissions);
   const objectiveUpdatedAt = useMorpheusCommandStore((state) => state.objectiveRun?.updatedAt);
+  const subscribeVoicePresence = useMorpheusVoiceStore((state) => state.subscribePresence);
+  const loadVoiceStatus = useMorpheusVoiceStore((state) => state.loadStatus);
+  const ensureAmbient = useMorpheusVoiceStore((state) => state.ensureAmbient);
 
   useEffect(() => {
     const unsubscribe = subscribe();
     const unsubscribeConsent = subscribeConsent();
     const unsubscribeObjectives = subscribeObjectives();
+    const unsubscribeVoice = subscribeVoicePresence();
     void Promise.all([
       loadCapabilities(), loadPermissionCenter(), loadFilesRoot(), loadWorkspaces(), loadArtifacts(), loadObjectives(),
-      loadCompanion(),
+      loadCompanion(), loadVoiceStatus().then(() => ensureAmbient()),
     ]);
     return () => {
       unsubscribe();
       unsubscribeConsent();
       unsubscribeObjectives();
+      unsubscribeVoice();
     };
   }, [
     subscribe,
@@ -51,6 +57,9 @@ export function MorpheusGlobalRuntime() {
     loadArtifacts,
     loadObjectives,
     loadCompanion,
+    subscribeVoicePresence,
+    loadVoiceStatus,
+    ensureAmbient,
   ]);
 
   useEffect(() => {

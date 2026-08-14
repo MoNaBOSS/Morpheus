@@ -60,6 +60,7 @@ import type {
 } from '@shared/morpheus/core/objective-types';
 import type {
   MorpheusTranscribeAudioPayload,
+  MorpheusAmbientListeningPayload,
   MorpheusVoiceSettingsPatch,
 } from '@shared/morpheus/voice-types';
 import type { SetMorpheusRuntimePausedPayload } from '@shared/morpheus/runtime-control-types';
@@ -484,6 +485,17 @@ export const hostApi = {
     ),
     transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => (
       invokeHost('morpheus', 'transcribeAudio', payload)
+    ),
+    beginAmbientVoice: () => invokeHost('morpheus', 'beginAmbientVoice'),
+    endAmbientVoice: () => invokeHost('morpheus', 'endAmbientVoice'),
+    setAmbientVoiceListening: (payload: MorpheusAmbientListeningPayload) => (
+      invokeHost('morpheus', 'setAmbientVoiceListening', payload)
+    ),
+    transcribeAmbientAudio: (payload: MorpheusTranscribeAudioPayload) => (
+      invokeHost('morpheus', 'transcribeAmbientAudio', payload)
+    ),
+    setVoiceSpeaking: (payload: { speaking: boolean }) => (
+      invokeHost('morpheus', 'setVoiceSpeaking', payload)
     ),
     runtimeControl: () => invokeHost('morpheus', 'runtimeControl'),
     setRuntimePaused: (paused: boolean) => (

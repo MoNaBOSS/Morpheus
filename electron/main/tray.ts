@@ -66,6 +66,7 @@ export function buildTrayMenuTemplate(
   const gateway = options.getGatewayStatus();
   const runtime = options.controls.runtimeControl();
   const profile = options.controls.permissionProfile();
+  const voice = options.controls.voicePresence();
   const profiles: PermissionProfile[] = ['strict', 'balanced', 'autonomous'];
 
   return [
@@ -88,6 +89,14 @@ export function buildTrayMenuTemplate(
         showWindow(mainWindow);
         options.showVoiceCommand();
       },
+    },
+    {
+      label: voice.ambientEnabled
+        ? `Ambient voice · ${voice.state[0].toUpperCase()}${voice.state.slice(1)}`
+        : 'Ambient voice · Off',
+      type: 'checkbox',
+      checked: voice.ambientEnabled,
+      click: () => runAndRefresh(() => options.controls.setAmbientVoiceEnabled(!voice.ambientEnabled)),
     },
     { type: 'separator' },
     {
@@ -135,12 +144,14 @@ export function refreshTray(): void {
   const gateway = activeOptions.getGatewayStatus();
   const runtime = activeOptions.controls.runtimeControl();
   const profile = activeOptions.controls.permissionProfile();
+  const voice = activeOptions.controls.voicePresence();
   const state = runtime.paused
     ? 'New work paused'
     : gateway.state === 'running' && gateway.gatewayReady !== false
       ? 'Ready'
       : 'Starting';
-  tray.setToolTip(`Morpheus · ${state} · ${profileLabel(profile)}`);
+  const voiceLabel = voice.ambientEnabled ? `Voice ${voice.state}` : 'Voice asleep';
+  tray.setToolTip(`Morpheus · ${state} · ${voiceLabel} · ${profileLabel(profile)}`);
   tray.setContextMenu(Menu.buildFromTemplate(buildTrayMenuTemplate(activeWindow, activeOptions)));
 }
 

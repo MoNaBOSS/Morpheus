@@ -80,6 +80,7 @@ import { createMenu } from './menu';
 import type { PermissionProfile } from '@shared/morpheus/permission-types';
 import type { MorpheusRuntimeControlSnapshot } from '@shared/morpheus/runtime-control-types';
 import type { MorpheusCompanionSurfaceStatus } from '@shared/morpheus/companion-types';
+import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
 
 type MorpheusCompanionSurfaceControls = {
   status(): MorpheusCompanionSurfaceStatus;
@@ -92,6 +93,8 @@ export type MorpheusDesktopControls = {
   setPermissionProfile(profile: PermissionProfile): Promise<void>;
   runtimeControl(): MorpheusRuntimeControlSnapshot;
   setRuntimePaused(paused: boolean): Promise<MorpheusRuntimeControlSnapshot>;
+  voicePresence(): MorpheusVoicePresence;
+  setAmbientVoiceEnabled(enabled: boolean): Promise<void>;
 };
 
 /**
@@ -194,6 +197,10 @@ function registerTypedHostHandlers(
       if (mainWindow.isDestroyed()) return;
       mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.objectiveEvent, event);
     },
+    emitVoicePresence: (presence) => {
+      if (mainWindow.isDestroyed()) return;
+      mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.voicePresence, presence);
+    },
   });
   const morpheusApi = createMorpheusApi({
     runtime: morpheusService.runtime,
@@ -276,6 +283,7 @@ function registerTypedHostHandlers(
   app.once('before-quit', () => {
     morpheusService.scheduler.stop();
     morpheusService.objectives.dispose();
+    morpheusService.voice.dispose();
     morpheusService.runtime.dispose();
   });
   registerHostInvokeHandler(hostApiRegistry, () => (
@@ -288,6 +296,10 @@ function registerTypedHostHandlers(
     },
     runtimeControl: () => morpheusService.runtimeControl.snapshot(),
     setRuntimePaused: (paused) => morpheusService.runtimeControl.setPaused(paused, 'tray'),
+    voicePresence: () => morpheusService.voice.presence(),
+    async setAmbientVoiceEnabled(enabled) {
+      await morpheusService.voice.updateSettings({ ambientEnabled: enabled });
+    },
   };
 }
 

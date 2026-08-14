@@ -71,6 +71,11 @@ import {
   MORPHEUS_VOICE_MAX_AUDIO_BYTES,
   MORPHEUS_VOICE_MAX_DURATION_MS,
   MORPHEUS_VOICE_MIME_TYPES,
+  MORPHEUS_AMBIENT_MAX_SILENCE_MS,
+  MORPHEUS_AMBIENT_MAX_UTTERANCE_MS,
+  MORPHEUS_AMBIENT_MIN_SILENCE_MS,
+  MORPHEUS_AMBIENT_MIN_UTTERANCE_MS,
+  MORPHEUS_AMBIENT_WAKE_PHRASE_PATTERN,
   type MorpheusTranscribeAudioPayload,
   type MorpheusVoiceSettingsPatch,
 } from '@shared/morpheus/voice-types';
@@ -632,8 +637,9 @@ export function validateVoiceSettingsPatch(payload: unknown): MorpheusVoiceSetti
   const record = requireRecord(payload, 'updateVoiceSettings payload');
   assertNoUnknownKeys(record, [
     'enabled', 'providerAccountId', 'modelId', 'speakResponses', 'autoSubmitTranscript',
+    'ambientEnabled', 'wakePhrase', 'ambientSilenceMs', 'ambientMaxUtteranceMs', 'bargeIn',
   ], 'updateVoiceSettings payload');
-  for (const key of ['enabled', 'speakResponses', 'autoSubmitTranscript'] as const) {
+  for (const key of ['enabled', 'speakResponses', 'autoSubmitTranscript', 'ambientEnabled', 'bargeIn'] as const) {
     if (record[key] !== undefined && typeof record[key] !== 'boolean') {
       throw new MorpheusValidationError(`${key} must be a boolean`);
     }
@@ -646,7 +652,35 @@ export function validateVoiceSettingsPatch(payload: unknown): MorpheusVoiceSetti
     || !record.modelId.trim() || record.modelId.length > 200)) {
     throw new MorpheusValidationError('invalid voice modelId');
   }
+  if (record.wakePhrase !== undefined && (typeof record.wakePhrase !== 'string'
+    || !MORPHEUS_AMBIENT_WAKE_PHRASE_PATTERN.test(record.wakePhrase.trim()))) {
+    throw new MorpheusValidationError('invalid ambient wakePhrase');
+  }
+  if (record.ambientSilenceMs !== undefined && (!Number.isInteger(record.ambientSilenceMs)
+    || Number(record.ambientSilenceMs) < MORPHEUS_AMBIENT_MIN_SILENCE_MS
+    || Number(record.ambientSilenceMs) > MORPHEUS_AMBIENT_MAX_SILENCE_MS)) {
+    throw new MorpheusValidationError('invalid ambientSilenceMs');
+  }
+  if (record.ambientMaxUtteranceMs !== undefined && (!Number.isInteger(record.ambientMaxUtteranceMs)
+    || Number(record.ambientMaxUtteranceMs) < MORPHEUS_AMBIENT_MIN_UTTERANCE_MS
+    || Number(record.ambientMaxUtteranceMs) > MORPHEUS_AMBIENT_MAX_UTTERANCE_MS)) {
+    throw new MorpheusValidationError('invalid ambientMaxUtteranceMs');
+  }
   return record as MorpheusVoiceSettingsPatch;
+}
+
+export function validateAmbientListeningPayload(payload: unknown): { listening: boolean } {
+  const record = requireRecord(payload, 'setAmbientVoiceListening payload');
+  assertNoUnknownKeys(record, ['listening'], 'setAmbientVoiceListening payload');
+  if (typeof record.listening !== 'boolean') throw new MorpheusValidationError('listening must be boolean');
+  return { listening: record.listening };
+}
+
+export function validateVoiceSpeakingPayload(payload: unknown): { speaking: boolean } {
+  const record = requireRecord(payload, 'setVoiceSpeaking payload');
+  assertNoUnknownKeys(record, ['speaking'], 'setVoiceSpeaking payload');
+  if (typeof record.speaking !== 'boolean') throw new MorpheusValidationError('speaking must be boolean');
+  return { speaking: record.speaking };
 }
 
 export function validateRuntimePausedPayload(payload: unknown): SetMorpheusRuntimePausedPayload {
@@ -985,6 +1019,13 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     voiceStatus: () => voice.status(),
     updateVoiceSettings: (payload) => voice.updateSettings(validateVoiceSettingsPatch(payload)),
     transcribeAudio: (payload) => voice.transcribe(validateTranscribeAudioPayload(payload)),
+    beginAmbientVoice: () => voice.beginAmbientSession(),
+    endAmbientVoice: () => voice.endAmbientSession(),
+    setAmbientVoiceListening: (payload) => (
+      voice.setAmbientListening(validateAmbientListeningPayload(payload).listening)
+    ),
+    transcribeAmbientAudio: (payload) => voice.transcribeAmbient(validateTranscribeAudioPayload(payload)),
+    setVoiceSpeaking: (payload) => voice.setSpeaking(validateVoiceSpeakingPayload(payload).speaking),
     runtimeControl: () => runtimeControl.snapshot(),
     setRuntimePaused: (payload) => (
       runtimeControl.setPaused(validateRuntimePausedPayload(payload).paused, 'settings')

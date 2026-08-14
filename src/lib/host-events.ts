@@ -141,4 +141,7 @@ export const hostEvents = {
   onMorpheusObjectiveEvent: (handler: HostEventHandler<'morpheus', 'objectiveEvent'>) => (
     onMorpheusEvent('objectiveEvent', handler)
   ),
+  onMorpheusVoicePresence: (handler: HostEventHandler<'morpheus', 'voicePresence'>) => (
+    onMorpheusEvent('voicePresence', handler)
+  ),
 };

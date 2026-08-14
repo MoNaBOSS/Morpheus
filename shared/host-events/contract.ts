@@ -6,6 +6,7 @@ import type { UpdateStatusSnapshot } from '../host-api/contract';
 import type { ChatRuntimeEvent } from '../chat-runtime-events';
 import type { MorpheusActionEvent } from '../morpheus/action-types';
 import type { MorpheusObjectiveEvent } from '../morpheus/core/objective-types';
+import type { MorpheusVoicePresence } from '../morpheus/voice-types';
 import type { MorpheusRiskTier } from '../morpheus/actions/registry';
 import type {
   GatewayNotification,
@@ -123,6 +124,8 @@ export type HostEventContract = {
     planConsent: (payload: MorpheusPlanConsentEvent) => void;
     /** Truthful Main-owned state of the unified objective pipeline. */
     objectiveEvent: (payload: MorpheusObjectiveEvent) => void;
+    /** Main-owned ambient microphone and spoken-response presence. */
+    voicePresence: (payload: MorpheusVoicePresence) => void;
   };
 };
 
@@ -207,6 +210,7 @@ export const HOST_EVENT_CHANNELS = {
     voiceCommand: 'morpheus:voice-command',
     planConsent: 'morpheus:plan-consent',
     objectiveEvent: 'morpheus:objective-event',
+    voicePresence: 'morpheus:voice-presence',
   },
 } as const satisfies {
   [M in Exclude<HostEventModule, 'channel'>]: {

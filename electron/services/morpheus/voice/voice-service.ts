@@ -1,8 +1,15 @@
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 
 import type { ProviderAccount } from '../../../shared/providers/types';
 import type { ProviderService } from '../../providers/provider-service';
+import type { MorpheusObjectiveEvent, MorpheusSystemState } from '@shared/morpheus/core/objective-types';
 import {
+  MORPHEUS_AMBIENT_MAX_SILENCE_MS,
+  MORPHEUS_AMBIENT_MAX_UTTERANCE_MS,
+  MORPHEUS_AMBIENT_MIN_SILENCE_MS,
+  MORPHEUS_AMBIENT_MIN_UTTERANCE_MS,
+  MORPHEUS_AMBIENT_WAKE_PHRASE_PATTERN,
   MORPHEUS_VOICE_MAX_AUDIO_BYTES,
   MORPHEUS_VOICE_MAX_DURATION_MS,
   MORPHEUS_VOICE_MAX_TRANSCRIPT_CHARS,
@@ -10,6 +17,8 @@ import {
   MORPHEUS_VOICE_VERSION,
   type MorpheusTranscribeAudioPayload,
   type MorpheusTranscriptionResult,
+  type MorpheusVoicePresence,
+  type MorpheusVoicePresenceState,
   type MorpheusVoiceSettings,
   type MorpheusVoiceSettingsPatch,
   type MorpheusVoiceProviderOption,
@@ -26,28 +35,68 @@ const DEFAULT_VOICE_SETTINGS: MorpheusVoiceSettings = Object.freeze({
   modelId: 'whisper-1',
   speakResponses: true,
   autoSubmitTranscript: true,
+  ambientEnabled: false,
+  wakePhrase: 'Morpheus',
+  ambientSilenceMs: 1_000,
+  ambientMaxUtteranceMs: 20_000,
+  bargeIn: true,
 });
 
 const BASE64_PATTERN = /^[A-Za-z0-9+/]*={0,2}$/;
 
 export interface MorpheusVoiceService {
   status(): Promise<MorpheusVoiceStatus>;
+  presence(): MorpheusVoicePresence;
   updateSettings(patch: MorpheusVoiceSettingsPatch): Promise<MorpheusVoiceStatus>;
   transcribe(payload: MorpheusTranscribeAudioPayload): Promise<MorpheusTranscriptionResult>;
+  beginAmbientSession(): Promise<MorpheusVoicePresence>;
+  endAmbientSession(): Promise<MorpheusVoicePresence>;
+  setAmbientListening(listening: boolean): Promise<MorpheusVoicePresence>;
+  transcribeAmbient(payload: MorpheusTranscribeAudioPayload): Promise<MorpheusTranscriptionResult>;
+  setSpeaking(speaking: boolean): MorpheusVoicePresence;
+  observeObjective(event: MorpheusObjectiveEvent): void;
+  dispose(): void;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function validProviderId(value: unknown): value is string | null {
+  return value === null || (typeof value === 'string' && /^[A-Za-z0-9._-]{1,128}$/.test(value));
+}
+
+/** Migrates the 1.0 push-to-talk settings without silently enabling ambient capture. */
 function validateSettings(value: unknown): MorpheusVoiceSettings | null {
-  if (!isRecord(value) || value.v !== MORPHEUS_VOICE_VERSION) return null;
+  if (!isRecord(value) || (value.v !== 1 && value.v !== MORPHEUS_VOICE_VERSION)) return null;
   if (typeof value.enabled !== 'boolean' || typeof value.speakResponses !== 'boolean'
-    || typeof value.autoSubmitTranscript !== 'boolean') return null;
-  if (value.providerAccountId !== null && (typeof value.providerAccountId !== 'string'
-    || !/^[A-Za-z0-9._-]{1,128}$/.test(value.providerAccountId))) return null;
+    || typeof value.autoSubmitTranscript !== 'boolean' || !validProviderId(value.providerAccountId)) return null;
   if (typeof value.modelId !== 'string' || !value.modelId.trim() || value.modelId.length > 200) return null;
-  return value as MorpheusVoiceSettings;
+
+  const migrated = value.v === 1 ? { ...DEFAULT_VOICE_SETTINGS, ...value, v: MORPHEUS_VOICE_VERSION } : value;
+  const { ambientEnabled, bargeIn, wakePhrase, ambientSilenceMs, ambientMaxUtteranceMs } = migrated;
+  if (typeof ambientEnabled !== 'boolean' || typeof bargeIn !== 'boolean') return null;
+  if (typeof wakePhrase !== 'string'
+    || !MORPHEUS_AMBIENT_WAKE_PHRASE_PATTERN.test(wakePhrase.trim())) return null;
+  if (typeof ambientSilenceMs !== 'number' || !Number.isInteger(ambientSilenceMs)
+    || ambientSilenceMs < MORPHEUS_AMBIENT_MIN_SILENCE_MS
+    || ambientSilenceMs > MORPHEUS_AMBIENT_MAX_SILENCE_MS) return null;
+  if (typeof ambientMaxUtteranceMs !== 'number' || !Number.isInteger(ambientMaxUtteranceMs)
+    || ambientMaxUtteranceMs < MORPHEUS_AMBIENT_MIN_UTTERANCE_MS
+    || ambientMaxUtteranceMs > MORPHEUS_AMBIENT_MAX_UTTERANCE_MS) return null;
+  return {
+    v: MORPHEUS_VOICE_VERSION,
+    enabled: value.enabled,
+    providerAccountId: value.providerAccountId,
+    modelId: value.modelId.trim(),
+    speakResponses: value.speakResponses,
+    autoSubmitTranscript: value.autoSubmitTranscript,
+    ambientEnabled,
+    wakePhrase: wakePhrase.trim(),
+    ambientSilenceMs,
+    ambientMaxUtteranceMs,
+    bargeIn,
+  };
 }
 
 function eligibleAccount(account: ProviderAccount): boolean {
@@ -76,7 +125,6 @@ function safeHeaders(account: ProviderAccount, apiKey: string): Record<string, s
       || ['authorization', 'x-api-key', 'host', 'content-length', 'cookie'].includes(lower)) continue;
     if (typeof value === 'string' && value.length <= 1_000) headers[name] = value;
   }
-  if (account.vendorId === 'openrouter') headers['X-OpenRouter-Title'] = 'Morpheus';
   return headers;
 }
 
@@ -102,16 +150,49 @@ function decodeAudio(payload: MorpheusTranscribeAudioPayload): Buffer {
   return audio;
 }
 
+function objectivePresence(state: MorpheusSystemState): MorpheusVoicePresenceState | null {
+  if (state === 'understanding' || state === 'planning') return 'understanding';
+  if (state === 'waiting-for-approval' || state === 'needs-clarification') return 'waiting-for-approval';
+  if (state === 'executing' || state === 'observing' || state === 'replanning') return 'working';
+  if (state === 'error' || state === 'degraded') return 'error';
+  if (state === 'cancelled' || state === 'complete' || state === 'ready') return 'armed';
+  return null;
+}
+
 export function createMorpheusVoiceService(options: {
   userDataDir: string;
   providerService: ProviderService;
   audit: MorpheusAuditSink;
   appVersion: string;
   fetchImpl?: typeof fetch;
+  now?: () => Date;
+  emitPresence?: (presence: MorpheusVoicePresence) => void;
 }): MorpheusVoiceService {
+  const now = options.now ?? (() => new Date());
   const settingsPath = join(options.userDataDir, 'morpheus', 'voice-settings.json');
   let settings = readValidatedJson(settingsPath, validateSettings) ?? structuredClone(DEFAULT_VOICE_SETTINGS);
+  let ambientSession: { sessionId: string; startedAt: string; providerLabel: string } | null = null;
+  let currentPresence: MorpheusVoicePresence = {
+    v: MORPHEUS_VOICE_VERSION,
+    state: 'asleep',
+    ambientEnabled: settings.ambientEnabled,
+  };
   const save = (): void => writeJsonAtomically(settingsPath, settings);
+
+  const publish = (state: MorpheusVoicePresenceState, reason?: string): MorpheusVoicePresence => {
+    currentPresence = {
+      v: MORPHEUS_VOICE_VERSION,
+      state,
+      ambientEnabled: settings.ambientEnabled,
+      ...(ambientSession ? {
+        sessionStartedAt: ambientSession.startedAt,
+        providerLabel: ambientSession.providerLabel,
+      } : {}),
+      ...(reason ? { reason } : {}),
+    };
+    options.emitPresence?.(structuredClone(currentPresence));
+    return structuredClone(currentPresence);
+  };
 
   const resolveAccount = async (
     accountCandidates?: ProviderAccount[],
@@ -136,71 +217,47 @@ export function createMorpheusVoiceService(options: {
     })));
     if (!settings.enabled) {
       return {
-        settings: structuredClone(settings),
-        transcriptionAvailable: false,
-        providers,
-        reason: 'Voice input is disabled.',
+        settings: structuredClone(settings), presence: structuredClone(currentPresence),
+        transcriptionAvailable: false, providers, reason: 'Voice input is disabled.',
       };
     }
     const resolved = await resolveAccount(accounts);
     return resolved
       ? {
-          settings: structuredClone(settings),
-          transcriptionAvailable: true,
-          providers,
-          providerLabel: resolved.account.label,
+          settings: structuredClone(settings), presence: structuredClone(currentPresence),
+          transcriptionAvailable: true, providers, providerLabel: resolved.account.label,
         }
       : {
-          settings: structuredClone(settings),
-          transcriptionAvailable: false,
-          providers,
+          settings: structuredClone(settings), presence: structuredClone(currentPresence),
+          transcriptionAvailable: false, providers,
           reason: 'Configure an API-key OpenAI or compatible transcription provider.',
         };
   };
 
-  return {
-    status,
+  const transcribeWithMode = async (
+    payload: MorpheusTranscribeAudioPayload,
+    ambient: boolean,
+  ): Promise<MorpheusTranscriptionResult> => {
+    if (!settings.enabled) throw new Error('Voice input is disabled.');
+    if (!options.audit.isHealthy()) throw new Error('Voice transcription is blocked while Audit is unavailable.');
+    if (ambient && !ambientSession) throw new Error('Ambient voice is not armed.');
+    const audio = decodeAudio(payload);
+    const resolved = await resolveAccount();
+    if (!resolved) throw new Error('No compatible transcription provider is configured.');
+    const endpoint = baseUrl(resolved.account);
+    const modelId = settings.modelId.trim();
 
-    async updateSettings(patch) {
-      const next = validateSettings({ ...settings, ...patch, v: MORPHEUS_VOICE_VERSION });
-      if (!next) throw new Error('Invalid Morpheus voice settings.');
-      await options.audit.recordControl({
-        category: 'voice', event: 'settings-updated',
-        details: {
-          enabled: next.enabled,
-          speakResponses: next.speakResponses,
-          autoSubmitTranscript: next.autoSubmitTranscript,
-          providerConfigured: Boolean(next.providerAccountId),
-        },
-        appVersion: options.appVersion,
-      });
-      settings = structuredClone(next);
-      save();
-      return status();
-    },
+    await options.audit.recordControl({
+      category: 'voice', event: 'transcription-started', subjectId: resolved.account.id,
+      details: {
+        bytes: audio.length, durationMs: payload.durationMs,
+        mimeType: payload.mimeType, modelId, ambient,
+      },
+      appVersion: options.appVersion,
+    });
+    if (ambient) publish('transcribing');
 
-    async transcribe(payload) {
-      if (!settings.enabled) throw new Error('Voice input is disabled.');
-      if (!options.audit.isHealthy()) throw new Error('Voice transcription is blocked while Audit is unavailable.');
-      const audio = decodeAudio(payload);
-      const resolved = await resolveAccount();
-      if (!resolved) throw new Error('No compatible transcription provider is configured.');
-      const endpoint = baseUrl(resolved.account);
-      const modelId = settings.modelId.trim();
-
-      // Persist metadata before disclosure to an external provider. Audio and
-      // transcript are deliberately absent from both this record and history.
-      await options.audit.recordControl({
-        category: 'voice', event: 'transcription-started', subjectId: resolved.account.id,
-        details: {
-          bytes: audio.length,
-          durationMs: payload.durationMs,
-          mimeType: payload.mimeType,
-          modelId,
-        },
-        appVersion: options.appVersion,
-      });
-
+    try {
       const form = new FormData();
       form.append('model', modelId);
       form.append('file', new Blob([audio], { type: payload.mimeType }), `morpheus-voice.${audioExtension(payload.mimeType)}`);
@@ -228,17 +285,120 @@ export function createMorpheusVoiceService(options: {
 
       await options.audit.recordControl({
         category: 'voice', event: 'transcription-completed', subjectId: resolved.account.id,
-        details: { durationMs: payload.durationMs, transcriptChars: transcript.length, modelId },
+        details: { durationMs: payload.durationMs, transcriptChars: transcript.length, modelId, ambient },
         appVersion: options.appVersion,
       });
-      return {
-        transcript,
-        providerAccountId: resolved.account.id,
-        modelId,
-        durationMs: payload.durationMs,
+      if (ambient) publish('armed');
+      return { transcript, providerAccountId: resolved.account.id, modelId, durationMs: payload.durationMs };
+    } catch (error) {
+      try {
+        await options.audit.recordControl({
+          category: 'voice', event: 'transcription-failed', subjectId: resolved.account.id,
+          details: { durationMs: payload.durationMs, modelId, ambient }, appVersion: options.appVersion,
+        });
+      } finally {
+        if (ambient) publish('error', 'Transcription failed. Ambient voice remains armed for retry.');
+      }
+      throw error;
+    }
+  };
+
+  const service: MorpheusVoiceService = {
+    status,
+    presence: () => structuredClone(currentPresence),
+
+    async updateSettings(patch) {
+      const next = validateSettings({ ...settings, ...patch, v: MORPHEUS_VOICE_VERSION });
+      if (!next) throw new Error('Invalid Morpheus voice settings.');
+      await options.audit.recordControl({
+        category: 'voice', event: 'settings-updated',
+        details: {
+          enabled: next.enabled, ambientEnabled: next.ambientEnabled,
+          speakResponses: next.speakResponses, autoSubmitTranscript: next.autoSubmitTranscript,
+          providerConfigured: Boolean(next.providerAccountId), wakePhraseChars: next.wakePhrase.length,
+        },
+        appVersion: options.appVersion,
+      });
+      const disableAmbient = settings.ambientEnabled && !next.ambientEnabled;
+      settings = structuredClone(next);
+      save();
+      if (disableAmbient) await service.endAmbientSession();
+      else if (settings.ambientEnabled) await service.beginAmbientSession();
+      else publish('asleep');
+      return status();
+    },
+
+    transcribe: (payload) => transcribeWithMode(payload, false),
+
+    async beginAmbientSession() {
+      if (ambientSession) return structuredClone(currentPresence);
+      if (!settings.enabled || !settings.ambientEnabled) throw new Error('Ambient voice is disabled.');
+      if (!options.audit.isHealthy()) throw new Error('Ambient voice is blocked while Audit is unavailable.');
+      const resolved = await resolveAccount();
+      if (!resolved) {
+        publish('error', 'Configure a compatible transcription provider before enabling ambient voice.');
+        throw new Error('No compatible transcription provider is configured.');
+      }
+      const startedAt = now().toISOString();
+      const sessionId = `voice-${randomUUID()}`;
+      await options.audit.recordControl({
+        category: 'voice', event: 'ambient-session-started', subjectId: sessionId,
+        details: { providerAccountId: resolved.account.id, modelId: settings.modelId },
+        appVersion: options.appVersion,
+      });
+      ambientSession = { sessionId, startedAt, providerLabel: resolved.account.label };
+      return publish('armed');
+    },
+
+    async endAmbientSession() {
+      const session = ambientSession;
+      ambientSession = null;
+      if (session) {
+        try {
+          await options.audit.recordControl({
+            category: 'voice', event: 'ambient-session-ended', subjectId: session.sessionId,
+            details: {}, appVersion: options.appVersion,
+          });
+        } finally {
+          publish('asleep');
+        }
+      } else publish('asleep');
+      return structuredClone(currentPresence);
+    },
+
+    async setAmbientListening(listening) {
+      if (!ambientSession) throw new Error('Ambient voice is not armed.');
+      await options.audit.recordControl({
+        category: 'voice',
+        event: listening ? 'ambient-capture-started' : 'ambient-capture-ended',
+        subjectId: ambientSession.sessionId,
+        details: {}, appVersion: options.appVersion,
+      });
+      return publish(listening ? 'listening' : 'armed');
+    },
+
+    transcribeAmbient: (payload) => transcribeWithMode(payload, true),
+
+    setSpeaking(speaking) {
+      if (!ambientSession) return structuredClone(currentPresence);
+      return publish(speaking ? 'speaking' : 'armed');
+    },
+
+    observeObjective(event) {
+      if (!ambientSession || event.run.origin.type !== 'voice') return;
+      const next = objectivePresence(event.state);
+      if (next) publish(next, event.state === 'error' ? event.run.error?.message : undefined);
+    },
+
+    dispose() {
+      ambientSession = null;
+      currentPresence = {
+        v: MORPHEUS_VOICE_VERSION, state: 'asleep', ambientEnabled: settings.ambientEnabled,
       };
     },
   };
+
+  return service;
 }
 
-export { decodeAudio as validateAndDecodeMorpheusAudio };
+export { decodeAudio as validateAndDecodeMorpheusAudio, validateSettings as validateMorpheusVoiceSettings };

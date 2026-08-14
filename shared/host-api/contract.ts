@@ -62,6 +62,8 @@ import type {
 import type {
   MorpheusTranscribeAudioPayload,
   MorpheusTranscriptionResult,
+  MorpheusAmbientListeningPayload,
+  MorpheusVoicePresence,
   MorpheusVoiceSettingsPatch,
   MorpheusVoiceStatus,
 } from '../morpheus/voice-types';
@@ -1178,6 +1180,11 @@ export type HostApiContract = {
     voiceStatus: () => MorpheusVoiceStatus;
     updateVoiceSettings: (payload: MorpheusVoiceSettingsPatch) => MorpheusVoiceStatus;
     transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => MorpheusTranscriptionResult;
+    beginAmbientVoice: () => MorpheusVoicePresence;
+    endAmbientVoice: () => MorpheusVoicePresence;
+    setAmbientVoiceListening: (payload: MorpheusAmbientListeningPayload) => MorpheusVoicePresence;
+    transcribeAmbientAudio: (payload: MorpheusTranscribeAudioPayload) => MorpheusTranscriptionResult;
+    setVoiceSpeaking: (payload: { speaking: boolean }) => MorpheusVoicePresence;
     runtimeControl: () => MorpheusRuntimeControlSnapshot;
     setRuntimePaused: (payload: SetMorpheusRuntimePausedPayload) => MorpheusRuntimeControlSnapshot;
     permissionCenter: () => PermissionCenterSnapshot;
