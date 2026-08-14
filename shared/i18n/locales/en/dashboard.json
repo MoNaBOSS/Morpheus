@@ -829,6 +829,70 @@
         "voiceSetup": "Configure a transcription-compatible provider"
       }
     },
+    "today": {
+      "title": "Today",
+      "clear": "Nothing needs your attention. Morpheus is watching the real work, not inventing urgency.",
+      "enableNotifications": "Enable proactive notifications",
+      "disableNotifications": "Disable proactive notifications",
+      "snooze": "1 hour",
+      "dismiss": "Dismiss",
+      "act": "Handle it",
+      "openGoals": "Open Goals",
+      "sources": { "mission": "Mission", "goal": "Goal", "schedule": "Schedule", "routine": "Routine", "reminder": "Reminder" },
+      "itemTitles": {
+        "mission-needs-input": "A Mission needs your input",
+        "mission-failed": "A Mission needs attention",
+        "goal-overdue": "A Goal is overdue",
+        "goal-due": "A Goal milestone is approaching",
+        "schedule-failed": "A scheduled System needs attention",
+        "routine-candidate": "This repeated work could become a System"
+      }
+    },
+    "proactive": {
+      "settings": {
+        "title": "Proactive intelligence",
+        "description": "Morpheus watches durable Goals, Missions, schedules, routines, and reminders for factual next actions.",
+        "enabled": "Enable Today intelligence",
+        "enabledDescription": "Surface real attention from durable Morpheus state without inventing tasks or urgency.",
+        "notifications": "Proactive Windows notifications",
+        "notificationsDescription": "Deliver at most one relevant notification per scan outside quiet hours.",
+        "factualDisclosure": "Notifications are generated only from inspectable Morpheus state. Provider output cannot silently create them.",
+        "quietHours": "Quiet hours",
+        "quietStart": "Starts",
+        "quietEnd": "Ends",
+        "sources": "Attention sources"
+      }
+    },
+    "goals": {
+      "eyebrow": "Long-horizon intelligence",
+      "title": "Goals",
+      "description": "Give Missions a durable purpose, measurable milestones, and a truthful next action.",
+      "create": "New Goal",
+      "empty": "No Goals yet. Create one for work that should continue across multiple Missions.",
+      "select": "Select a Goal or create a new one.",
+      "newGoal": "New Goal",
+      "longHorizon": "Long-horizon objective",
+      "untitled": "Untitled Goal",
+      "continue": "Continue",
+      "name": "Goal name",
+      "status": "Status",
+      "objective": "Objective",
+      "successCriteria": "Success criteria",
+      "project": "Project",
+      "agent": "Agent Profile",
+      "workspace": "Workspace",
+      "targetDate": "Target date",
+      "nextAction": "Next real action",
+      "milestones": "Milestones",
+      "addMilestone": "Add milestone",
+      "noMilestones": "No milestones yet. Progress remains 0% until real milestones are completed.",
+      "removeMilestone": "Remove milestone",
+      "history": "Goal history",
+      "removeTitle": "Remove this Goal?",
+      "removeMessage": "The Goal record will be removed. Existing Missions and artifacts remain intact.",
+      "statuses": { "active": "Active", "paused": "Paused", "completed": "Completed", "abandoned": "Abandoned" },
+      "milestoneStatuses": { "pending": "Pending", "inProgress": "In progress", "completed": "Completed", "skipped": "Skipped" }
+    },
     "voice": {
       "start": "Speak to Morpheus",
       "stop": "Finish listening",

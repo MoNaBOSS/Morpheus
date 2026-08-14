@@ -36,6 +36,7 @@ import {
   Zap,
   Target,
   FolderKanban,
+  Flag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isGatewayRestarting } from '@/lib/gateway-status';
@@ -448,6 +449,13 @@ export function Sidebar() {
       icon: <FolderKanban className="h-4 w-4" strokeWidth={2} />,
       label: t('sidebar.projects'),
       testId: 'sidebar-nav-projects',
+      section: 'product',
+    },
+    {
+      to: '/goals',
+      icon: <Flag className="h-4 w-4" strokeWidth={2} />,
+      label: t('sidebar.goals'),
+      testId: 'sidebar-nav-goals',
       section: 'product',
     },
     {

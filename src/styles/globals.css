@@ -231,6 +231,10 @@
 }
 
 @layer components {
+  .morpheus-field {
+    @apply mt-1.5 h-10 w-full rounded-lg border border-border bg-surface-input px-3 text-sm text-foreground outline-none transition-colors focus:border-[hsl(var(--morpheus-accent-dim))] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
   .sidebar-nav-text.sidebar-nav-text {
     @apply text-sm font-normal leading-4;
   }

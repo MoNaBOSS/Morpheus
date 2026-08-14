@@ -10,6 +10,7 @@
         "quickCommand": "Quick Command",
         "missions": "Missions",
         "projects": "Projects & Context",
+        "goals": "Goals",
         "groups": {
             "product": "Morpheus",
             "builder": "System Builder",

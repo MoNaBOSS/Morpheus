@@ -19,6 +19,7 @@ import { PermissionCenter } from '@/components/morpheus/PermissionCenter';
 import { MorpheusWorkspaceControl } from '@/components/morpheus/MorpheusWorkspaceControl';
 import { MorpheusRuntimeControl } from '@/components/morpheus/MorpheusRuntimeControl';
 import { MorpheusVoiceSettings } from '@/components/morpheus/MorpheusVoiceSettings';
+import { MorpheusProactiveSettings } from '@/components/morpheus/MorpheusProactiveSettings';
 import { MorpheusOnboardingSettings } from '@/components/morpheus/onboarding/MorpheusOnboardingSettings';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { toUserMessage } from '@/lib/error-message';
@@ -657,6 +658,7 @@ export function Settings() {
             <div className="space-y-4">
               <MorpheusRuntimeControl />
               <MorpheusVoiceSettings />
+              <MorpheusProactiveSettings />
               <MorpheusOnboardingSettings />
             </div>
           </div>

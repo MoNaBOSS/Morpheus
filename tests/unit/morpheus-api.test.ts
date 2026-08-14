@@ -24,6 +24,9 @@ import {
   validateMemoryDraft,
   validateMemoryIdPayload,
   validateCompleteOnboardingPayload,
+  validateGoalDraft,
+  validateProactiveSettingsPatch,
+  validateCreateReminderPayload,
 } from '@electron/services/morpheus-api';
 import type { MorpheusRuntime } from '@electron/services/morpheus';
 
@@ -393,6 +396,53 @@ describe('Mission and explicit context validation', () => {
   });
 });
 
+describe('Goal and proactive intelligence validation', () => {
+  const goal = {
+    name: 'Launch Morpheus',
+    objective: 'Deliver a testable release',
+    successCriteria: 'Installer verified',
+    status: 'active' as const,
+    projectId: 'personal',
+    workspaceId: 'morpheus-files',
+    agentProfileId: 'general',
+    nextAction: 'Prepare the release notes',
+    milestones: [{ title: 'Run tests', status: 'pending' as const }],
+  };
+
+  it('accepts logical Goal context and rejects renderer-owned lineage or paths', () => {
+    expect(validateGoalDraft(goal)).toEqual(goal);
+    for (const [key, value] of [
+      ['missionIds', ['mission-injected']],
+      ['history', []],
+      ['rootPath', 'C:\\outside'],
+      ['executablePath', 'cmd.exe'],
+      ['permissionGrant', 'always'],
+    ] as const) {
+      expect(() => validateGoalDraft({ ...goal, [key]: value })).toThrow(/unsupported key/);
+    }
+    expect(() => validateGoalDraft({
+      ...goal,
+      milestones: [{ ...goal.milestones[0], completedAt: new Date().toISOString() }],
+    })).toThrow(/unsupported key/);
+  });
+
+  it('accepts bounded proactive preferences and rejects fact or execution injection', () => {
+    expect(validateProactiveSettingsPatch({
+      enabled: true,
+      quietHoursStart: '22:00',
+      categories: { goal: false },
+    })).toEqual({ enabled: true, quietHoursStart: '22:00', categories: { goal: false } });
+    expect(() => validateProactiveSettingsPatch({ enabled: true, sourceId: 'mission-injected' }))
+      .toThrow(/unsupported key/);
+    expect(() => validateProactiveSettingsPatch({ categories: { shell: true } }))
+      .toThrow(/unsupported key/);
+    expect(() => validateCreateReminderPayload({
+      title: 'Review', detail: '', dueAt: '2026-08-15T09:00:00.000Z',
+      sourceFingerprint: 'injected', executablePath: 'cmd.exe',
+    })).toThrow(/unsupported key/);
+  });
+});
+
 describe('validateAuditRecentPayload', () => {
   it('defaults, clamps and rejects', () => {
     expect(validateAuditRecentPayload(undefined)).toEqual({});
@@ -441,6 +491,7 @@ describe('runtime control validation', () => {
 describe('createMorpheusApi', () => {
   it('exposes exactly the contract surface', () => {
     expect(Object.keys(createMorpheusApi(stubOptions())).sort()).toEqual([
+      'actOnAttention',
       'addWorkspace',
       'agentProfile',
       'agentProfiles',
@@ -451,13 +502,18 @@ describe('createMorpheusApi', () => {
       'cancelObjective',
       'companionSurfaceStatus',
       'completeOnboarding',
+      'continueGoal',
       'correctObjective',
+      'createReminder',
       'describeActions',
+      'dismissAttention',
       'dismissCompanionSurface',
       'endAmbientVoice',
       'executePlan',
       'expandCompanionSurface',
       'filesRoot',
+      'goal',
+      'goals',
       'interpretCommand',
       'memories',
       'mission',
@@ -467,11 +523,15 @@ describe('createMorpheusApi', () => {
       'openFilesRoot',
       'openWorkspace',
       'permissionCenter',
+      'proactiveSnapshot',
       'project',
       'projects',
+      'refreshProactive',
       'removeAgentProfile',
+      'removeGoal',
       'removeMemory',
       'removeProject',
+      'removeReminder',
       'removeSchedule',
       'removeWorkflow',
       'removeWorkspace',
@@ -488,6 +548,7 @@ describe('createMorpheusApi', () => {
       'runWorkflow',
       'runtimeControl',
       'saveAgentProfile',
+      'saveGoal',
       'saveMemory',
       'saveProject',
       'saveSchedule',
@@ -497,10 +558,12 @@ describe('createMorpheusApi', () => {
       'setPermissionProfile',
       'setRuntimePaused',
       'setVoiceSpeaking',
+      'snoozeAttention',
       'submitObjective',
       'systemInfo',
       'transcribeAmbientAudio',
       'transcribeAudio',
+      'updateProactiveSettings',
       'updateVoiceSettings',
       'updateWorkspace',
       'voiceStatus',

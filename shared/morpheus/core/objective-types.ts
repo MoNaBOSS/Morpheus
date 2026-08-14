@@ -105,6 +105,7 @@ export type MorpheusObjectiveRun = {
   completedAt?: string;
   /** Durable work identity projected into the Missions product surface. */
   missionId?: string;
+  goalId?: string;
   projectId?: string;
   workspaceId?: string;
   agentProfileId?: string;

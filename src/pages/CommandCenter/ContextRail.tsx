@@ -8,6 +8,7 @@ import { useMorpheusExecutionContextStore } from '@/stores/morpheus-execution-co
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { SupportedActions } from './SupportedActions';
 import { PermissionCenter } from '@/components/morpheus/PermissionCenter';
+import { TodayPanel } from './TodayPanel';
 
 export function ContextRail() {
   const { t } = useTranslation('dashboard');
@@ -22,6 +23,7 @@ export function ContextRail() {
 
   return (
     <aside data-testid="command-center-context-rail" className="flex min-h-0 flex-col overflow-y-auto border-l border-border/60 bg-[hsl(var(--morpheus-surface-2))]/45">
+      <TodayPanel />
       <section className="border-b border-border/50 p-4">
         <p className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-muted-foreground"><FolderKanban className="h-3.5 w-3.5" />{t('morpheus.projects.active')}</p>
         <p data-testid="command-center-active-project" className="mt-2 text-sm text-foreground">{project?.name ?? t('morpheus.projects.none')}</p>

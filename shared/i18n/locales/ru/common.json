@@ -10,6 +10,7 @@
         "quickCommand": "Быстрая команда",
         "missions": "Миссии",
         "projects": "Проекты и контекст",
+        "goals": "Цели",
         "groups": {
             "product": "Morpheus",
             "builder": "Конструктор систем",

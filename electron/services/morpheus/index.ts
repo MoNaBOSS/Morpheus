@@ -58,6 +58,10 @@ import { createMorpheusMissionStore, type MorpheusMissionStore } from './mission
 import { createMorpheusProjectStore, type MorpheusProjectStore } from './projects/project-store';
 import { createMorpheusMemoryStore, type MorpheusMemoryStore } from './memory/memory-store';
 import { createMorpheusOnboardingStore, type MorpheusOnboardingStore } from './onboarding/onboarding-store';
+import { createMorpheusGoalStore, type MorpheusGoalStore } from './goals/goal-store';
+import { createMorpheusGoalService, type MorpheusGoalService } from './goals/goal-service';
+import { createMorpheusProactiveStore, type MorpheusProactiveStore } from './proactive/proactive-store';
+import { createMorpheusProactiveService, type MorpheusProactiveService } from './proactive/proactive-service';
 
 export type CreateMorpheusServiceOptions = {
   userDataDir: string;
@@ -84,6 +88,10 @@ export type MorpheusService = {
   projects: MorpheusProjectStore;
   memory: MorpheusMemoryStore;
   onboarding: MorpheusOnboardingStore;
+  goalStore: MorpheusGoalStore;
+  goals: MorpheusGoalService;
+  proactiveStore: MorpheusProactiveStore;
+  proactive: MorpheusProactiveService;
   voice: MorpheusVoiceService;
   workspaces: MorpheusWorkspaceStore;
   audit: MorpheusAuditSink;
@@ -173,6 +181,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   const memory = createMorpheusMemoryStore({ userDataDir: options.userDataDir });
   const missions = createMorpheusMissionStore({ userDataDir: options.userDataDir });
   const onboarding = createMorpheusOnboardingStore({ userDataDir: options.userDataDir });
+  const goalStore = createMorpheusGoalStore({ userDataDir: options.userDataDir });
   const objectiveStore = createMorpheusObjectiveStore({ userDataDir: options.userDataDir });
   missions.reconcile(objectiveStore.snapshot());
   const providerService = options.providerService ?? getProviderService();
@@ -197,6 +206,14 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     missions,
     projects,
     memory,
+    projectGoal: async (run) => {
+      if (!run.goalId) return;
+      await audit.recordControl({
+        category: 'goal', event: 'objective-state-projected', subjectId: run.goalId,
+        details: { objectiveRunId: run.objectiveRunId, state: run.state }, appVersion: options.appVersion,
+      });
+      goalStore.projectObjective(run);
+    },
     isRuntimePaused: () => runtimeControl.snapshot().paused,
     emit: (event) => {
       // Objective transitions have already been audit-persisted here. Voice
@@ -221,6 +238,15 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     }),
     isRuntimePaused: () => runtimeControl.snapshot().paused,
   });
+  const goals = createMorpheusGoalService({
+    store: goalStore, objectives, projects, workspaces, agents: agentProfiles,
+    audit, appVersion: options.appVersion,
+  });
+  const proactiveStore = createMorpheusProactiveStore({ userDataDir: options.userDataDir });
+  const proactive = createMorpheusProactiveService({
+    store: proactiveStore, missions, goals: goalStore, schedules: scheduleStore,
+    objectives, audit, appVersion: options.appVersion,
+  });
 
   return {
     runtime,
@@ -236,6 +262,10 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     projects,
     memory,
     onboarding,
+    goalStore,
+    goals,
+    proactiveStore,
+    proactive,
     voice,
     workspaces,
     audit,
@@ -258,6 +288,10 @@ export type { MorpheusMissionStore } from './missions/mission-store';
 export type { MorpheusProjectStore } from './projects/project-store';
 export type { MorpheusMemoryStore } from './memory/memory-store';
 export type { MorpheusOnboardingStore } from './onboarding/onboarding-store';
+export type { MorpheusGoalStore } from './goals/goal-store';
+export type { MorpheusGoalService } from './goals/goal-service';
+export type { MorpheusProactiveStore } from './proactive/proactive-store';
+export type { MorpheusProactiveService } from './proactive/proactive-service';
 export type { MorpheusVoiceService } from './voice/voice-service';
 export type { MorpheusWorkspaceStore } from './workspaces/workspace-store';
 export type { MorpheusRuntimeControlService } from './runtime-control';

@@ -88,6 +88,7 @@ type ObjectiveSubmission = {
   agentProfileId?: string;
   projectId?: string;
   missionId?: string;
+  goalId?: string;
   /** Main-compiled workflow plan. Never accepted from Renderer. */
   preparedPlan?: ExecutionPlan;
 };
@@ -193,6 +194,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
   missions: MorpheusMissionStore;
   projects?: { get(projectId: string): MorpheusProject | undefined };
   memory?: { eligibleForPlanning(projectId?: string, limit?: number): MorpheusMemory[] };
+  projectGoal?: (run: MorpheusObjectiveRun) => Promise<void>;
   isRuntimePaused?: () => boolean;
   emit: (event: MorpheusObjectiveEvent) => void;
   platform?: string;
@@ -290,6 +292,12 @@ export function createMorpheusObjectiveOrchestrator(options: {
         // projection cannot be presented as success, but it must not duplicate
         // or replay a native operation either. Reconciliation repairs it on the
         // next healthy load.
+      }
+      try {
+        await options.projectGoal?.(run);
+      } catch {
+        // Goal is a durable projection, never execution authority. It can be
+        // reconciled from Objective history without replaying native work.
       }
       seq += 1;
       options.emit({
@@ -746,6 +754,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
       v: MORPHEUS_OBJECTIVE_VERSION,
       objectiveRunId,
       missionId,
+      ...(payload.goalId ? { goalId: payload.goalId } : {}),
       ...(projectId ? { projectId } : {}),
       objective,
       origin: payload.origin,

@@ -213,6 +213,8 @@ function registerTypedHostHandlers(
     projects: morpheusService.projects,
     memory: morpheusService.memory,
     onboarding: morpheusService.onboarding,
+    goals: morpheusService.goals,
+    proactive: morpheusService.proactive,
     companionSurface,
     voice: morpheusService.voice,
     runtimeControl: morpheusService.runtimeControl,
@@ -279,9 +281,13 @@ function registerTypedHostHandlers(
   // Start only after the renderer can receive a batched consent request. An
   // app-startup schedule must never begin before the UI exists and then time
   // out invisibly.
-  mainWindow.webContents.once('did-finish-load', () => morpheusService.scheduler.start());
+  mainWindow.webContents.once('did-finish-load', () => {
+    morpheusService.scheduler.start();
+    morpheusService.proactive.start();
+  });
   app.once('before-quit', () => {
     morpheusService.scheduler.stop();
+    morpheusService.proactive.stop();
     morpheusService.objectives.dispose();
     morpheusService.voice.dispose();
     morpheusService.runtime.dispose();

@@ -13,6 +13,7 @@ import {
   type MorpheusObjectiveSnapshot,
   type MorpheusSystemState,
 } from '@shared/morpheus/core/objective-types';
+import { isMorpheusGoalId } from '@shared/morpheus/goal-types';
 
 import { readValidatedJson, writeJsonAtomically } from '../storage/atomic-json';
 
@@ -59,6 +60,7 @@ function validateStored(value: unknown): StoredMissions | null {
       || !MISSION_STATUSES.includes(mission.status as MorpheusMissionStatus)
       || typeof mission.createdAt !== 'string' || typeof mission.updatedAt !== 'string'
       || !Array.isArray(mission.objectiveRunIds) || !Array.isArray(mission.artifacts)) continue;
+    if (mission.goalId !== undefined && !isMorpheusGoalId(mission.goalId)) continue;
     missionsById[missionId] = structuredClone(mission) as MorpheusMission;
   }
   return {
@@ -162,6 +164,7 @@ export function createMorpheusMissionStore(options: {
       startedAt: existing?.startedAt ?? run.startedAt,
       ...(terminal && run.completedAt ? { completedAt: run.completedAt } : {}),
       ...(run.projectId ? { projectId: run.projectId } : existing?.projectId ? { projectId: existing.projectId } : {}),
+      ...(run.goalId ? { goalId: run.goalId } : existing?.goalId ? { goalId: existing.goalId } : {}),
       ...(run.workspaceId ? { workspaceId: run.workspaceId } : {}),
       ...(run.agentProfileId ? { agentProfileId: run.agentProfileId } : {}),
       objectiveRunIds,

@@ -58,6 +58,8 @@ import type {
   MorpheusProjectStore,
   MorpheusMemoryStore,
   MorpheusOnboardingStore,
+  MorpheusGoalService,
+  MorpheusProactiveService,
 } from './morpheus';
 import type { MorpheusScheduleDraft, MorpheusScheduleTrigger } from '@shared/morpheus/schedule-types';
 import type { MorpheusAuditSink } from './morpheus/audit';
@@ -115,6 +117,15 @@ import {
 } from '@shared/morpheus/memory-types';
 import type { CompleteMorpheusOnboardingPayload } from '@shared/morpheus/onboarding-types';
 import type { MorpheusCompanionSurfaceStatus } from '@shared/morpheus/companion-types';
+import {
+  isMorpheusGoalId,
+  type MorpheusGoalDraft,
+} from '@shared/morpheus/goal-types';
+import {
+  isMorpheusAttentionId,
+  type CreateMorpheusReminderPayload,
+  type MorpheusProactiveSettingsPatch,
+} from '@shared/morpheus/proactive-types';
 
 const MORPHEUS_RISK_ORDER: Record<MorpheusRiskTier, number> = {
   low: 0, medium: 1, high: 2, critical: 3,
@@ -242,6 +253,8 @@ export type CreateMorpheusApiOptions = {
   projects: MorpheusProjectStore;
   memory: MorpheusMemoryStore;
   onboarding: MorpheusOnboardingStore;
+  goals: MorpheusGoalService;
+  proactive: MorpheusProactiveService;
   companionSurface: {
     status(): MorpheusCompanionSurfaceStatus;
     dismiss(): MorpheusCompanionSurfaceStatus;
@@ -325,6 +338,141 @@ export function validateProjectDraft(payload: unknown): MorpheusProjectDraft {
     instructions: boundedText(record.instructions, 'Project context', 2_000).trim(),
     enabled: record.enabled,
   };
+}
+
+export function validateGoalIdPayload(payload: unknown): { goalId: string } {
+  const record = requireRecord(payload, 'Goal payload');
+  assertNoUnknownKeys(record, ['goalId'], 'Goal payload');
+  if (!isMorpheusGoalId(record.goalId)) throw new MorpheusValidationError('invalid Goal id');
+  return { goalId: record.goalId };
+}
+
+export function validateGoalDraft(payload: unknown): MorpheusGoalDraft {
+  const record = requireRecord(payload, 'saveGoal payload');
+  assertNoUnknownKeys(record, [
+    'goalId', 'name', 'objective', 'successCriteria', 'status', 'targetDate',
+    'projectId', 'workspaceId', 'agentProfileId', 'nextAction', 'milestones',
+  ], 'saveGoal payload');
+  if (record.goalId !== undefined && !isMorpheusGoalId(record.goalId)) throw new MorpheusValidationError('invalid Goal id');
+  if (!['active', 'paused', 'completed', 'abandoned'].includes(String(record.status))) {
+    throw new MorpheusValidationError('invalid Goal status');
+  }
+  if (!isMorpheusProjectId(record.projectId)) throw new MorpheusValidationError('invalid Goal Project id');
+  if (!isMorpheusWorkspaceId(record.workspaceId)) throw new MorpheusValidationError('invalid Goal workspace id');
+  if (typeof record.agentProfileId !== 'string' || !/^[a-z][a-z0-9-]{1,63}$/.test(record.agentProfileId)) {
+    throw new MorpheusValidationError('invalid Goal Agent Profile id');
+  }
+  if (record.targetDate !== undefined && (typeof record.targetDate !== 'string'
+    || !/^\d{4}-\d{2}-\d{2}$/.test(record.targetDate)
+    || !Number.isFinite(Date.parse(`${record.targetDate}T00:00:00`)))) {
+    throw new MorpheusValidationError('invalid Goal target date');
+  }
+  if (!Array.isArray(record.milestones) || record.milestones.length > 50) {
+    throw new MorpheusValidationError('invalid Goal milestones');
+  }
+  const milestones = record.milestones.map((value, index) => {
+    const milestone = requireRecord(value, `Goal milestone ${index + 1}`);
+    assertNoUnknownKeys(milestone, ['milestoneId', 'title', 'status', 'targetDate'], `Goal milestone ${index + 1}`);
+    if (milestone.milestoneId !== undefined && (typeof milestone.milestoneId !== 'string'
+      || !/^milestone-[a-z0-9][a-z0-9-]{0,95}$/i.test(milestone.milestoneId))) {
+      throw new MorpheusValidationError('invalid Goal milestone id');
+    }
+    if (!['pending', 'in-progress', 'completed', 'skipped'].includes(String(milestone.status))) {
+      throw new MorpheusValidationError('invalid Goal milestone status');
+    }
+    if (milestone.targetDate !== undefined && (typeof milestone.targetDate !== 'string'
+      || !/^\d{4}-\d{2}-\d{2}$/.test(milestone.targetDate)
+      || !Number.isFinite(Date.parse(`${milestone.targetDate}T00:00:00`)))) {
+      throw new MorpheusValidationError('invalid Goal milestone target date');
+    }
+    return {
+      ...(milestone.milestoneId ? { milestoneId: milestone.milestoneId } : {}),
+      title: boundedText(milestone.title, 'Goal milestone title', 160, false).trim(),
+      status: milestone.status as MorpheusGoalDraft['milestones'][number]['status'],
+      ...(milestone.targetDate ? { targetDate: milestone.targetDate } : {}),
+    };
+  });
+  return {
+    ...(record.goalId ? { goalId: record.goalId } : {}),
+    name: boundedText(record.name, 'Goal name', 100, false).trim(),
+    objective: boundedText(record.objective, 'Goal objective', 2_000, false).trim(),
+    successCriteria: boundedText(record.successCriteria, 'Goal success criteria', 2_000).trim(),
+    status: record.status as MorpheusGoalDraft['status'],
+    ...(record.targetDate ? { targetDate: record.targetDate } : {}),
+    projectId: record.projectId,
+    workspaceId: record.workspaceId,
+    agentProfileId: record.agentProfileId,
+    nextAction: boundedText(record.nextAction, 'Goal next action', 2_000).trim(),
+    milestones,
+  };
+}
+
+export function validateProactiveSettingsPatch(payload: unknown): MorpheusProactiveSettingsPatch {
+  const record = requireRecord(payload, 'updateProactiveSettings payload');
+  assertNoUnknownKeys(record, [
+    'enabled', 'notificationsEnabled', 'quietHoursEnabled', 'quietHoursStart', 'quietHoursEnd', 'categories',
+  ], 'updateProactiveSettings payload');
+  for (const key of ['enabled', 'notificationsEnabled', 'quietHoursEnabled'] as const) {
+    if (record[key] !== undefined && typeof record[key] !== 'boolean') {
+      throw new MorpheusValidationError(`${key} must be boolean`);
+    }
+  }
+  for (const key of ['quietHoursStart', 'quietHoursEnd'] as const) {
+    if (record[key] !== undefined && (typeof record[key] !== 'string'
+      || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(record[key]))) {
+      throw new MorpheusValidationError(`${key} must be HH:MM`);
+    }
+  }
+  let categories: MorpheusProactiveSettingsPatch['categories'];
+  if (record.categories !== undefined) {
+    const input = requireRecord(record.categories, 'proactive categories');
+    assertNoUnknownKeys(input, ['mission', 'goal', 'schedule', 'routine', 'reminder'], 'proactive categories');
+    for (const [key, value] of Object.entries(input)) {
+      if (typeof value !== 'boolean') throw new MorpheusValidationError(`${key} category must be boolean`);
+    }
+    categories = input as MorpheusProactiveSettingsPatch['categories'];
+  }
+  return {
+    ...(record.enabled !== undefined ? { enabled: record.enabled } : {}),
+    ...(record.notificationsEnabled !== undefined ? { notificationsEnabled: record.notificationsEnabled } : {}),
+    ...(record.quietHoursEnabled !== undefined ? { quietHoursEnabled: record.quietHoursEnabled } : {}),
+    ...(record.quietHoursStart ? { quietHoursStart: record.quietHoursStart } : {}),
+    ...(record.quietHoursEnd ? { quietHoursEnd: record.quietHoursEnd } : {}),
+    ...(categories ? { categories } : {}),
+  } as MorpheusProactiveSettingsPatch;
+}
+
+export function validateCreateReminderPayload(payload: unknown): CreateMorpheusReminderPayload {
+  const record = requireRecord(payload, 'createReminder payload');
+  assertNoUnknownKeys(record, ['title', 'detail', 'dueAt', 'suggestedObjective'], 'createReminder payload');
+  if (typeof record.dueAt !== 'string' || !Number.isFinite(Date.parse(record.dueAt))) {
+    throw new MorpheusValidationError('dueAt must be an ISO date');
+  }
+  return {
+    title: boundedText(record.title, 'reminder title', 160, false).trim(),
+    detail: boundedText(record.detail, 'reminder detail', 600).trim(),
+    dueAt: new Date(record.dueAt).toISOString(),
+    ...(record.suggestedObjective !== undefined
+      ? { suggestedObjective: boundedText(record.suggestedObjective, 'reminder objective', 2_000).trim() }
+      : {}),
+  };
+}
+
+export function validateAttentionIdPayload(payload: unknown): { attentionId: string } {
+  const record = requireRecord(payload, 'attention payload');
+  assertNoUnknownKeys(record, ['attentionId'], 'attention payload');
+  if (!isMorpheusAttentionId(record.attentionId)) throw new MorpheusValidationError('invalid attention id');
+  return { attentionId: record.attentionId };
+}
+
+export function validateSnoozeAttentionPayload(payload: unknown): { attentionId: string; until: string } {
+  const record = requireRecord(payload, 'snoozeAttention payload');
+  assertNoUnknownKeys(record, ['attentionId', 'until'], 'snoozeAttention payload');
+  if (!isMorpheusAttentionId(record.attentionId)) throw new MorpheusValidationError('invalid attention id');
+  if (typeof record.until !== 'string' || !Number.isFinite(Date.parse(record.until))) {
+    throw new MorpheusValidationError('until must be an ISO date');
+  }
+  return { attentionId: record.attentionId, until: new Date(record.until).toISOString() };
 }
 
 export function validateMemoryIdPayload(payload: unknown): MorpheusMemoryIdPayload {
@@ -784,7 +932,7 @@ const AUDIT_PHASES = [
 const AUDIT_CATEGORIES = [
   'execution', 'objective', 'mission', 'project', 'memory', 'onboarding',
   'planner', 'voice', 'permission', 'workspace',
-  'agent-profile', 'workflow', 'schedule', 'runtime',
+  'agent-profile', 'workflow', 'schedule', 'runtime', 'goal', 'proactive', 'system',
 ] as const;
 
 export function validateAuditQueryPayload(payload: unknown): MorpheusAuditQueryPayload {
@@ -895,7 +1043,7 @@ export function validateRevokePayload(payload: unknown): { grantId: string } {
 export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHostServiceRegistry['morpheus'] {
   const {
     runtime, grants, agentProfiles, workflows, scheduler, objectives, voice, runtimeControl,
-    missions, projects, memory, onboarding, companionSurface, workspaces, audit, filesRoot, appVersion, auditHealth,
+    missions, projects, memory, onboarding, goals, proactive, companionSurface, workspaces, audit, filesRoot, appVersion, auditHealth,
   } = options;
   const now = options.now ?? (() => new Date());
   const planner = options.planner ?? createDeterministicMorpheusPlanner();
@@ -1013,6 +1161,22 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
       });
       return onboarding.reset();
     },
+    goals: () => goals.list(),
+    goal: (payload) => ({ goal: goals.get(validateGoalIdPayload(payload).goalId) ?? null }),
+    saveGoal: (payload) => goals.save(validateGoalDraft(payload)),
+    removeGoal: (payload) => goals.remove(validateGoalIdPayload(payload).goalId),
+    continueGoal: (payload) => goals.continue(validateGoalIdPayload(payload).goalId),
+    proactiveSnapshot: () => proactive.snapshot(),
+    refreshProactive: () => proactive.refresh(),
+    updateProactiveSettings: (payload) => proactive.updateSettings(validateProactiveSettingsPatch(payload)),
+    createReminder: (payload) => proactive.createReminder(validateCreateReminderPayload(payload)),
+    dismissAttention: (payload) => proactive.dismiss(validateAttentionIdPayload(payload).attentionId),
+    snoozeAttention: (payload) => {
+      const input = validateSnoozeAttentionPayload(payload);
+      return proactive.snooze(input.attentionId, input.until);
+    },
+    removeReminder: (payload) => proactive.removeReminder(validateAttentionIdPayload(payload).attentionId),
+    actOnAttention: (payload) => proactive.act(validateAttentionIdPayload(payload).attentionId),
     companionSurfaceStatus: () => companionSurface.status(),
     dismissCompanionSurface: () => companionSurface.dismiss(),
     expandCompanionSurface: () => companionSurface.expand(),

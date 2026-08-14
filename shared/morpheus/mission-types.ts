@@ -38,6 +38,7 @@ export type MorpheusMission = {
   startedAt?: string;
   completedAt?: string;
   projectId?: string;
+  goalId?: string;
   workspaceId?: string;
   agentProfileId?: string;
   objectiveRunIds: readonly string[];

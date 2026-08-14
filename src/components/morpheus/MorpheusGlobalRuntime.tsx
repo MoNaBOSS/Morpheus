@@ -6,6 +6,7 @@ import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusWorkspacesStore } from '@/stores/morpheus-workspaces';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { useMorpheusIntelligenceStore } from '@/stores/morpheus-intelligence';
 import { MorpheusCaptureIndicator } from './MorpheusCaptureIndicator';
 import { MorpheusPermissionDialog } from './MorpheusPermissionDialog';
 import { MorpheusPlanConsentDialog } from './MorpheusPlanConsentDialog';
@@ -30,6 +31,8 @@ export function MorpheusGlobalRuntime() {
   const subscribeVoicePresence = useMorpheusVoiceStore((state) => state.subscribePresence);
   const loadVoiceStatus = useMorpheusVoiceStore((state) => state.loadStatus);
   const ensureAmbient = useMorpheusVoiceStore((state) => state.ensureAmbient);
+  const loadIntelligence = useMorpheusIntelligenceStore((state) => state.load);
+  const refreshToday = useMorpheusIntelligenceStore((state) => state.refreshToday);
 
   useEffect(() => {
     const unsubscribe = subscribe();
@@ -38,7 +41,7 @@ export function MorpheusGlobalRuntime() {
     const unsubscribeVoice = subscribeVoicePresence();
     void Promise.all([
       loadCapabilities(), loadPermissionCenter(), loadFilesRoot(), loadWorkspaces(), loadArtifacts(), loadObjectives(),
-      loadCompanion(), loadVoiceStatus().then(() => ensureAmbient()),
+      loadCompanion(), loadIntelligence(), loadVoiceStatus().then(() => ensureAmbient()),
     ]);
     return () => {
       unsubscribe();
@@ -60,11 +63,12 @@ export function MorpheusGlobalRuntime() {
     subscribeVoicePresence,
     loadVoiceStatus,
     ensureAmbient,
+    loadIntelligence,
   ]);
 
   useEffect(() => {
-    if (objectiveUpdatedAt) void loadMissions();
-  }, [loadMissions, objectiveUpdatedAt]);
+    if (objectiveUpdatedAt) void Promise.all([loadMissions(), refreshToday()]);
+  }, [loadMissions, refreshToday, objectiveUpdatedAt]);
 
   useEffect(() => {
     const latestId = runOrder[runOrder.length - 1];

@@ -30,7 +30,10 @@ export type ExecutionOrigin =
   | { type: 'action-launcher' }
   | { type: 'chat'; sessionKey?: string }
   | { type: 'workflow'; workflowId: string; agentProfileId?: string }
-  | { type: 'schedule'; scheduleId: string; workflowId: string; agentProfileId?: string };
+  | { type: 'schedule'; scheduleId: string; workflowId: string; agentProfileId?: string }
+  | { type: 'goal'; goalId: string; agentProfileId?: string }
+  | { type: 'proactive'; attentionId: string }
+  | { type: 'system'; systemId: string; workflowId: string; agentProfileId?: string };
 
 export type ExecutionOriginType = ExecutionOrigin['type'];
 
@@ -42,6 +45,9 @@ export const EXECUTION_ORIGIN_TYPES: readonly ExecutionOriginType[] = Object.fre
   'chat',
   'workflow',
   'schedule',
+  'goal',
+  'proactive',
+  'system',
 ]);
 
 /**

@@ -100,6 +100,21 @@ import type {
   MorpheusOnboardingStatus,
 } from '../morpheus/onboarding-types';
 import type { MorpheusCompanionSurfaceStatus } from '../morpheus/companion-types';
+import type {
+  MorpheusGoalDraft,
+  MorpheusGoalIdPayload,
+  MorpheusGoalResult,
+  MorpheusGoalsSnapshot,
+} from '../morpheus/goal-types';
+import type {
+  CreateMorpheusReminderPayload,
+  MorpheusAttentionIdPayload,
+  MorpheusAttentionItem,
+  MorpheusProactiveSettings,
+  MorpheusProactiveSettingsPatch,
+  MorpheusProactiveSnapshot,
+  SnoozeMorpheusAttentionPayload,
+} from '../morpheus/proactive-types';
 import type { WebBrowserNavigatePayload } from '../web-browser';
 
 export type JsonRecord = Record<string, unknown>;
@@ -1174,6 +1189,19 @@ export type HostApiContract = {
     onboardingStatus: () => MorpheusOnboardingStatus;
     completeOnboarding: (payload: CompleteMorpheusOnboardingPayload) => MorpheusOnboardingStatus;
     resetOnboarding: () => MorpheusOnboardingStatus;
+    goals: () => MorpheusGoalsSnapshot;
+    goal: (payload: MorpheusGoalIdPayload) => MorpheusGoalResult;
+    saveGoal: (payload: MorpheusGoalDraft) => MorpheusGoalResult;
+    removeGoal: (payload: MorpheusGoalIdPayload) => MorpheusGoalResult;
+    continueGoal: (payload: MorpheusGoalIdPayload) => SubmitMorpheusObjectiveResult;
+    proactiveSnapshot: () => MorpheusProactiveSnapshot;
+    refreshProactive: () => MorpheusProactiveSnapshot;
+    updateProactiveSettings: (payload: MorpheusProactiveSettingsPatch) => MorpheusProactiveSettings;
+    createReminder: (payload: CreateMorpheusReminderPayload) => MorpheusAttentionItem;
+    dismissAttention: (payload: MorpheusAttentionIdPayload) => MorpheusAttentionItem;
+    snoozeAttention: (payload: SnoozeMorpheusAttentionPayload) => MorpheusAttentionItem;
+    removeReminder: (payload: MorpheusAttentionIdPayload) => MorpheusAttentionItem | null;
+    actOnAttention: (payload: MorpheusAttentionIdPayload) => SubmitMorpheusObjectiveResult;
     companionSurfaceStatus: () => MorpheusCompanionSurfaceStatus;
     dismissCompanionSurface: () => MorpheusCompanionSurfaceStatus;
     expandCompanionSurface: () => MorpheusCompanionSurfaceStatus;

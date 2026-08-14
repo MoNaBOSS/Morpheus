@@ -73,6 +73,11 @@ import type { MorpheusWorkflowDraft } from '@shared/morpheus/workflow-types';
 import type { PermissionProfile } from '@shared/morpheus/permission-types';
 import type { MorpheusProjectDraft } from '@shared/morpheus/project-types';
 import type { MorpheusMemoryDraft } from '@shared/morpheus/memory-types';
+import type { MorpheusGoalDraft } from '@shared/morpheus/goal-types';
+import type {
+  CreateMorpheusReminderPayload,
+  MorpheusProactiveSettingsPatch,
+} from '@shared/morpheus/proactive-types';
 import type { CompleteMorpheusOnboardingPayload } from '@shared/morpheus/onboarding-types';
 import { invokeHost } from './host-api-client';
 
@@ -476,6 +481,23 @@ export const hostApi = {
       invokeHost('morpheus', 'completeOnboarding', payload)
     ),
     resetOnboarding: () => invokeHost('morpheus', 'resetOnboarding'),
+    goals: () => invokeHost('morpheus', 'goals'),
+    goal: (goalId: string) => invokeHost('morpheus', 'goal', { goalId }),
+    saveGoal: (payload: MorpheusGoalDraft) => invokeHost('morpheus', 'saveGoal', payload),
+    removeGoal: (goalId: string) => invokeHost('morpheus', 'removeGoal', { goalId }),
+    continueGoal: (goalId: string) => invokeHost('morpheus', 'continueGoal', { goalId }),
+    proactiveSnapshot: () => invokeHost('morpheus', 'proactiveSnapshot'),
+    refreshProactive: () => invokeHost('morpheus', 'refreshProactive'),
+    updateProactiveSettings: (payload: MorpheusProactiveSettingsPatch) => (
+      invokeHost('morpheus', 'updateProactiveSettings', payload)
+    ),
+    createReminder: (payload: CreateMorpheusReminderPayload) => invokeHost('morpheus', 'createReminder', payload),
+    dismissAttention: (attentionId: string) => invokeHost('morpheus', 'dismissAttention', { attentionId }),
+    snoozeAttention: (attentionId: string, until: string) => (
+      invokeHost('morpheus', 'snoozeAttention', { attentionId, until })
+    ),
+    removeReminder: (attentionId: string) => invokeHost('morpheus', 'removeReminder', { attentionId }),
+    actOnAttention: (attentionId: string) => invokeHost('morpheus', 'actOnAttention', { attentionId }),
     companionSurfaceStatus: () => invokeHost('morpheus', 'companionSurfaceStatus'),
     dismissCompanionSurface: () => invokeHost('morpheus', 'dismissCompanionSurface'),
     expandCompanionSurface: () => invokeHost('morpheus', 'expandCompanionSurface'),
