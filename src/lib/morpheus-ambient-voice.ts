@@ -47,7 +47,10 @@ export async function morpheusBlobToBase64(blob: Blob): Promise<string> {
 export type MorpheusAmbientVoiceCaptureOptions = {
   silenceMs: number;
   maxUtteranceMs: number;
-  onCaptureStarted(): void;
+  /** Main must audit and publish the visible capture state before bytes are recorded. */
+  onCaptureStarted(): Promise<void>;
+  /** Balances every audited start, including discarded and failed captures. */
+  onCaptureEnded(): Promise<void>;
   onBargeIn(): void;
   onUtterance(blob: Blob, mimeType: MorpheusVoiceMimeType, durationMs: number): Promise<void>;
   onError(error: Error): void;
@@ -70,6 +73,7 @@ export class MorpheusAmbientVoiceCapture {
   private suppressed = false;
   private stopped = true;
   private maxTimer: number | null = null;
+  private discardCurrent = false;
 
   constructor(private readonly options: MorpheusAmbientVoiceCaptureOptions) {}
 
@@ -144,7 +148,11 @@ export class MorpheusAmbientVoiceCapture {
           this.voiceFrames = 0;
           this.noiseFloor = this.noiseFloor * 0.98 + Math.min(rms, 0.04) * 0.02;
         }
-        if (this.voiceFrames >= 3) this.startUtterance(mimeType, now);
+        if (this.voiceFrames >= 3) {
+          this.processing = true;
+          this.voiceFrames = 0;
+          void this.startUtterance(mimeType);
+        }
       } else if (this.recorder?.state === 'recording') {
         if (rms > threshold) this.lastVoiceAt = now;
         if (now - this.lastVoiceAt >= this.options.silenceMs) this.finishUtterance(false);
@@ -154,61 +162,82 @@ export class MorpheusAmbientVoiceCapture {
     this.animationFrame = requestAnimationFrame(frame);
   }
 
-  private startUtterance(mimeType: MorpheusVoiceMimeType, now: number): void {
-    if (!this.stream || this.recorder || this.processing || this.suppressed) return;
-    const recorder = new MediaRecorder(this.stream, { mimeType });
-    this.recorder = recorder;
-    this.chunks = [];
-    this.chunkBytes = 0;
-    this.utteranceStartedAt = now;
-    this.lastVoiceAt = now;
-    this.voiceFrames = 0;
-    recorder.ondataavailable = (event) => {
-      if (!event.data.size) return;
-      this.chunkBytes += event.data.size;
-      if (this.chunkBytes > MORPHEUS_VOICE_MAX_AUDIO_BYTES) {
-        this.options.onError(new Error('Ambient utterance exceeded the safe audio limit.'));
-        this.finishUtterance(true);
+  private async startUtterance(mimeType: MorpheusVoiceMimeType): Promise<void> {
+    if (!this.stream || this.recorder || this.suppressed || this.stopped) {
+      this.processing = false;
+      return;
+    }
+    let audited = false;
+    try {
+      await this.options.onCaptureStarted();
+      audited = true;
+      if (!this.stream || this.recorder || this.suppressed || this.stopped) {
+        await this.options.onCaptureEnded();
         return;
       }
-      this.chunks.push(event.data);
-    };
-    recorder.onerror = () => {
-      this.options.onError(new Error('Ambient microphone recording failed.'));
-      this.finishUtterance(true);
-    };
-    recorder.onstop = () => this.handleStopped(recorder, mimeType);
-    recorder.start(250);
-    this.options.onBargeIn();
-    this.options.onCaptureStarted();
-    this.maxTimer = window.setTimeout(() => this.finishUtterance(false), this.options.maxUtteranceMs);
+      const recorder = new MediaRecorder(this.stream, { mimeType });
+      this.recorder = recorder;
+      this.chunks = [];
+      this.chunkBytes = 0;
+      this.discardCurrent = false;
+      this.utteranceStartedAt = performance.now();
+      this.lastVoiceAt = this.utteranceStartedAt;
+      recorder.ondataavailable = (event) => {
+        if (!event.data.size) return;
+        this.chunkBytes += event.data.size;
+        if (this.chunkBytes > MORPHEUS_VOICE_MAX_AUDIO_BYTES) {
+          this.options.onError(new Error('Ambient utterance exceeded the safe audio limit.'));
+          this.finishUtterance(true);
+          return;
+        }
+        this.chunks.push(event.data);
+      };
+      recorder.onerror = () => {
+        this.options.onError(new Error('Ambient microphone recording failed.'));
+        this.finishUtterance(true);
+      };
+      recorder.onstop = () => { void this.handleStopped(recorder, mimeType); };
+      recorder.start(250);
+      this.options.onBargeIn();
+      this.maxTimer = window.setTimeout(() => this.finishUtterance(false), this.options.maxUtteranceMs);
+    } catch (error) {
+      if (audited) await this.options.onCaptureEnded().catch(() => undefined);
+      this.options.onError(error instanceof Error ? error : new Error(String(error)));
+    } finally {
+      this.processing = false;
+    }
   }
 
   private finishUtterance(discard: boolean): void {
     const recorder = this.recorder;
     if (!recorder || recorder.state !== 'recording') return;
-    if (discard) this.chunks = [];
+    this.discardCurrent ||= discard;
     if (this.maxTimer !== null) window.clearTimeout(this.maxTimer);
     this.maxTimer = null;
     recorder.stop();
   }
 
-  private handleStopped(recorder: MediaRecorder, mimeType: MorpheusVoiceMimeType): void {
+  private async handleStopped(recorder: MediaRecorder, mimeType: MorpheusVoiceMimeType): Promise<void> {
     if (this.recorder !== recorder) return;
     const chunks = this.chunks;
     const bytes = this.chunkBytes;
+    const discard = this.discardCurrent;
     const durationMs = Math.max(100, Math.round(performance.now() - this.utteranceStartedAt));
     this.recorder = null;
     this.chunks = [];
     this.chunkBytes = 0;
-    if (this.stopped || this.suppressed || bytes === 0 || bytes > MORPHEUS_VOICE_MAX_AUDIO_BYTES) return;
+    this.discardCurrent = false;
     this.processing = true;
-    const blob = new Blob(chunks, { type: mimeType });
-    void this.options.onUtterance(blob, mimeType, durationMs)
-      .catch((error) => this.options.onError(error instanceof Error ? error : new Error(String(error))))
-      .finally(() => {
-        this.processing = false;
-        this.voiceFrames = 0;
-      });
+    try {
+      await this.options.onCaptureEnded();
+      if (discard || this.stopped || this.suppressed || bytes === 0 || bytes > MORPHEUS_VOICE_MAX_AUDIO_BYTES) return;
+      const blob = new Blob(chunks, { type: mimeType });
+      await this.options.onUtterance(blob, mimeType, durationMs);
+    } catch (error) {
+      this.options.onError(error instanceof Error ? error : new Error(String(error)));
+    } finally {
+      this.processing = false;
+      this.voiceFrames = 0;
+    }
   }
 }

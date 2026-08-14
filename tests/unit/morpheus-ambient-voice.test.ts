@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { extractMorpheusWakeObjective } from '@/lib/morpheus-ambient-voice';
+import {
+  extractMorpheusWakeObjective,
+  MorpheusAmbientVoiceCapture,
+} from '@/lib/morpheus-ambient-voice';
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe('ambient Morpheus wake phrase', () => {
   it('extracts an objective only after the exact normalized token sequence', () => {
@@ -14,5 +19,83 @@ describe('ambient Morpheus wake phrase', () => {
     expect(extractMorpheusWakeObjective('Open Notepad please', 'Morpheus')).toBeNull();
     expect(extractMorpheusWakeObjective('Morph us open Notepad', 'Morpheus')).toBeNull();
     expect(extractMorpheusWakeObjective('Morpheus!', 'Morpheus')).toBeNull();
+  });
+
+  it('does not begin recording until Main accepts the audited capture transition', async () => {
+    const order: string[] = [];
+    let acceptAudit: (() => void) | undefined;
+    class FakeMediaRecorder {
+      state: RecordingState = 'inactive';
+      ondataavailable: ((event: BlobEvent) => void) | null = null;
+      onerror: (() => void) | null = null;
+      onstop: (() => void) | null = null;
+      start() { this.state = 'recording'; order.push('recording'); }
+      stop() { this.state = 'inactive'; this.onstop?.(); }
+    }
+    vi.stubGlobal('MediaRecorder', FakeMediaRecorder);
+    const onCaptureEnded = vi.fn(async () => { order.push('ended'); });
+    const capture = new MorpheusAmbientVoiceCapture({
+      silenceMs: 1_000,
+      maxUtteranceMs: 20_000,
+      onCaptureStarted: vi.fn(() => new Promise<void>((resolve) => {
+        acceptAudit = () => { order.push('audited'); resolve(); };
+      })),
+      onCaptureEnded,
+      onBargeIn: vi.fn(),
+      onUtterance: vi.fn(async () => undefined),
+      onError: vi.fn(),
+    });
+    const internal = capture as unknown as {
+      stream: MediaStream;
+      stopped: boolean;
+      startUtterance(mimeType: 'audio/webm'): Promise<void>;
+    };
+    internal.stream = { getTracks: () => [] } as unknown as MediaStream;
+    internal.stopped = false;
+
+    const starting = internal.startUtterance('audio/webm');
+    await vi.waitFor(() => expect(acceptAudit).toBeTypeOf('function'));
+    expect(order).toEqual([]);
+    acceptAudit?.();
+    await starting;
+    expect(order).toEqual(['audited', 'recording']);
+
+    capture.stop();
+    await vi.waitFor(() => expect(onCaptureEnded).toHaveBeenCalledOnce());
+    expect(order).toEqual(['audited', 'recording', 'ended']);
+  });
+
+  it('records no bytes when Main rejects the capture transition', async () => {
+    const recorderStart = vi.fn();
+    class FakeMediaRecorder {
+      state: RecordingState = 'inactive';
+      ondataavailable: ((event: BlobEvent) => void) | null = null;
+      onerror: (() => void) | null = null;
+      onstop: (() => void) | null = null;
+      start() { recorderStart(); this.state = 'recording'; }
+      stop() { this.state = 'inactive'; this.onstop?.(); }
+    }
+    vi.stubGlobal('MediaRecorder', FakeMediaRecorder);
+    const onError = vi.fn();
+    const capture = new MorpheusAmbientVoiceCapture({
+      silenceMs: 1_000,
+      maxUtteranceMs: 20_000,
+      onCaptureStarted: vi.fn(async () => { throw new Error('Audit unavailable'); }),
+      onCaptureEnded: vi.fn(async () => undefined),
+      onBargeIn: vi.fn(),
+      onUtterance: vi.fn(async () => undefined),
+      onError,
+    });
+    const internal = capture as unknown as {
+      stream: MediaStream;
+      stopped: boolean;
+      startUtterance(mimeType: 'audio/webm'): Promise<void>;
+    };
+    internal.stream = { getTracks: () => [] } as unknown as MediaStream;
+    internal.stopped = false;
+
+    await internal.startUtterance('audio/webm');
+    expect(recorderStart).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Audit unavailable' }));
   });
 });

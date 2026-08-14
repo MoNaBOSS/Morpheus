@@ -170,17 +170,18 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
       const controller = new MorpheusAmbientVoiceCapture({
         silenceMs: status.settings.ambientSilenceMs,
         maxUtteranceMs: status.settings.ambientMaxUtteranceMs,
-        onCaptureStarted() {
-          void hostApi.morpheus.setAmbientVoiceListening({ listening: true })
-            .then((next) => set({ presence: next }))
-            .catch((error) => set({ error: error instanceof Error ? error.message : String(error) }));
+        async onCaptureStarted() {
+          const next = await hostApi.morpheus.setAmbientVoiceListening({ listening: true });
+          set({ presence: next });
+        },
+        async onCaptureEnded() {
+          const next = await hostApi.morpheus.setAmbientVoiceListening({ listening: false });
+          set({ presence: next });
         },
         onBargeIn() {
           if (status.settings.bargeIn) window.speechSynthesis?.cancel();
         },
         async onUtterance(blob, mimeType, durationMs) {
-          const ended = await hostApi.morpheus.setAmbientVoiceListening({ listening: false });
-          set({ presence: ended });
           const result = await hostApi.morpheus.transcribeAmbientAudio({
             audioBase64: await morpheusBlobToBase64(blob), mimeType, durationMs,
           });
