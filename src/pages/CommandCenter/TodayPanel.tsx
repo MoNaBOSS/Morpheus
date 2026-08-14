@@ -13,20 +13,20 @@ function AttentionIcon({ item }: { item: MorpheusAttentionItem }) {
   return <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />;
 }
 
-export function TodayPanel() {
+export function TodayPanel({ limit = 3 }: { limit?: number }) {
   const { t } = useTranslation('dashboard');
   const snapshot = useMorpheusIntelligenceStore((state) => state.proactive);
   const dismiss = useMorpheusIntelligenceStore((state) => state.dismissAttention);
   const snooze = useMorpheusIntelligenceStore((state) => state.snoozeAttention);
   const act = useMorpheusIntelligenceStore((state) => state.actOnAttention);
   const updateSettings = useMorpheusIntelligenceStore((state) => state.updateProactiveSettings);
-  const items = snapshot.items.filter((item) => item.status === 'open').slice(0, 5);
+  const items = snapshot.items.filter((item) => item.status === 'open').slice(0, limit);
   const itemTitle = (item: MorpheusAttentionItem): string => item.presentationKey === 'reminder'
     ? item.title
     : t(`morpheus.today.itemTitles.${item.presentationKey}`);
 
   return (
-    <section data-testid="command-center-today" className="flex max-h-[300px] min-h-[150px] shrink-0 flex-col border-b border-border/60 bg-[hsl(var(--morpheus-surface-2))]/35">
+    <section data-testid="command-center-today" className="flex max-h-[185px] min-h-[108px] shrink-0 flex-col border-b border-border/60 bg-[hsl(var(--morpheus-surface-2))]/35">
       <div className="flex h-9 shrink-0 items-center justify-between border-b border-border/40 px-3">
         <div className="flex items-center gap-2">
           <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">{t('morpheus.today.title')}</span>

@@ -7,6 +7,7 @@ import { useGatewayStore } from '@/stores/gateway';
 import { useProviderStore } from '@/stores/providers';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { MorpheusRuntimeControl } from '@/components/morpheus/MorpheusRuntimeControl';
+import { PERMISSION_PROFILES, type PermissionProfile } from '@shared/morpheus/permission-types';
 
 type RuntimeCellProps = {
   icon: React.ReactNode;
@@ -44,6 +45,7 @@ export function RuntimeStatusBar() {
   const accounts = useProviderStore((state) => state.accounts);
   const defaultAccountId = useProviderStore((state) => state.defaultAccountId);
   const permission = useMorpheusCommandStore((state) => state.permission);
+  const setProfile = useMorpheusCommandStore((state) => state.setProfile);
 
   const running = gatewayStatus.state === 'running';
   const ready = running && gatewayStatus.gatewayReady !== false;
@@ -82,17 +84,36 @@ export function RuntimeStatusBar() {
         label={t('morpheus.status.provider')}
         value={providerLabel}
       />
-      <RuntimeCell
-        testId="morpheus-runtime-profile"
-        icon={permission?.auditDegraded
-          ? <ShieldAlert className="h-4 w-4 text-[hsl(var(--morpheus-danger))]" />
-          : <ShieldCheck className="h-4 w-4" />}
-        label={t('morpheus.status.trust')}
-        value={profileLabel}
-        profile={permission?.profile ?? 'unknown'}
+      <div
+        data-testid="morpheus-runtime-profile"
+        data-profile={permission?.profile ?? 'unknown'}
+        className="flex min-w-0 items-center gap-2 px-3 py-2"
       >
-        <StatusDot tone={permission?.auditDegraded ? 'error' : 'ok'} />
-      </RuntimeCell>
+        <span className="shrink-0 text-muted-foreground">
+          {permission?.auditDegraded
+            ? <ShieldAlert className="h-4 w-4 text-[hsl(var(--morpheus-danger))]" />
+            : <ShieldCheck className="h-4 w-4" />}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-muted-foreground">{t('morpheus.status.trust')}</p>
+          <div className="mt-0.5 flex items-center gap-1" role="group" aria-label={t('morpheus.permission.profileLabel')}>
+            <StatusDot tone={permission?.auditDegraded ? 'error' : 'ok'} />
+            {permission ? PERMISSION_PROFILES.map((profile: PermissionProfile) => (
+              <button
+                key={profile}
+                type="button"
+                data-testid={`morpheus-profile-${profile}`}
+                data-active={permission.profile === profile ? 'true' : 'false'}
+                title={t(`morpheus.permission.profiles.${profile}.description`)}
+                onClick={() => void setProfile(profile)}
+                className="rounded border border-border/55 px-1.5 py-0.5 text-[8px] text-muted-foreground transition-colors hover:text-foreground data-[active=true]:border-[hsl(var(--morpheus-accent-dim))] data-[active=true]:bg-[hsl(var(--morpheus-accent))]/8 data-[active=true]:text-foreground"
+              >
+                {t(`morpheus.permission.profiles.${profile}.name`)}
+              </button>
+            )) : <span className="truncate text-2xs">{profileLabel}</span>}
+          </div>
+        </div>
+      </div>
       <div className="flex items-center pl-2">
         <MorpheusRuntimeControl compact />
       </div>

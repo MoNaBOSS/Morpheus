@@ -41,7 +41,7 @@ export function Panel({ title, description, actions, children, className, testId
       )}
     >
       {(title || actions) && (
-        <header className="mb-2 flex items-start justify-between gap-2">
+        <header className="mb-2 flex shrink-0 items-start justify-between gap-2">
           <div className="min-w-0">
             {title && <h2 className="font-serif text-sm leading-tight text-foreground">{title}</h2>}
             {description && (

@@ -9,6 +9,7 @@ import { MorpheusObjectiveContextPicker } from '@/components/morpheus/MorpheusOb
 import { Panel } from '@/components/morpheus/ui';
 import { useMorpheusFoundationStore } from '@/stores/morpheus-foundation';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
+import { useMorpheusSystemsStore } from '@/stores/morpheus-systems';
 
 import { CommandBar } from './CommandBar';
 import { PlanPanel } from './PlanPanel';
@@ -22,10 +23,11 @@ export function CommandCenter() {
   const loadModels = useMorpheusFoundationStore((state) => state.loadModels);
   const loadActivity = useMorpheusFoundationStore((state) => state.loadActivity);
   const loadCompanion = useMorpheusCompanionStore((state) => state.loadAll);
+  const loadSystems = useMorpheusSystemsStore((state) => state.load);
 
   useEffect(() => {
-    void Promise.all([loadModels(), loadActivity({ limit: 20 }), loadCompanion()]);
-  }, [loadModels, loadActivity, loadCompanion]);
+    void Promise.all([loadModels(), loadActivity({ limit: 20 }), loadCompanion(), loadSystems()]);
+  }, [loadModels, loadActivity, loadCompanion, loadSystems]);
 
   return (
     <div data-morpheus data-testid="command-center-page" className="morpheus-command-center flex h-full min-h-0 flex-col overflow-y-auto bg-[hsl(var(--morpheus-surface-1))] lg:overflow-hidden">
@@ -44,7 +46,7 @@ export function CommandCenter() {
 
       <div className="relative z-10 shrink-0 px-4 pb-3 pt-3"><CommandBar /></div>
 
-      <div className="relative z-10 grid min-h-[560px] flex-1 border-t border-border/40 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_258px]">
+      <div className="relative z-10 grid min-h-[560px] flex-1 border-t border-border/40 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_278px]">
         <section className="grid min-h-0 lg:grid-rows-[minmax(0,1fr)_132px]">
           <div className="grid min-h-0 grid-cols-[190px_minmax(0,1fr)] border-b border-border/60">
             <MissionRail />

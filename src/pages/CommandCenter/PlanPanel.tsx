@@ -110,7 +110,7 @@ export function PlanPanel({ className }: { className?: string }) {
         testId="command-center-plan"
         className={cn('flex min-h-0 flex-col', className)}
       >
-        <div className="flex min-h-0 flex-1 flex-col justify-center px-2" data-testid="plan-timeline">
+        <div className="flex min-h-0 flex-1 flex-col justify-start overflow-y-auto px-2 pt-1" data-testid="plan-timeline">
           <StatusDot tone="ok" label={t('morpheus.plan.readyTitle')} />
           <p className="mt-2 max-w-md text-tiny leading-relaxed text-foreground/80">
             {t('morpheus.plan.readyBody')}

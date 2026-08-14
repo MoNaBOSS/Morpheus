@@ -781,6 +781,45 @@
     0 0 28px hsl(var(--morpheus-glow));
 }
 
+.morpheus-core-orb {
+  color: hsl(var(--muted-foreground) / 0.55);
+  border: 1px solid hsl(var(--border) / 0.85);
+  background:
+    radial-gradient(circle at 50% 50%, currentColor 0 7%, transparent 9%),
+    radial-gradient(circle at 50% 50%, hsl(var(--morpheus-surface-3)) 0 46%, transparent 48%),
+    conic-gradient(from 30deg, transparent, hsl(var(--morpheus-grid)), transparent 38%, hsl(var(--morpheus-grid)), transparent 72%);
+  box-shadow: inset 0 0 20px hsl(var(--foreground) / 0.025);
+}
+
+.morpheus-core-orb::before,
+.morpheus-core-orb::after {
+  position: absolute;
+  content: '';
+  border-radius: 9999px;
+  border: 1px solid currentColor;
+  opacity: 0.24;
+}
+
+.morpheus-core-orb::before { inset: 17%; }
+.morpheus-core-orb::after { inset: -5%; border-style: dashed; }
+
+.morpheus-core-orb-live {
+  color: hsl(var(--morpheus-accent));
+  border-color: hsl(var(--morpheus-accent-dim));
+  box-shadow:
+    inset 0 0 24px hsl(var(--morpheus-glow)),
+    0 0 28px hsl(var(--morpheus-glow));
+  animation: morpheus-core-breathe 2.8s ease-in-out infinite;
+}
+
+.morpheus-core-orb-warn { color: hsl(var(--morpheus-warn)); }
+.morpheus-core-orb-error { color: hsl(var(--morpheus-danger)); }
+
+@keyframes morpheus-core-breathe {
+  0%, 100% { opacity: 0.72; transform: scale(0.985); }
+  50% { opacity: 1; transform: scale(1.025); }
+}
+
 .morpheus-runtime-strip {
   box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.025);
 }
@@ -924,7 +963,8 @@
   }
 
   .morpheus-activation-orbit,
-  .morpheus-voice-bar {
+  .morpheus-voice-bar,
+  .morpheus-core-orb-live {
     animation: none;
   }
 }

@@ -7,6 +7,7 @@ import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { morpheusActionLabelKey } from '@/components/morpheus/morpheus-phase';
 import { MorpheusVoiceButton } from '@/components/morpheus/MorpheusVoiceButton';
 import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
+import { ObjectiveCorePresence } from './ObjectiveCorePresence';
 
 const STARTER_OBJECTIVES = [
   { key: 'system', objective: 'Show system information' },
@@ -43,9 +44,12 @@ export function CommandBar() {
           </h2>
           <p className="mt-0.5 text-2xs text-muted-foreground">{t('morpheus.command.promise')}</p>
         </div>
-        <kbd className="hidden shrink-0 rounded border border-border/70 bg-black/10 px-2 py-1 font-mono text-[9px] text-muted-foreground sm:block dark:bg-white/[0.03]">
-          Ctrl ⇧ Space · {t('morpheus.quickCommand.title')}
-        </kbd>
+        <div className="hidden min-w-0 items-center gap-4 md:flex">
+          <ObjectiveCorePresence />
+          <kbd className="hidden shrink-0 rounded border border-border/70 bg-black/10 px-2 py-1 font-mono text-[9px] text-muted-foreground xl:block dark:bg-white/[0.03]">
+            Ctrl ⇧ Space · {t('morpheus.quickCommand.title')}
+          </kbd>
+        </div>
       </div>
 
       <form
