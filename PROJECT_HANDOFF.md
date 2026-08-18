@@ -7,9 +7,11 @@ changing the runtime.
 ## Current project status
 
 Morpheus now has a coherent Windows operator experience rather than an
-OpenClaw-first shell. The **Signal OS** release candidate is implemented,
-committed, packaged, and verified through automated tests, visual checks, an
-existing-profile packaged smoke, and a fresh-profile first-run smoke.
+OpenClaw-first shell. The **Signal OS** review candidate is implemented,
+committed, packaged, and verified through automated tests, visual checks,
+normal packaged startup, an existing-profile runtime smoke, and a fresh-profile
+first-run smoke. Larry's focused review instructions are in
+[`docs/releases/LARRY_REVIEW_GUIDE.md`](docs/releases/LARRY_REVIEW_GUIDE.md).
 
 The visible product now provides:
 
@@ -47,6 +49,7 @@ and compatible credentials.
 | Item | Value |
 | --- | --- |
 | Current branch | `codex/morpheus-production-companion` |
+| Larry review runtime source | `0d85962` |
 | Signal OS runtime source | `8ba4568` |
 | Signal OS doctrine | `1af1f25` |
 | Windows 1.0 Foundation checkpoint | `4895fa4` |
@@ -61,14 +64,14 @@ application behavior. `git rev-parse HEAD` is the authoritative latest commit.
 | Field | Verified value |
 | --- | --- |
 | Installer | `C:\Morpheus\morpheus-core\release\Morpheus-1.0.0-win-x64.exe` |
-| Size | 263,671,241 bytes |
-| SHA-256 | `39454470DB3006F778F0D17AD334392E9E60D3B48D78FAEA91E3AC7732EBC77C` |
+| Size | 263,671,900 bytes |
+| SHA-256 | `1F97350612062BE49D2FD6B03B79C9A81FE8E14591EB95FAA4AEDEA0D721C6B5` |
 | Authenticode | `NotSigned`; production signing remains CI/credential-owned |
 | Unpacked executable | `C:\Morpheus\morpheus-core\release\win-unpacked\Morpheus.exe` |
 | Unpacked size | 213,989,888 bytes |
-| Unpacked SHA-256 | `F5469A2477F139A8939E9715314FDC5CB379735B80986C17B44FF80A8F4CC698` |
+| Unpacked SHA-256 | `A1866BD27451C0A5E582CCD7B27E39E47DF1968ADFED18591B6EA745D336006E` |
 
-`pnpm package:win` completed from committed runtime source `8ba4568`.
+`pnpm package:win` completed from committed runtime source `0d85962`.
 Generated release files are ignored and untracked.
 
 ## Test and verification status
@@ -82,10 +85,13 @@ Generated release files are ignored and untracked.
 | Signal OS harness validation and dry run | Pass |
 | Communication replay and comparison | Pass |
 | Core Signal OS E2E | 23/23 pass |
-| Full Morpheus E2E | 51/52 on the full run; the one fixture-sensitive scenario passed on an immediate targeted rerun |
+| Full Morpheus E2E | 51/51 pass |
+| Chat/Gateway regression canaries | 16/16 pass |
+| Repository-wide unit suite | 2,570 pass, 2 pending, 16 inherited Windows path/mock failures in three untouched OpenClaw test files |
 | Vite production build | Pass |
 | Windows NSIS package | Pass |
-| Existing-profile packaged smoke | Pass with the limitation recorded below |
+| Normal packaged startup | Pass at 1280×800; Morpheus setup rendered correctly |
+| Existing-profile packaged smoke | Pass |
 | Fresh-profile activation smoke | Pass |
 
 The fresh-profile packaged smoke used the real unpacked production executable,
@@ -98,10 +104,9 @@ all packaged processes and the port 18789 Gateway listener were clean.
 
 The existing-profile smoke verified live Gateway readiness, the real system
 report, sequential progress, artifact projection, Invoke/Presence, and fresh
-Chat usability. One restored historical Chat session retained a stale disabled
-composer even while its footer showed the Gateway connected; creating a fresh
-Chat session worked immediately. Treat that as inherited restored-session test
-debt, not as a Gateway or Objective Core failure.
+Chat usability. Runtime source `0d85962` also fixes the misleading restored
+session composer state: workspace/session readiness now has its own exact
+message and no longer reports a Gateway disconnection when the Gateway is live.
 
 Verification screenshots remain outside Git:
 
@@ -121,8 +126,9 @@ Verification screenshots remain outside Git:
 - Ambient voice is explicit opt-in and provider-backed; it is not an offline
   wake-word engine. Microphone recognition, latency, speaker output, barge-in,
   and acoustic quality need hands-on testing on the target device.
-- A restored historical Chat session can retain a stale disabled composer after
-  Gateway connection. A fresh Chat session connects and is usable.
+- The repository-wide unit suite retains 16 pre-existing Windows path/mock
+  expectation failures in `openclaw-cli`, `openclaw-upgrade-snapshot`, and
+  `plugin-install`; the Morpheus suite and packaged runtime checks are green.
 - The controlled capability set intentionally excludes arbitrary shell or
   PowerShell, unrestricted executables/arguments/paths, financial transactions,
   credential access, and privilege elevation.
@@ -237,8 +243,10 @@ source, screenshots, documentation, or audit.
 
 ## Next recommended task
 
-Run hands-on product acceptance with the intended microphone, speakers, and a
-compatible provider: activation -> push-to-talk -> broad objective -> typed plan
--> trust if required -> execution -> spoken/visual result -> tray/Invoke recall.
-Then fix only observed usability or restored-session defects before preparing a
-signed external tester build and a configured Morpheus update channel.
+Give the verified installer and
+[`docs/releases/LARRY_REVIEW_GUIDE.md`](docs/releases/LARRY_REVIEW_GUIDE.md) to
+Larry for hands-on opinion testing. Capture concrete feedback on first-use
+clarity, operator feel, trust interruptions, responsiveness, voice hardware,
+and one real weekly task. Use that evidence to choose the next product slice;
+prepare a signed external build only after authorized signing credentials and a
+Morpheus update channel exist.

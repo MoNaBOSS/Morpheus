@@ -60,18 +60,19 @@ A fresh synthetic packaged profile completed the full first-user journey:
 8. all packaged processes and the Gateway listener were clean after shutdown.
 
 The existing-profile smoke separately verified Gateway readiness, Command,
-Invoke, real execution and a fresh usable Chat. A restored historical Chat
-session retained a stale disabled composer despite showing the Gateway as
-connected; this is the main known inherited regression for the next session.
+Invoke, real execution and a fresh usable Chat. Runtime source `0d85962` fixes
+the misleading restored-session composer state: workspace/session readiness is
+now reported separately and never masquerades as a Gateway disconnection.
 
 ## Current technical and release state
 
 - Branch: `codex/morpheus-production-companion`
+- Larry review runtime source: `0d85962`
 - Signal OS runtime source: `8ba4568`
 - Signal OS doctrine: `1af1f25`
 - Installer: `C:\Morpheus\morpheus-core\release\Morpheus-1.0.0-win-x64.exe`
-- Size: 263,671,241 bytes
-- SHA-256: `39454470DB3006F778F0D17AD334392E9E60D3B48D78FAEA91E3AC7732EBC77C`
+- Size: 263,671,900 bytes
+- SHA-256: `1F97350612062BE49D2FD6B03B79C9A81FE8E14591EB95FAA4AEDEA0D721C6B5`
 - Authenticode: `NotSigned`
 - Generated release files and screenshots are ignored and must not be committed.
 
@@ -79,8 +80,9 @@ Recorded verification:
 
 - 615/615 Morpheus unit tests passed across 65 files.
 - Core Signal OS E2E passed 23/23.
-- Full Morpheus E2E passed 51/52 in one run; the single fixture-sensitive
-  failure passed on immediate targeted rerun.
+- Full Morpheus E2E passed 51/51; Chat/Gateway canaries passed 16/16.
+- The repository-wide suite passed 2,570 tests with 2 pending and retains 16
+  inherited Windows path/mock failures in three untouched OpenClaw test files.
 - Typecheck, harness, communication replay/comparison, and Vite build passed.
 - Lint had zero errors and 12 inherited Fast Refresh warnings.
 - NSIS packaging, existing-profile smoke, and fresh-profile activation smoke
@@ -113,14 +115,17 @@ Recorded verification:
 
 ## Next acceptance step
 
-Use the packaged installer on the target machine and test the human journey:
+Use the packaged installer and
+[`../releases/LARRY_REVIEW_GUIDE.md`](../releases/LARRY_REVIEW_GUIDE.md) on the
+target machine to test the human journey:
 
 1. first launch and activation comprehension;
 2. push-to-talk discoverability and real microphone transcription;
 3. one deterministic objective and one broad provider-planned objective;
 4. one scoped remembered grant and its reuse;
 5. tray/background behavior and global Invoke recall;
-6. fresh Chat plus a restored historical session;
+6. fresh Chat plus a restored historical session, checking that non-Gateway
+   readiness states are explained truthfully;
 7. perceived speed, personality, spoken output, and visual clarity.
 
 Fix evidence-backed defects from that session before signing or distributing an
