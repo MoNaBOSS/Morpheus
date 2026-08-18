@@ -6,9 +6,15 @@ changing the runtime.
 
 ## Current project status
 
-The Windows production companion is implemented, committed, packaged, and ready
-for user acceptance testing. This checkpoint turns the 0.5 execution foundation
-into one coherent Morpheus experience rather than a collection of feature pages:
+The Windows production-companion engineering foundation is implemented,
+committed, packaged, and suitable for internal engineering validation. It is
+**not yet suitable for presentation as the finished Jarvis-style Morpheus
+experience**. Hands-on installation on 2026-08-18 found a material product gap:
+the inherited OpenClaw Chat experience remains too visually dominant, while the
+cinematic onboarding, living companion presence, voice-first interaction and
+execution-focused feedback do not yet form one convincing first-run journey.
+
+The checkpoint provides substantial reusable infrastructure:
 
 - a cinematic, skippable first-run activation reaches a real **SYSTEM READY**
   state using capability, Gateway, provider, and voice availability;
@@ -28,6 +34,11 @@ into one coherent Morpheus experience rather than a collection of feature pages:
 - the premium compact Matrix-accented UI is verified at 1280x800 and 1920x1080;
 - OpenClaw Gateway and conversational Chat remain live inside the Morpheus
   product without owning its identity or OS authority.
+
+These bullets describe implemented systems, not proof that the intended product
+experience has been achieved. Do not call the application production-ready or
+Larry-ready until the packaged first-user journey passes the experience gates in
+[`docs/handoff/MORPHEUS_NEXT_SESSION_HANDOFF.md`](docs/handoff/MORPHEUS_NEXT_SESSION_HANDOFF.md).
 
 Release artifacts and verification screenshots remain ignored and outside Git.
 
@@ -236,12 +247,13 @@ put credential values in source control, screenshots, documentation, or audit.
 
 ## Next recommended task
 
-Run structured user acceptance on the packaged installer: complete the first-run
-companion flow, select the intended planner/STT provider, test the microphone in
-the actual room, and exercise several real multi-step objectives. Capture
-friction, latency, misunderstanding, interruption, permission, and visual notes
-as product feedback. The next engineering cycle should prioritize that evidence
-before expanding capability count or adding another host platform.
+Redesign and implement the unified first-user and everyday companion experience
+described in
+[`docs/handoff/MORPHEUS_NEXT_SESSION_HANDOFF.md`](docs/handoff/MORPHEUS_NEXT_SESSION_HANDOFF.md).
+Start with visual/interaction directions and an executable vertical slice:
+activation -> provider/microphone setup -> voice objective -> plan -> autonomous
+execution -> spoken/visual result -> tray companion. Validate the packaged build
+as a new user before expanding capability count or adding another platform.
 
 ## MacBook Setup
 
