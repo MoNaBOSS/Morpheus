@@ -109,6 +109,8 @@ function translate(key: string, vars?: Record<string, unknown>): string {
       return 'Route the next message to another agent';
     case 'composer.gatewayDisconnectedPlaceholder':
       return 'Gateway not connected...';
+    case 'composer.unavailablePlaceholder':
+      return 'Chat is temporarily unavailable.';
     case 'composer.send':
       return 'Send';
     case 'composer.morpheusExecute':
@@ -289,6 +291,29 @@ describe('ChatInput agent targeting', () => {
     expect(indicator).toHaveAttribute('aria-live', 'polite');
     expect(screen.getByTestId('chat-composer-dot-pulse')).toBeInTheDocument();
     expect(screen.queryByTestId('chat-composer-zoomies')).not.toBeInTheDocument();
+  });
+
+  it('uses the caller-provided reason when the composer is unavailable', () => {
+    const { rerender } = render(
+      <TooltipProvider>
+        <ChatInput
+          onSend={vi.fn()}
+          disabled
+          disabledPlaceholder="Opening this conversation..."
+        />
+      </TooltipProvider>,
+    );
+
+    const input = screen.getByTestId('chat-composer-input');
+    expect(input).toBeDisabled();
+    expect(input).toHaveAttribute('placeholder', 'Opening this conversation...');
+
+    rerender(
+      <TooltipProvider>
+        <ChatInput onSend={vi.fn()} disabled />
+      </TooltipProvider>,
+    );
+    expect(input).toHaveAttribute('placeholder', 'Chat is temporarily unavailable.');
   });
 
   it('shows an image-generation indicator without locking the composer for background work', () => {

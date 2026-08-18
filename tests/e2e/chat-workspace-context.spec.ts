@@ -563,6 +563,14 @@ test.describe('ClawX chat workspace context', () => {
       await expect(banner).toContainText(SESSION_WORKSPACE);
       await expect(banner.getByRole('button', { name: 'Choose workspace' })).toBeVisible();
 
+      const composer = page.getByTestId('chat-composer-input');
+      await expect(composer).toBeDisabled();
+      await expect(composer).toHaveAttribute(
+        'placeholder',
+        /workspace is unavailable/i,
+      );
+      await expect(composer).not.toHaveAttribute('placeholder', /gateway not connected/i);
+
       await expect.poll(async () => {
         const invocations = await getRecordedHostInvocations(app);
         return invocations.filter((entry) => (

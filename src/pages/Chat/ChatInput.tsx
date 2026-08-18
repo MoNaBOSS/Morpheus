@@ -52,6 +52,7 @@ interface ChatInputProps {
   onSend: (text: string, attachments?: FileAttachment[], targetAgentId?: string | null) => void;
   onStop?: () => void;
   disabled?: boolean;
+  disabledPlaceholder?: string;
   sending?: boolean;
   imageGenerating?: boolean;
   workspaceLabel?: string;
@@ -201,6 +202,7 @@ export function ChatInput({
   onSend,
   onStop,
   disabled = false,
+  disabledPlaceholder,
   sending = false,
   imageGenerating = false,
   workspaceLabel,
@@ -1010,7 +1012,9 @@ export function ChatInput({
                 isComposingRef.current = false;
               }}
               onPaste={handlePaste}
-              placeholder={inputDisabled ? t('composer.gatewayDisconnectedPlaceholder') : ''}
+              placeholder={inputDisabled
+                ? disabledPlaceholder ?? t('composer.unavailablePlaceholder')
+                : ''}
               disabled={inputDisabled}
               data-testid="chat-composer-input"
               className={cn(

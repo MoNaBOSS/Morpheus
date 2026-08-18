@@ -148,6 +148,7 @@ vi.mock('@/pages/Chat/ChatToolbar', () => ({
 vi.mock('@/pages/Chat/ChatInput', () => ({
   ChatInput: ({
     disabled,
+    disabledPlaceholder,
     onSend,
     onStop,
     sending,
@@ -156,6 +157,7 @@ vi.mock('@/pages/Chat/ChatInput', () => ({
     workspaceReadOnly,
   }: {
     disabled?: boolean;
+    disabledPlaceholder?: string;
     onSend: (text: string, attachments?: Array<Record<string, unknown>>, targetAgentId?: string | null) => void;
     onStop?: () => void;
     sending?: boolean;
@@ -164,7 +166,12 @@ vi.mock('@/pages/Chat/ChatInput', () => ({
     workspaceReadOnly?: boolean;
     onSelectWorkspace?: (path: string) => void;
   }) => (
-    <div data-testid="mock-chat-input" data-disabled={disabled ? 'true' : 'false'} data-sending={sending ? 'true' : 'false'}>
+    <div
+      data-testid="mock-chat-input"
+      data-disabled={disabled ? 'true' : 'false'}
+      data-disabled-placeholder={disabledPlaceholder ?? ''}
+      data-sending={sending ? 'true' : 'false'}
+    >
       <span data-testid="mock-workspace-label">{workspaceLabel}</span>
       <span data-testid="mock-workspace-path">{workspacePath}</span>
       <span data-testid="mock-workspace-readonly">{workspaceReadOnly ? 'readonly' : 'editable'}</span>
@@ -222,6 +229,11 @@ vi.mock('react-i18next', () => ({
         'workspace.unavailable.description': `This folder is unavailable: ${String(options?.path ?? '')}`,
         'workspace.unavailable.boundDescription': `This chat workspace is unavailable: ${String(options?.path ?? '')}`,
         'workspace.unavailable.chooseAction': 'Choose workspace',
+        'composer.cancellingPlaceholder': 'Stopping the current response...',
+        'composer.sessionLoadingPlaceholder': 'Opening this conversation...',
+        'composer.workspaceCheckingPlaceholder': 'Checking this workspace...',
+        'composer.workspaceRequiredPlaceholder': 'Choose a workspace to continue.',
+        'composer.workspaceUnavailablePlaceholder': 'This conversation workspace is unavailable.',
         'toolbar.currentAgent': `Talking to ${String(options?.agent ?? '')}`,
         'welcome.subtitle': 'What can I do for you?',
       };
@@ -719,11 +731,32 @@ describe('ACP Chat page', () => {
     });
     expect(acpState.loadSession).not.toHaveBeenCalled();
     expect(screen.getByTestId('mock-chat-input')).toHaveAttribute('data-disabled', 'true');
+    expect(screen.getByTestId('mock-chat-input')).toHaveAttribute(
+      'data-disabled-placeholder',
+      'This conversation workspace is unavailable.',
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'Choose workspace' }));
     await waitFor(() => {
       expect(settingsState.setChatWorkspacePath).toHaveBeenCalledWith('D:\\projects\\next-workspace');
     });
+  });
+
+  it('describes historical session loading without blaming the connected Gateway', async () => {
+    acpState.loading = true;
+
+    render(<Chat />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-chat-input')).toHaveAttribute(
+        'data-disabled-placeholder',
+        'Opening this conversation...',
+      );
+    });
+    expect(screen.getByTestId('mock-chat-input')).not.toHaveAttribute(
+      'data-disabled-placeholder',
+      'Gateway not connected...',
+    );
   });
 
   it('clears stale ACP content when switching to a local pending session', async () => {
