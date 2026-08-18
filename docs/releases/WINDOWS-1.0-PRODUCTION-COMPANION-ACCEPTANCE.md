@@ -82,22 +82,29 @@ together. Contracts, placeholder pages and mocked providers do not count.
 - normal-production packaged smoke
 - visual inspection at 1280x800 and the current desktop resolution
 
-## Verified release result — 2026-08-14
+## Verified Signal OS release-candidate result — 2026-08-18
 
-- Packaged runtime source: `d9a2ac8d5c7cde2e4b0582bc1b2c8e3f9feace66`.
-- Morpheus unit tests: 611/611 pass; typecheck, harness, communication replay,
-  and focused production-companion E2E pass.
+- Packaged runtime source: `8ba4568`.
+- The original Signal identity, cinematic activation, Today / Mission / Context
+  Command Center, compact Presence/Invoke surface, and plan-level trust
+  presentation are implemented and localized.
+- Morpheus unit tests: 615/615 pass across 65 files. Typecheck, Signal OS
+  harness validation/dry run, communication replay/comparison, Vite build, and
+  23/23 core Signal OS E2E pass.
 - Lint: zero errors with 12 inherited Fast Refresh warnings.
-- The full inherited suites retain 16 Windows path/mock unit failures and two
-  reproducible Chat E2E regressions in untouched paths; exact files and results
-  are recorded in `PROJECT_HANDOFF.md`.
+- Full Morpheus E2E passed 51/52 in one run; the single fixture-sensitive
+  session-grant scenario passed on an immediate targeted rerun.
 - `pnpm package:win` produced
-  `release/Morpheus-1.0.0-win-x64.exe` (263,669,614 bytes), SHA-256
-  `2D2F2388D051BC2907FB15067815373C9EB6415C290591C5EE61B48A33815E98`.
+  `release/Morpheus-1.0.0-win-x64.exe` (263,671,241 bytes), SHA-256
+  `39454470DB3006F778F0D17AD334392E9E60D3B48D78FAEA91E3AC7732EBC77C`.
 - Authenticode is `NotSigned`; release signing remains CI/credential-owned.
-- Normal-production smoke passed first-run SYSTEM READY, Command Center, real
-  system execution, Mission/Activity projection, Quick Command, Goals, Systems,
-  live Gateway, a real provider-backed Chat response, existing-session loading,
-  process stability, fatal-log scan, and complete owned-process cleanup.
-- Visual inspection passed at 1280x800 and 1920x1080. Screenshots remain outside
-  Git as verification artifacts.
+- Existing-profile packaged smoke passed Gateway readiness, real deterministic
+  execution, sequential Mission progress, artifact projection, Invoke, and
+  fresh Chat. A restored historical Chat session retained a stale disabled
+  composer despite connected Gateway state and remains known inherited debt.
+- Fresh-profile packaged smoke passed setup into the cinematic activation, real
+  calibration, companion personalization, a real privacy-safe first mission,
+  final **Morpheus is ready**, natural Command Center entry, and complete owned
+  process/Gateway cleanup.
+- Visual inspection passed at 1280×800 and the current desktop resolution.
+  Screenshots remain outside Git as verification artifacts.

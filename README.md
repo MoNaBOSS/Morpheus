@@ -157,6 +157,11 @@ Morpheus currently reports updates as **not configured**. It does not contact or
 
 ### 🟢 Morpheus Windows 1.0 Production Companion
 
+Morpheus now opens as **Signal OS**: a calm, execution-first operating presence
+with an original signal identity, cinematic activation, compact product rail,
+and a **Today / Mission / Context** Command Center. Chat remains available but
+does not define the home experience.
+
 Morpheus opens on the **Command Center** at `/`; **Quick Command** is available
 globally with `Ctrl+Shift+Space`; **Voice Command** has its own global shortcut;
 and OpenClaw chat remains fully functional at `/chat`. Voice, Quick Command,
@@ -190,7 +195,7 @@ operating experience:
 - long-horizon **Goals** hold measurable milestones and exact execution context,
   while **Systems** turn reviewed workflows or eligible Missions into tested,
   reusable work without minting permission grants;
-- the first-run companion introduction reaches a real **SYSTEM READY** state and
+- the first-run companion introduction reaches a real **MORPHEUS IS READY** state and
   explains Command Center, global Quick Command and voice entry points.
 
 - **Sequential typed plans** — multi-step plans honour dependencies, expose real
@@ -219,9 +224,10 @@ operating experience:
   privacy-safe audit metadata, and a cursor-based Activity ledger across daily
   append-only audit files. Text, clipboard payloads, notification copy, process
   names, directory entries, and URL queries are never persisted in audit output.
-- **Permanent visual system** — dark by default for fresh profiles, compact at
-  1280×800, with Matrix influence reserved for live/verified state and the real
-  signal-driven boot sequence.
+- **Signal OS visual system** — dark by default, compact at 1280×800, with
+  Matrix influence reserved for live/verified state, an original Morpheus
+  signal grammar, cinematic first-run activation, an execution-centered Mission
+  stage, and a compact Presence/Invoke surface. No actor likeness is used.
 - **Windows operator behavior** — tray controls expose real gateway state,
   runtime pause/resume, permission profiles, Quick Command and Voice Command.
   Voice transcription uses only a configured compatible provider; speech output

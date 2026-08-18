@@ -1,4 +1,4 @@
-# Morpheus Windows Production Companion — Handoff
+# Morpheus Signal OS — Release-Candidate Handoff
 
 Read [`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md), and the canonical
 product, architecture, design, security, roadmap, and release documents before
@@ -6,137 +6,134 @@ changing the runtime.
 
 ## Current project status
 
-The Windows production-companion engineering foundation is implemented,
-committed, packaged, and suitable for internal engineering validation. It is
-**not yet suitable for presentation as the finished Jarvis-style Morpheus
-experience**. Hands-on installation on 2026-08-18 found a material product gap:
-the inherited OpenClaw Chat experience remains too visually dominant, while the
-cinematic onboarding, living companion presence, voice-first interaction and
-execution-focused feedback do not yet form one convincing first-run journey.
+Morpheus now has a coherent Windows operator experience rather than an
+OpenClaw-first shell. The **Signal OS** release candidate is implemented,
+committed, packaged, and verified through automated tests, visual checks, an
+existing-profile packaged smoke, and a fresh-profile first-run smoke.
 
-The checkpoint provides substantial reusable infrastructure:
+The visible product now provides:
 
-- a cinematic, skippable first-run activation reaches a real **SYSTEM READY**
-  state using capability, Gateway, provider, and voice availability;
-- Command Center, Quick Command, voice, explicit Chat execution, workflows, and
-  schedules enter one Main-owned Objective Core;
-- known objectives route directly to registered capabilities, while broader
-  objectives can use a configured provider through a typed, validated planning
-  boundary;
-- sequential plans, whole-plan trust evaluation, exact scoped grants, real
-  progress, artifacts, durable Missions, and append-only Activity remain one
-  execution path;
-- Projects & Context, long-horizon Goals, source-backed Today attention,
-  proactive reminders, reusable tested Systems, Agent Profiles, workflows, and
-  schedules are first-class product surfaces;
-- global Quick Command, push-to-talk, and opt-in ambient wake-phrase voice use
-  the same Objective Core and never bypass policy;
-- the premium compact Matrix-accented UI is verified at 1280x800 and 1920x1080;
-- OpenClaw Gateway and conversational Chat remain live inside the Morpheus
-  product without owning its identity or OS authority.
+- an original Morpheus Signal identity with no actor likeness or inherited
+  ClawX artwork;
+- a full-window first-run activation that introduces the product, reports real
+  capability/runtime/provider/voice readiness, offers companion behavior, runs
+  a real privacy-safe first mission, reaches **Morpheus is ready**, and
+  transitions naturally into the Command Center;
+- a compact Signal OS rail centered on Command, Missions, Systems, Library,
+  Chat, and Invoke, with inherited administration surfaces kept under More;
+- a Command Center organized as **Today / Mission / Context**, with the command
+  surface, runtime truth, plan progress, artifacts, and trust state above the
+  fold at 1280×800;
+- an Invoke/Presence surface for immediate voice or text objectives without
+  entering Chat;
+- plan-level trust presentation that asks once for a genuinely new boundary and
+  keeps the safest decision focused by default;
+- OpenClaw Chat as a secondary conversational surface while the Main-owned
+  Objective Core remains the execution authority.
 
-These bullets describe implemented systems, not proof that the intended product
-experience has been achieved. Do not call the application production-ready or
-Larry-ready until the packaged first-user journey passes the experience gates in
-[`docs/handoff/MORPHEUS_NEXT_SESSION_HANDOFF.md`](docs/handoff/MORPHEUS_NEXT_SESSION_HANDOFF.md).
+The runtime foundation remains intact: 19 controlled Windows capabilities,
+sequential typed plans, whole-plan trust evaluation, exact grants, Missions,
+Projects/context, Goals, Agent Profiles, workflows, Morpheus schedules,
+Systems, Activity, artifacts, push-to-talk, opt-in ambient voice, and a
+provider-neutral planning boundary.
 
-Release artifacts and verification screenshots remain ignored and outside Git.
+This is a strong internal release candidate for hands-on product testing. It is
+not yet a signed public release, and microphone/acoustic quality plus broad
+provider-backed planning still require testing with the user's actual hardware
+and compatible credentials.
 
 ## Branch and commits
 
 | Item | Value |
 | --- | --- |
 | Current branch | `codex/morpheus-production-companion` |
-| Verified packaged runtime source | `d9a2ac8d5c7cde2e4b0582bc1b2c8e3f9feace66` |
-| Production companion campaign base | `b5cff47` |
+| Signal OS runtime source | `8ba4568` |
+| Signal OS doctrine | `1af1f25` |
 | Windows 1.0 Foundation checkpoint | `4895fa4` |
 | Origin | `https://github.com/MoNaBOSS/Morpheus.git` |
-| Remote state | This branch is local and has not been pushed |
+| Remote state | This branch is local unless a later operator explicitly pushes it |
 
-The handoff/documentation commit follows the packaged runtime source and does
-not change application behavior. `git rev-parse HEAD` is the authoritative
-latest documentation checkpoint; do not rewrite the verified runtime commits.
+The documentation checkpoint follows the packaged runtime and does not change
+application behavior. `git rev-parse HEAD` is the authoritative latest commit.
 
 ## Latest Windows installer
 
 | Field | Verified value |
 | --- | --- |
 | Installer | `C:\Morpheus\morpheus-core\release\Morpheus-1.0.0-win-x64.exe` |
-| Size | 263,669,614 bytes (251.45 MiB) |
-| SHA-256 | `2D2F2388D051BC2907FB15067815373C9EB6415C290591C5EE61B48A33815E98` |
+| Size | 263,671,241 bytes |
+| SHA-256 | `39454470DB3006F778F0D17AD334392E9E60D3B48D78FAEA91E3AC7732EBC77C` |
 | Authenticode | `NotSigned`; production signing remains CI/credential-owned |
 | Unpacked executable | `C:\Morpheus\morpheus-core\release\win-unpacked\Morpheus.exe` |
 | Unpacked size | 213,989,888 bytes |
-| Unpacked SHA-256 | `7EFC2E593FF5BF7BC4D8D59C65106E30695F90B014982A0B3B9B3EEFCB60CF7A` |
+| Unpacked SHA-256 | `F5469A2477F139A8939E9715314FDC5CB379735B80986C17B44FF80A8F4CC698` |
 
-`pnpm package:win` completed from committed runtime source `d9a2ac8`.
+`pnpm package:win` completed from committed runtime source `8ba4568`.
 Generated release files are ignored and untracked.
 
 ## Test and verification status
 
 | Validation | Result |
 | --- | --- |
-| `git diff --check` | Pass |
+| `git diff --check` | Pass before the documentation checkpoint |
 | Typecheck | Pass |
 | Lint | 0 errors; 12 inherited Fast Refresh warnings |
-| Morpheus unit tests | 611/611 pass across 64 files |
-| Full unit suite | 2,561 pass, 2 skip; 16 inherited Windows path/mock failures in 3 untouched OpenClaw test files |
-| Harness validation and dry run | Pass |
+| Morpheus unit tests | 615/615 pass across 65 files |
+| Signal OS harness validation and dry run | Pass |
 | Communication replay and comparison | Pass |
-| Focused production companion E2E | Pass |
-| Permission and Command Center E2E | 13/13 pass |
-| Final voice/foundation/intelligence E2E | 13/13 pass |
-| Full Electron E2E | 184 pass, 3 skip, 4 initial failures; one fixed and one load flake passed on rerun; 2 inherited Chat regressions remain |
+| Core Signal OS E2E | 23/23 pass |
+| Full Morpheus E2E | 51/52 on the full run; the one fixture-sensitive scenario passed on an immediate targeted rerun |
+| Vite production build | Pass |
 | Windows NSIS package | Pass |
-| Normal-production packaged smoke | Pass |
+| Existing-profile packaged smoke | Pass with the limitation recorded below |
+| Fresh-profile activation smoke | Pass |
 
-The two reproducible inherited E2E regressions are
-`tests/e2e/chat-scroll-to-latest.spec.ts` (jump control visibility) and
-`tests/e2e/chat-acp-attachments.spec.ts` (HTML preview fullscreen navigation).
-Their implementation paths were not changed by the production companion work.
-The 16 inherited unit failures are confined to `tests/unit/openclaw-cli.test.ts`,
-`tests/unit/openclaw-upgrade-snapshot.test.ts`, and
-`tests/unit/plugin-install.test.ts`; all 611 Morpheus tests pass.
+The fresh-profile packaged smoke used the real unpacked production executable,
+not an E2E bypass. It verified setup into the full-screen Signal activation,
+real calibration (19 capabilities and connected runtime), companion
+personalization, automatic execution of the privacy-safe system-report mission,
+one genuine artifact, the final **Morpheus is ready** state, and transition into
+the 1280×800 Command Center. The isolated profile was removed after the test;
+all packaged processes and the port 18789 Gateway listener were clean.
 
-The normal-production smoke launched only
-`release\win-unpacked\Morpheus.exe`, without an E2E bypass or installer run. It
-verified first-run activation through **SYSTEM READY**, the Command Center,
-OpenClaw Gateway on port 18789, a real provider-backed Chat response, an older
-OpenClaw session after normal Gateway warm-up, automatic privacy-safe system
-reporting, real Mission/Activity audit projection, Quick Command, Goals, and
-Systems. One Main process and its expected Electron/Gateway children ran without
-startup loops. Current-launch logs contained no fatal/error patterns. All
-packaged-owned processes and port 18789 were clean after shutdown.
+The existing-profile smoke verified live Gateway readiness, the real system
+report, sequential progress, artifact projection, Invoke/Presence, and fresh
+Chat usability. One restored historical Chat session retained a stale disabled
+composer even while its footer showed the Gateway connected; creating a fresh
+Chat session worked immediately. Treat that as inherited restored-session test
+debt, not as a Gateway or Objective Core failure.
 
 Verification screenshots remain outside Git:
 
-- `C:\Users\monir\.codex\visualizations\2026\08\10\019febb3-e40f-7751-b411-cec96afab311\morpheus-production-command-center-1280x800.png`
-- `C:\Users\monir\.codex\visualizations\2026\08\10\019febb3-e40f-7751-b411-cec96afab311\morpheus-production-command-center-1920x1080.png`
+- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\activation-ready-1280x800.png`
+- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\signal-command-center-1280x800.png`
+- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\signal-presence.png`
+- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\signal-trust-boundary.png`
+- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\command-center-mission-1280x800.png`
+- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\mission-history-1280x800.png`
+- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\quick-command-overlay.png`
 
 ## Known limitations
 
-- Real provider-backed broad planning and transcription require the user to
-  configure compatible provider/STT credentials. Deterministic registered
-  capabilities remain truthful and usable without them.
+- Real provider-backed broad planning and transcription require compatible
+  provider/STT credentials configured locally. Deterministic registered
+  capabilities remain usable without them.
 - Ambient voice is explicit opt-in and provider-backed; it is not an offline
-  wake-word engine. Microphone acceptance and acoustic quality require hands-on
-  testing on the user's device.
-- The shipped Windows capability set is intentionally controlled. It does not
-  include arbitrary shell/PowerShell, unrestricted executable paths, broad
-  filesystem access, financial transactions, credential access, or privilege
-  elevation.
-- Connected-service operators, financial-manager integrations, self-authored
-  code/skills without review, and macOS/Linux/web/mobile hosts are future
-  product work, not hidden placeholders in this build.
-- Execution remains sequential by design. Concurrency needs explicit resource
-  locking and scheduler semantics.
+  wake-word engine. Microphone recognition, latency, speaker output, barge-in,
+  and acoustic quality need hands-on testing on the target device.
+- A restored historical Chat session can retain a stale disabled composer after
+  Gateway connection. A fresh Chat session connects and is usable.
+- The controlled capability set intentionally excludes arbitrary shell or
+  PowerShell, unrestricted executables/arguments/paths, financial transactions,
+  credential access, and privilege elevation.
+- Connected-service operators, financial integrations, unsupervised skill/code
+  authorship, and non-Windows hosts remain future product work.
+- Execution remains sequential by design. Concurrency requires explicit
+  resource locking and scheduler semantics.
 - The Morpheus update endpoint is intentionally unconfigured. Local Windows
-  binaries are unsigned until the authorized CI/signing credentials exist.
-- Some internal `clawx` identifiers remain for OpenClaw data compatibility;
-  normal user-facing identity and execution authority are Morpheus.
-- The two inherited Chat E2E regressions above remain known test debt even
-  though packaged Gateway, fresh Chat, provider response, and existing-session
-  loading all passed the production smoke.
+  binaries remain unsigned until authorized signing credentials and CI exist.
+- Some internal `clawx` identifiers remain for OpenClaw compatibility; normal
+  product identity and execution authority are Morpheus.
 
 ## Architecture summary
 
@@ -145,21 +142,20 @@ Canonical references:
 - [`docs/product/MORPHEUS_VISION.md`](docs/product/MORPHEUS_VISION.md)
 - [`docs/product/MORPHEUS_COMPANION_VISION.md`](docs/product/MORPHEUS_COMPANION_VISION.md)
 - [`docs/architecture/MORPHEUS_WINDOWS_1.0_ARCHITECTURE.md`](docs/architecture/MORPHEUS_WINDOWS_1.0_ARCHITECTURE.md)
-- [`docs/architecture/MORPHEUS_COMPANION_MISSIONS_ARCHITECTURE.md`](docs/architecture/MORPHEUS_COMPANION_MISSIONS_ARCHITECTURE.md)
+- [`docs/design/MORPHEUS_SIGNAL_OS.md`](docs/design/MORPHEUS_SIGNAL_OS.md)
 - [`docs/design/MORPHEUS_DESIGN_SYSTEM.md`](docs/design/MORPHEUS_DESIGN_SYSTEM.md)
 - [`docs/security/PERMISSION_MODEL.md`](docs/security/PERMISSION_MODEL.md)
-- [`docs/security/WINDOWS_1.0_SECURITY_REVIEW.md`](docs/security/WINDOWS_1.0_SECURITY_REVIEW.md)
 - [`docs/releases/WINDOWS-1.0-PRODUCTION-COMPANION-ACCEPTANCE.md`](docs/releases/WINDOWS-1.0-PRODUCTION-COMPANION-ACCEPTANCE.md)
 
 ```text
-objective from Command Center / Quick Command / voice / Chat / workflow / schedule
+objective from Command / Invoke / voice / Chat / workflow / schedule
   -> workspace, Project, Agent Profile and eligible memory context
   -> direct registered capability or provider-neutral planner
   -> validated typed sequential plan
   -> whole-plan trust-delta evaluation
   -> one consent only for genuinely new or broader boundaries
   -> Main-owned capability execution and bounded observation/replanning
-  -> real status, Mission, result, artifact, Activity and append-only audit
+  -> live Signal state, Mission, result, artifact, Activity and audit
 ```
 
 Renderer calls Main through `src/lib/host-api.ts` and the typed `host:invoke`
@@ -167,22 +163,20 @@ registry. Renderer cannot create grants, choose executable paths, submit shell
 strings, select unrestricted roots, or activate untested Systems. Provider
 output is untrusted planning input and receives no direct OS authority.
 
-## Required software
+## Required software and setup
 
 - Git
 - Node.js 24.x
 - Corepack
 - pnpm 10.33.4 (pinned in `package.json`)
-- Windows 10/11 for native capabilities, packaged smoke, and NSIS packaging
-- Windows Developer Mode where electron-builder extraction needs symlink support
+- Windows 10/11 for native capabilities, NSIS packaging, and packaged smoke
+- Windows Developer Mode where electron-builder extraction requires symlinks
 - Optional provider and speech credentials configured through Morpheus
-- Optional signing credentials only in an authorized CI/signing environment
+- Optional signing credentials in an authorized CI/signing environment
 
-## Setup commands
-
-```bash
+```powershell
 git clone https://github.com/MoNaBOSS/Morpheus.git morpheus-core
-cd morpheus-core
+Set-Location morpheus-core
 git checkout codex/morpheus-production-companion
 corepack enable
 corepack prepare pnpm@10.33.4 --activate
@@ -192,21 +186,22 @@ pnpm dev
 
 Useful validation commands:
 
-```bash
+```powershell
 pnpm run typecheck
 pnpm run lint:check
-pnpm test
+pnpm exec vitest run morpheus
 pnpm run test:e2e
 pnpm run comms:replay
 pnpm run comms:compare
-pnpm harness validate --spec harness/specs/tasks/morpheus-production-companion.md
-pnpm harness run --spec harness/specs/tasks/morpheus-production-companion.md --dry-run
+pnpm harness validate --spec harness/specs/tasks/morpheus-signal-os.md
+pnpm harness run --spec harness/specs/tasks/morpheus-signal-os.md --dry-run
 pnpm package:win
 ```
 
 ## Environment variable names
 
-Names from `.env.example` (never commit values):
+Names from `.env.example` and supported diagnostics/runtime controls (never
+commit values):
 
 ```text
 OPENCLAW_GATEWAY_PORT
@@ -217,11 +212,6 @@ APPLE_TEAM_ID
 CSC_LINK
 CSC_KEY_PASSWORD
 GH_TOKEN
-```
-
-Optional development, diagnostics, runtime, and test controls include:
-
-```text
 OPENCLAW_STATE_DIR
 CLAWX_GATEWAY_WS_TRACE
 CLAWX_REMOTE_DEBUGGING_PORT
@@ -242,31 +232,13 @@ ALL_PROXY
 NO_PROXY
 ```
 
-Provider secrets belong in Morpheus Settings and OS-protected storage. Never
-put credential values in source control, screenshots, documentation, or audit.
+Provider secrets belong in Morpheus Settings and OS-protected storage, not
+source, screenshots, documentation, or audit.
 
 ## Next recommended task
 
-Redesign and implement the unified first-user and everyday companion experience
-described in
-[`docs/handoff/MORPHEUS_NEXT_SESSION_HANDOFF.md`](docs/handoff/MORPHEUS_NEXT_SESSION_HANDOFF.md).
-Start with visual/interaction directions and an executable vertical slice:
-activation -> provider/microphone setup -> voice objective -> plan -> autonomous
-execution -> spoken/visual result -> tray companion. Validate the packaged build
-as a new user before expanding capability count or adding another platform.
-
-## MacBook Setup
-
-```bash
-git clone https://github.com/MoNaBOSS/Morpheus.git morpheus-core
-cd morpheus-core
-git checkout codex/morpheus-production-companion
-corepack enable
-corepack prepare pnpm@10.33.4 --activate
-pnpm run init
-pnpm dev
-```
-
-The branch must be pushed before it can be checked out from another machine.
-Platform-neutral development/tests work on macOS, but the `.icns`, native
-adapters, and macOS packaging are not release-ready.
+Run hands-on product acceptance with the intended microphone, speakers, and a
+compatible provider: activation -> push-to-talk -> broad objective -> typed plan
+-> trust if required -> execution -> spoken/visual result -> tray/Invoke recall.
+Then fix only observed usability or restored-session defects before preparing a
+signed external tester build and a configured Morpheus update channel.
