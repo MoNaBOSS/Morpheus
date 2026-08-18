@@ -40,6 +40,7 @@ test.describe('Morpheus reusable Systems', () => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
+      await page.getByTestId('signal-nav-advanced').click();
       await page.getByTestId('sidebar-nav-workflows').click();
       await page.getByTestId('workflow-run-system-brief').click();
 

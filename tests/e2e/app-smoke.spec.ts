@@ -13,6 +13,7 @@ test.describe('ClawX Electron smoke flows', () => {
 
     await expect(page.getByTestId('main-layout')).toBeVisible();
     await expect(page.getByTestId('chat-toolbar-actions').getByRole('button', { name: 'Refresh chat' })).toHaveCount(0);
+    await page.getByTestId('signal-nav-advanced').click();
     await page.getByTestId('sidebar-nav-models').click();
 
     await expect(page.getByTestId('models-page')).toBeVisible();

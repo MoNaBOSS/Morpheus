@@ -25,19 +25,16 @@ test.describe('Morpheus Command Center', () => {
         'command-center-title',
         'morpheus-command-input',
         'morpheus-command-submit',
-        'morpheus-runtime-status',
         'morpheus-runtime-gateway',
         'morpheus-runtime-provider',
-        'morpheus-core-presence',
-        'command-center-readiness',
-        'plan-timeline',
+        'morpheus-runtime-profile',
+        'signal-os-live-state',
+        'signal-mission-phases',
         'command-center-today',
-        'command-center-goal-focus',
-        'command-center-systems-summary',
-        'morpheus-supported-system.report',
-        'sidebar-nav-chat',
-        'sidebar-nav-agents',
-        'sidebar-nav-skills',
+        'command-center-context-rail',
+        'signal-nav-chat',
+        'signal-nav-missions',
+        'signal-nav-systems',
       ]) {
         await expect(page.getByTestId(testId), testId).toBeVisible();
         expect(await isAboveFold(page, testId), `${testId} must be above the fold`).toBe(true);
@@ -72,7 +69,7 @@ test.describe('Morpheus Command Center', () => {
     }
   });
 
-  test('shows the active permission profile and can change it', async ({ launchElectronApp }) => {
+  test('shows the active permission profile and runs privacy-safe work without interruption', async ({ launchElectronApp }) => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
@@ -81,33 +78,24 @@ test.describe('Morpheus Command Center', () => {
       // Balanced is the default.
       await expect(page.getByTestId('morpheus-runtime-profile')).toHaveAttribute('data-profile', 'balanced');
 
-      await page.getByTestId('morpheus-profile-strict').click();
-      await expect(page.getByTestId('morpheus-runtime-profile')).toHaveAttribute('data-profile', 'strict');
-
-      // Under Strict a privacy-safe read still runs automatically.
       await page.getByTestId('morpheus-command-input').fill('Show system information');
       await page.getByTestId('morpheus-command-submit').click();
-      await expect(page.getByTestId('morpheus-run-card').first())
-        .toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
       await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i);
-      await expect(page.getByTestId('command-center-objective-iteration')).toContainText('1');
-      await expect(page.getByTestId('command-center-objective-progress')).toHaveAttribute('style', /100%/);
+      await expect(page.getByTestId('plan-timeline').locator('li').first())
+        .toHaveAttribute('data-status', 'succeeded', { timeout: 20_000 });
+      await expect(page.getByTestId('morpheus-plan-consent-dialog')).toHaveCount(0);
     } finally {
       await closeElectronApp(app);
     }
   });
 
-  test('lists only genuinely supported capabilities and records real artifacts', async ({
+  test('records real artifacts produced by a trusted command', async ({
     launchElectronApp,
   }) => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
       await expect(page.getByTestId('command-center-page')).toBeVisible();
-
-      await expect(page.getByTestId('morpheus-supported-system.report')).toBeVisible();
-      await expect(page.getByTestId('morpheus-supported-file.createText')).toBeVisible();
-      await expect(page.getByTestId('morpheus-supported-app.launch')).toBeVisible();
 
       // The approved location is shown, and no artifacts exist until one is made.
       await expect(page.getByTestId('morpheus-files-root')).toContainText('morpheus');
@@ -121,9 +109,6 @@ test.describe('Morpheus Command Center', () => {
       await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });
       await expect(page.getByTestId('morpheus-plan-consent-boundary-file.createText')).toBeVisible();
       await page.getByTestId('morpheus-plan-consent-allow-once').click();
-
-      await expect(page.getByTestId('morpheus-run-card').first())
-        .toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
 
       // The plan panel reports the step outcome, not just the raw event stream.
       await expect(page.getByTestId('plan-timeline').locator('li').first())

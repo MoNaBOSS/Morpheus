@@ -1,22 +1,17 @@
-/** Morpheus Command Center — objective, Mission, trust, execution, result. */
+/** Morpheus Signal OS — Command projection of one Main-owned Objective Core. */
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Activity, Orbit } from 'lucide-react';
 
-import morpheusLogo from '@/assets/morpheus-logo.svg';
-import { MorpheusActionTimeline } from '@/components/morpheus/MorpheusActionTimeline';
-import { MorpheusObjectiveContextPicker } from '@/components/morpheus/MorpheusObjectiveContextPicker';
-import { Panel } from '@/components/morpheus/ui';
+import { CommandBar } from './CommandBar';
+import { SignalContextHorizon } from './SignalContextHorizon';
+import { SignalMissionStage } from './SignalMissionStage';
+import { SignalTodayHorizon } from './SignalTodayHorizon';
 import { useMorpheusFoundationStore } from '@/stores/morpheus-foundation';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { useMorpheusSystemsStore } from '@/stores/morpheus-systems';
-
-import { CommandBar } from './CommandBar';
-import { PlanPanel } from './PlanPanel';
-import { RuntimeStatusBar } from './RuntimeStatusBar';
-import { MissionRail } from './MissionRail';
-import { ContextRail } from './ContextRail';
-import { RecentActivity } from './RecentActivity';
+import { resolveMorpheusSignalState } from '@/components/morpheus/signal/signal-state';
+import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 
 export function CommandCenter() {
   const { t } = useTranslation('dashboard');
@@ -24,42 +19,45 @@ export function CommandCenter() {
   const loadActivity = useMorpheusFoundationStore((state) => state.loadActivity);
   const loadCompanion = useMorpheusCompanionStore((state) => state.loadAll);
   const loadSystems = useMorpheusSystemsStore((state) => state.load);
+  const voicePhase = useMorpheusVoiceStore((state) => state.phase);
+  const voicePresence = useMorpheusVoiceStore((state) => state.presence?.state);
+  const objectiveState = useMorpheusCommandStore((state) => state.objectiveRun?.state);
+  const signalState = resolveMorpheusSignalState({
+    voicePhase,
+    // The Command layer is an explicit invocation surface. A dormant ambient
+    // listener is still ready for direct voice or keyboard input here.
+    voicePresence: voicePresence === 'asleep' ? 'armed' : voicePresence,
+    objectiveState,
+  });
 
   useEffect(() => {
     void Promise.all([loadModels(), loadActivity({ limit: 20 }), loadCompanion(), loadSystems()]);
   }, [loadModels, loadActivity, loadCompanion, loadSystems]);
 
   return (
-    <div data-morpheus data-testid="command-center-page" className="morpheus-command-center flex h-full min-h-0 flex-col overflow-y-auto bg-[hsl(var(--morpheus-surface-1))] lg:overflow-hidden">
-      <header className="relative z-10 flex shrink-0 items-center gap-4 border-b border-border/60 px-4 py-2.5">
-        <div className="flex w-[174px] min-w-0 shrink-0 items-center gap-2.5">
-          <div className="morpheus-mark-frame flex h-9 w-9 items-center justify-center rounded-lg border border-border/70 bg-[hsl(var(--morpheus-surface-2))]"><img src={morpheusLogo} alt="" aria-hidden className="h-6 w-6" /></div>
-          <div><h1 data-testid="command-center-title" className="font-serif text-base font-normal tracking-[0.1em]">{t('morpheus.title')}</h1><p className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">{t('morpheus.commandCenter')}</p></div>
+    <div data-morpheus data-testid="command-center-page" className="morpheus-signal-os relative flex h-full min-h-0 flex-col overflow-hidden bg-[hsl(var(--morpheus-surface-1))]">
+      <div aria-hidden className="morpheus-signal-os-field absolute inset-0" />
+      <header className="relative z-10 flex h-[64px] shrink-0 items-center justify-between border-b border-white/[0.07] px-5">
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 data-testid="command-center-title" className="font-serif text-base font-normal tracking-[0.16em]">{t('morpheus.title')}</h1>
+            <p className="mt-0.5 text-[8px] uppercase tracking-[0.22em] text-muted-foreground">{t('morpheus.signalOs.commandLayer')}</p>
+          </div>
         </div>
-        <RuntimeStatusBar />
+        <div className="flex items-center gap-2" aria-live="polite">
+          <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--morpheus-accent))] shadow-[0_0_10px_hsl(var(--morpheus-glow))]" />
+          <span data-testid="signal-os-live-state" className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">{t(`morpheus.signalOs.signal.${signalState}`)}</span>
+        </div>
       </header>
 
-      <div className="relative z-10 flex shrink-0 items-center gap-3 border-b border-border/40 px-4 py-2">
-        <span className="flex shrink-0 items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-muted-foreground"><Orbit className="h-3.5 w-3.5 text-[hsl(var(--morpheus-accent))]" />{t('morpheus.context.title')}</span>
-        <MorpheusObjectiveContextPicker className="min-w-0 flex-1" />
+      <div className="relative z-10 shrink-0 border-b border-white/[0.07] px-5 py-3">
+        <CommandBar />
       </div>
 
-      <div className="relative z-10 shrink-0 px-4 pb-3 pt-3"><CommandBar /></div>
-
-      <div className="relative z-10 grid min-h-[560px] flex-1 border-t border-border/40 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_278px]">
-        <section className="grid min-h-0 lg:grid-rows-[minmax(0,1fr)_132px]">
-          <div className="grid min-h-0 grid-cols-[190px_minmax(0,1fr)] border-b border-border/60">
-            <MissionRail />
-            <div className="min-h-0 p-3"><PlanPanel className="h-full min-h-[280px] lg:min-h-0" /></div>
-          </div>
-          <div className="grid min-h-0 grid-cols-[minmax(0,1.25fr)_minmax(250px,0.75fr)]">
-            <Panel testId="command-center-execution" title={<span className="flex items-center gap-2"><Activity className="h-3.5 w-3.5" />{t('morpheus.timeline.current')}</span>} className="min-h-0 overflow-hidden rounded-none border-0 border-r border-border/60 bg-transparent p-3">
-              <div className="max-h-24 overflow-y-auto pr-1"><MorpheusActionTimeline limit={3} /></div>
-            </Panel>
-            <Panel testId="command-center-activity" title={t('morpheus.activity.recent')} className="min-h-0 overflow-hidden rounded-none border-0 bg-transparent p-3"><RecentActivity /></Panel>
-          </div>
-        </section>
-        <ContextRail />
+      <div className="relative z-10 grid min-h-0 flex-1 grid-cols-[220px_minmax(0,1fr)_270px]" data-testid="signal-command-layout">
+        <SignalTodayHorizon />
+        <SignalMissionStage />
+        <SignalContextHorizon />
       </div>
     </div>
   );

@@ -1,5 +1,10 @@
 import { closeElectronApp, completeSetup, expect, getStableWindow, test } from './fixtures/electron';
 
+async function openAdvancedRoute(page: Awaited<ReturnType<typeof getStableWindow>>, testId: string): Promise<void> {
+  await page.getByTestId('signal-nav-advanced').click();
+  await page.getByTestId(testId).click();
+}
+
 /**
  * Command Center is the product home; Chat is one interface into it. These are
  * the assertions that stop a future change quietly reverting that.
@@ -36,6 +41,7 @@ test.describe('Morpheus routing', () => {
       const page = await getStableWindow(app);
       await expect(page.getByTestId('command-center-page')).toBeVisible();
 
+      await page.getByTestId('signal-nav-chat').click();
       await page.getByTestId('sidebar-new-chat').click();
       await expect(page.getByTestId('chat-page')).toBeVisible();
       expect(page.url()).toContain('#/chat');
@@ -69,7 +75,11 @@ test.describe('Morpheus routing', () => {
         ['sidebar-nav-skills', 'skills-page'],
         ['sidebar-nav-cron', 'cron-page'],
       ] as const) {
-        await page.getByTestId(testId).click();
+        if (await page.getByTestId('signal-nav-advanced').isVisible().catch(() => false)) {
+          await openAdvancedRoute(page, testId);
+        } else {
+          await page.getByTestId(testId).click();
+        }
         await expect(page.getByTestId(pageTestId)).toBeVisible({ timeout: 20_000 });
       }
     } finally {

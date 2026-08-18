@@ -11,6 +11,15 @@ async function runCommand(page: Page, objective: string): Promise<void> {
   await page.getByTestId('morpheus-command-submit').click();
 }
 
+async function navigate(page: Page, testId: string): Promise<void> {
+  if (await page.getByTestId(testId).isVisible().catch(() => false)) {
+    await page.getByTestId(testId).click();
+    return;
+  }
+  await page.getByTestId('signal-nav-advanced').click();
+  await page.getByTestId(testId).click();
+}
+
 test.describe('Morpheus 0.5 foundation', () => {
   test('keeps Command Center, builder, activity and OpenClaw chat as distinct reachable surfaces', async ({
     launchElectronApp,
@@ -27,7 +36,7 @@ test.describe('Morpheus 0.5 foundation', () => {
         ['sidebar-nav-activity', 'activity-page'],
         ['sidebar-nav-chat', 'chat-page'],
       ] as const) {
-        await page.getByTestId(navId).click();
+        await navigate(page, navId);
         await expect(page.getByTestId(pageId)).toBeVisible({ timeout: 20_000 });
       }
 
@@ -99,7 +108,7 @@ test.describe('Morpheus 0.5 foundation', () => {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
 
-      await page.getByTestId('sidebar-nav-workflows').click();
+      await navigate(page, 'sidebar-nav-workflows');
       await expect(page.getByTestId('workflow-system-brief')).toBeVisible();
       const workflowRun = page.getByTestId('workflow-run-system-brief');
       await workflowRun.click();
@@ -112,7 +121,7 @@ test.describe('Morpheus 0.5 foundation', () => {
       await expect(workflowSteps.nth(0)).toHaveAttribute('data-status', 'succeeded');
       await expect(workflowSteps.nth(1)).toHaveAttribute('data-status', 'succeeded');
 
-      await page.getByTestId('sidebar-nav-schedules').click();
+      await navigate(page, 'sidebar-nav-schedules');
       await page.getByTestId('schedule-name').fill('Foundation system brief');
       await page.getByTestId('schedule-workflow').selectOption('system-brief');
       await page.getByTestId('schedule-trigger').selectOption('interval');
@@ -125,7 +134,7 @@ test.describe('Morpheus 0.5 foundation', () => {
       await schedule.getByRole('button', { name: /run now/i }).click();
       await expect(schedule.locator('[data-tone="ok"]')).toBeVisible({ timeout: 20_000 });
 
-      await page.getByTestId('sidebar-nav-activity').click();
+      await navigate(page, 'sidebar-nav-activity');
       await expect(page.getByTestId('activity-entry').first()).toBeVisible({ timeout: 20_000 });
     } finally {
       await closeElectronApp(app);
@@ -140,7 +149,7 @@ test.describe('Morpheus 0.5 foundation', () => {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
 
-      await page.getByTestId('sidebar-nav-agent-profiles').click();
+      await navigate(page, 'sidebar-nav-agent-profiles');
       await page.getByTestId('agent-profile-create').click();
       await expect(page.getByTestId('agent-profile-editor')).toBeVisible();
       await page.getByTestId('agent-profile-name').fill('Verification Operator');
@@ -150,7 +159,7 @@ test.describe('Morpheus 0.5 foundation', () => {
       await expect(page.getByTestId('agent-profile-editor')).toHaveCount(0);
       await expect(page.getByText('Verification Operator', { exact: true })).toBeVisible();
 
-      await page.getByTestId('sidebar-nav-workflows').click();
+      await navigate(page, 'sidebar-nav-workflows');
       await page.getByTestId('workflow-create').click();
       await expect(page.getByTestId('workflow-editor')).toBeVisible();
       await page.getByTestId('workflow-name').fill('Verification system brief');
@@ -167,7 +176,7 @@ test.describe('Morpheus 0.5 foundation', () => {
       await expect(page.getByTestId('plan-status')).toContainText(/completed/i, { timeout: 20_000 });
       await expect(page.getByTestId('morpheus-workspace-control')).toBeVisible();
 
-      await page.getByTestId('sidebar-nav-schedules').click();
+      await navigate(page, 'sidebar-nav-schedules');
       await page.getByTestId('schedule-name').fill('Verification every hour');
       await page.getByTestId('schedule-workflow').selectOption({ label: 'Verification system brief' });
       await expect(page.getByTestId('schedule-workspace')).not.toHaveValue('');

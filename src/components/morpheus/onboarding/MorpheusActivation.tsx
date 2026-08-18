@@ -1,29 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ArrowRight,
-  Bot,
-  Check,
-  Cpu,
-  Mic,
-  Orbit,
-  ShieldCheck,
-  Sparkles,
-  Volume2,
-} from 'lucide-react';
+import { ArrowRight, Check, Cpu, Mic, ShieldCheck, Volume2 } from 'lucide-react';
 
-import morpheusLogo from '@/assets/morpheus-logo.svg';
 import { cn } from '@/lib/utils';
 import { hostApi } from '@/lib/host-api';
 import { useGatewayStore } from '@/stores/gateway';
 import { useProviderStore } from '@/stores/providers';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
+import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import type { MorpheusCompanionPersonality } from '@shared/morpheus/onboarding-types';
+import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
+import { MorpheusSignal } from '@/components/morpheus/signal/MorpheusSignal';
+import { resolveMorpheusSignalState } from '@/components/morpheus/signal/signal-state';
 
-type ActivationStage = 'loading' | 'intro' | 'calibrating' | 'preferences' | 'ready';
-type Signal = { id: 'core' | 'runtime' | 'provider' | 'voice'; available: boolean; detail: string };
-
+type ActivationStage = 'loading' | 'intro' | 'calibrating' | 'preferences' | 'proof' | 'ready';
+type SignalLock = { id: 'core' | 'runtime' | 'provider' | 'voice'; available: boolean; detail: string };
 const PERSONALITIES: readonly MorpheusCompanionPersonality[] = ['adaptive', 'concise', 'warm'];
+const PROOF_OBJECTIVE = 'Show system information';
 
 export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const { t } = useTranslation('dashboard');
@@ -33,11 +26,14 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const gatewayStatus = useGatewayStore((state) => state.status);
   const accounts = useProviderStore((state) => state.accounts);
   const defaultAccountId = useProviderStore((state) => state.defaultAccountId);
+  const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
+  const runObjective = useMorpheusCommandStore((state) => state.runObjective);
   const [stage, setStage] = useState<ActivationStage>('loading');
   const [dismissed, setDismissed] = useState(false);
-  const [signals, setSignals] = useState<Signal[]>([]);
+  const [signals, setSignals] = useState<SignalLock[]>([]);
   const [speakResponses, setSpeakResponses] = useState(true);
   const [personality, setPersonality] = useState<MorpheusCompanionPersonality>('adaptive');
+  const [proofStarted, setProofStarted] = useState(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -53,188 +49,125 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     return () => { cancelled = true; };
   }, [enabled, loadOnboarding]);
 
-  const provider = useMemo(() => (
-    accounts.find((account) => account.id === defaultAccountId && account.enabled)
-  ), [accounts, defaultAccountId]);
+  const provider = useMemo(() => accounts.find((account) => account.id === defaultAccountId && account.enabled), [accounts, defaultAccountId]);
+  const visibleStage: ActivationStage = stage === 'proof' && proofStarted && objectiveRun && isObjectiveTerminalState(objectiveRun.state) ? 'ready' : stage;
+  const signalState = resolveMorpheusSignalState({ objectiveState: visibleStage === 'proof' ? objectiveRun?.state : visibleStage === 'ready' ? 'complete' : visibleStage === 'calibrating' ? 'understanding' : undefined });
 
-  // Completion is persisted before the final READY scene is shown. Keep that
-  // scene alive for this activation session; a fresh mount still starts in
-  // `loading` and therefore suppresses an already-completed activation.
-  if (!enabled || dismissed || (onboarding?.completed && stage !== 'ready') || stage === 'loading') return null;
+  if (!enabled || dismissed || (onboarding?.completed && visibleStage !== 'proof' && visibleStage !== 'ready') || visibleStage === 'loading') return null;
 
   const speakIntroduction = (): void => {
     if (typeof window.speechSynthesis === 'undefined' || typeof SpeechSynthesisUtterance === 'undefined') return;
     window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(new SpeechSynthesisUtterance(t('morpheus.activation.spokenIntroduction')));
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(t('morpheus.signalOs.activation.spokenIntroduction')));
   };
 
   const calibrate = async (): Promise<void> => {
     setStage('calibrating');
     speakIntroduction();
-    const [capabilities, voice] = await Promise.all([
-      hostApi.morpheus.describeActions().catch(() => null),
-      hostApi.morpheus.voiceStatus().catch(() => null),
-    ]);
+    const [capabilities, voice] = await Promise.all([hostApi.morpheus.describeActions().catch(() => null), hostApi.morpheus.voiceStatus().catch(() => null)]);
     const runtimeReady = gatewayStatus.state === 'running' && gatewayStatus.gatewayReady !== false;
     setSignals([
-      {
-        id: 'core', available: Boolean(capabilities?.actions.length),
-        detail: capabilities ? t('morpheus.activation.signal.capabilities', { count: capabilities.actions.length }) : t('morpheus.activation.signal.unavailable'),
-      },
-      {
-        id: 'runtime', available: runtimeReady,
-        detail: runtimeReady ? t('morpheus.activation.signal.connected') : t('morpheus.activation.signal.starting'),
-      },
-      {
-        id: 'provider', available: Boolean(provider),
-        detail: provider ? `${provider.label}${provider.model ? ` · ${provider.model}` : ''}` : t('morpheus.activation.signal.optionalProvider'),
-      },
-      {
-        id: 'voice', available: Boolean(voice?.transcriptionAvailable),
-        detail: voice?.transcriptionAvailable ? (voice.providerLabel ?? t('morpheus.activation.signal.available')) : t('morpheus.activation.signal.voiceSetup'),
-      },
+      { id: 'core', available: Boolean(capabilities?.actions.length), detail: capabilities ? t('morpheus.activation.signal.capabilities', { count: capabilities.actions.length }) : t('morpheus.activation.signal.unavailable') },
+      { id: 'runtime', available: runtimeReady, detail: runtimeReady ? t('morpheus.activation.signal.connected') : t('morpheus.activation.signal.starting') },
+      { id: 'provider', available: Boolean(provider), detail: provider ? `${provider.label}${provider.model ? ` · ${provider.model}` : ''}` : t('morpheus.activation.signal.optionalProvider') },
+      { id: 'voice', available: Boolean(voice?.transcriptionAvailable), detail: voice?.transcriptionAvailable ? (voice.providerLabel ?? t('morpheus.activation.signal.available')) : t('morpheus.activation.signal.voiceSetup') },
     ]);
   };
 
-  const finish = async (): Promise<void> => {
-    const completed = await completeOnboarding({ speakResponses, personality });
-    if (completed) setStage('ready');
+  const savePreferences = async (): Promise<void> => {
+    if (await completeOnboarding({ speakResponses, personality })) setStage('proof');
   };
 
   const skip = async (): Promise<void> => {
-    const completed = await completeOnboarding({ speakResponses, personality });
-    if (completed) setDismissed(true);
+    if (await completeOnboarding({ speakResponses, personality })) setDismissed(true);
+  };
+
+  const startProof = async (): Promise<void> => {
+    setProofStarted(true);
+    const accepted = await runObjective(PROOF_OBJECTIVE, 'command-bar');
+    if (!accepted) setProofStarted(false);
   };
 
   return (
-    <div
-      data-morpheus
-      data-testid="morpheus-activation"
-      data-stage={stage}
-      className="morpheus-activation fixed inset-0 z-[9997] overflow-hidden bg-[hsl(var(--morpheus-surface-1))] text-foreground"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t('morpheus.activation.title')}
-    >
-      <div aria-hidden className="morpheus-activation-grid absolute inset-0" />
-      <div aria-hidden className="morpheus-activation-orbit absolute left-1/2 top-[42%] h-[34rem] w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full" />
+    <div data-morpheus data-testid="morpheus-activation" data-stage={visibleStage} className="morpheus-signal-activation fixed inset-0 z-[9997] overflow-hidden bg-[hsl(var(--morpheus-surface-1))] text-foreground" role="dialog" aria-modal="true" aria-label={t('morpheus.activation.title')}>
+      <div aria-hidden className="morpheus-activation-depth absolute inset-0" />
+      <div aria-hidden className="morpheus-activation-streams absolute inset-0" />
 
-      <header className="relative z-10 flex items-center justify-between px-8 py-6">
-        <div className="flex items-center gap-3">
-          <img src={morpheusLogo} alt="" className="h-8 w-8" aria-hidden />
-          <span className="font-serif text-sm tracking-[0.2em]">{t('morpheus.title')}</span>
-        </div>
-        <button
-          type="button"
-          data-testid="morpheus-activation-skip"
-          onClick={() => void skip()}
-          className="rounded border border-border/60 px-3 py-1.5 text-2xs uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
-        >
-          {t('morpheus.activation.skip')}
-        </button>
+      <header className="relative z-10 flex h-16 items-center justify-between border-b border-white/[0.05] px-7">
+        <span className="font-serif text-sm tracking-[0.24em]">{t('morpheus.title')}</span>
+        <button type="button" data-testid="morpheus-activation-skip" onClick={() => void skip()} className="px-2 py-1 text-[9px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground">{t('morpheus.activation.skip')}</button>
       </header>
 
-      <main className="relative z-10 mx-auto flex h-[calc(100%-6rem)] w-full max-w-5xl items-center justify-center px-8 pb-16">
-        {stage === 'intro' ? (
-          <section className="max-w-3xl text-center" data-testid="morpheus-activation-intro">
-            <div className="morpheus-activation-core mx-auto mb-8 flex h-28 w-28 items-center justify-center rounded-full border border-[hsl(var(--morpheus-accent-dim))]">
-              <img src={morpheusLogo} alt="" className="h-16 w-16" aria-hidden />
-            </div>
-            <p className="mb-4 text-[10px] uppercase tracking-[0.38em] text-[hsl(var(--morpheus-accent))]">
-              {t('morpheus.activation.eyebrow')}
-            </p>
-            <h1 className="font-serif text-5xl font-normal tracking-tight sm:text-7xl">{t('morpheus.activation.title')}</h1>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground">
-              {t('morpheus.activation.introduction')}
-            </p>
-            <button
-              type="button"
-              data-testid="morpheus-activation-begin"
-              autoFocus
-              onClick={() => void calibrate()}
-              className="mt-9 inline-flex h-12 items-center gap-3 rounded-full border border-[hsl(var(--morpheus-accent-dim))] bg-[hsl(var(--morpheus-accent))]/10 px-7 text-xs uppercase tracking-[0.18em] text-[hsl(var(--morpheus-accent))] shadow-[0_0_40px_hsl(var(--morpheus-glow))] hover:bg-[hsl(var(--morpheus-accent))]/15"
-            >
-              <Orbit className="h-4 w-4" /> {t('morpheus.activation.begin')} <ArrowRight className="h-4 w-4" />
-            </button>
-          </section>
-        ) : null}
+      <main className="relative z-10 grid h-[calc(100%-4rem)] grid-cols-[minmax(300px,0.8fr)_minmax(520px,1.2fr)]">
+        <section className="flex items-center justify-center border-r border-white/[0.06] p-8">
+          <div className="text-center">
+            <MorpheusSignal state={signalState} className="mx-auto h-64 w-64 text-[hsl(var(--morpheus-accent))]" label={t(`morpheus.signalOs.signal.${signalState}`)} />
+            <p className="mt-5 text-[9px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t(`morpheus.signalOs.signal.${signalState}`)}</p>
+          </div>
+        </section>
 
-        {stage === 'calibrating' ? (
-          <section className="w-full max-w-3xl" data-testid="morpheus-activation-calibration">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.calibrating')}</p>
-            <h2 className="mt-3 font-serif text-4xl font-normal">{t('morpheus.activation.systemsTitle')}</h2>
-            {signals.length === 0 ? (
-              <div className="mt-10 flex items-center gap-3 text-sm text-muted-foreground">
-                <Orbit className="h-5 w-5 motion-safe:animate-spin text-[hsl(var(--morpheus-accent))]" />
-                {t('morpheus.activation.checking')}
+        <section className="flex min-w-0 items-center px-[8vw] py-8">
+          {visibleStage === 'intro' ? (
+            <div data-testid="morpheus-activation-intro" className="max-w-2xl">
+              <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.eyebrow')}</p>
+              <h1 className="mt-5 font-serif text-6xl font-normal leading-[0.96] tracking-tight">{t('morpheus.signalOs.activation.title')}</h1>
+              <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">{t('morpheus.signalOs.activation.introduction')}</p>
+              <button type="button" data-testid="morpheus-activation-begin" autoFocus onClick={() => void calibrate()} className="mt-9 inline-flex items-center gap-3 border-b border-[hsl(var(--morpheus-accent))] pb-2 text-xs uppercase tracking-[0.18em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.signalOs.activation.begin')}<ArrowRight className="h-4 w-4" /></button>
+            </div>
+          ) : null}
+
+          {visibleStage === 'calibrating' ? (
+            <div data-testid="morpheus-activation-calibration" className="w-full max-w-2xl">
+              <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.calibrating')}</p>
+              <h2 className="mt-4 font-serif text-4xl font-normal">{t('morpheus.signalOs.activation.readiness')}</h2>
+              {signals.length === 0 ? <p className="mt-8 text-sm text-muted-foreground">{t('morpheus.activation.checking')}</p> : (
+                <>
+                  <ol className="mt-8 divide-y divide-white/[0.07] border-y border-white/[0.07]">
+                    {signals.map((signal) => {
+                      const Icon = signal.id === 'runtime' ? ShieldCheck : signal.id === 'provider' ? Cpu : signal.id === 'voice' ? Mic : Check;
+                      return <li key={signal.id} data-testid={`activation-signal-${signal.id}`} data-available={signal.available} className="flex items-center gap-4 py-4"><Icon className="h-4 w-4 text-muted-foreground" /><div className="min-w-0 flex-1"><p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground">{t(`morpheus.activation.signal.${signal.id}`)}</p><p className="mt-1 truncate text-sm text-foreground/85">{signal.detail}</p></div><span className={cn('h-2 w-2 rounded-full', signal.available ? 'bg-[hsl(var(--morpheus-accent))]' : 'bg-[hsl(var(--morpheus-warn))]')} /></li>;
+                    })}
+                  </ol>
+                  <button type="button" data-testid="morpheus-activation-continue" onClick={() => setStage('preferences')} className="mt-7 inline-flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.continue')}<ArrowRight className="h-4 w-4" /></button>
+                </>
+              )}
+            </div>
+          ) : null}
+
+          {visibleStage === 'preferences' ? (
+            <div data-testid="morpheus-activation-preferences" className="w-full max-w-2xl">
+              <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.personalize')}</p>
+              <h2 className="mt-4 font-serif text-4xl font-normal">{t('morpheus.signalOs.activation.relationship')}</h2>
+              <div className="mt-7 grid grid-cols-3 border-y border-white/[0.07]">
+                {PERSONALITIES.map((choice) => <button key={choice} type="button" data-testid={`activation-personality-${choice}`} data-selected={personality === choice} onClick={() => setPersonality(choice)} className="border-r border-white/[0.07] px-4 py-5 text-left last:border-r-0 data-[selected=true]:bg-white/[0.04]"><span className={cn('block h-1 w-7', personality === choice ? 'bg-[hsl(var(--morpheus-accent))]' : 'bg-white/10')} /><p className="mt-4 text-sm">{t(`morpheus.activation.personalities.${choice}.name`)}</p><p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">{t(`morpheus.activation.personalities.${choice}.description`)}</p></button>)}
               </div>
-            ) : (
-              <>
-                <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border/60 bg-border/60">
-                  {signals.map((signal) => {
-                    const Icon = signal.id === 'core' ? Bot : signal.id === 'runtime' ? ShieldCheck : signal.id === 'provider' ? Cpu : Mic;
-                    return (
-                      <div key={signal.id} data-testid={`activation-signal-${signal.id}`} data-available={signal.available} className="bg-[hsl(var(--morpheus-surface-2))] p-5">
-                        <div className="flex items-center justify-between">
-                          <Icon className="h-5 w-5 text-muted-foreground" />
-                          <span className={cn('h-2 w-2 rounded-full', signal.available ? 'bg-[hsl(var(--morpheus-accent))]' : 'bg-[hsl(var(--morpheus-warn))]')} />
-                        </div>
-                        <p className="mt-4 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{t(`morpheus.activation.signal.${signal.id}`)}</p>
-                        <p className="mt-1 truncate text-sm text-foreground">{signal.detail}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-                <button type="button" data-testid="morpheus-activation-continue" onClick={() => setStage('preferences')} className="mt-7 inline-flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-[hsl(var(--morpheus-accent))]">
-                  {t('morpheus.activation.continue')} <ArrowRight className="h-4 w-4" />
-                </button>
-              </>
-            )}
-          </section>
-        ) : null}
-
-        {stage === 'preferences' ? (
-          <section className="w-full max-w-3xl" data-testid="morpheus-activation-preferences">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.personalize')}</p>
-            <h2 className="mt-3 font-serif text-4xl font-normal">{t('morpheus.activation.preferenceTitle')}</h2>
-            <p className="mt-3 text-sm text-muted-foreground">{t('morpheus.activation.preferenceBody')}</p>
-            <div className="mt-8 grid grid-cols-3 gap-3">
-              {PERSONALITIES.map((choice) => (
-                <button
-                  key={choice}
-                  type="button"
-                  data-testid={`activation-personality-${choice}`}
-                  data-selected={personality === choice}
-                  onClick={() => setPersonality(choice)}
-                  className={cn('rounded-xl border p-4 text-left transition-colors', personality === choice ? 'border-[hsl(var(--morpheus-accent-dim))] bg-[hsl(var(--morpheus-accent))]/8' : 'border-border/60 bg-[hsl(var(--morpheus-surface-2))]')}
-                >
-                  <Sparkles className="h-4 w-4 text-[hsl(var(--morpheus-accent))]" />
-                  <p className="mt-5 text-sm font-medium">{t(`morpheus.activation.personalities.${choice}.name`)}</p>
-                  <p className="mt-1 text-2xs leading-relaxed text-muted-foreground">{t(`morpheus.activation.personalities.${choice}.description`)}</p>
-                </button>
-              ))}
+              <label className="mt-4 flex cursor-pointer items-center justify-between border-b border-white/[0.07] py-4"><span className="flex items-center gap-3"><Volume2 className="h-4 w-4 text-muted-foreground" /><span><span className="block text-sm">{t('morpheus.activation.speak')}</span><span className="mt-1 block text-[10px] text-muted-foreground">{t('morpheus.activation.speakDescription')}</span></span></span><input data-testid="activation-speak-responses" type="checkbox" checked={speakResponses} onChange={(event) => setSpeakResponses(event.target.checked)} className="h-4 w-4 accent-emerald-500" /></label>
+              <button type="button" data-testid="morpheus-activation-finish" onClick={() => void savePreferences()} className="mt-7 inline-flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.signalOs.activation.prove')}<ArrowRight className="h-4 w-4" /></button>
             </div>
-            <label className="mt-4 flex cursor-pointer items-center justify-between rounded-xl border border-border/60 bg-[hsl(var(--morpheus-surface-2))] p-4">
-              <span className="flex items-center gap-3"><Volume2 className="h-4 w-4 text-muted-foreground" /><span><span className="block text-sm">{t('morpheus.activation.speak')}</span><span className="mt-0.5 block text-2xs text-muted-foreground">{t('morpheus.activation.speakDescription')}</span></span></span>
-              <input data-testid="activation-speak-responses" type="checkbox" checked={speakResponses} onChange={(event) => setSpeakResponses(event.target.checked)} className="h-4 w-4 accent-emerald-500" />
-            </label>
-            <button type="button" data-testid="morpheus-activation-finish" onClick={() => void finish()} className="mt-7 inline-flex h-11 items-center gap-2 rounded-full border border-[hsl(var(--morpheus-accent-dim))] bg-[hsl(var(--morpheus-accent))]/10 px-6 text-xs uppercase tracking-[0.15em] text-[hsl(var(--morpheus-accent))]">
-              {t('morpheus.activation.finish')} <ArrowRight className="h-4 w-4" />
-            </button>
-          </section>
-        ) : null}
+          ) : null}
 
-        {stage === 'ready' ? (
-          <section className="max-w-2xl text-center" data-testid="morpheus-activation-ready">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-[hsl(var(--morpheus-accent-dim))] bg-[hsl(var(--morpheus-accent))]/10 shadow-[0_0_60px_hsl(var(--morpheus-glow))]"><Check className="h-8 w-8 text-[hsl(var(--morpheus-accent))]" /></div>
-            <p className="mt-7 text-[10px] uppercase tracking-[0.35em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.readyLabel')}</p>
-            <h2 className="mt-3 font-serif text-5xl font-normal">{t('morpheus.activation.readyTitle')}</h2>
-            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{t('morpheus.activation.readyBody')}</p>
-            <button type="button" autoFocus data-testid="morpheus-activation-enter" onClick={() => setDismissed(true)} className="mt-8 inline-flex h-12 items-center gap-3 rounded-full border border-[hsl(var(--morpheus-accent-dim))] px-7 text-xs uppercase tracking-[0.18em] text-[hsl(var(--morpheus-accent))]">
-              {t('morpheus.activation.enter')} <ArrowRight className="h-4 w-4" />
-            </button>
-          </section>
-        ) : null}
+          {visibleStage === 'proof' ? (
+            <div data-testid="morpheus-activation-proof" className="w-full max-w-2xl">
+              <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.signalOs.activation.firstMission')}</p>
+              <h2 className="mt-4 font-serif text-4xl font-normal">{t('morpheus.signalOs.activation.proofTitle')}</h2>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{t('morpheus.signalOs.activation.proofBody')}</p>
+              <div className="mt-7 border-y border-white/[0.07] py-5"><p className="font-serif text-xl">{t('morpheus.signalOs.activation.proofObjective')}</p>{objectiveRun ? <p className="mt-2 text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--morpheus-accent))]">{t(`morpheus.objective.states.${objectiveRun.state}`)}</p> : null}</div>
+              <div className="mt-7 flex items-center gap-5">
+                <button type="button" data-testid="morpheus-activation-run-proof" disabled={proofStarted} onClick={() => void startProof()} className="inline-flex items-center gap-2 border-b border-[hsl(var(--morpheus-accent))] pb-2 text-xs uppercase tracking-[0.15em] text-[hsl(var(--morpheus-accent))] disabled:opacity-50">{t('morpheus.signalOs.activation.runMission')}<ArrowRight className="h-4 w-4" /></button>
+                <button type="button" data-testid="morpheus-activation-skip-proof" onClick={() => setStage('ready')} className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground">{t('morpheus.signalOs.activation.continueWithout')}</button>
+              </div>
+            </div>
+          ) : null}
+
+          {visibleStage === 'ready' ? (
+            <div data-testid="morpheus-activation-ready" className="max-w-2xl">
+              <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.readyLabel')}</p>
+              <h2 className="mt-4 font-serif text-5xl font-normal">{t('morpheus.signalOs.activation.readyTitle')}</h2>
+              <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{objectiveRun?.summary ?? t('morpheus.signalOs.activation.readyBody')}</p>
+              <button type="button" autoFocus data-testid="morpheus-activation-enter" onClick={() => setDismissed(true)} className="mt-8 inline-flex items-center gap-3 border-b border-[hsl(var(--morpheus-accent))] pb-2 text-xs uppercase tracking-[0.18em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.enter')}<ArrowRight className="h-4 w-4" /></button>
+            </div>
+          ) : null}
+        </section>
       </main>
     </div>
   );

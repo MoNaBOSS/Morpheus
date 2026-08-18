@@ -115,6 +115,19 @@
     "title": "Morpheus",
     "commandCenter": "コマンドセンター",
     "subtitle": "AI 実行プラットフォーム — 計画・許可・実行・監査。",
+    "signalOs": {
+      "navigation": "Morpheus ナビゲーション", "advanced": "高度な画面", "more": "その他",
+      "nav": { "command": "コマンド", "missions": "ミッション", "systems": "システム", "library": "ライブラリ", "chat": "チャット", "invoke": "呼び出す", "goals": "目標", "agentProfiles": "エージェント", "workflows": "ワークフロー", "schedules": "スケジュール", "activity": "アクティビティ", "models": "モデル", "agents": "エージェント", "channels": "チャンネル", "skills": "スキル", "cron": "Cron タスク", "settings": "設定" },
+      "commandLayer": "コマンドレイヤー", "presence": "プレゼンス", "presencePromise": "望む結果を伝えてください。作業は Morpheus が扱います。", "commandPlaceholder": "Morpheus に何を任せますか？", "try": "例", "stop": "停止",
+      "ready": "準備完了", "idleTitle": "クリック手順ではなく、望む結果を伝えてください。", "idleBody": "自然に話すか入力してください。Morpheus が計画を作り、新しい信頼境界だけを提示し、実行、検証、結果の引き渡しまで行います。",
+      "activeMission": "実行中のミッション", "currentWork": "現在の作業", "interpreting": "目的を解釈中", "runAgain": "もう一度実行", "inspect": "確認", "result": "結果", "resultPending": "検証済みの結果に向けて作業中です。", "artifacts": "成果物", "noArtifacts": "成果物はまだありません。", "observable": "作業中の実イベントは記録されます。",
+      "today": "今日", "todayClear": "対応事項なし", "todayClearBody": "注意が必要な先回り作業はありません。", "goals": "目標", "handle": "処理", "allMissions": "すべてのミッション", "context": "コンテキスト", "trustReason": "計画が新しい信頼境界を越える場合にだけ確認します。",
+      "presenceReady": "プレゼンス準備完了", "microphoneVisible": "マイク使用中", "interpretation": "解釈", "handlingObjective": "実際の計画を構築して実行中です。", "presenceHint": "結果を話すか入力してください。コマンドセンターと同じ Objective Core を使用します。", "trustProfile": "{{profile}} 信頼プロファイル",
+      "signal": { "asleep": "休止", "ready": "準備完了", "listening": "聞き取り中", "understanding": "理解中", "planning": "計画中", "trust": "信頼が必要", "executing": "実行中", "speaking": "応答中", "complete": "完了", "failed": "要確認", "degraded": "制限状態" },
+      "phases": { "understand": "理解", "plan": "計画", "act": "実行", "verify": "検証", "deliver": "引き渡し" },
+      "presencePhases": { "plan": "計画", "trust": "信頼", "execute": "実行", "result": "結果" },
+      "activation": { "spokenIntroduction": "私は Morpheus です。望む結果を伝えてください。作業を計画し、信頼が変わる時だけ確認し、行動中は常に状態を示します。", "title": "知性を、そこに。", "introduction": "Morpheus は単なるチャット画面ではありません。目的を制御可能で観測できる仕事へ変える、オペレーティング・プレゼンスです。", "begin": "Morpheus を起動", "readiness": "動作環境を確立中", "relationship": "Morpheus との関わり方を選択", "prove": "最初のミッションへ", "firstMission": "最初のミッション", "proofTitle": "入る前に、Morpheus の働きを確認。", "proofBody": "このミッションは実際のプライバシー安全な機能を使います。計画、実行、検証、正確な結果を確認できます。", "proofObjective": "システム情報を表示", "runMission": "ミッションを実行", "continueWithout": "実行せず続ける", "readyTitle": "Morpheus の準備が整いました。", "readyBody": "どこからでもプレゼンスを呼び出すか、コマンドセンターから始めてください。" }
+    },
     "systemPanel": {
       "title": "システム",
       "description": "プライバシーに配慮したランタイム情報。",

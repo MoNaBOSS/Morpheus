@@ -8,6 +8,7 @@ import { TitleBar } from './TitleBar';
 import { MAC_SIDEBAR_CHROME_HEIGHT } from '@shared/sidebar-layout';
 import { cn } from '@/lib/utils';
 import { WebBrowserHost } from '@/components/web-browser/WebBrowserHost';
+import { MorpheusProductNav } from '@/components/morpheus/signal/MorpheusProductNav';
 
 export function MainLayout() {
   const location = useLocation();
@@ -15,7 +16,8 @@ export function MainLayout() {
   const isMac = platform === 'darwin';
   const isWin = platform === 'win32';
   const isMorpheusProductSurface = [
-    '/', '/agent-profiles', '/workflows', '/schedules', '/activity',
+    '/', '/missions', '/systems', '/projects', '/goals', '/agent-profiles',
+    '/workflows', '/schedules', '/activity',
   ].includes(location.pathname);
 
   return (
@@ -31,12 +33,13 @@ export function MainLayout() {
       <TitleBar />
 
       <div className="flex min-h-0 flex-1 overflow-hidden bg-surface-sidebar">
-        <Sidebar />
+        {isMorpheusProductSurface ? <MorpheusProductNav /> : <Sidebar />}
         <main
           data-testid="main-content"
           className={cn(
-            'relative min-h-0 flex-1 rounded-tl-2xl border-l border-border/60 bg-background',
+            'relative min-h-0 flex-1 bg-background',
             isMorpheusProductSurface ? 'overflow-hidden p-0' : 'overflow-auto p-6',
+            !isMorpheusProductSurface && 'rounded-tl-2xl border-l border-border/60',
             !isWin && 'border-t border-border/60',
           )}
         >

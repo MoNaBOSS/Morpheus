@@ -24,6 +24,7 @@ test.describe('ClawX gateway lifecycle resilience', () => {
 
     // Navigate through all major pages to verify nothing crashes
     // when the gateway is not running.
+    await page.getByTestId('signal-nav-advanced').click();
     await page.getByTestId('sidebar-nav-models').click();
     await expect(page.getByTestId('models-page')).toBeVisible();
 
@@ -77,6 +78,7 @@ test.describe('ClawX gateway lifecycle resilience', () => {
     await page.waitForTimeout(500);
 
     // Verify navigation still works after status transitions
+    await page.getByTestId('signal-nav-advanced').click();
     await page.getByTestId('sidebar-nav-models').click();
     await expect(page.getByTestId('models-page')).toBeVisible();
 
@@ -168,6 +170,7 @@ test.describe('ClawX gateway lifecycle resilience', () => {
     });
 
     await completeSetup(page);
+    await page.getByTestId('signal-nav-chat').click();
 
     await electronApp.evaluate(({ BrowserWindow }) => {
       const win = BrowserWindow.getAllWindows()[0];
@@ -248,6 +251,7 @@ test.describe('ClawX gateway lifecycle resilience', () => {
     });
 
     await completeSetup(page);
+    await page.getByTestId('signal-nav-chat').click();
     await expect(page.getByTestId('sidebar-gateway-restarting')).toHaveAttribute('data-state', 'visible');
     await expect(page.getByText('history after ready')).toHaveCount(0);
 

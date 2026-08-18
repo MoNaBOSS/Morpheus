@@ -5,6 +5,7 @@ test.describe('Morpheus production companion intelligence', () => {
     let app = await launchElectronApp({ skipSetup: true });
     try {
       let page = await getStableWindow(app);
+      await page.getByTestId('signal-nav-advanced').click();
       await page.getByTestId('sidebar-nav-goals').click();
       await expect(page.getByTestId('goals-page')).toBeVisible();
 

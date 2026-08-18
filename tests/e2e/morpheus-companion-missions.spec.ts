@@ -25,12 +25,17 @@ test.describe('Morpheus companion and persistent Missions', () => {
       const page = await getStableWindow(app);
       await page.setViewportSize({ width: 1280, height: 800 });
       await expect(page.getByTestId('morpheus-activation')).toHaveAttribute('data-stage', 'intro');
+      await expect(page.getByTestId('morpheus-activation')).toHaveCSS('background-image', /linear-gradient/);
+      const activationBox = await page.getByTestId('morpheus-activation').boundingBox();
+      expect(activationBox).toMatchObject({ x: 0, y: 0, width: 1280, height: 800 });
       await page.getByTestId('morpheus-activation-begin').click();
       await expect(page.getByTestId('activation-signal-core')).toHaveAttribute('data-available', 'true');
       await expect(page.getByTestId('activation-signal-provider')).toHaveAttribute('data-available', 'false');
       await page.getByTestId('morpheus-activation-continue').click();
       await page.getByTestId('activation-personality-warm').click();
       await page.getByTestId('morpheus-activation-finish').click();
+      await expect(page.getByTestId('morpheus-activation-proof')).toBeVisible();
+      await page.getByTestId('morpheus-activation-skip-proof').click();
       await expect(page.getByTestId('morpheus-activation-ready')).toBeVisible();
       await captureVisualEvidence(page, 'activation-ready-1280x800.png');
       await page.getByTestId('morpheus-activation-enter').click();
@@ -51,7 +56,7 @@ test.describe('Morpheus companion and persistent Missions', () => {
       await page.getByTestId('morpheus-command-submit').click();
       await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i);
       await captureVisualEvidence(page, 'command-center-mission-1280x800.png');
-      await page.getByTestId('sidebar-nav-missions').click();
+      await page.getByTestId('signal-nav-missions').click();
       await expect(page.getByTestId('missions-page')).toBeVisible();
       await expect(page.getByTestId('mission-detail')).toContainText('Show system information');
       await expect(page.getByTestId('mission-route')).toContainText(/direct capability/i);
@@ -66,7 +71,7 @@ test.describe('Morpheus companion and persistent Missions', () => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
-      await page.getByTestId('sidebar-nav-projects').click();
+      await page.getByTestId('signal-nav-library').click();
       await expect(page.getByTestId('projects-page')).toBeVisible();
       await expect(page.getByTestId('project-list-item-personal')).toBeVisible();
 
@@ -91,7 +96,7 @@ test.describe('Morpheus companion and persistent Missions', () => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
-      await page.getByTestId('sidebar-quick-command').click();
+      await page.getByTestId('signal-nav-presence').click();
       await expect(page.getByTestId('morpheus-quick-command')).toHaveAttribute('data-presentation', 'overlay');
       await captureVisualEvidence(page, 'quick-command-overlay.png');
       await page.getByTestId('quick-command-input').fill('Show system information');

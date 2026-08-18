@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { MonoPath, RiskBadge } from '@/components/morpheus/ui';
+import { MorpheusSignal } from '@/components/morpheus/signal/MorpheusSignal';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import type { MorpheusConsentBoundary } from '@shared/host-events/contract';
 
@@ -64,28 +65,36 @@ export function MorpheusPlanConsentDialog() {
       <DialogContent
         data-morpheus
         data-testid="morpheus-plan-consent-dialog"
-        className="w-[calc(100%-2rem)] max-w-lg rounded-lg border bg-surface-modal p-6 shadow-lg"
+        className="morpheus-presence-surface w-[calc(100%-2rem)] max-w-2xl overflow-hidden rounded-none border border-[hsl(var(--morpheus-warn))]/30 bg-[hsl(var(--morpheus-surface-2))] p-0 shadow-2xl"
         onOpenAutoFocus={(event) => {
           // Focus the safest non-execution option.
           event.preventDefault();
           denyRef.current?.focus();
         }}
       >
-        <DialogTitle className="text-lg font-semibold">
-          {t('morpheus.permission.plan.title')}
-        </DialogTitle>
-        <DialogDescription className="mt-2 text-sm text-muted-foreground">
-          {consent
-            ? t('morpheus.permission.plan.description', { objective: consent.objective })
-            : ''}
-        </DialogDescription>
+        <div aria-hidden className="morpheus-presence-field absolute inset-0" />
+        <header className="relative z-10 grid grid-cols-[92px_minmax(0,1fr)] border-b border-white/[0.07]">
+          <div className="flex items-center justify-center border-r border-white/[0.07] py-4">
+            <MorpheusSignal state="trust" className="h-14 w-14" />
+          </div>
+          <div className="min-w-0 px-5 py-4">
+            <DialogTitle className="font-serif text-xl font-normal tracking-tight">
+              {t('morpheus.permission.plan.title')}
+            </DialogTitle>
+            <DialogDescription className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+              {consent
+                ? t('morpheus.permission.plan.description', { objective: consent.objective })
+                : ''}
+            </DialogDescription>
+          </div>
+        </header>
 
-        <ul className="mt-4 space-y-2" data-testid="morpheus-plan-consent-boundaries">
+        <ul className="relative z-10 max-h-[38vh] divide-y divide-white/[0.07] overflow-y-auto border-b border-white/[0.07]" data-testid="morpheus-plan-consent-boundaries">
           {boundaries.map((boundary) => (
             <li
               key={boundary.boundaryId}
               data-testid={`morpheus-plan-consent-boundary-${boundary.capabilityId}`}
-              className="rounded-md border bg-surface-input p-3"
+              className="bg-black/10 px-5 py-4"
             >
               <div className="flex items-start justify-between gap-2">
                 {/* Name the whole decision. A grouped boundary grants every
@@ -131,7 +140,7 @@ export function MorpheusPlanConsentDialog() {
           ))}
         </ul>
 
-        <div className="mt-5 flex flex-col gap-2">
+        <div className="relative z-10 grid grid-cols-2 gap-2 px-5 pt-4">
           {decisions.map(({ kind, variant }) => (
             <Button
               key={kind}
@@ -139,7 +148,9 @@ export function MorpheusPlanConsentDialog() {
               data-testid={`morpheus-plan-consent-${kind}`}
               variant={variant}
               onClick={() => void answerConsent(kind)}
-              className="justify-start"
+              className={kind === 'allow-once'
+                ? 'justify-start rounded-none border border-white/15 bg-white/[0.08] text-foreground hover:bg-white/[0.12]'
+                : 'justify-start rounded-none'}
             >
               {/* Plan-level wording. The per-run dialog says "this exact
                   action"; a batched decision may cover a whole workspace
@@ -149,7 +160,7 @@ export function MorpheusPlanConsentDialog() {
           ))}
         </div>
 
-        <p className="mt-3 text-2xs text-muted-foreground">
+        <p className="relative z-10 px-5 pb-5 pt-3 text-2xs text-muted-foreground">
           {anyMandatory
             ? t('morpheus.permission.plan.mandatoryNote')
             : t('morpheus.permission.plan.note')}
