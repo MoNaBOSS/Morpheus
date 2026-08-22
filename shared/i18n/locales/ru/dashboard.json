@@ -118,7 +118,7 @@
     "signalOs": {
       "navigation": "Навигация Morpheus", "advanced": "Расширенные разделы", "more": "Ещё",
       "nav": { "command": "Команда", "missions": "Миссии", "systems": "Системы", "library": "Библиотека", "chat": "Чат", "invoke": "Вызвать", "goals": "Цели", "agentProfiles": "Профили агентов", "workflows": "Процессы", "schedules": "Расписание", "activity": "Активность", "models": "Модели", "agents": "Агенты", "channels": "Каналы", "skills": "Навыки", "cron": "Задачи Cron", "settings": "Настройки" },
-      "commandLayer": "Командный слой", "presence": "Присутствие", "presencePromise": "Назовите результат — Morpheus выполнит работу.", "commandPlaceholder": "Что поручить Morpheus?", "try": "Пример", "stop": "Остановить",
+      "commandLayer": "Командный слой", "presence": "Присутствие", "presencePromise": "Назовите результат — Morpheus выполнит работу.", "presencePromiseNamed": "{{name}}, назовите результат — Morpheus выполнит работу.", "commandPlaceholder": "Что поручить Morpheus?", "commandPlaceholderNamed": "{{name}}, что Morpheus должен сделать для вас?", "voiceShortcut": "Говорите сейчас или нажмите Ctrl Alt Space из любого места", "try": "Пример", "stop": "Остановить",
       "ready": "Готов", "idleTitle": "Сообщите Morpheus результат, а не последовательность кликов.", "idleBody": "Говорите или пишите естественно. Morpheus создаст план, покажет только новые границы доверия, выполнит и проверит работу, затем передаст результат.",
       "activeMission": "Активная миссия", "currentWork": "Текущая работа", "interpreting": "Интерпретация цели", "runAgain": "Запустить снова", "inspect": "Открыть", "result": "Результат", "resultPending": "Morpheus продолжает работу над проверенным результатом.", "artifacts": "Артефакты", "noArtifacts": "Артефактов пока нет.", "observable": "Реальные события записываются во время работы Morpheus.",
       "today": "Сегодня", "todayClear": "Горизонт чист", "todayClearBody": "Нет инициативных задач, требующих внимания.", "goals": "Цели", "handle": "Выполнить", "allMissions": "Все миссии", "context": "Контекст", "trustReason": "Morpheus спрашивает только тогда, когда план пересекает новую границу доверия.",
@@ -388,7 +388,7 @@
         "system": "Показать сведения о системе",
         "file": "Создать notes.txt",
         "notepad": "Открыть Блокнот",
-        "web": "Исследовать идею"
+        "website": "Создать сайт для бизнеса"
       },
       "unsupportedTitle": "Morpheus пока не может этого сделать",
       "unsupportedBody": "Эта команда не соответствует ни одной реальной возможности Morpheus. Поддерживается:",

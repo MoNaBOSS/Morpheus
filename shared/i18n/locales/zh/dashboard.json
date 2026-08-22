@@ -118,7 +118,7 @@
     "signalOs": {
       "navigation": "Morpheus 导航", "advanced": "高级界面", "more": "更多",
       "nav": { "command": "指令", "missions": "任务", "systems": "系统", "library": "资料库", "chat": "聊天", "invoke": "唤起", "goals": "目标", "agentProfiles": "智能体配置", "workflows": "工作流", "schedules": "计划", "activity": "活动", "models": "模型", "agents": "智能体", "channels": "频道", "skills": "技能", "cron": "定时任务", "settings": "设置" },
-      "commandLayer": "指令层", "presence": "临场助手", "presencePromise": "说出结果，Morpheus 负责完成工作。", "commandPlaceholder": "希望 Morpheus 处理什么？", "try": "试试", "stop": "停止",
+      "commandLayer": "指令层", "presence": "临场助手", "presencePromise": "说出结果，Morpheus 负责完成工作。", "presencePromiseNamed": "{{name}}，说出结果，Morpheus 负责完成工作。", "commandPlaceholder": "希望 Morpheus 处理什么？", "commandPlaceholderNamed": "{{name}}，希望 Morpheus 为你处理什么？", "voiceShortcut": "现在说话，或在任意位置按 Ctrl Alt Space", "try": "试试", "stop": "停止",
       "ready": "就绪", "idleTitle": "告诉 Morpheus 结果，而不是一连串点击。", "idleBody": "自然地说出或输入需求。Morpheus 会制定计划，仅在出现新的信任边界时提醒，然后执行、验证并交付结果。",
       "activeMission": "当前任务", "currentWork": "当前工作", "interpreting": "正在理解目标", "runAgain": "再次运行", "inspect": "查看", "result": "结果", "resultPending": "Morpheus 正在生成经过验证的结果。", "artifacts": "产物", "noArtifacts": "尚未生成产物。", "observable": "Morpheus 工作时会记录实时事件。",
       "today": "今天", "todayClear": "当前无待办", "todayClearBody": "没有需要你关注的主动任务。", "goals": "目标", "handle": "处理", "allMissions": "全部任务", "context": "上下文", "trustReason": "只有计划跨越新的信任边界时，Morpheus 才会询问。",
@@ -388,7 +388,7 @@
         "system": "显示系统信息",
         "file": "创建 notes.txt",
         "notepad": "打开记事本",
-        "web": "研究一个想法"
+        "website": "创建商业网站"
       },
       "unsupportedTitle": "Morpheus 暂时无法执行该操作",
       "unsupportedBody": "该命令未映射到 Morpheus 实际具备的能力。当前支持：",

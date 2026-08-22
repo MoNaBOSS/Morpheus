@@ -9,6 +9,15 @@ async function capture(page: Awaited<ReturnType<typeof getStableWindow>>, name: 
   await page.screenshot({ path: join(visualEvidenceDir, name), animations: 'disabled' });
 }
 
+async function useBalancedProfile(page: Awaited<ReturnType<typeof getStableWindow>>): Promise<void> {
+  await page.getByTestId('sidebar-nav-settings').click();
+  await expect(page.getByTestId('settings-permissions-section')).toBeVisible();
+  await page.getByTestId('morpheus-profile-balanced').click();
+  await expect(page.getByTestId('morpheus-profile-balanced')).toHaveAttribute('data-active', 'true');
+  await page.getByTestId('sidebar-nav-command-center').click();
+  await expect(page.getByTestId('command-center-page')).toBeVisible();
+}
+
 test.describe('Morpheus Signal OS', () => {
   test('presents a compact outcome-first operating surface at 1280x800', async ({ launchElectronApp }) => {
     const app = await launchElectronApp({ skipSetup: true });
@@ -63,6 +72,7 @@ test.describe('Morpheus Signal OS', () => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
+      await useBalancedProfile(page);
       await page.getByTestId('morpheus-command-input').fill('Create a text file named signal-trust.txt');
       await page.getByTestId('morpheus-command-submit').click();
 

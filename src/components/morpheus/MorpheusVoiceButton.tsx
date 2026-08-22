@@ -11,10 +11,12 @@ export function MorpheusVoiceButton({
   source,
   className,
   disabled = false,
+  showLabel = false,
 }: {
   source: MorpheusVoiceSource;
   className?: string;
   disabled?: boolean;
+  showLabel?: boolean;
 }) {
   const { t } = useTranslation('dashboard');
   const phase = useMorpheusVoiceStore((state) => state.phase);
@@ -35,7 +37,8 @@ export function MorpheusVoiceButton({
         else void startListening(source);
       }}
       className={cn(
-        'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded border transition-colors',
+        'inline-flex shrink-0 items-center justify-center border transition-colors',
+        showLabel ? 'h-10 gap-2 rounded-full px-3' : 'h-9 w-9 rounded',
         listening
           ? 'border-[hsl(var(--morpheus-danger))]/60 bg-[hsl(var(--morpheus-danger))]/10 text-[hsl(var(--morpheus-danger))]'
           : 'border-border text-muted-foreground hover:border-[hsl(var(--morpheus-accent-dim))] hover:text-[hsl(var(--morpheus-accent))]',
@@ -50,6 +53,11 @@ export function MorpheusVoiceButton({
       ) : (
         <Mic className="h-4 w-4" aria-hidden />
       )}
+      {showLabel ? (
+        <span className="text-[9px] uppercase tracking-[0.12em]">
+          {listening ? t('morpheus.voice.stop') : t('morpheus.voice.start')}
+        </span>
+      ) : null}
     </button>
   );
 }

@@ -25,6 +25,8 @@ test.describe('Morpheus Command Center', () => {
         'command-center-title',
         'morpheus-command-input',
         'morpheus-command-submit',
+        'morpheus-voice-button-command-center',
+        'morpheus-command-example-website',
         'morpheus-runtime-gateway',
         'morpheus-runtime-provider',
         'morpheus-runtime-profile',
@@ -46,6 +48,20 @@ test.describe('Morpheus Command Center', () => {
         return element ? element.scrollWidth - element.clientWidth : 0;
       });
       expect(overflow).toBeLessThanOrEqual(1);
+    } finally {
+      await closeElectronApp(app);
+    }
+  });
+
+  test('makes voice and the provider-backed hero objective immediately discoverable', async ({ launchElectronApp }) => {
+    const app = await launchElectronApp({ skipSetup: true });
+    try {
+      const page = await getStableWindow(app);
+      await expect(page.getByTestId('morpheus-voice-button-command-center')).toContainText(/speak to Morpheus/i);
+
+      await page.getByTestId('morpheus-command-example-website').click();
+      await expect(page.getByTestId('morpheus-command-input'))
+        .toHaveValue('Build a responsive business website and a 30-day launch plan');
     } finally {
       await closeElectronApp(app);
     }

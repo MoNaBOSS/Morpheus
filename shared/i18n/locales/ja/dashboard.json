@@ -118,7 +118,7 @@
     "signalOs": {
       "navigation": "Morpheus ナビゲーション", "advanced": "高度な画面", "more": "その他",
       "nav": { "command": "コマンド", "missions": "ミッション", "systems": "システム", "library": "ライブラリ", "chat": "チャット", "invoke": "呼び出す", "goals": "目標", "agentProfiles": "エージェント", "workflows": "ワークフロー", "schedules": "スケジュール", "activity": "アクティビティ", "models": "モデル", "agents": "エージェント", "channels": "チャンネル", "skills": "スキル", "cron": "Cron タスク", "settings": "設定" },
-      "commandLayer": "コマンドレイヤー", "presence": "プレゼンス", "presencePromise": "望む結果を伝えてください。作業は Morpheus が扱います。", "commandPlaceholder": "Morpheus に何を任せますか？", "try": "例", "stop": "停止",
+      "commandLayer": "コマンドレイヤー", "presence": "プレゼンス", "presencePromise": "望む結果を伝えてください。作業は Morpheus が扱います。", "presencePromiseNamed": "{{name}}、望む結果を伝えてください。作業は Morpheus が扱います。", "commandPlaceholder": "Morpheus に何を任せますか？", "commandPlaceholderNamed": "{{name}}、Morpheus に何を任せますか？", "voiceShortcut": "今話すか、どこからでも Ctrl Alt Space を押してください", "try": "例", "stop": "停止",
       "ready": "準備完了", "idleTitle": "クリック手順ではなく、望む結果を伝えてください。", "idleBody": "自然に話すか入力してください。Morpheus が計画を作り、新しい信頼境界だけを提示し、実行、検証、結果の引き渡しまで行います。",
       "activeMission": "実行中のミッション", "currentWork": "現在の作業", "interpreting": "目的を解釈中", "runAgain": "もう一度実行", "inspect": "確認", "result": "結果", "resultPending": "検証済みの結果に向けて作業中です。", "artifacts": "成果物", "noArtifacts": "成果物はまだありません。", "observable": "作業中の実イベントは記録されます。",
       "today": "今日", "todayClear": "対応事項なし", "todayClearBody": "注意が必要な先回り作業はありません。", "goals": "目標", "handle": "処理", "allMissions": "すべてのミッション", "context": "コンテキスト", "trustReason": "計画が新しい信頼境界を越える場合にだけ確認します。",
@@ -388,7 +388,7 @@
         "system": "システム情報を表示",
         "file": "notes.txt を作成",
         "notepad": "メモ帳を開く",
-        "web": "アイデアを調べる"
+        "website": "ビジネスサイトを作成"
       },
       "unsupportedTitle": "Morpheus はまだそれを実行できません",
       "unsupportedBody": "そのコマンドは Morpheus が実際に持つ機能に対応していません。現在の対応：",

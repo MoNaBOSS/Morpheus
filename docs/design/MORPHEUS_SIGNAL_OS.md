@@ -123,7 +123,12 @@ At 1280 by 800, the default composition is:
 ```
 
 The current Mission receives most visual weight. Empty state centers the Signal
-and command invitation instead of showing empty panels.
+and command invitation instead of showing empty panels. The invitation uses the
+preferred name collected during setup. Voice is a labeled primary affordance
+beside the command field, with the active wake phrase or global push-to-talk
+shortcut disclosed in the intelligence band. The compact starter set includes
+the real provider-backed business-site journey; it must never advertise a
+placeholder objective.
 
 ### Chat layer
 

@@ -20,6 +20,15 @@ async function openCommandCenter(page: Page): Promise<void> {
   await expect(page.getByTestId('command-center-page')).toBeVisible();
 }
 
+async function useBalancedProfile(page: Page): Promise<void> {
+  await page.getByTestId('sidebar-nav-settings').click();
+  await expect(page.getByTestId('settings-permissions-section')).toBeVisible();
+  await page.getByTestId('morpheus-profile-balanced').click();
+  await expect(page.getByTestId('morpheus-profile-balanced')).toHaveAttribute('data-active', 'true');
+  await page.getByTestId('sidebar-nav-command-center').click();
+  await expect(page.getByTestId('command-center-page')).toBeVisible();
+}
+
 async function runCommand(page: Page, objective: string): Promise<void> {
   await page.getByTestId('morpheus-command-input').fill(objective);
   await page.getByTestId('morpheus-command-submit').click();
@@ -34,6 +43,7 @@ test.describe('Morpheus device capability permissions', () => {
     try {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
+      await useBalancedProfile(page);
 
       await runCommand(page, 'Notify me "Morpheus is ready"');
 
@@ -50,6 +60,7 @@ test.describe('Morpheus device capability permissions', () => {
     try {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
+      await useBalancedProfile(page);
 
       await runCommand(page, 'Copy "Morpheus" to the clipboard');
       await expect(consentDialog(page)).toBeVisible({ timeout: 20_000 });
@@ -136,6 +147,7 @@ test.describe('Morpheus device capability permissions', () => {
     try {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
+      await useBalancedProfile(page);
 
       await runCommand(page, 'Open Notepad');
       await expect(consentDialog(page)).toBeVisible({ timeout: 20_000 });

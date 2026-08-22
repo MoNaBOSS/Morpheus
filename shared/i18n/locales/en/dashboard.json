@@ -141,7 +141,10 @@
       "commandLayer": "Command layer",
       "presence": "Presence",
       "presencePromise": "State the outcome. Morpheus handles the work.",
+      "presencePromiseNamed": "{{name}}, state the outcome. Morpheus handles the work.",
       "commandPlaceholder": "What should Morpheus handle?",
+      "commandPlaceholderNamed": "What should Morpheus handle for you, {{name}}?",
+      "voiceShortcut": "Speak now or press Ctrl Alt Space from anywhere",
       "try": "Try",
       "stop": "Stop",
       "ready": "Ready",
@@ -478,7 +481,7 @@
         "system": "Show system information",
         "file": "Create notes.txt",
         "notepad": "Open Notepad",
-        "web": "Research an idea"
+        "website": "Build a business website"
       },
       "unsupportedTitle": "Morpheus cannot do that yet",
       "unsupportedBody": "That command does not map to a capability Morpheus actually has. It supports:",

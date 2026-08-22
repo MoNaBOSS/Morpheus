@@ -24,6 +24,15 @@ function readAuditEntries(userDataDir: string): AuditEntry[] {
     .map((line) => JSON.parse(line) as AuditEntry));
 }
 
+async function useBalancedProfile(page: import('@playwright/test').Page): Promise<void> {
+  await page.getByTestId('sidebar-nav-settings').click();
+  await expect(page.getByTestId('settings-permissions-section')).toBeVisible();
+  await page.getByTestId('morpheus-profile-balanced').click();
+  await expect(page.getByTestId('morpheus-profile-balanced')).toHaveAttribute('data-active', 'true');
+  await page.getByTestId('sidebar-nav-command-center').click();
+  await expect(page.getByTestId('command-center-page')).toBeVisible();
+}
+
 test.describe('Morpheus audit log', () => {
   test('records every real phase and never persists file content', async ({
     launchElectronApp,
@@ -35,6 +44,7 @@ test.describe('Morpheus audit log', () => {
       const page = await getStableWindow(app);
       await expect(page.getByTestId('main-layout')).toBeVisible();
       await expect(page.getByTestId('command-center-page')).toBeVisible();
+      await useBalancedProfile(page);
 
       // One allowed run…
       await page.getByTestId('morpheus-command-input').fill(`Create a text file named audited.txt saying "${secret}"`);
@@ -123,6 +133,7 @@ test.describe('Morpheus audit log', () => {
       const page = await getStableWindow(app);
       await expect(page.getByTestId('main-layout')).toBeVisible();
       await expect(page.getByTestId('command-center-page')).toBeVisible();
+      await useBalancedProfile(page);
       await page.getByTestId('morpheus-command-input').fill('Open Notepad');
       await page.getByTestId('morpheus-command-submit').click();
       await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });

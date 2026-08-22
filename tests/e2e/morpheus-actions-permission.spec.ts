@@ -19,6 +19,15 @@ async function openCommandCenter(page: Page): Promise<void> {
   await expect(page.getByTestId('command-center-page')).toBeVisible();
 }
 
+async function useBalancedProfile(page: Page): Promise<void> {
+  await page.getByTestId('sidebar-nav-settings').click();
+  await expect(page.getByTestId('settings-permissions-section')).toBeVisible();
+  await page.getByTestId('morpheus-profile-balanced').click();
+  await expect(page.getByTestId('morpheus-profile-balanced')).toHaveAttribute('data-active', 'true');
+  await page.getByTestId('sidebar-nav-command-center').click();
+  await expect(page.getByTestId('command-center-page')).toBeVisible();
+}
+
 async function runCommand(page: Page, objective: string): Promise<void> {
   await page.getByTestId('morpheus-command-input').fill(objective);
   await page.getByTestId('morpheus-command-submit').click();
@@ -32,12 +41,32 @@ test.describe('Morpheus permission engine', () => {
     try {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
+      await useBalancedProfile(page);
 
       await runCommand(page, 'Show system information');
 
       // Balanced auto-allows privacy-safe reads: no dialog should ever appear.
       await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
       await expect(page.getByTestId('morpheus-plan-consent-dialog')).toHaveCount(0);
+    } finally {
+      await closeElectronApp(app);
+    }
+  });
+
+  test('Autonomous handles reversible workspace creation without a first-use interruption', async ({
+    launchElectronApp,
+    userDataDir,
+  }) => {
+    const app = await launchElectronApp({ skipSetup: true });
+    try {
+      const page = await getStableWindow(app);
+      await openCommandCenter(page);
+
+      await runCommand(page, 'Create a text file named autonomous-run.txt');
+
+      await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
+      await expect(page.getByTestId('morpheus-plan-consent-dialog')).toHaveCount(0);
+      expect(existsSync(join(morpheusFilesDir(userDataDir), 'autonomous-run.txt'))).toBe(true);
     } finally {
       await closeElectronApp(app);
     }
@@ -51,6 +80,7 @@ test.describe('Morpheus permission engine', () => {
     try {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
+      await useBalancedProfile(page);
 
       await runCommand(page, 'Create a text file named denied-run.txt');
 
@@ -76,6 +106,7 @@ test.describe('Morpheus permission engine', () => {
     try {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
+      await useBalancedProfile(page);
 
       await runCommand(page, 'Create a text file named once-a.txt');
       await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });
@@ -102,6 +133,7 @@ test.describe('Morpheus permission engine', () => {
     try {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
+      await useBalancedProfile(page);
 
       await runCommand(page, 'Create a text file named session-a.txt');
       await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });
@@ -124,6 +156,7 @@ test.describe('Morpheus permission engine', () => {
     try {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
+      await useBalancedProfile(page);
 
       await runCommand(page, 'Create a text file named revoke-a.txt');
       await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });
@@ -151,6 +184,7 @@ test.describe('Morpheus permission engine', () => {
     try {
       const page = await getStableWindow(first);
       await openCommandCenter(page);
+      await useBalancedProfile(page);
 
       await runCommand(page, 'Create a text file named persist-a.txt');
       await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });
@@ -182,6 +216,7 @@ test.describe('Morpheus permission engine', () => {
     try {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
+      await useBalancedProfile(page);
 
       await runCommand(page, 'Open Notepad');
       await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });

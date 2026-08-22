@@ -6,13 +6,14 @@ import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { MorpheusVoiceButton } from '@/components/morpheus/MorpheusVoiceButton';
 import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
 import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
+import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { MorpheusInteractionModeControl } from '@/components/morpheus/operator/MorpheusInteractionModeControl';
 
 const STARTER_OBJECTIVES = [
   { key: 'system', objective: 'Show system information' },
   { key: 'file', objective: 'Create a text file named notes.txt' },
   { key: 'notepad', objective: 'Open Notepad' },
-  { key: 'web', objective: 'Open browser and search for passive income ideas' },
+  { key: 'website', objective: 'Build a responsive business website and a 30-day launch plan' },
 ] as const;
 
 export function CommandBar() {
@@ -30,6 +31,10 @@ export function CommandBar() {
   const queueConversation = useMorpheusOperatorStore((state) => state.queueConversation);
   const clarification = useMorpheusOperatorStore((state) => state.clarification);
   const clearClarification = useMorpheusOperatorStore((state) => state.clearClarification);
+  const onboarding = useMorpheusCompanionStore((state) => state.onboarding);
+  const preferredName = onboarding?.preferences.preferredName.trim() ?? '';
+  const ambientVoice = onboarding?.preferences.ambientVoiceEnabled ?? false;
+  const wakePhrase = onboarding?.preferences.wakePhrase ?? 'Morpheus';
   const objectiveActive = Boolean(objectiveRun && !isObjectiveTerminalState(objectiveRun.state));
   const busy = interpreting || objectiveActive;
 
@@ -50,14 +55,23 @@ export function CommandBar() {
     <section data-testid="morpheus-command-bar" className="morpheus-intelligence-band grid grid-cols-[220px_minmax(0,1fr)] items-center gap-5">
       <div className="hidden xl:block">
         <p className="text-[9px] uppercase tracking-[0.22em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.signalOs.presence')}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{t('morpheus.signalOs.presencePromise')}</p>
+        <p data-testid="morpheus-personal-presence" className="mt-1 text-xs text-muted-foreground">
+          {preferredName
+            ? t('morpheus.signalOs.presencePromiseNamed', { name: preferredName })
+            : t('morpheus.signalOs.presencePromise')}
+        </p>
+        <p className="mt-2 font-mono text-[8px] text-muted-foreground/65">
+          {ambientVoice
+            ? t('morpheus.voice.wakeHint', { phrase: wakePhrase })
+            : t('morpheus.signalOs.voiceShortcut')}
+        </p>
       </div>
 
       <div className="min-w-0">
         <form className="morpheus-signal-command flex items-center gap-2 border-b border-white/15 pb-2 focus-within:border-[hsl(var(--morpheus-accent-dim))]" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
           <span aria-hidden className="morpheus-command-cursor h-5 w-px shrink-0 bg-[hsl(var(--morpheus-accent))]" />
-          <input data-testid="morpheus-command-input" value={input} disabled={busy} placeholder={t('morpheus.signalOs.commandPlaceholder')} aria-label={t('morpheus.command.label')} onChange={(event) => { setInput(event.target.value); clearClarification(); }} className="h-11 min-w-0 flex-1 bg-transparent font-serif text-xl text-foreground outline-none placeholder:text-muted-foreground/50 disabled:opacity-60" />
-          <MorpheusVoiceButton source="command-center" disabled={objectiveActive} className="h-10 w-10 rounded-full border-white/10" />
+          <input data-testid="morpheus-command-input" value={input} disabled={busy} placeholder={preferredName ? t('morpheus.signalOs.commandPlaceholderNamed', { name: preferredName }) : t('morpheus.signalOs.commandPlaceholder')} aria-label={t('morpheus.command.label')} onChange={(event) => { setInput(event.target.value); clearClarification(); }} className="h-11 min-w-0 flex-1 bg-transparent font-serif text-xl text-foreground outline-none placeholder:text-muted-foreground/50 disabled:opacity-60" />
+          <MorpheusVoiceButton source="command-center" disabled={objectiveActive} showLabel className="border-white/10" />
           {objectiveActive ? (
             <button type="button" data-testid="morpheus-command-stop" onClick={() => void cancelObjective()} className="inline-flex h-10 items-center gap-2 rounded-md border border-[hsl(var(--morpheus-danger))]/35 px-3 text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--morpheus-danger))]"><Square className="h-3 w-3 fill-current" />{t('morpheus.signalOs.stop')}</button>
           ) : (
