@@ -1,0 +1,23 @@
+# Morpheus Operator Private Alpha Reference
+
+Canonical product contract:
+`docs/product/MORPHEUS_OPERATOR_CONTRACT.md`.
+
+Canonical architecture:
+`docs/architecture/MORPHEUS_OPERATOR_PRIVATE_ALPHA_ARCHITECTURE.md`.
+
+Durable invariants:
+
+1. Ask, Auto, and Act are routing hints over one Morpheus Core, not separate
+   planners or products.
+2. Main owns objective state, planning validation, trust, capabilities, memory
+   persistence, and execution.
+3. Autonomous first use is limited to explicitly enumerated reversible targets;
+   it cannot become arbitrary shell, paths, credentials, finance, privilege, or
+   irreversible authority.
+4. Automatic memory is bounded, inspectable, local-first, and excludes secrets,
+   audio, file content, raw audit, and unlimited transcripts.
+5. The hero website journey must create and verify real artifacts. An
+   unconfigured deployment adapter reports unavailable and never invents a URL.
+6. OpenClaw Chat remains operational but does not own execution.
+
