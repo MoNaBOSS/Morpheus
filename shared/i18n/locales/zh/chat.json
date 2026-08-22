@@ -234,6 +234,7 @@
         "morpheusNoAttachments": "Morpheus 目标执行目前只接受文本；普通聊天仍可发送这些附件",
         "morpheusAccepted": "目标已发送到 Morpheus",
         "morpheusRejected": "Morpheus 无法启动此目标",
+        "morpheusClarification": "我还不能清楚理解该指令。请说明你想要的结果。",
         "stop": "停止",
         "thinking": "思考中…",
         "gatewayConnected": "已连接",

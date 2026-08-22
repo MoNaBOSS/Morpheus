@@ -32,6 +32,7 @@ import {
   validateCreateSystemFromMissionPayload,
 } from '@electron/services/morpheus-api';
 import type { MorpheusRuntime } from '@electron/services/morpheus';
+import { DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES } from '@shared/morpheus/onboarding-types';
 
 function stubGrants() {
   return {
@@ -108,7 +109,7 @@ function stubOptions(runtime = stubRuntime()) {
     } as never,
     onboarding: {
       status: vi.fn(() => ({
-        v: 1, completed: false, preferences: { speakResponses: true, personality: 'adaptive' },
+        v: 2, completed: false, preferences: { ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES },
       })),
       complete: vi.fn(),
       reset: vi.fn(),
@@ -387,11 +388,18 @@ describe('Mission and explicit context validation', () => {
   });
 
   it('keeps activation preferences bounded and non-authoritative', () => {
-    expect(validateCompleteOnboardingPayload({ speakResponses: true, personality: 'warm' }))
-      .toEqual({ speakResponses: true, personality: 'warm' });
+    const payload = {
+      ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES,
+      preferredName: 'Larry',
+      personality: 'warm' as const,
+      interactionMode: 'act' as const,
+    };
+    expect(validateCompleteOnboardingPayload(payload)).toEqual(payload);
     expect(() => validateCompleteOnboardingPayload({
-      speakResponses: true, personality: 'warm', alwaysAllow: true,
+      ...payload, alwaysAllow: true,
     })).toThrow(/unsupported key: alwaysAllow/);
+    expect(() => validateCompleteOnboardingPayload({ ...payload, wakePhrase: '<script>' }))
+      .toThrow(/invalid wake phrase/);
   });
 
   it('audits memory metadata without persisting memory text', async () => {
@@ -407,6 +415,38 @@ describe('Mission and explicit context validation', () => {
       details: expect.objectContaining({ kind: 'preference', sensitivity: 'normal' }),
     }));
     expect(JSON.stringify(options.audit.recordControl.mock.calls)).not.toContain('Never include this value');
+  });
+
+  it('applies companion setup through Main-owned services without auditing the preferred name', async () => {
+    const options = stubOptions();
+    const payload = {
+      ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES,
+      preferredName: 'Larry',
+      ambientVoiceEnabled: false,
+      launchAtStartup: true,
+    };
+    options.onboarding.complete = vi.fn((preferences) => ({
+      v: 2, completed: true, completedAt: '2026-08-13T12:00:00.000Z', preferences,
+    }));
+    const applyDesktopSetup = vi.fn(async () => undefined);
+    const api = createMorpheusApi({ ...options, applyDesktopSetup });
+
+    await expect(api.completeOnboarding(payload)).resolves.toMatchObject({
+      completed: true,
+      preferences: { preferredName: 'Larry', interactionMode: 'auto' },
+    });
+    expect(options.voice.updateSettings).toHaveBeenCalledWith({
+      speakResponses: true,
+      ambientEnabled: false,
+      wakePhrase: 'Morpheus',
+    });
+    expect(applyDesktopSetup).toHaveBeenCalledWith({ launchAtStartup: true });
+    expect(options.grants.setProfile).toHaveBeenCalledWith('autonomous');
+    expect(options.memory.save).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Preferred name',
+      text: 'Call the user Larry.',
+    }), { source: 'user', sourceId: 'onboarding-preferred-name' });
+    expect(JSON.stringify(options.audit.recordControl.mock.calls)).not.toContain('Larry');
   });
 });
 

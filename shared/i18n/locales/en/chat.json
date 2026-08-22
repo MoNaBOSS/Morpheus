@@ -234,6 +234,7 @@
         "morpheusNoAttachments": "Morpheus objective execution currently accepts text only; ordinary Chat can send these attachments",
         "morpheusAccepted": "Objective sent to Morpheus",
         "morpheusRejected": "Morpheus could not start this objective",
+        "morpheusClarification": "I did not understand that clearly enough to act. Please describe the result you want.",
         "stop": "Stop",
         "thinking": "Thinking…",
         "gatewayConnected": "connected",

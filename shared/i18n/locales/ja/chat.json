@@ -234,6 +234,7 @@
         "morpheusNoAttachments": "Morpheus の目標実行は現在テキストのみ対応しています。通常の Chat では添付を送信できます",
         "morpheusAccepted": "目標を Morpheus に送信しました",
         "morpheusRejected": "Morpheus はこの目標を開始できませんでした",
+        "morpheusClarification": "実行できるほど明確に理解できませんでした。望む結果を説明してください。",
         "stop": "停止",
         "thinking": "考え中…",
         "gatewayConnected": "接続済み",

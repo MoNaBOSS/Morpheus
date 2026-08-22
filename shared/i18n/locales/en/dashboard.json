@@ -890,6 +890,15 @@
         "local-only": "Local only"
       }
     },
+    "operator": {
+      "modeLabel": "How Morpheus should respond",
+      "clarification": "I did not understand that clearly enough to act. Please say what outcome you want.",
+      "modes": {
+        "ask": { "name": "Ask", "description": "Think, explain and advise without taking action." },
+        "auto": { "name": "Auto", "description": "Understand the intent and act when a result is requested." },
+        "act": { "name": "Act", "description": "Treat the instruction as an objective to execute." }
+      }
+    },
     "activation": {
       "eyebrow": "Intelligent operating companion",
       "title": "Meet Morpheus",
@@ -904,6 +913,17 @@
       "personalize": "Companion behavior",
       "preferenceTitle": "How should Morpheus work with you?",
       "preferenceBody": "These preferences shape communication. They never bypass capability policy or trust.",
+      "preferredName": "What should I call you?",
+      "preferredNamePlaceholder": "Your name or preferred title",
+      "autonomy": "Autonomy and protection",
+      "launchAtStartup": "Start with Windows",
+      "launchAtStartupDescription": "Keep Morpheus available in the tray after sign-in.",
+      "ambientVoice": "Listen for Morpheus",
+      "ambientVoiceDescription": "Provider-backed listening responds only after “{{wakePhrase}}”.",
+      "ambientVoiceUnavailable": "Add a transcription-compatible provider to enable the wake phrase.",
+      "wakePhrase": "Wake phrase",
+      "proactiveCheckIns": "Occasional check-ins",
+      "proactiveCheckInsDescription": "Let Morpheus check in naturally during longer work.",
       "speak": "Speak final responses",
       "speakDescription": "Use Windows speech after completed voice objectives.",
       "finish": "Complete activation",
@@ -916,8 +936,14 @@
       "replayAction": "Replay activation",
       "personalities": {
         "adaptive": { "name": "Adaptive", "description": "Match detail, tone and pace to the objective." },
+        "witty": { "name": "Witty", "description": "Confident, concise and naturally humorous." },
         "concise": { "name": "Concise", "description": "Prefer brief, direct status and results." },
         "warm": { "name": "Warm", "description": "Use a conversational, helpful and lightly humorous voice." }
+      },
+      "permissionProfiles": {
+        "strict": { "name": "Strict", "description": "Ask at each new action boundary." },
+        "balanced": { "name": "Balanced", "description": "Reuse exact trust and ask only when scope changes." },
+        "autonomous": { "name": "Autonomous", "description": "Handle routine reversible work; pause at protected boundaries." }
       },
       "signal": {
         "core": "Execution core",

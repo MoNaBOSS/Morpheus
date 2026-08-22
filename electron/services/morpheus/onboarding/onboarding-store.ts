@@ -1,17 +1,19 @@
 import { join } from 'node:path';
 
 import {
+  DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES,
   MORPHEUS_ONBOARDING_VERSION,
   type CompleteMorpheusOnboardingPayload,
   type MorpheusOnboardingStatus,
 } from '@shared/morpheus/onboarding-types';
+import { MORPHEUS_AMBIENT_WAKE_PHRASE_PATTERN } from '@shared/morpheus/voice-types';
 
 import { readValidatedJson, writeJsonAtomically } from '../storage/atomic-json';
 
 const DEFAULT_STATUS: Readonly<MorpheusOnboardingStatus> = Object.freeze({
   v: MORPHEUS_ONBOARDING_VERSION,
   completed: false,
-  preferences: Object.freeze({ speakResponses: true, personality: 'adaptive' as const }),
+  preferences: DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES,
 });
 
 export interface MorpheusOnboardingStore {
@@ -25,11 +27,37 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function validateStatus(value: unknown): MorpheusOnboardingStatus | null {
-  if (!isRecord(value) || value.v !== MORPHEUS_ONBOARDING_VERSION
+  if (!isRecord(value) || (value.v !== 1 && value.v !== MORPHEUS_ONBOARDING_VERSION)
     || typeof value.completed !== 'boolean' || !isRecord(value.preferences)
     || typeof value.preferences.speakResponses !== 'boolean'
-    || !['adaptive', 'concise', 'warm'].includes(String(value.preferences.personality))
+    || !['adaptive', 'concise', 'warm', 'witty'].includes(String(value.preferences.personality))
     || (value.completedAt !== undefined && typeof value.completedAt !== 'string')) return null;
+
+  if (value.v === 1) {
+    return {
+      ...structuredClone(DEFAULT_STATUS),
+      completed: value.completed,
+      ...(typeof value.completedAt === 'string' ? { completedAt: value.completedAt } : {}),
+      preferences: {
+        ...structuredClone(DEFAULT_STATUS.preferences),
+        speakResponses: value.preferences.speakResponses,
+        personality: value.preferences.personality as 'adaptive' | 'concise' | 'warm',
+        // Preserve the legacy behavior instead of silently increasing an
+        // existing user's authority during schema migration.
+        permissionProfile: 'balanced',
+      },
+    };
+  }
+
+  const preferences = value.preferences;
+  if (typeof preferences.preferredName !== 'string' || preferences.preferredName.length > 80
+    || !['ask', 'auto', 'act'].includes(String(preferences.interactionMode))
+    || typeof preferences.launchAtStartup !== 'boolean'
+    || typeof preferences.ambientVoiceEnabled !== 'boolean'
+    || typeof preferences.wakePhrase !== 'string'
+    || !MORPHEUS_AMBIENT_WAKE_PHRASE_PATTERN.test(preferences.wakePhrase.trim())
+    || !['strict', 'balanced', 'autonomous'].includes(String(preferences.permissionProfile))
+    || typeof preferences.proactiveCheckIns !== 'boolean') return null;
   return structuredClone(value) as MorpheusOnboardingStatus;
 }
 
@@ -45,8 +73,11 @@ export function createMorpheusOnboardingStore(options: {
   return {
     status: () => structuredClone(current),
     complete(payload) {
-      if (typeof payload.speakResponses !== 'boolean'
-        || !['adaptive', 'concise', 'warm'].includes(payload.personality)) {
+      if (!validateStatus({
+        v: MORPHEUS_ONBOARDING_VERSION,
+        completed: true,
+        preferences: payload,
+      })) {
         throw new Error('Invalid Morpheus activation preferences');
       }
       current = {

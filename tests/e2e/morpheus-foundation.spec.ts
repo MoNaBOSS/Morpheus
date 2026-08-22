@@ -74,7 +74,7 @@ test.describe('Morpheus 0.5 foundation', () => {
     }
   });
 
-  test('keeps ordinary OpenClaw send separate from explicit Chat execution through Morpheus Core', async ({
+  test('routes one Chat composer through Ask, Auto, and Act without splitting the product core', async ({
     launchElectronApp,
   }) => {
     const app = await launchElectronApp({ skipSetup: true });
@@ -91,7 +91,8 @@ test.describe('Morpheus 0.5 foundation', () => {
       await expect(input).toBeEnabled({ timeout: 30_000 });
       await input.fill('Show system information');
       await expect(page.getByTestId('chat-composer-send')).toBeEnabled();
-      await page.getByTestId('chat-composer-morpheus-execute').click();
+      await expect(page.getByTestId('morpheus-mode-auto')).toHaveAttribute('aria-checked', 'true');
+      await page.getByTestId('chat-composer-send').click();
       await expect(input).toHaveValue('');
 
       await page.getByTestId('sidebar-nav-command-center').click();

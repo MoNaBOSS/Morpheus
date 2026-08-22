@@ -32,7 +32,11 @@ test.describe('Morpheus companion and persistent Missions', () => {
       await expect(page.getByTestId('activation-signal-core')).toHaveAttribute('data-available', 'true');
       await expect(page.getByTestId('activation-signal-provider')).toHaveAttribute('data-available', 'false');
       await page.getByTestId('morpheus-activation-continue').click();
+      await page.getByTestId('activation-preferred-name').fill('Larry');
       await page.getByTestId('activation-personality-warm').click();
+      await expect(page.getByTestId('morpheus-activation-preferences').getByTestId('morpheus-mode-auto')).toHaveAttribute('aria-checked', 'true');
+      await expect(page.getByTestId('activation-permission-autonomous')).toHaveAttribute('data-selected', 'true');
+      await expect(page.getByTestId('activation-ambient-voice')).toBeDisabled();
       await page.getByTestId('morpheus-activation-finish').click();
       await expect(page.getByTestId('morpheus-activation-proof')).toBeVisible();
       await page.getByTestId('morpheus-activation-skip-proof').click();

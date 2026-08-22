@@ -4,6 +4,8 @@ const mocks = vi.hoisted(() => ({
   voiceStatus: vi.fn(),
   transcribeAudio: vi.fn(),
   submitObjective: vi.fn(),
+  routeInteraction: vi.fn(),
+  expandCompanionSurface: vi.fn(),
 }));
 
 vi.mock('@/lib/host-api', () => ({
@@ -12,6 +14,8 @@ vi.mock('@/lib/host-api', () => ({
       voiceStatus: mocks.voiceStatus,
       transcribeAudio: mocks.transcribeAudio,
       submitObjective: mocks.submitObjective,
+      routeInteraction: mocks.routeInteraction,
+      expandCompanionSurface: mocks.expandCompanionSurface,
     },
   },
 }));
@@ -25,6 +29,7 @@ vi.mock('@/lib/host-events', () => ({
 
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
 
 class FakeMediaRecorder {
   static isTypeSupported = vi.fn(() => true);
@@ -68,6 +73,13 @@ beforeEach(() => {
     transcript: 'Open Notepad', providerAccountId: 'openai', modelId: 'whisper-1', durationMs: 1_000,
   });
   mocks.submitObjective.mockResolvedValue({ objectiveRunId: 'objective-voice', accepted: true });
+  mocks.routeInteraction.mockResolvedValue({
+    route: 'objective', reason: 'actionable-intent', confidence: 'high', text: 'Open Notepad',
+  });
+  mocks.expandCompanionSurface.mockResolvedValue({ mode: 'full' });
+  useMorpheusOperatorStore.setState({
+    mode: 'auto', lastDecision: null, clarification: null, pendingConversation: null,
+  });
   useMorpheusVoiceStore.setState({
     phase: 'idle', status: null, transcript: null, error: null, source: null, startedAt: null,
   });
@@ -99,6 +111,9 @@ describe('Morpheus renderer voice controller', () => {
     useMorpheusVoiceStore.getState().stopListening();
 
     await vi.waitFor(() => expect(mocks.transcribeAudio).toHaveBeenCalledOnce());
+    expect(mocks.routeInteraction).toHaveBeenCalledWith({
+      text: 'Open Notepad', mode: 'auto', surface: 'voice',
+    });
     await vi.waitFor(() => expect(mocks.submitObjective).toHaveBeenCalledWith({
       objective: 'Open Notepad',
       originType: 'voice',

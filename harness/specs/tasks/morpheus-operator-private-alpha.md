@@ -21,6 +21,7 @@ touchedAreas:
   - src/pages/Settings/**
   - src/styles/globals.css
   - tests/unit/morpheus-**
+  - tests/unit/chat-input.test.tsx
   - tests/e2e/morpheus-**
   - docs/**
   - harness/reference/morpheus-operator-private-alpha.md
@@ -77,4 +78,3 @@ docs:
 This task implements the approved private-alpha operator journey. Managed Pro
 and Ultra billing, a hosted provider gateway, cloud memory synchronization,
 financial execution, and unrestricted shell authority are outside this branch.
-

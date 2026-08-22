@@ -164,11 +164,10 @@ does not define the home experience.
 
 Morpheus opens on the **Command Center** at `/`; **Quick Command** is available
 globally with `Ctrl+Shift+Space`; **Voice Command** has its own global shortcut;
-and OpenClaw chat remains fully functional at `/chat`. Voice, Quick Command,
-Command Center and explicit Chat execution converge on the same Main-owned
-Objective Core.
-In Chat, ordinary **Send** remains conversational ACP traffic; the separate
-**Execute** action (`Ctrl+Enter`) submits a text objective to Morpheus. Command
+and OpenClaw chat remains fully functional at `/chat`. **Ask / Auto / Act** is
+the same control on Voice, Quick Command, Command Center, and Chat. Auto is the
+default: Main routes questions to OpenClaw and actionable outcomes to the same
+Objective Core; unclear commands ask for one focused clarification. Command
 Center and Quick Command share logical workspace and Agent Profile context while
 Main retains target resolution and execution authority.
 
@@ -176,7 +175,9 @@ The companion and Mission foundation extends that runtime into a persistent
 operating experience:
 
 - a one-time, skippable cinematic activation introduces Morpheus from real
-  capability, Gateway, provider, and voice availability signals;
+  capability, Gateway, provider, and voice availability signals, then captures
+  preferred name, personality, operating mode, autonomy, startup presence,
+  disclosed wake phrase, spoken-result, and check-in preferences;
 - tray and global shortcuts summon a focused companion surface and restore the
   user's previous window state exactly when dismissed or expanded;
 - every accepted objective becomes a durable **Mission** with route, run
@@ -205,7 +206,7 @@ operating experience:
   review and replan objectives through a typed, schema-validated boundary.
   Provider output is untrusted input and never receives direct OS authority;
   deterministic planning remains the truthful fallback.
-- **Plan-level trust** — Strict, Balanced (default), and Autonomous profiles
+- **Plan-level trust** — Strict, Balanced, and Autonomous (fresh private-alpha default) profiles
   evaluate the complete plan. Morpheus asks once only for genuinely new scopes,
   then honours exact session or persistent grants. Critical boundaries remain
   unwaivable; degraded audit blocks writes and launches.

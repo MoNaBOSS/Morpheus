@@ -104,11 +104,9 @@ test.describe('Morpheus Command Center', () => {
       await page.getByTestId('morpheus-command-input').fill('Create a text file named artifact.txt');
       await page.getByTestId('morpheus-command-submit').click();
 
-      // A command-bar objective becomes a PLAN, so consent is requested once for
-      // the whole plan rather than once per capability run.
-      await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });
-      await expect(page.getByTestId('morpheus-plan-consent-boundary-file.createText')).toBeVisible();
-      await page.getByTestId('morpheus-plan-consent-allow-once').click();
+      // Autonomous handles first-use routine reversible work in the exact
+      // approved workspace without forcing a ceremonial confirmation.
+      await expect(page.getByTestId('morpheus-plan-consent-dialog')).toHaveCount(0);
 
       // The plan panel reports the step outcome, not just the raw event stream.
       await expect(page.getByTestId('plan-timeline').locator('li').first())
@@ -127,9 +125,10 @@ test.describe('Morpheus Command Center', () => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
-      await page.getByTestId('morpheus-command-input').fill('Create a text file named cancellable.txt');
+      await page.getByTestId('morpheus-command-input').fill('Take a screenshot');
       await page.getByTestId('morpheus-command-submit').click();
       await expect(page.getByTestId('morpheus-plan-consent-dialog')).toBeVisible({ timeout: 20_000 });
+      await expect(page.getByTestId('morpheus-plan-consent-boundary-screen.capture')).toBeVisible();
 
       await expect(page.getByTestId('morpheus-command-input')).toBeDisabled();
       await expect(page.getByTestId('morpheus-command-stop')).toBeVisible();

@@ -11,6 +11,7 @@ import { MorpheusCaptureIndicator } from './MorpheusCaptureIndicator';
 import { MorpheusPermissionDialog } from './MorpheusPermissionDialog';
 import { MorpheusPlanConsentDialog } from './MorpheusPlanConsentDialog';
 import { MorpheusVoiceRuntime } from './MorpheusVoiceRuntime';
+import { MorpheusOperatorNavigation } from './operator/MorpheusOperatorNavigation';
 
 export function MorpheusGlobalRuntime() {
   const subscribe = useMorpheusActionsStore((state) => state.subscribe);
@@ -86,6 +87,7 @@ export function MorpheusGlobalRuntime() {
       <MorpheusPlanConsentDialog />
       <MorpheusPermissionDialog />
       <MorpheusVoiceRuntime />
+      <MorpheusOperatorNavigation />
     </>
   );
 }

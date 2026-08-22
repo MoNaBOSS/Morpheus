@@ -282,6 +282,8 @@ export type CreateMorpheusApiOptions = {
   auditHealth: () => 'healthy' | 'degraded';
   /** Main-owned native picker. Renderer can never supply a directory path. */
   selectWorkspaceDirectory: () => Promise<string | null>;
+  /** Main-owned Windows setup side effects; renderer supplies booleans only. */
+  applyDesktopSetup?: (preferences: { launchAtStartup: boolean }) => Promise<void>;
   now?: () => Date;
   /** Main-owned adapter boundary; raw provider output never enters here directly. */
   planner?: MorpheusPlanner;
@@ -608,14 +610,41 @@ export function validateMemoryDraft(payload: unknown): MorpheusMemoryDraft {
 
 export function validateCompleteOnboardingPayload(payload: unknown): CompleteMorpheusOnboardingPayload {
   const record = requireRecord(payload, 'completeOnboarding payload');
-  assertNoUnknownKeys(record, ['speakResponses', 'personality'], 'completeOnboarding payload');
+  assertNoUnknownKeys(record, [
+    'preferredName', 'speakResponses', 'personality', 'interactionMode',
+    'launchAtStartup', 'ambientVoiceEnabled', 'wakePhrase', 'permissionProfile',
+    'proactiveCheckIns',
+  ], 'completeOnboarding payload');
+  if (typeof record.preferredName !== 'string' || record.preferredName.trim().length > 80) {
+    throw new MorpheusValidationError('preferredName must be at most 80 characters');
+  }
   if (typeof record.speakResponses !== 'boolean') throw new MorpheusValidationError('speakResponses must be boolean');
-  if (!['adaptive', 'concise', 'warm'].includes(String(record.personality))) {
+  if (!['adaptive', 'concise', 'warm', 'witty'].includes(String(record.personality))) {
     throw new MorpheusValidationError('invalid companion personality');
   }
+  if (!MORPHEUS_INTERACTION_MODES.includes(record.interactionMode as never)) {
+    throw new MorpheusValidationError('invalid default interaction mode');
+  }
+  if (typeof record.launchAtStartup !== 'boolean') throw new MorpheusValidationError('launchAtStartup must be boolean');
+  if (typeof record.ambientVoiceEnabled !== 'boolean') throw new MorpheusValidationError('ambientVoiceEnabled must be boolean');
+  if (typeof record.wakePhrase !== 'string'
+    || !MORPHEUS_AMBIENT_WAKE_PHRASE_PATTERN.test(record.wakePhrase.trim())) {
+    throw new MorpheusValidationError('invalid wake phrase');
+  }
+  if (!PERMISSION_PROFILES.includes(record.permissionProfile as never)) {
+    throw new MorpheusValidationError('invalid permission profile');
+  }
+  if (typeof record.proactiveCheckIns !== 'boolean') throw new MorpheusValidationError('proactiveCheckIns must be boolean');
   return {
+    preferredName: record.preferredName.trim(),
     speakResponses: record.speakResponses,
     personality: record.personality as CompleteMorpheusOnboardingPayload['personality'],
+    interactionMode: record.interactionMode as CompleteMorpheusOnboardingPayload['interactionMode'],
+    launchAtStartup: record.launchAtStartup,
+    ambientVoiceEnabled: record.ambientVoiceEnabled,
+    wakePhrase: record.wakePhrase.trim(),
+    permissionProfile: record.permissionProfile as PermissionProfile,
+    proactiveCheckIns: record.proactiveCheckIns,
   };
 }
 
@@ -1241,10 +1270,50 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
       const preferences = validateCompleteOnboardingPayload(payload);
       await audit.recordControl({
         category: 'onboarding', event: 'completed',
-        details: { speakResponses: preferences.speakResponses, personality: preferences.personality },
+        details: {
+          hasPreferredName: Boolean(preferences.preferredName),
+          speakResponses: preferences.speakResponses,
+          personality: preferences.personality,
+          interactionMode: preferences.interactionMode,
+          launchAtStartup: preferences.launchAtStartup,
+          ambientVoiceEnabled: preferences.ambientVoiceEnabled,
+          permissionProfile: preferences.permissionProfile,
+          proactiveCheckIns: preferences.proactiveCheckIns,
+        },
         appVersion,
       });
-      await voice.updateSettings({ speakResponses: preferences.speakResponses });
+      await voice.updateSettings({
+        speakResponses: preferences.speakResponses,
+        ambientEnabled: preferences.ambientVoiceEnabled,
+        wakePhrase: preferences.wakePhrase,
+      });
+      await options.applyDesktopSetup?.({ launchAtStartup: preferences.launchAtStartup });
+      await audit.recordControl({
+        category: 'permission', event: 'profile-changed',
+        details: { profile: preferences.permissionProfile, source: 'onboarding' }, appVersion,
+      });
+      grants.setProfile(preferences.permissionProfile);
+
+      if (preferences.preferredName) {
+        const existing = memory.list().memories.find((entry) => (
+          entry.sourceId === 'onboarding-preferred-name'
+        ));
+        const memoryId = existing?.memoryId ?? `memory-${randomUUID()}`;
+        await audit.recordControl({
+          category: 'memory', event: existing ? 'updated-from-onboarding' : 'captured-from-onboarding',
+          subjectId: memoryId,
+          details: { kind: 'preference', source: 'user' }, appVersion,
+        });
+        memory.save({
+          memoryId,
+          title: 'Preferred name',
+          text: `Call the user ${preferences.preferredName}.`,
+          kind: 'preference',
+          sensitivity: 'normal',
+          providerUse: 'allowed',
+          enabled: true,
+        }, { source: 'user', sourceId: 'onboarding-preferred-name' });
+      }
       return onboarding.complete(preferences);
     },
     resetOnboarding: async () => {

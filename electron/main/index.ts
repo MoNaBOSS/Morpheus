@@ -126,6 +126,7 @@ const gotTheLock = gotElectronLock && gotFileLock;
 
 // Global references
 let mainWindow: BrowserWindow | null = null;
+let shouldStartHidden = false;
 let gatewayManager!: GatewayManager;
 let clawHubService!: ClawHubService;
 const hostApiRegistry = new HostApiRegistry();
@@ -362,7 +363,7 @@ function createMainWindow(): BrowserWindow {
       return;
     }
 
-    win.show();
+    if (!shouldStartHidden) win.show();
   });
 
   win.on('close', (event) => {
@@ -430,6 +431,7 @@ async function initialize(): Promise<void> {
     // Apply persisted proxy settings before creating windows or network requests.
     await applyProxySettings();
     await syncLaunchAtStartupSettingFromStore();
+    shouldStartHidden = Boolean(await getSetting('startMinimized'));
   } else {
     logger.info('Running in E2E mode: startup side effects minimized');
   }

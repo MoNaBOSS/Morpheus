@@ -1,21 +1,31 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, Check, Cpu, Mic, ShieldCheck, Volume2 } from 'lucide-react';
+import { ArrowRight, BellRing, Check, Cpu, Mic, Power, ShieldCheck, UserRound, Volume2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { hostApi } from '@/lib/host-api';
+import { Switch } from '@/components/ui/switch';
 import { useGatewayStore } from '@/stores/gateway';
 import { useProviderStore } from '@/stores/providers';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
-import type { MorpheusCompanionPersonality } from '@shared/morpheus/onboarding-types';
+import {
+  DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES,
+  type MorpheusCompanionPersonality,
+  type MorpheusOnboardingPreferences,
+} from '@shared/morpheus/onboarding-types';
+import type { MorpheusInteractionMode } from '@shared/morpheus/operator-types';
+import type { PermissionProfile } from '@shared/morpheus/permission-types';
 import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
 import { MorpheusSignal } from '@/components/morpheus/signal/MorpheusSignal';
 import { resolveMorpheusSignalState } from '@/components/morpheus/signal/signal-state';
+import { MorpheusInteractionModeControl } from '@/components/morpheus/operator/MorpheusInteractionModeControl';
+import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
 
 type ActivationStage = 'loading' | 'intro' | 'calibrating' | 'preferences' | 'proof' | 'ready';
 type SignalLock = { id: 'core' | 'runtime' | 'provider' | 'voice'; available: boolean; detail: string };
-const PERSONALITIES: readonly MorpheusCompanionPersonality[] = ['adaptive', 'concise', 'warm'];
+const PERSONALITIES: readonly MorpheusCompanionPersonality[] = ['adaptive', 'witty', 'warm', 'concise'];
+const PERMISSION_PROFILES: readonly PermissionProfile[] = ['strict', 'balanced', 'autonomous'];
 const PROOF_OBJECTIVE = 'Show system information';
 
 export function MorpheusActivation({ enabled }: { enabled: boolean }) {
@@ -23,6 +33,7 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const onboarding = useMorpheusCompanionStore((state) => state.onboarding);
   const loadOnboarding = useMorpheusCompanionStore((state) => state.loadOnboarding);
   const completeOnboarding = useMorpheusCompanionStore((state) => state.completeOnboarding);
+  const setOperatorMode = useMorpheusOperatorStore((state) => state.setMode);
   const gatewayStatus = useGatewayStore((state) => state.status);
   const accounts = useProviderStore((state) => state.accounts);
   const defaultAccountId = useProviderStore((state) => state.defaultAccountId);
@@ -32,7 +43,15 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const [dismissed, setDismissed] = useState(false);
   const [signals, setSignals] = useState<SignalLock[]>([]);
   const [speakResponses, setSpeakResponses] = useState(true);
-  const [personality, setPersonality] = useState<MorpheusCompanionPersonality>('adaptive');
+  const [preferredName, setPreferredName] = useState('');
+  const [personality, setPersonality] = useState<MorpheusCompanionPersonality>('witty');
+  const [interactionMode, setInteractionMode] = useState<MorpheusInteractionMode>('auto');
+  const [launchAtStartup, setLaunchAtStartup] = useState(false);
+  const [ambientVoiceEnabled, setAmbientVoiceEnabled] = useState(false);
+  const [wakePhrase, setWakePhrase] = useState('Morpheus');
+  const [permissionProfile, setPermissionProfile] = useState<PermissionProfile>('autonomous');
+  const [proactiveCheckIns, setProactiveCheckIns] = useState(true);
+  const [voiceAvailable, setVoiceAvailable] = useState(false);
   const [proofStarted, setProofStarted] = useState(false);
 
   useEffect(() => {
@@ -43,7 +62,14 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
       const status = useMorpheusCompanionStore.getState().onboarding;
       if (!status || status.completed) return;
       setSpeakResponses(status.preferences.speakResponses);
+      setPreferredName(status.preferences.preferredName);
       setPersonality(status.preferences.personality);
+      setInteractionMode(status.preferences.interactionMode);
+      setLaunchAtStartup(status.preferences.launchAtStartup);
+      setAmbientVoiceEnabled(status.preferences.ambientVoiceEnabled);
+      setWakePhrase(status.preferences.wakePhrase);
+      setPermissionProfile(status.preferences.permissionProfile);
+      setProactiveCheckIns(status.preferences.proactiveCheckIns);
       setStage('intro');
     });
     return () => { cancelled = true; };
@@ -66,6 +92,7 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     speakIntroduction();
     const [capabilities, voice] = await Promise.all([hostApi.morpheus.describeActions().catch(() => null), hostApi.morpheus.voiceStatus().catch(() => null)]);
     const runtimeReady = gatewayStatus.state === 'running' && gatewayStatus.gatewayReady !== false;
+    setVoiceAvailable(Boolean(voice?.transcriptionAvailable));
     setSignals([
       { id: 'core', available: Boolean(capabilities?.actions.length), detail: capabilities ? t('morpheus.activation.signal.capabilities', { count: capabilities.actions.length }) : t('morpheus.activation.signal.unavailable') },
       { id: 'runtime', available: runtimeReady, detail: runtimeReady ? t('morpheus.activation.signal.connected') : t('morpheus.activation.signal.starting') },
@@ -74,12 +101,31 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     ]);
   };
 
+  const preferences = (): MorpheusOnboardingPreferences => ({
+    ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES,
+    preferredName: preferredName.trim(),
+    speakResponses,
+    personality,
+    interactionMode,
+    launchAtStartup,
+    ambientVoiceEnabled: ambientVoiceEnabled && voiceAvailable,
+    wakePhrase: wakePhrase.trim() || 'Morpheus',
+    permissionProfile,
+    proactiveCheckIns,
+  });
+
   const savePreferences = async (): Promise<void> => {
-    if (await completeOnboarding({ speakResponses, personality })) setStage('proof');
+    if (await completeOnboarding(preferences())) {
+      setOperatorMode(interactionMode);
+      setStage('proof');
+    }
   };
 
   const skip = async (): Promise<void> => {
-    if (await completeOnboarding({ speakResponses, personality })) setDismissed(true);
+    if (await completeOnboarding(preferences())) {
+      setOperatorMode(interactionMode);
+      setDismissed(true);
+    }
   };
 
   const startProof = async (): Promise<void> => {
@@ -135,13 +181,42 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
           ) : null}
 
           {visibleStage === 'preferences' ? (
-            <div data-testid="morpheus-activation-preferences" className="w-full max-w-2xl">
+            <div data-testid="morpheus-activation-preferences" className="max-h-full w-full max-w-3xl overflow-y-auto py-2 pr-2 scrollbar-thin">
               <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.personalize')}</p>
-              <h2 className="mt-4 font-serif text-4xl font-normal">{t('morpheus.signalOs.activation.relationship')}</h2>
-              <div className="mt-7 grid grid-cols-3 border-y border-white/[0.07]">
-                {PERSONALITIES.map((choice) => <button key={choice} type="button" data-testid={`activation-personality-${choice}`} data-selected={personality === choice} onClick={() => setPersonality(choice)} className="border-r border-white/[0.07] px-4 py-5 text-left last:border-r-0 data-[selected=true]:bg-white/[0.04]"><span className={cn('block h-1 w-7', personality === choice ? 'bg-[hsl(var(--morpheus-accent))]' : 'bg-white/10')} /><p className="mt-4 text-sm">{t(`morpheus.activation.personalities.${choice}.name`)}</p><p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">{t(`morpheus.activation.personalities.${choice}.description`)}</p></button>)}
+              <h2 className="mt-3 font-serif text-4xl font-normal">{t('morpheus.activation.preferenceTitle')}</h2>
+
+              <label className="mt-6 block">
+                <span className="flex items-center gap-2 text-[9px] uppercase tracking-[0.16em] text-muted-foreground"><UserRound className="h-3.5 w-3.5" />{t('morpheus.activation.preferredName')}</span>
+                <input
+                  data-testid="activation-preferred-name"
+                  value={preferredName}
+                  maxLength={80}
+                  autoComplete="name"
+                  onChange={(event) => setPreferredName(event.target.value)}
+                  placeholder={t('morpheus.activation.preferredNamePlaceholder')}
+                  className="mt-2 h-11 w-full border border-white/[0.1] bg-black/15 px-4 text-sm outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-[hsl(var(--morpheus-accent)/0.55)]"
+                />
+              </label>
+
+              <div className="mt-5 grid grid-cols-4 border-y border-white/[0.07]">
+                {PERSONALITIES.map((choice) => <button key={choice} type="button" data-testid={`activation-personality-${choice}`} data-selected={personality === choice} onClick={() => setPersonality(choice)} className="border-r border-white/[0.07] px-3 py-3 text-left last:border-r-0 data-[selected=true]:bg-white/[0.04]"><span className={cn('block h-0.5 w-6', personality === choice ? 'bg-[hsl(var(--morpheus-accent))]' : 'bg-white/10')} /><p className="mt-2.5 text-xs">{t(`morpheus.activation.personalities.${choice}.name`)}</p><p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">{t(`morpheus.activation.personalities.${choice}.description`)}</p></button>)}
               </div>
-              <label className="mt-4 flex cursor-pointer items-center justify-between border-b border-white/[0.07] py-4"><span className="flex items-center gap-3"><Volume2 className="h-4 w-4 text-muted-foreground" /><span><span className="block text-sm">{t('morpheus.activation.speak')}</span><span className="mt-1 block text-[10px] text-muted-foreground">{t('morpheus.activation.speakDescription')}</span></span></span><input data-testid="activation-speak-responses" type="checkbox" checked={speakResponses} onChange={(event) => setSpeakResponses(event.target.checked)} className="h-4 w-4 accent-emerald-500" /></label>
+
+              <p className="mt-5 text-[9px] uppercase tracking-[0.16em] text-muted-foreground">{t('morpheus.operator.modeLabel')}</p>
+              <MorpheusInteractionModeControl className="mt-2" value={interactionMode} onChange={setInteractionMode} showDescription />
+
+              <p className="mt-5 text-[9px] uppercase tracking-[0.16em] text-muted-foreground">{t('morpheus.activation.autonomy')}</p>
+              <div className="mt-2 grid grid-cols-3 border border-white/[0.09] bg-black/15">
+                {PERMISSION_PROFILES.map((profile) => <button key={profile} type="button" data-testid={`activation-permission-${profile}`} data-selected={permissionProfile === profile} onClick={() => setPermissionProfile(profile)} className="border-r border-white/[0.08] px-4 py-3 text-left last:border-r-0 data-[selected=true]:bg-[hsl(var(--morpheus-accent)/0.08)]"><span className={cn('text-[10px] uppercase tracking-[0.14em]', permissionProfile === profile ? 'text-[hsl(var(--morpheus-accent))]' : 'text-foreground/65')}>{t(`morpheus.activation.permissionProfiles.${profile}.name`)}</span><span className="mt-1 block text-[9px] leading-relaxed text-muted-foreground">{t(`morpheus.activation.permissionProfiles.${profile}.description`)}</span></button>)}
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 border-y border-white/[0.07]">
+                <ActivationToggle icon={Power} testId="activation-launch-at-startup" title={t('morpheus.activation.launchAtStartup')} description={t('morpheus.activation.launchAtStartupDescription')} checked={launchAtStartup} onChange={setLaunchAtStartup} />
+                <ActivationToggle icon={Mic} testId="activation-ambient-voice" title={t('morpheus.activation.ambientVoice')} description={voiceAvailable ? t('morpheus.activation.ambientVoiceDescription', { wakePhrase }) : t('morpheus.activation.ambientVoiceUnavailable')} checked={ambientVoiceEnabled && voiceAvailable} disabled={!voiceAvailable} onChange={setAmbientVoiceEnabled} />
+                <ActivationToggle icon={Volume2} testId="activation-speak-responses" title={t('morpheus.activation.speak')} description={t('morpheus.activation.speakDescription')} checked={speakResponses} onChange={setSpeakResponses} />
+                <ActivationToggle icon={BellRing} testId="activation-proactive-check-ins" title={t('morpheus.activation.proactiveCheckIns')} description={t('morpheus.activation.proactiveCheckInsDescription')} checked={proactiveCheckIns} onChange={setProactiveCheckIns} />
+              </div>
+              {ambientVoiceEnabled && voiceAvailable ? <label className="mt-3 flex items-center gap-3"><span className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground">{t('morpheus.activation.wakePhrase')}</span><input data-testid="activation-wake-phrase" value={wakePhrase} maxLength={48} onChange={(event) => setWakePhrase(event.target.value)} className="h-9 min-w-0 flex-1 border border-white/[0.1] bg-black/15 px-3 text-xs outline-none focus:border-[hsl(var(--morpheus-accent)/0.55)]" /></label> : null}
               <button type="button" data-testid="morpheus-activation-finish" onClick={() => void savePreferences()} className="mt-7 inline-flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.signalOs.activation.prove')}<ArrowRight className="h-4 w-4" /></button>
             </div>
           ) : null}
@@ -170,5 +245,31 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
         </section>
       </main>
     </div>
+  );
+}
+
+function ActivationToggle({
+  icon: Icon,
+  testId,
+  title,
+  description,
+  checked,
+  disabled = false,
+  onChange,
+}: {
+  icon: typeof Mic;
+  testId: string;
+  title: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className={cn('flex min-h-20 items-center gap-3 border-r border-b border-white/[0.07] p-3 last:border-r-0', disabled && 'opacity-50')}>
+      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <span className="min-w-0 flex-1"><span className="block text-xs">{title}</span><span className="mt-1 block text-[9px] leading-relaxed text-muted-foreground">{description}</span></span>
+      <Switch data-testid={testId} checked={checked} disabled={disabled} onCheckedChange={onChange} />
+    </label>
   );
 }

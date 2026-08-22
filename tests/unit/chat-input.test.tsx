@@ -3,10 +3,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ChatInput } from '@/pages/Chat/ChatInput';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
+import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
 const hostApiFetchMock = vi.hoisted(() => vi.fn());
 const hostApiDialogOpenMock = vi.hoisted(() => vi.fn());
 const toastErrorMock = vi.hoisted(() => vi.fn());
 const toastSuccessMock = vi.hoisted(() => vi.fn());
+const toastInfoMock = vi.hoisted(() => vi.fn());
+const routeInteractionMock = vi.hoisted(() => vi.fn());
 const { agentsState, chatState, gatewayState, providersState, artifactPanelMocks } = vi.hoisted(() => ({
   agentsState: {
     agents: [] as Array<Record<string, unknown>>,
@@ -73,6 +76,9 @@ vi.mock('@/lib/host-api', () => ({
     dialog: {
       open: hostApiDialogOpenMock,
     },
+    morpheus: {
+      routeInteraction: routeInteractionMock,
+    },
   },
 }));
 
@@ -80,6 +86,7 @@ vi.mock('sonner', () => ({
   toast: {
     error: toastErrorMock,
     success: toastSuccessMock,
+    info: toastInfoMock,
   },
 }));
 
@@ -251,6 +258,17 @@ describe('ChatInput agent targeting', () => {
     vi.mocked(hostApiDialogOpenMock).mockReset();
     toastErrorMock.mockReset();
     toastSuccessMock.mockReset();
+    toastInfoMock.mockReset();
+    routeInteractionMock.mockReset();
+    routeInteractionMock.mockImplementation(async ({ text, mode }: { text: string; mode: string }) => ({
+      route: mode === 'ask' ? 'conversation' : 'objective',
+      reason: mode === 'ask' ? 'ask-selected' : 'actionable-intent',
+      confidence: mode === 'ask' ? 'explicit' : 'high',
+      text: text.trim(),
+    }));
+    useMorpheusOperatorStore.setState({
+      mode: 'ask', lastDecision: null, clarification: null, pendingConversation: null,
+    });
     artifactPanelMocks.openPreview.mockReset();
     useMorpheusCommandStore.setState({
       runObjective: originalRunObjective,
@@ -259,15 +277,16 @@ describe('ChatInput agent targeting', () => {
     });
   });
 
-  it('keeps ordinary Chat send separate from explicit Morpheus execution', async () => {
+  it('uses one Auto submit control to route actionable text through Morpheus Core', async () => {
     const runObjective = vi.fn(async () => true);
     useMorpheusCommandStore.setState({ runObjective, interpreting: false, executing: false });
+    useMorpheusOperatorStore.setState({ mode: 'auto' });
     const onSend = vi.fn();
     renderChatInput(onSend);
 
     const input = screen.getByTestId('chat-composer-input');
     fireEvent.change(input, { target: { value: 'Show system information' } });
-    fireEvent.click(screen.getByTestId('chat-composer-morpheus-execute'));
+    fireEvent.click(screen.getByTestId('chat-composer-send'));
 
     await waitFor(() => {
       expect(runObjective).toHaveBeenCalledWith('Show system information', 'chat');
@@ -275,6 +294,20 @@ describe('ChatInput agent targeting', () => {
     expect(onSend).not.toHaveBeenCalled();
     expect(input).toHaveValue('');
     expect(toastSuccessMock).toHaveBeenCalledWith('Objective sent to Morpheus');
+  });
+
+  it('uses Ask mode to send the same composer text through OpenClaw Chat', async () => {
+    const runObjective = vi.fn(async () => true);
+    useMorpheusCommandStore.setState({ runObjective, interpreting: false, executing: false });
+    const onSend = vi.fn();
+    renderChatInput(onSend);
+
+    fireEvent.click(screen.getByTestId('morpheus-mode-ask'));
+    fireEvent.change(screen.getByTestId('chat-composer-input'), { target: { value: 'Explain the plan' } });
+    fireEvent.click(screen.getByTestId('chat-composer-send'));
+
+    await waitFor(() => expect(onSend).toHaveBeenCalledWith('Explain the plan', undefined, null));
+    expect(runObjective).not.toHaveBeenCalled();
   });
 
   it('renders a dot pulse and visible thinking label while a message is sending', () => {
@@ -925,7 +958,7 @@ describe('ChatInput agent targeting', () => {
     expect(textbox.className).not.toContain('text-transparent');
   });
 
-  it('lets the user select an agent target and sends it with the message', () => {
+  it('lets the user select an agent target and sends it with the message', async () => {
     const onSend = vi.fn();
     agentsState.agents = [
       {
@@ -962,10 +995,10 @@ describe('ChatInput agent targeting', () => {
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Hello direct agent' } });
     fireEvent.click(screen.getByTitle('Send'));
 
-    expect(onSend).toHaveBeenCalledWith('Hello direct agent', undefined, 'research');
+    await waitFor(() => expect(onSend).toHaveBeenCalledWith('Hello direct agent', undefined, 'research'));
   });
 
-  it('keeps the ACP composer enabled while gateway is running but not yet ready', () => {
+  it('keeps the ACP composer enabled while gateway is running but not yet ready', async () => {
     const onSend = vi.fn();
     gatewayState.status = { state: 'running', port: 18789, gatewayReady: false };
     agentsState.agents = [
@@ -1025,7 +1058,7 @@ describe('ChatInput agent targeting', () => {
     fireEvent.change(input, { target: { value: 'Send through ACP' } });
     fireEvent.click(screen.getByTitle('Send'));
 
-    expect(onSend).toHaveBeenCalledWith('Send through ACP', undefined, null);
+    await waitFor(() => expect(onSend).toHaveBeenCalledWith('Send through ACP', undefined, null));
   });
 
   it('shows starting status while gateway is running but not yet ready', () => {
@@ -1132,7 +1165,7 @@ describe('ChatInput agent targeting', () => {
 
     fireEvent.click(screen.getByTitle('Send'));
 
-    expect(onSend).toHaveBeenCalledWith('Draft /create-skill  a new helper', undefined, null);
+    await waitFor(() => expect(onSend).toHaveBeenCalledWith('Draft /create-skill  a new helper', undefined, null));
     expect(hostApiFetchMock).toHaveBeenCalledWith(
       '/api/skills/quick-access',
       expect.objectContaining({

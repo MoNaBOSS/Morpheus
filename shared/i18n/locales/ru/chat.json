@@ -234,6 +234,7 @@
         "morpheusNoAttachments": "Выполнение целей Morpheus пока принимает только текст; обычный Chat может отправить эти вложения",
         "morpheusAccepted": "Цель отправлена в Morpheus",
         "morpheusRejected": "Morpheus не смог запустить эту цель",
+        "morpheusClarification": "Я не понял команду достаточно точно. Опишите нужный результат.",
         "stop": "Остановить",
         "thinking": "Думаю…",
         "gatewayConnected": "подключён",

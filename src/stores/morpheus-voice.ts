@@ -8,6 +8,7 @@ import {
   MorpheusAmbientVoiceCapture,
 } from '@/lib/morpheus-ambient-voice';
 import { useMorpheusCommandStore } from './morpheus-command';
+import { useMorpheusOperatorStore } from './morpheus-operator';
 import {
   MORPHEUS_VOICE_MAX_AUDIO_BYTES,
   MORPHEUS_VOICE_MAX_DURATION_MS,
@@ -91,6 +92,19 @@ async function blobToBase64(blob: Blob): Promise<string> {
   return window.btoa(binary);
 }
 
+async function routeVoiceInput(text: string): Promise<void> {
+  const operator = useMorpheusOperatorStore.getState();
+  const decision = await operator.route(text, 'voice');
+  if (decision.route === 'objective') {
+    await useMorpheusCommandStore.getState().runObjective(decision.text, 'voice');
+    return;
+  }
+  if (decision.route === 'conversation') {
+    await hostApi.morpheus.expandCompanionSurface().catch(() => undefined);
+    operator.queueConversation(decision.text);
+  }
+}
+
 export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
   const fail = (error: unknown): void => {
     operationGeneration += 1;
@@ -147,7 +161,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
         startedAt: null,
       });
       if (status?.settings.autoSubmitTranscript) {
-        await useMorpheusCommandStore.getState().runObjective(result.transcript, 'voice');
+        await routeVoiceInput(result.transcript);
       }
     } catch (error) {
       if (generation === operationGeneration) fail(error);
@@ -195,7 +209,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
           if (!objective) return;
           useMorpheusCommandStore.getState().setInput(objective);
           if (status.settings.autoSubmitTranscript) {
-            await useMorpheusCommandStore.getState().runObjective(objective, 'voice');
+            await routeVoiceInput(objective);
           }
         },
         onError(error) {

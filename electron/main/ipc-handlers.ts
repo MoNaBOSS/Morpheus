@@ -230,6 +230,11 @@ function registerTypedHostHandlers(
       });
       return result.canceled ? null : result.filePaths[0] ?? null;
     },
+    applyDesktopSetup: async ({ launchAtStartup }) => {
+      await setSetting('launchAtStartup', launchAtStartup);
+      await setSetting('startMinimized', launchAtStartup);
+      if (process.env.CLAWX_E2E !== '1') await syncLaunchAtStartupSettingFromStore();
+    },
   });
   hostApiRegistry.registerCoreServices({
     app: createAppApi(),
