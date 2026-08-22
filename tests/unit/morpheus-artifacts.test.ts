@@ -44,4 +44,46 @@ describe('Morpheus durable artifact projection', () => {
   it('does not invent an artifact for a failed execution', () => {
     expect(artifactFromAuditEntry({ ...BASE_AUDIT, phase: 'failed' })).toBeNull();
   });
+
+  it('restores a verified website preview target from durable audit metadata', () => {
+    expect(artifactFromAuditEntry({
+      ...BASE_AUDIT,
+      actionId: 'site.verify',
+      outcome: {
+        kind: 'website',
+        projectPath: 'C:\\Morpheus Files\\projects\\acme',
+        workspaceRoot: 'C:\\Morpheus Files',
+        entryPath: 'C:\\Morpheus Files\\projects\\acme\\index.html',
+        relativeEntryPath: 'projects/acme/index.html',
+        fileCount: 5,
+        totalBytes: 2048,
+        verified: true,
+      },
+    })).toEqual({
+      kind: 'website', artifactId: 'run-1', createdAt: BASE_AUDIT.ts,
+      projectPath: 'C:\\Morpheus Files\\projects\\acme',
+      workspaceRoot: 'C:\\Morpheus Files',
+      entryPath: 'C:\\Morpheus Files\\projects\\acme\\index.html',
+      relativeEntryPath: 'projects/acme/index.html',
+      fileCount: 5,
+      totalBytes: 2048,
+    });
+  });
+
+  it('restores scheduled reminder lineage without retaining the reminder message', () => {
+    const artifact = artifactFromAuditEntry({
+      ...BASE_AUDIT,
+      actionId: 'reminder.schedule',
+      outcome: {
+        kind: 'scheduled-reminder', scheduleId: 'schedule-1', workflowId: 'reminder-1',
+        triggerType: 'daily', nextRunAt: '2026-08-11T09:00:00.000Z',
+      },
+    });
+    expect(artifact).toEqual({
+      kind: 'schedule', artifactId: 'run-1', createdAt: BASE_AUDIT.ts,
+      scheduleId: 'schedule-1', workflowId: 'reminder-1',
+      triggerType: 'daily', nextRunAt: '2026-08-11T09:00:00.000Z',
+    });
+    expect(JSON.stringify(artifact)).not.toContain('message');
+  });
 });

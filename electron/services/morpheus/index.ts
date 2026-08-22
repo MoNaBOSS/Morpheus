@@ -33,6 +33,8 @@ import { win32SystemStorageCapability } from './capabilities/win32/system-storag
 import { win32SystemProcessesCapability } from './capabilities/win32/system-processes';
 import { win32OpenUrlCapability } from './capabilities/win32/open-url';
 import { win32LaunchProjectCapability } from './capabilities/win32/launch-project';
+import { win32VerifySiteCapability } from './capabilities/win32/verify-site';
+import { createWin32ScheduleReminderCapability } from './capabilities/win32/schedule-reminder';
 import { createMorpheusAgentProfileStore, type MorpheusAgentProfileStore } from './agents/profile-store';
 import { createMorpheusWorkflowStore, type MorpheusWorkflowStore } from './workflows/workflow-store';
 import { createMorpheusWorkflowService, type MorpheusWorkflowService } from './workflows/workflow-service';
@@ -118,6 +120,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   registry.register(win32SystemStorageCapability);
   registry.register(win32SystemProcessesCapability);
   registry.register(win32OpenUrlCapability);
+  registry.register(win32VerifySiteCapability);
   registry.register(win32LaunchProjectCapability);
 
   const workspaces = createMorpheusWorkspaceStore({ userDataDir: options.userDataDir });
@@ -242,6 +245,10 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     }),
     isRuntimePaused: () => runtimeControl.snapshot().paused,
   });
+  // This capability depends on the Morpheus-owned scheduler, so registration
+  // happens only after the service exists. Runtime holds the registry by
+  // reference and no external caller can execute before composition returns.
+  registry.register(createWin32ScheduleReminderCapability({ scheduler }));
   const goals = createMorpheusGoalService({
     store: goalStore, objectives, projects, workspaces, agents: agentProfiles,
     audit, appVersion: options.appVersion,

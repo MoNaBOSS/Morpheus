@@ -54,6 +54,20 @@ describe('parameter kinds reject what they must', () => {
     expect(ok('relativePath', 'reports\\2026\\q1.md')).toBe(true);
   });
 
+  it('writable relative paths preserve containment and refuse executable content types', () => {
+    for (const bad of [
+      '../site/index.html', 'C:\\site\\index.html', 'site/run.ps1', 'site/app.js',
+      'site/launch.cmd', 'site/no-extension', 'site/NUL.html',
+    ]) {
+      expect(ok('writableRelativePath', bad), `writableRelativePath should reject ${bad}`).toBe(false);
+    }
+    for (const accepted of [
+      'site/index.html', 'site/styles/main.css', 'site/analytics.json', 'site/30-day-plan.md',
+    ]) {
+      expect(ok('writableRelativePath', accepted), `writableRelativePath should accept ${accepted}`).toBe(true);
+    }
+  });
+
   it('urls are http(s) only', () => {
     // `file:` and `javascript:` are how an "open a link" capability turns into
     // local file access or code execution.
@@ -70,6 +84,20 @@ describe('parameter kinds reject what they must', () => {
     }
     expect(ok('httpUrl', 'https://example.com/a?b=c')).toBe(true);
     expect(ok('httpUrl', 'http://localhost:3000')).toBe(true);
+  });
+
+  it('schedule times are absolute ISO instants rather than ambiguous local prose', () => {
+    expect(validateParam('isoDateTime', '2026-08-23T09:30:00Z')).toEqual({
+      ok: true,
+      value: '2026-08-23T09:30:00.000Z',
+    });
+    expect(validateParam('isoDateTime', '2026-08-23T15:30:00+06:00')).toEqual({
+      ok: true,
+      value: '2026-08-23T09:30:00.000Z',
+    });
+    for (const bad of ['tomorrow at 9', '2026-08-23', '2026-08-23T09:30:00', 'not-a-date']) {
+      expect(ok('isoDateTime', bad), `isoDateTime should reject ${bad}`).toBe(false);
+    }
   });
 
   it('keys cannot carry path or shell syntax', () => {

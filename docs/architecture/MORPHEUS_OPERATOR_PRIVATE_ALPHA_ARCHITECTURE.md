@@ -49,22 +49,32 @@ excluded.
 
 ## Hero website builder
 
-The business-site journey uses existing capabilities where they are sound and
-adds narrow capabilities only for gaps:
+The business-site journey reuses the sequential plan executor and adds three
+narrow registered capabilities for the remaining gaps:
 
-- workspace folders and exclusive text-file creation for source artifacts;
-- a typed website-project manifest for validation and preview;
-- a Main-owned local preview lifecycle with no arbitrary command or shell;
-- an optional typed staging adapter whose credentials remain in secure provider
-  storage and whose destination is compiled/configured, not renderer-authored;
-- Morpheus reminders/schedules created through a validated Main service;
-- provider planning that may propose content but cannot execute, choose paths,
-  or create authority.
+- `file.create` exclusively creates bounded non-executable text assets at a
+  validated workspace-relative path. It never overwrites and cannot create a
+  script or executable extension;
+- `site.verify` resolves the future project path during whole-plan trust
+  preparation, then re-resolves and inspects the real completed project only
+  after its dependencies succeed. It rejects links, scripts, forms, embeds,
+  remote resources, missing responsive metadata, and invalid analytics
+  configuration before returning a typed website manifest;
+- `reminder.schedule` creates one persisted Morpheus workflow containing one
+  bounded notification and a real one-time or daily Morpheus schedule. It has
+  no command, executable, URL, environment, shell, or path parameter.
+
+Verified website outcomes become durable metadata-only artifacts. Command
+Center preview sends the manifest's workspace root plus relative entry path to
+the existing Main-owned local HTML preview policy; the Renderer cannot replace
+it with an arbitrary file URL. Provider planning may propose file content and
+steps, but cannot execute, choose an absolute root, or create authority.
 
 The initial package can complete the local website, preview, analytics-ready
-files, content plan, and follow-up artifacts without hosting credentials. It
-reports staging deployment as unavailable until a supported destination is
-configured; it never fakes a public URL.
+files, content plan, and follow-up reminder without hosting credentials. A
+typed staging adapter is deliberately not implemented yet; public deployment
+remains unavailable until a supported destination and credential boundary are
+implemented, and Morpheus never fakes a public URL.
 
 ## Autonomy profile
 
@@ -85,4 +95,3 @@ Shared contracts remain under `shared/morpheus/**`. Windows implementation
 lives under `electron/services/morpheus/capabilities/win32/**`. Future macOS,
 Linux, bootable, web, and mobile hosts implement adapters around the same
 objective, plan, memory, artifact, and provider contracts.
-

@@ -105,6 +105,13 @@ describe('morpheus audit sink', () => {
       kind: 'notification', title: 'Private title', body: 'Private body',
     })).toEqual({ kind: 'notification', delivered: true });
     expect(sanitizeAuditOutcome({
+      kind: 'scheduled-reminder', scheduleId: 'schedule-1', workflowId: 'reminder-1',
+      triggerType: 'daily', nextRunAt: '2026-08-11T09:00:00.000Z',
+    })).toEqual({
+      kind: 'scheduled-reminder', scheduleId: 'schedule-1', workflowId: 'reminder-1',
+      triggerType: 'daily', nextRunAt: '2026-08-11T09:00:00.000Z',
+    });
+    expect(sanitizeAuditOutcome({
       kind: 'processes', processes: [{ pid: 42, name: 'private-process.exe' }], truncated: false,
     })).toEqual({ kind: 'processes', processCount: 1, truncated: false });
     expect(sanitizeAuditOutcome({
@@ -113,6 +120,32 @@ describe('morpheus audit sink', () => {
     expect(sanitizeAuditOutcome({
       kind: 'url', url: 'https://example.com/private?token=must-not-persist',
     })).toEqual({ kind: 'url', origin: 'https://example.com' });
+    expect(sanitizeAuditOutcome({
+      kind: 'website',
+      manifest: {
+        v: 1,
+        projectPath: 'C:\\Morpheus Files\\projects\\acme',
+        workspaceRoot: 'C:\\Morpheus Files',
+        entryPath: 'C:\\Morpheus Files\\projects\\acme\\index.html',
+        relativeEntryPath: 'projects/acme/index.html',
+        fileCount: 5,
+        totalBytes: 2048,
+        checks: {
+          entryDocument: true, viewportMetadata: true, responsiveStyles: true,
+          localStylesheet: true, analyticsConfiguration: true, selfContained: true,
+        },
+        verifiedAt: '2026-08-10T12:00:00.000Z',
+      },
+    })).toEqual({
+      kind: 'website',
+      projectPath: 'C:\\Morpheus Files\\projects\\acme',
+      workspaceRoot: 'C:\\Morpheus Files',
+      entryPath: 'C:\\Morpheus Files\\projects\\acme\\index.html',
+      relativeEntryPath: 'projects/acme/index.html',
+      fileCount: 5,
+      totalBytes: 2048,
+      verified: true,
+    });
   });
 
   it('redacts credential-shaped keys', () => {

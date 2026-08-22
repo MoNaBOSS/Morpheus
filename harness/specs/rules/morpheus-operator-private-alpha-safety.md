@@ -25,3 +25,14 @@ workspace, validate real output, and report credential-dependent deployment as
 unavailable when it cannot produce a real destination. Provider output remains
 untrusted proposal data and never executes directly.
 
+General project creation may write only a frozen non-executable text-extension
+set, must use exclusive create, and must re-check canonical containment after
+creating parent directories. Website verification may prepare a safe future
+path for dependency planning, but it must re-resolve and inspect the completed
+project before reporting success. A verified website preview must use a scoped
+workspace reference through the Main-owned local HTML policy, never a
+Renderer-authored arbitrary URL.
+
+Reminder creation may persist only one bounded notification workflow and one
+Morpheus-owned one-time or daily schedule. Reminder parameters cannot include a
+command, executable, URL, path, environment, shell, or ambiguous local time.

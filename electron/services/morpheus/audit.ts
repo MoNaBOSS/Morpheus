@@ -129,6 +129,25 @@ export function sanitizeAuditOutcome(
     }
     case 'notification':
       return { kind: 'notification', delivered: true };
+    case 'scheduled-reminder':
+      return {
+        kind: 'scheduled-reminder',
+        scheduleId: outcome.scheduleId,
+        workflowId: outcome.workflowId,
+        triggerType: outcome.triggerType,
+        ...(outcome.nextRunAt ? { nextRunAt: outcome.nextRunAt } : {}),
+      };
+    case 'website':
+      return {
+        kind: 'website',
+        projectPath: outcome.manifest.projectPath,
+        workspaceRoot: outcome.manifest.workspaceRoot,
+        entryPath: outcome.manifest.entryPath,
+        relativeEntryPath: outcome.manifest.relativeEntryPath,
+        fileCount: outcome.manifest.fileCount,
+        totalBytes: outcome.manifest.totalBytes,
+        verified: true,
+      };
   }
 }
 

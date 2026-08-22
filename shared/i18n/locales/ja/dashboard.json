@@ -171,6 +171,10 @@
         "label": "テキストファイルを作成",
         "description": "承認済みの Morpheus フォルダに新しいテキストファイルを書き込みます。"
       },
+      "fileCreate": {
+        "label": "プロジェクトファイルを作成",
+        "description": "承認済みワークスペース内に、上書きせず制限付きのテキスト、HTML、CSS、JSON、Markdown ファイルを作成します。"
+      },
       "systemReport": {
         "label": "システム情報を取得",
         "description": "このマシンのランタイムに関する非個人情報を収集します。"
@@ -219,6 +223,10 @@
         "label": "通知を表示",
         "description": "デスクトップ通知を表示します。何も読み取らず、何も残しません。"
       },
+      "reminderSchedule": {
+        "label": "リマインダーを設定",
+        "description": "監査可能な Objective Core で実行される一回または毎日の Morpheus リマインダーを作成します。"
+      },
       "screenCapture": {
         "label": "スクリーンショットを撮る",
         "description": "画面をキャプチャし、承認済みワークスペースに保存します。すべてのキャプチャは表示・記録されます。"
@@ -234,6 +242,10 @@
       "webOpenUrl": {
         "label": "承認済み URL を開く",
         "description": "明示された http または https URL をシステムブラウザーで開きます。"
+      },
+      "siteVerify": {
+        "label": "ウェブサイトプロジェクトを検証",
+        "description": "自己完結型のレスポンシブサイトを検査し、検証済みプレビュー成果物を作成します。"
       },
       "devLaunchProject": {
         "label": "VS Code でプロジェクトを開く",
@@ -410,6 +422,9 @@
       "rootLabel": "承認済みファイルの場所",
       "rootUnknown": "利用不可",
       "open": "開く",
+      "previewWebsite": "検証済みサイトをプレビュー",
+      "websiteVerified": "{{count}} ファイルを検証済み",
+      "reminderScheduled": "{{trigger}}リマインダーを設定済み",
       "empty": "成果物はまだありません。完了した操作がここに表示されます。",
       "more": "他 {{count}} 件"
     },
@@ -417,20 +432,26 @@
       "steps": {
         "systemReport": "プライバシーに配慮したシステム情報を収集",
         "fileCreateText": "承認済みフォルダに {{fileName}} を作成",
+        "fileCreate": "承認済みワークスペースに {{path}} を作成",
         "appLaunch": "{{application}} を起動",
         "fileReadText": "{{path}} を読み取る",
         "fileList": "ワークスペースを一覧表示",
         "fileSearch": "「{{query}}」に一致するファイルを検索",
+        "fileAppendText": "{{path}} にテキストを追記",
+        "fileMove": "{{path}} を {{destination}} に移動",
+        "fileCopy": "{{path}} を {{destination}} にコピー",
         "fileDelete": "{{path}} を完全に削除",
         "folderCreate": "フォルダ {{path}} を作成",
         "clipboardReadText": "クリップボードを読む",
         "clipboardWriteText": "テキストをクリップボードにコピー",
         "systemNotify": "通知を表示",
+        "reminderSchedule": "{{runAt}} にリマインダーを設定",
         "screenCapture": "画面をキャプチャ",
         "systemStorage": "承認済みストレージを確認",
         "systemProcesses": "実行中のプロセスを確認",
         "webOpenUrl": "{{url}} を開く",
         "webSearch": "ウェブで {{query}} を検索",
+        "siteVerify": "ウェブサイトプロジェクト {{path}} を検証",
         "devLaunchProject": "{{path}} を VS Code で開く"
       },
       "title": "実行プラン",

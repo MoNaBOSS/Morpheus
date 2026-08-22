@@ -139,4 +139,71 @@ describe('Morpheus scheduling', () => {
     expect(submitInternal).not.toHaveBeenCalled();
     expect(store.get('paused-1')?.lastStatus).toBe('never');
   });
+
+  it('creates a real scheduled notification workflow and removes it with its reminder', () => {
+    const store = createMorpheusScheduleStore({ userDataDir: root() });
+    const saveWorkflow = vi.fn((workflow) => workflow);
+    const removeWorkflow = vi.fn(() => true);
+    const scheduler = createMorpheusScheduler({
+      store,
+      workflows: {
+        save: saveWorkflow,
+        remove: removeWorkflow,
+      } as never,
+      objectives: {} as never,
+      now: () => new Date('2026-08-10T10:00:00.000Z'),
+      createId: () => 'schedule-reminder-1',
+    });
+
+    const result = scheduler.createReminder({
+      title: 'Daily launch check',
+      body: 'Review today’s launch plan task.',
+      runAt: '2026-08-11T09:30:00.000Z',
+      repeatDaily: true,
+      workspaceId: 'morpheus-files',
+    });
+
+    expect(result).toMatchObject({
+      scheduleId: 'schedule-reminder-1',
+      triggerType: 'daily',
+    });
+    expect(saveWorkflow).toHaveBeenCalledWith(expect.objectContaining({
+      workflowId: result.workflowId,
+      agentProfileId: 'general',
+      allowedTriggers: ['schedule'],
+      steps: [expect.objectContaining({
+        capabilityId: 'system.notify',
+        params: { title: 'Daily launch check', body: 'Review today’s launch plan task.' },
+      })],
+    }));
+    expect(store.get('schedule-reminder-1')).toMatchObject({
+      workflowId: result.workflowId,
+      managedKind: 'reminder',
+      workspaceId: 'morpheus-files',
+      trigger: { type: 'daily' },
+      enabled: true,
+    });
+
+    expect(scheduler.remove('schedule-reminder-1')).toBe(true);
+    expect(removeWorkflow).toHaveBeenCalledWith(result.workflowId);
+  });
+
+  it('never deletes a user workflow merely because its id starts with reminder-', () => {
+    const store = createMorpheusScheduleStore({ userDataDir: root() });
+    const removeWorkflow = vi.fn(() => true);
+    const scheduler = createMorpheusScheduler({
+      store,
+      workflows: { remove: removeWorkflow } as never,
+      objectives: {} as never,
+      now: () => new Date('2026-08-10T10:00:00.000Z'),
+      createId: () => 'schedule-user',
+    });
+    scheduler.save({
+      name: 'User schedule', workflowId: 'reminder-user-owned', enabled: true,
+      trigger: { type: 'daily', localTime: '09:30' },
+    });
+
+    expect(scheduler.remove('schedule-user')).toBe(true);
+    expect(removeWorkflow).not.toHaveBeenCalled();
+  });
 });

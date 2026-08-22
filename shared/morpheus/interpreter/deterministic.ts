@@ -110,9 +110,28 @@ export function extractQuoted(objective: string): string | null {
 }
 
 const FILE_CREATE_PATTERNS = [
-  /\b(create|make|write|new)\b[^.]*\b(text\s+)?file\b/i,
-  /\b(create|make|write|save)\b[^.]*\.txt\b/i,
+  /^\s*(?:please\s+)?(create|make|write|new)\b[^\r\n]{0,240}\b(text\s+)?file\b/i,
+  /^\s*(?:please\s+)?(create|make|write|save)\b[^\r\n]{0,240}\.txt\b/i,
 ];
+
+const FILE_APPEND_PATTERNS = [
+  /\b(append|add)\b[^\r\n]{0,240}\b(to|onto)\b[^\r\n]{0,240}\bfile\b/i,
+  /\bappend\b[^\r\n]{0,240}\.[a-z0-9]{1,8}\b/i,
+];
+
+const FILE_MOVE_PATTERNS = [
+  /\b(move|rename)\b[^\r\n]{0,240}\b(file|folder|directory)\b[^\r\n]{0,240}\b(to|as)\b/i,
+];
+
+const FILE_COPY_PATTERNS = [
+  /\b(copy|duplicate)\b[^\r\n]{0,240}\b(file|folder|directory)\b[^\r\n]{0,240}\b(to|as)\b/i,
+];
+
+const SITE_VERIFY_PATTERNS = [
+  /\b(verify|validate|inspect|check)\b[^.]*\b(website|site)\b[^.]*\b(project|folder|directory)\b/i,
+];
+
+const REMINDER_RELATIVE_PATTERN = /\bremind\s+me\s+in\s+(\d{1,3})\s*(minute|hour|day)s?\s+(?:to|about)\s+(.{1,240})$/i;
 
 /**
  * Filesystem intents.
@@ -155,6 +174,14 @@ export function extractPath(objective: string): string | null {
   if (named?.[1]) return named[1];
   const bare = /\b([\w-]+(?:[/\\][\w.-]+)+|[\w-]+\.\w{1,6})\b/.exec(objective);
   return bare?.[1] ?? null;
+}
+
+/** Source and destination from a bounded workspace move/copy phrase. */
+export function extractPathPair(objective: string): { path: string; destination: string } | null {
+  const match = /\b(?:move|rename|copy|duplicate)\b\s+(?:the\s+)?(?:file|folder|directory)?\s*["']?([\w./\\-]+)["']?\s+(?:to|as)\s+["']?([\w./\\-]+)["']?/i.exec(objective);
+  const path = match?.[1]?.replace(/[.,;!?]+$/, '');
+  const destination = match?.[2]?.replace(/[.,;!?]+$/, '');
+  return path && destination ? { path, destination } : null;
 }
 
 /** The term a search should match names against. */
@@ -265,6 +292,25 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
   });
 
   if (FILE_CREATE_PATTERNS.some((pattern) => pattern.test(text))) {
+    const projectPath = extractPath(text);
+    // The legacy text-file capability accepts only a basename. Any explicitly
+    // nested path or non-.txt project file uses the bounded project writer.
+    if (projectPath && (/[\\/]/.test(projectPath) || /\.(?:md|json|csv|log|ya?ml|ini|xml|html|css)$/i.test(projectPath))) {
+      return {
+        ok: true,
+        plan: basePlan([
+          makeStep(
+            'step-1',
+            'file.create',
+            { path: projectPath, content: extractFileContent(text) },
+            buildPermission('file.create', platform, filesRoot),
+            'morpheus.plan.steps.fileCreate',
+            { path: projectPath },
+          ),
+        ]),
+      };
+    }
+
     const fileName = extractFileName(text);
     const content = extractFileContent(text);
     return {
@@ -419,6 +465,88 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
     };
   }
 
+  const reminderMatch = REMINDER_RELATIVE_PATTERN.exec(text);
+  if (reminderMatch) {
+    const amount = Number.parseInt(reminderMatch[1], 10);
+    const unit = reminderMatch[2].toLowerCase();
+    const multiplier = unit === 'minute' ? 60_000 : unit === 'hour' ? 3_600_000 : 86_400_000;
+    const scheduledFrom = now();
+    const runAt = new Date(scheduledFrom.getTime() + amount * multiplier);
+    if (amount > 0 && runAt.getTime() - scheduledFrom.getTime() <= 366 * 86_400_000) {
+      const body = reminderMatch[3].trim().replace(/[.!?]+$/, '');
+      return {
+        ok: true,
+        plan: basePlan([
+          makeStep(
+            'step-1',
+            'reminder.schedule',
+            { title: 'Morpheus reminder', body, runAt: runAt.toISOString(), repeatDaily: false },
+            buildPermission('reminder.schedule', platform, 'morpheus-reminders'),
+            'morpheus.plan.steps.reminderSchedule',
+            { runAt: runAt.toISOString() },
+          ),
+        ]),
+      };
+    }
+  }
+
+  const appendPath = FILE_APPEND_PATTERNS.some((pattern) => pattern.test(text))
+    ? extractPath(text)
+    : null;
+  if (appendPath) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'file.appendText',
+          { path: appendPath, content: extractFileContent(text) },
+          buildPermission('file.appendText', platform, filesRoot),
+          'morpheus.plan.steps.fileAppendText',
+          { path: appendPath },
+        ),
+      ]),
+    };
+  }
+
+  const movePaths = FILE_MOVE_PATTERNS.some((pattern) => pattern.test(text))
+    ? extractPathPair(text)
+    : null;
+  if (movePaths) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'file.move',
+          movePaths,
+          buildPermission('file.move', platform, filesRoot),
+          'morpheus.plan.steps.fileMove',
+          movePaths,
+        ),
+      ]),
+    };
+  }
+
+  const copyPaths = FILE_COPY_PATTERNS.some((pattern) => pattern.test(text))
+    ? extractPathPair(text)
+    : null;
+  if (copyPaths) {
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'file.copy',
+          copyPaths,
+          buildPermission('file.copy', platform, filesRoot),
+          'morpheus.plan.steps.fileCopy',
+          copyPaths,
+        ),
+      ]),
+    };
+  }
+
   const webSearchQuery = extractWebSearchQuery(text);
   const openBrowserHome = BROWSER_HOME_PATTERNS.some((pattern) => pattern.test(text));
   if (webSearchQuery || openBrowserHome) {
@@ -435,6 +563,24 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
           buildPermission('web.openUrl', platform, 'https://www.google.com'),
           webSearchQuery ? 'morpheus.plan.steps.webSearch' : 'morpheus.plan.steps.webOpenUrl',
           webSearchQuery ? { query: webSearchQuery } : { url: targetUrl },
+        ),
+      ]),
+    };
+  }
+
+  if (SITE_VERIFY_PATTERNS.some((pattern) => pattern.test(text))) {
+    const path = extractProjectPath(text);
+    if (!path) return { ok: false, unsupported: { objective: text, reason: 'not-understood', supportedCapabilities } };
+    return {
+      ok: true,
+      plan: basePlan([
+        makeStep(
+          'step-1',
+          'site.verify',
+          { path },
+          buildPermission('site.verify', platform, filesRoot),
+          'morpheus.plan.steps.siteVerify',
+          { path },
         ),
       ]),
     };

@@ -30,6 +30,8 @@ export type MorpheusCapabilityContext = {
   roots: MorpheusRootProvider;
   appVersion: string;
   env: NodeJS.ProcessEnv;
+  /** Logical Main-owned binding for service capabilities such as reminders. */
+  workspaceId?: string;
 };
 
 /**

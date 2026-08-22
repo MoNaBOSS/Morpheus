@@ -8,25 +8,25 @@ import {
 const CREATED_AT = '2026-08-10T00:00:00.000Z';
 
 const GENERAL_CAPABILITIES = Object.freeze([
-  'system.report', 'system.storage', 'system.processes', 'system.notify',
-  'file.createText', 'file.readText', 'file.appendText', 'file.list', 'file.search',
+  'system.report', 'system.storage', 'system.processes', 'system.notify', 'reminder.schedule',
+  'file.createText', 'file.create', 'file.readText', 'file.appendText', 'file.list', 'file.search',
   'file.move', 'file.copy', 'folder.create',
   'app.launch', 'clipboard.readText', 'clipboard.writeText', 'screen.capture',
-  'web.openUrl',
+  'web.openUrl', 'site.verify',
 ] satisfies readonly MorpheusActionId[]);
 
 const RESEARCH_CAPABILITIES = Object.freeze([
-  'system.report', 'system.storage', 'system.notify',
-  'file.createText', 'file.readText', 'file.appendText', 'file.list', 'file.search',
-  'clipboard.readText', 'clipboard.writeText', 'web.openUrl', 'screen.capture',
+  'system.report', 'system.storage', 'system.notify', 'reminder.schedule',
+  'file.createText', 'file.create', 'file.readText', 'file.appendText', 'file.list', 'file.search',
+  'clipboard.readText', 'clipboard.writeText', 'web.openUrl', 'site.verify', 'screen.capture',
 ] satisfies readonly MorpheusActionId[]);
 
 const DEVELOPER_CAPABILITIES = Object.freeze([
-  'system.report', 'system.storage', 'system.processes', 'system.notify',
-  'file.createText', 'file.readText', 'file.appendText', 'file.list', 'file.search',
+  'system.report', 'system.storage', 'system.processes', 'system.notify', 'reminder.schedule',
+  'file.createText', 'file.create', 'file.readText', 'file.appendText', 'file.list', 'file.search',
   'file.move', 'file.copy', 'folder.create',
   'app.launch', 'clipboard.readText', 'clipboard.writeText', 'screen.capture',
-  'web.openUrl', 'dev.launchProject',
+  'web.openUrl', 'site.verify', 'dev.launchProject',
 ] satisfies readonly MorpheusActionId[]);
 
 function starter(

@@ -20,6 +20,8 @@ export type MorpheusSchedule = {
   scheduleId: string;
   name: string;
   workflowId: string;
+  /** Main-authored ownership marker; never accepted from Renderer drafts. */
+  managedKind?: 'reminder';
   workspaceId: string;
   enabled: boolean;
   trigger: MorpheusScheduleTrigger;
@@ -47,4 +49,21 @@ export type MorpheusScheduleRunResult = {
   objectiveRunId?: string;
   planId?: string;
   error?: string;
+};
+
+/** A bounded reminder request used by the Objective Core and Scheduler. */
+export type MorpheusReminderDraft = {
+  title: string;
+  body: string;
+  /** Absolute ISO timestamp. Daily reminders use its local wall-clock time. */
+  runAt: string;
+  repeatDaily: boolean;
+  workspaceId: string;
+};
+
+export type MorpheusReminderResult = {
+  scheduleId: string;
+  workflowId: string;
+  triggerType: 'once' | 'daily';
+  nextRunAt?: string;
 };

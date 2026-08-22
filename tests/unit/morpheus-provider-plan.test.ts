@@ -11,6 +11,8 @@ import type { MorpheusActionId } from '@shared/morpheus/actions/registry';
 const AVAILABLE: MorpheusActionId[] = [
   'system.report',
   'file.createText',
+  'file.create',
+  'site.verify',
   'app.launch',
   'dev.launchProject',
 ];
@@ -87,6 +89,27 @@ describe('provider plan validation', () => {
     ] });
     expect(() => createPlanFromProviderText(text, CONTEXT))
       .toThrowError(expect.objectContaining({ code: 'invalid-graph' }));
+  });
+
+  it('accepts a real multi-file website plan and rejects executable file reconstruction', () => {
+    const plan = createPlanFromProviderText(JSON.stringify({ steps: [
+      {
+        stepId: 'create-site', capabilityId: 'file.create',
+        params: { path: 'projects/acme/index.html', content: '<!doctype html>' },
+        dependsOn: [], summary: 'Create website entry',
+      },
+      {
+        stepId: 'verify-site', capabilityId: 'site.verify',
+        params: { path: 'projects/acme' }, dependsOn: ['create-site'], summary: 'Verify site',
+      },
+    ] }), CONTEXT);
+    expect(plan.steps.map((step) => step.capabilityId)).toEqual(['file.create', 'site.verify']);
+
+    expect(() => createPlanFromProviderText(JSON.stringify({ steps: [{
+      stepId: 'write-script', capabilityId: 'file.create',
+      params: { path: 'projects/acme/run.ps1', content: 'Write-Host unsafe' },
+      dependsOn: [], summary: 'Write script',
+    }] }), CONTEXT)).toThrowError(expect.objectContaining({ code: 'invalid-params' }));
   });
 
   it('rejects unknown response fields rather than ignoring them', () => {

@@ -17,7 +17,8 @@ Durable invariants:
    irreversible authority.
 4. Automatic memory is bounded, inspectable, local-first, and excludes secrets,
    audio, file content, raw audit, and unlimited transcripts.
-5. The hero website journey must create and verify real artifacts. An
-   unconfigured deployment adapter reports unavailable and never invents a URL.
+5. The hero website journey uses `file.create` for exclusive safe assets,
+   `site.verify` for real post-dependency inspection, the existing Main-owned
+   local preview, and `reminder.schedule` for durable follow-up. Public staging
+   is not implemented and no URL may be invented.
 6. OpenClaw Chat remains operational but does not own execution.
-

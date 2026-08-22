@@ -34,6 +34,8 @@ function stepTone(status: ExecutionStepStatus | undefined): string {
 function artifactLabel(artifact: ExecutionArtifact): string {
   if (artifact.kind === 'file') return artifact.path;
   if (artifact.kind === 'process') return artifact.executablePath;
+  if (artifact.kind === 'website') return artifact.entryPath;
+  if (artifact.kind === 'schedule') return artifact.nextRunAt ?? artifact.scheduleId;
   if (typeof artifact.data.platform === 'string') {
     return `${artifact.data.platform} ${artifact.data.release ?? ''}`.trim();
   }

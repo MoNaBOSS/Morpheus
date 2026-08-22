@@ -87,7 +87,11 @@ Routine non-destructive operations within an exact trusted root reuse the same
 grant. Relative names are validated, canonicalized, checked for containment,
 bounded, and protected against links/reserved Windows names. Read-only workspace
 policy is enforced in the runtime for direct and planned execution. Creation is
-exclusive; overwrite and deletion remain critical.
+exclusive; overwrite and deletion remain critical. `file.create` extends
+exclusive creation to a frozen non-executable text-extension set while keeping
+the root Main-owned. `site.verify` may resolve a contained future folder during
+whole-plan trust preparation, but it must re-resolve and inspect the real files
+after dependency execution before producing a verified artifact.
 
 Applications and developer tools use frozen compiled-in keys/templates. Main
 resolves trusted system roots, rejects links, verifies real-path containment,
@@ -112,6 +116,12 @@ persisted. File content is represented by size/digest where relevant. Recent
 artifacts reconstruct from this reduced ledger after restart; the Renderer does
 not maintain a second authoritative history store.
 
+Website artifacts retain only the canonical project/entry locations, relative
+entry reference, file count, byte count, and verified state. Their built-in
+preview reuses the Main-owned local HTML navigation policy. Scheduled reminder
+artifacts retain schedule/workflow ids, trigger type, and next-run time; reminder
+copy is not written to the execution audit outcome.
+
 ## Agent, workflow, schedule, and provider boundaries
 
 Agent Profiles carry planner binding, instructions, capability allowlist,
@@ -119,6 +129,11 @@ workspace/context policy, and maximum risk. Workflows carry steps, dependencies,
 conditions, Agent Profile assignment, outputs, and allowed triggers. Morpheus
 schedules persist atomically and invoke workflows through the same policy engine.
 OpenClaw agents/cron remain separate chat-runtime concepts.
+
+`reminder.schedule` is the bounded convenience path: it persists one generated
+notification workflow plus one one-time/daily schedule. Removing that schedule
+also removes its generated workflow. It cannot carry an executable, command,
+URL, filesystem path, environment value, or shell payload.
 
 `MorpheusPlanner` maps objective + context to the same typed plan contract. The
 deterministic planner implements it today. Future OpenClaw/provider adapters may

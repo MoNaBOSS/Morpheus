@@ -97,7 +97,7 @@ capability, not an agent tool surface, which keeps the agent runtime replaceable
 
 ## Why a plan layer exists now
 
-Today's interpreter is deterministic and maps a bounded objective set to nineteen
+Today's deterministic and provider-backed planners map objectives to twenty-two
 real Windows capabilities and reusable workflows. It would have been cheaper to
 call capabilities directly.
 

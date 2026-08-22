@@ -16,8 +16,10 @@ touchedAreas:
   - src/lib/host-events.ts
   - src/stores/morpheus-**
   - src/components/morpheus/**
+  - src/components/file-preview/FilePreviewOverlay.tsx
   - src/pages/CommandCenter/**
   - src/pages/Chat/**
+  - src/pages/Missions/**
   - src/pages/Settings/**
   - src/styles/globals.css
   - tests/unit/morpheus-**
@@ -25,6 +27,7 @@ touchedAreas:
   - tests/e2e/morpheus-**
   - docs/**
   - harness/reference/morpheus-operator-private-alpha.md
+  - harness/reference/morpheus-execution-architecture.md
   - harness/specs/rules/morpheus-operator-private-alpha-safety.md
   - harness/specs/tasks/morpheus-operator-private-alpha.md
   - CLAUDE.md

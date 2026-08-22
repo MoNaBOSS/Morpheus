@@ -139,7 +139,7 @@ export function Missions() {
                 <div className="flex items-center justify-between"><h3 className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">{t('morpheus.missions.artifacts')}</h3><span className="font-mono text-[10px] text-muted-foreground">{selected.artifacts.length}</span></div>
                 {selected.artifacts.length === 0 ? <EmptyState message={t('morpheus.missions.noArtifacts')} /> : (
                   <ol className="mt-3 divide-y divide-border/50 border-y border-border/50">
-                    {selected.artifacts.map((artifact) => <li key={artifact.artifactId} className="flex items-center gap-3 py-3"><FileText className="h-4 w-4 text-muted-foreground" /><span className="min-w-0 flex-1 truncate font-mono text-2xs">{artifact.kind === 'file' ? artifact.path : artifact.kind === 'process' ? artifact.executablePath : artifact.artifactId}</span><ArrowRight className="h-3.5 w-3.5 text-muted-foreground" /></li>)}
+                    {selected.artifacts.map((artifact) => <li key={artifact.artifactId} className="flex items-center gap-3 py-3"><FileText className="h-4 w-4 text-muted-foreground" /><span className="min-w-0 flex-1 truncate font-mono text-2xs">{artifact.kind === 'file' ? artifact.path : artifact.kind === 'process' ? artifact.executablePath : artifact.kind === 'website' ? artifact.entryPath : artifact.kind === 'schedule' ? artifact.nextRunAt ?? artifact.scheduleId : artifact.artifactId}</span><ArrowRight className="h-3.5 w-3.5 text-muted-foreground" /></li>)}
                   </ol>
                 )}
               </section>

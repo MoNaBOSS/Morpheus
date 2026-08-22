@@ -53,6 +53,8 @@ export type MorpheusParamKind =
   | 'folderName'
   /** Path relative to an approved root. No absolute paths, no traversal. */
   | 'relativePath'
+  /** Relative path whose final segment has a non-executable writable extension. */
+  | 'writableRelativePath'
   /** Logical approved-root selector, resolved to a real path in Main. */
   | 'rootKey'
   /** Bounded UTF-8 text payload. */
@@ -63,6 +65,8 @@ export type MorpheusParamKind =
   | 'query'
   /** Absolute http(s) URL. */
   | 'httpUrl'
+  /** An absolute ISO-8601 date/time, normalized by the boundary. */
+  | 'isoDateTime'
   /** Key into the compiled-in developer command template record. */
   | 'devTemplateKey'
   /** Positive integer within a capability-declared bound. */
@@ -114,6 +118,30 @@ function badLeaf(name: string): string | null {
   return null;
 }
 
+function writableExtensionReason(name: string): string | null {
+  const dot = name.lastIndexOf('.');
+  const ext = dot === -1 ? '' : name.slice(dot).toLowerCase();
+  return WRITABLE_EXTENSIONS.includes(ext)
+    ? null
+    : `must use a permitted extension (${WRITABLE_EXTENSIONS.join(', ')})`;
+}
+
+function validateRelativePath(value: string): string | null {
+  if (!value) return 'must not be empty';
+  if (value.length > PARAM_LIMITS.relativePathChars) return 'is too long';
+  if (/^[A-Za-z]:/.test(value) || value.startsWith('/') || value.startsWith('\\')) {
+    return 'must be relative to an approved location';
+  }
+  const segments = value.split(/[\\/]/).filter(Boolean);
+  if (segments.length === 0) return 'must name at least one segment';
+  for (const segment of segments) {
+    if (segment === '.' || segment === '..') return 'must not traverse directories';
+    const bad = badLeaf(segment);
+    if (bad) return `segment "${segment}" ${bad}`;
+  }
+  return null;
+}
+
 function utf8Bytes(value: string): number {
   // Avoids Buffer so this stays platform-neutral for the renderer.
   return new TextEncoder().encode(value).length;
@@ -160,11 +188,8 @@ export function validateParam(kind: MorpheusParamKind, raw: unknown): ParamValid
     case 'fileName': {
       const bad = badLeaf(value);
       if (bad) return { ok: false, reason: bad };
-      const dot = value.lastIndexOf('.');
-      const ext = dot === -1 ? '' : value.slice(dot).toLowerCase();
-      if (!WRITABLE_EXTENSIONS.includes(ext)) {
-        return { ok: false, reason: `must use a permitted extension (${WRITABLE_EXTENSIONS.join(', ')})` };
-      }
+      const extensionReason = writableExtensionReason(value);
+      if (extensionReason) return { ok: false, reason: extensionReason };
       return { ok: true, value };
     }
 
@@ -175,18 +200,17 @@ export function validateParam(kind: MorpheusParamKind, raw: unknown): ParamValid
     }
 
     case 'relativePath': {
-      if (!value) return { ok: false, reason: 'must not be empty' };
-      if (value.length > PARAM_LIMITS.relativePathChars) return { ok: false, reason: 'is too long' };
-      if (/^[A-Za-z]:/.test(value) || value.startsWith('/') || value.startsWith('\\')) {
-        return { ok: false, reason: 'must be relative to an approved location' };
-      }
-      const segments = value.split(/[\\/]/).filter(Boolean);
-      if (segments.length === 0) return { ok: false, reason: 'must name at least one segment' };
-      for (const segment of segments) {
-        if (segment === '.' || segment === '..') return { ok: false, reason: 'must not traverse directories' };
-        const bad = badLeaf(segment);
-        if (bad) return { ok: false, reason: `segment "${segment}" ${bad}` };
-      }
+      const reason = validateRelativePath(value);
+      if (reason) return { ok: false, reason };
+      return { ok: true, value };
+    }
+
+    case 'writableRelativePath': {
+      const reason = validateRelativePath(value);
+      if (reason) return { ok: false, reason };
+      const name = value.split(/[\\/]/).at(-1) ?? '';
+      const extensionReason = writableExtensionReason(name);
+      if (extensionReason) return { ok: false, reason: extensionReason };
       return { ok: true, value };
     }
 
@@ -224,6 +248,18 @@ export function validateParam(kind: MorpheusParamKind, raw: unknown): ParamValid
         return { ok: false, reason: 'must be an http or https URL' };
       }
       return { ok: true, value: parsed.toString() };
+    }
+
+    case 'isoDateTime': {
+      // Require an explicit offset. Date.parse also accepts ambiguous local
+      // dates and implementation-defined prose, which would let a provider's
+      // "tomorrow at nine" mean different instants across machines.
+      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
+        return { ok: false, reason: 'must be an absolute ISO date and time with a timezone' };
+      }
+      const timestamp = Date.parse(value);
+      if (!Number.isFinite(timestamp)) return { ok: false, reason: 'must be an ISO date and time' };
+      return { ok: true, value: new Date(timestamp).toISOString() };
     }
 
     default: {

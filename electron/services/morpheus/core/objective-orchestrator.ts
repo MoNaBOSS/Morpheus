@@ -64,6 +64,7 @@ import type { MorpheusMissionStore } from '../missions/mission-store';
 const CAPABILITY_DESCRIPTIONS: Record<MorpheusActionId, string> = {
   'app.launch': 'Launch one compiled-in approved Windows application by logical key.',
   'file.createText': 'Create a new text file without overwrite inside the approved workspace.',
+  'file.create': 'Create a new bounded text, HTML, CSS, JSON, or Markdown file at a workspace-relative path without overwrite.',
   'system.report': 'Read privacy-safe operating-system and Morpheus runtime information.',
   'file.readText': 'Read a bounded text file inside the approved workspace.',
   'file.appendText': 'Append bounded text to an existing text file inside the approved workspace.',
@@ -76,10 +77,12 @@ const CAPABILITY_DESCRIPTIONS: Record<MorpheusActionId, string> = {
   'clipboard.readText': 'Read bounded current clipboard text.',
   'clipboard.writeText': 'Replace the clipboard with bounded text.',
   'system.notify': 'Show a bounded native Windows notification.',
+  'reminder.schedule': 'Create a reversible one-time or daily Morpheus reminder that later executes through the same Objective Core.',
   'screen.capture': 'Capture the current screen to a Main-generated PNG in the approved workspace.',
   'system.storage': 'Read privacy-safe storage capacity information.',
   'system.processes': 'List a bounded privacy-sensitive process snapshot.',
   'web.openUrl': 'Open an exact validated HTTP or HTTPS URL in the default browser.',
+  'site.verify': 'Verify an existing self-contained responsive website project, its local stylesheet, and its analytics-ready manifest inside the approved workspace.',
   'dev.launchProject': 'Open an approved workspace path with a compiled-in developer application template.',
 };
 

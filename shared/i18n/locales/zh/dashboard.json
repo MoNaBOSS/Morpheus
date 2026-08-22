@@ -171,6 +171,10 @@
         "label": "创建文本文件",
         "description": "在已批准的 Morpheus 文件夹中写入新的文本文件。"
       },
+      "fileCreate": {
+        "label": "创建项目文件",
+        "description": "在已批准的工作区中创建新的受限文本、HTML、CSS、JSON 或 Markdown 文件，且不会覆盖现有文件。"
+      },
       "systemReport": {
         "label": "报告系统信息",
         "description": "收集本机运行时的非隐私信息。"
@@ -219,6 +223,10 @@
         "label": "显示通知",
         "description": "显示桌面通知。不读取任何内容，也不留下任何痕迹。"
       },
+      "reminderSchedule": {
+        "label": "安排提醒",
+        "description": "创建通过可审计目标核心运行的一次性或每日 Morpheus 提醒。"
+      },
       "screenCapture": {
         "label": "截取屏幕",
         "description": "截取屏幕并保存到已批准的工作区。每次截图都会显示并记录。"
@@ -234,6 +242,10 @@
       "webOpenUrl": {
         "label": "打开批准的网页地址",
         "description": "在系统浏览器中打开明确的 http 或 https 地址。"
+      },
+      "siteVerify": {
+        "label": "验证网站项目",
+        "description": "检查自包含的响应式网站并创建经过验证的预览产物。"
       },
       "devLaunchProject": {
         "label": "在 VS Code 中打开项目",
@@ -410,6 +422,9 @@
       "rootLabel": "已批准的文件位置",
       "rootUnknown": "不可用",
       "open": "打开",
+      "previewWebsite": "预览已验证的网站",
+      "websiteVerified": "已验证 {{count}} 个文件",
+      "reminderScheduled": "已安排{{trigger}}提醒",
       "empty": "暂无产物。完成的操作将显示在此处。",
       "more": "另有 {{count}} 项"
     },
@@ -417,20 +432,26 @@
       "steps": {
         "systemReport": "收集不涉及隐私的系统信息",
         "fileCreateText": "在已批准的文件夹中创建 {{fileName}}",
+        "fileCreate": "在已批准的工作区中创建 {{path}}",
         "appLaunch": "启动 {{application}}",
         "fileReadText": "读取 {{path}}",
         "fileList": "列出工作区",
         "fileSearch": "查找匹配“{{query}}”的文件",
+        "fileAppendText": "向 {{path}} 追加文本",
+        "fileMove": "将 {{path}} 移动到 {{destination}}",
+        "fileCopy": "将 {{path}} 复制到 {{destination}}",
         "fileDelete": "永久删除 {{path}}",
         "folderCreate": "创建文件夹 {{path}}",
         "clipboardReadText": "读取剪贴板",
         "clipboardWriteText": "将文本复制到剪贴板",
         "systemNotify": "显示通知",
+        "reminderSchedule": "安排 {{runAt}} 的提醒",
         "screenCapture": "截取屏幕",
         "systemStorage": "检查批准的存储空间",
         "systemProcesses": "检查运行中的进程",
         "webOpenUrl": "打开 {{url}}",
         "webSearch": "在网络上搜索 {{query}}",
+        "siteVerify": "验证网站项目 {{path}}",
         "devLaunchProject": "在 VS Code 中打开 {{path}}"
       },
       "title": "执行计划",

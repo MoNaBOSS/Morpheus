@@ -158,6 +158,28 @@ export type ExecutionArtifact =
     createdAt: string;
     executablePath: string;
     pid: number | null;
+  }
+  | {
+    /** Main-verified local website with a safe preview entry point. */
+    kind: 'website';
+    artifactId: string;
+    createdAt: string;
+    projectPath: string;
+    workspaceRoot: string;
+    entryPath: string;
+    relativeEntryPath: string;
+    fileCount: number;
+    totalBytes: number;
+  }
+  | {
+    /** A real Morpheus-owned scheduled notification workflow. */
+    kind: 'schedule';
+    artifactId: string;
+    createdAt: string;
+    scheduleId: string;
+    workflowId: string;
+    triggerType: 'once' | 'daily';
+    nextRunAt?: string;
   };
 
 export type ExecutionPlan = {

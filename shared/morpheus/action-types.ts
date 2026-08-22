@@ -10,6 +10,8 @@
  */
 
 import type { MorpheusActionId, MorpheusApplicationKey, MorpheusParamsFor } from './actions/registry';
+import type { MorpheusWebsiteProjectManifest } from './site-types';
+import type { MorpheusReminderResult } from './schedule-types';
 
 export const MORPHEUS_EVENT_VERSION = 1 as const;
 export const MORPHEUS_AUDIT_VERSION = 1 as const;
@@ -183,7 +185,18 @@ export type MorpheusNotificationResult = {
   body: string;
 };
 
+export type MorpheusWebsiteResult = {
+  kind: 'website';
+  manifest: MorpheusWebsiteProjectManifest;
+};
+
+export type MorpheusScheduledReminderResult = MorpheusReminderResult & {
+  kind: 'scheduled-reminder';
+};
+
 export type MorpheusActionResult =
+  | MorpheusScheduledReminderResult
+  | MorpheusWebsiteResult
   | MorpheusNotificationResult
   | MorpheusStorageResult
   | MorpheusProcessResult
@@ -215,7 +228,18 @@ export type MorpheusAuditOutcome =
   | { kind: 'listing'; path: string; entryCount: number; truncated: boolean }
   | { kind: 'processes'; processCount: number; truncated: boolean }
   | { kind: 'url'; origin: string }
-  | { kind: 'notification'; delivered: true };
+  | { kind: 'notification'; delivered: true }
+  | ({ kind: 'scheduled-reminder' } & MorpheusReminderResult)
+  | {
+    kind: 'website';
+    projectPath: string;
+    workspaceRoot: string;
+    entryPath: string;
+    relativeEntryPath: string;
+    fileCount: number;
+    totalBytes: number;
+    verified: true;
+  };
 
 /** Renderer-supplied parameters. Validated in Main against a key whitelist. */
 /**

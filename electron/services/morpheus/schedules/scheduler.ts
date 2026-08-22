@@ -1,13 +1,16 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import {
   MORPHEUS_SCHEDULE_VERSION,
   type MorpheusSchedule,
   type MorpheusScheduleDraft,
+  type MorpheusReminderDraft,
+  type MorpheusReminderResult,
   type MorpheusScheduleRunResult,
   type MorpheusScheduleTrigger,
   type SchedulesSnapshot,
 } from '@shared/morpheus/schedule-types';
+import { MORPHEUS_WORKFLOW_VERSION, type MorpheusWorkflow } from '@shared/morpheus/workflow-types';
 import { MORPHEUS_DEFAULT_WORKSPACE_ID } from '@shared/morpheus/workspace-types';
 
 import type { MorpheusObjectiveOrchestrator } from '../core/objective-orchestrator';
@@ -19,6 +22,7 @@ const TICK_MS = 15_000;
 export interface MorpheusScheduler {
   list(): SchedulesSnapshot;
   save(draft: MorpheusScheduleDraft): MorpheusSchedule;
+  createReminder(draft: MorpheusReminderDraft): MorpheusReminderResult;
   remove(scheduleId: string): boolean;
   runNow(scheduleId: string): Promise<MorpheusScheduleRunResult>;
   tick(): Promise<void>;
@@ -59,6 +63,35 @@ export function createMorpheusScheduler(options: {
   const running = new Set<string>();
   const startupRun = new Set<string>();
   let timer: ReturnType<typeof setInterval> | null = null;
+
+  const saveSchedule = (
+    draft: MorpheusScheduleDraft,
+    managedKind?: MorpheusSchedule['managedKind'],
+  ): MorpheusSchedule => {
+    const stamp = now();
+    const existing = draft.scheduleId ? options.store.get(draft.scheduleId) : undefined;
+    if (existing?.managedKind === 'reminder'
+      && managedKind === undefined
+      && draft.workflowId !== existing.workflowId) {
+      throw new Error('A managed reminder workflow cannot be replaced');
+    }
+    const effectiveManagedKind = managedKind ?? existing?.managedKind;
+    const schedule: MorpheusSchedule = {
+      v: MORPHEUS_SCHEDULE_VERSION,
+      scheduleId: existing?.scheduleId ?? createId(),
+      name: draft.name.trim(), workflowId: draft.workflowId, enabled: draft.enabled,
+      ...(effectiveManagedKind ? { managedKind: effectiveManagedKind } : {}),
+      workspaceId: draft.workspaceId ?? existing?.workspaceId ?? MORPHEUS_DEFAULT_WORKSPACE_ID,
+      trigger: structuredClone(draft.trigger),
+      createdAt: existing?.createdAt ?? stamp.toISOString(), updatedAt: stamp.toISOString(),
+      nextRunAt: draft.enabled ? nextRunFor(draft.trigger, stamp) : undefined,
+      lastRunAt: existing?.lastRunAt, lastStatus: existing?.lastStatus ?? 'never',
+      lastError: existing?.lastError,
+      ...(existing?.lastObjectiveRunId ? { lastObjectiveRunId: existing.lastObjectiveRunId } : {}),
+      ...(existing?.lastPlanId ? { lastPlanId: existing.lastPlanId } : {}),
+    };
+    return options.store.save(schedule);
+  };
 
   const persistOutcome = (schedule: MorpheusSchedule, result: MorpheusScheduleRunResult): void => {
     const stamp = now();
@@ -150,25 +183,79 @@ export function createMorpheusScheduler(options: {
 
   const api: MorpheusScheduler = {
     list: () => options.store.list(),
-    save(draft) {
+    save: saveSchedule,
+    createReminder(draft) {
+      const title = draft.title.trim();
+      const body = draft.body.trim();
+      const runAt = new Date(draft.runAt);
       const stamp = now();
-      const existing = draft.scheduleId ? options.store.get(draft.scheduleId) : undefined;
-      const schedule: MorpheusSchedule = {
-        v: MORPHEUS_SCHEDULE_VERSION,
-        scheduleId: existing?.scheduleId ?? createId(),
-        name: draft.name.trim(), workflowId: draft.workflowId, enabled: draft.enabled,
-        workspaceId: draft.workspaceId ?? existing?.workspaceId ?? MORPHEUS_DEFAULT_WORKSPACE_ID,
-        trigger: structuredClone(draft.trigger),
-        createdAt: existing?.createdAt ?? stamp.toISOString(), updatedAt: stamp.toISOString(),
-        nextRunAt: draft.enabled ? nextRunFor(draft.trigger, stamp) : undefined,
-        lastRunAt: existing?.lastRunAt, lastStatus: existing?.lastStatus ?? 'never',
-        lastError: existing?.lastError,
-        ...(existing?.lastObjectiveRunId ? { lastObjectiveRunId: existing.lastObjectiveRunId } : {}),
-        ...(existing?.lastPlanId ? { lastPlanId: existing.lastPlanId } : {}),
+      if (!title || title.length > 100 || !body || body.length > 512) {
+        throw new Error('Reminder title or message is invalid');
+      }
+      if (!Number.isFinite(runAt.getTime()) || runAt.getTime() <= stamp.getTime()) {
+        throw new Error('Reminder time must be in the future');
+      }
+
+      const scheduleId = createId();
+      const workflowId = `reminder-${createHash('sha256').update(scheduleId).digest('hex').slice(0, 32)}`;
+      const timestamp = stamp.toISOString();
+      const workflow: MorpheusWorkflow = {
+        v: MORPHEUS_WORKFLOW_VERSION,
+        workflowId,
+        name: title,
+        description: 'Morpheus-owned scheduled reminder.',
+        agentProfileId: 'general',
+        steps: [{
+          stepId: 'notify',
+          capabilityId: 'system.notify',
+          params: { title, body },
+          dependsOn: [],
+          condition: { type: 'always' },
+          summary: 'Deliver the scheduled reminder',
+        }],
+        allowedTriggers: ['schedule'],
+        outputs: { collectArtifacts: true, retainHistory: true },
+        builtIn: false,
+        enabled: true,
+        createdAt: timestamp,
+        updatedAt: timestamp,
       };
-      return options.store.save(schedule);
+      const trigger: MorpheusScheduleTrigger = draft.repeatDaily
+        ? {
+            type: 'daily',
+            localTime: `${String(runAt.getHours()).padStart(2, '0')}:${String(runAt.getMinutes()).padStart(2, '0')}`,
+          }
+        : { type: 'once', runAt: runAt.toISOString() };
+
+      options.workflows.save(workflow);
+      try {
+        const schedule = saveSchedule({
+          scheduleId,
+          name: title,
+          workflowId,
+          workspaceId: draft.workspaceId,
+          enabled: true,
+          trigger,
+        }, 'reminder');
+        return {
+          scheduleId,
+          workflowId,
+          triggerType: trigger.type,
+          ...(schedule.nextRunAt ? { nextRunAt: schedule.nextRunAt } : {}),
+        };
+      } catch (error) {
+        options.workflows.remove(workflowId);
+        throw error;
+      }
     },
-    remove: (scheduleId) => options.store.remove(scheduleId),
+    remove(scheduleId) {
+      const existing = options.store.get(scheduleId);
+      const removed = options.store.remove(scheduleId);
+      if (removed && existing?.managedKind === 'reminder') {
+        try { options.workflows.remove(existing.workflowId); } catch { /* A harmless orphan is safer than restoring a removed schedule. */ }
+      }
+      return removed;
+    },
     runNow: run,
     async tick() {
       if (options.isRuntimePaused?.()) return;

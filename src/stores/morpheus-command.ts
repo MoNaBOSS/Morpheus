@@ -263,6 +263,28 @@ export function artifactFromRun(run: MorpheusRun): ExecutionArtifact | null {
     };
   }
 
+  if (run.result.kind === 'scheduled-reminder') {
+    return {
+      kind: 'schedule', artifactId: run.runId, createdAt,
+      scheduleId: run.result.scheduleId,
+      workflowId: run.result.workflowId,
+      triggerType: run.result.triggerType,
+      ...(run.result.nextRunAt ? { nextRunAt: run.result.nextRunAt } : {}),
+    };
+  }
+
+  if (run.result.kind === 'website') {
+    return {
+      kind: 'website', artifactId: run.runId, createdAt,
+      projectPath: run.result.manifest.projectPath,
+      workspaceRoot: run.result.manifest.workspaceRoot,
+      entryPath: run.result.manifest.entryPath,
+      relativeEntryPath: run.result.manifest.relativeEntryPath,
+      fileCount: run.result.manifest.fileCount,
+      totalBytes: run.result.manifest.totalBytes,
+    };
+  }
+
   return null;
 }
 
@@ -330,6 +352,24 @@ export function artifactFromAuditEntry(entry: MorpheusAuditEntry): ExecutionArti
       return {
         kind: 'report', artifactId: entry.runId, createdAt,
         data: { notification: 'delivered' },
+      };
+    case 'scheduled-reminder':
+      return {
+        kind: 'schedule', artifactId: entry.runId, createdAt,
+        scheduleId: outcome.scheduleId,
+        workflowId: outcome.workflowId,
+        triggerType: outcome.triggerType,
+        ...(outcome.nextRunAt ? { nextRunAt: outcome.nextRunAt } : {}),
+      };
+    case 'website':
+      return {
+        kind: 'website', artifactId: entry.runId, createdAt,
+        projectPath: outcome.projectPath,
+        workspaceRoot: outcome.workspaceRoot,
+        entryPath: outcome.entryPath,
+        relativeEntryPath: outcome.relativeEntryPath,
+        fileCount: outcome.fileCount,
+        totalBytes: outcome.totalBytes,
       };
   }
 }

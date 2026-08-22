@@ -29,7 +29,8 @@ export type MorpheusActionKind =
   | 'introspection'
   | 'clipboard'
   | 'notification'
-  | 'capture';
+  | 'capture'
+  | 'schedule';
 
 /**
  * Risk classification driving the permission engine.
@@ -69,6 +70,7 @@ export type MorpheusActionId =
   | 'app.launch'
   | 'system.report'
   | 'file.createText'
+  | 'file.create'
   | 'file.readText'
   | 'file.appendText'
   | 'file.list'
@@ -80,10 +82,12 @@ export type MorpheusActionId =
   | 'clipboard.readText'
   | 'clipboard.writeText'
   | 'system.notify'
+  | 'reminder.schedule'
   | 'screen.capture'
   | 'system.storage'
   | 'system.processes'
   | 'web.openUrl'
+  | 'site.verify'
   | 'dev.launchProject';
 
 /**
@@ -99,6 +103,7 @@ export const MORPHEUS_AUTONOMOUS_FIRST_USE_ACTIONS = Object.freeze([
   'app.launch',
   'system.report',
   'file.createText',
+  'file.create',
   'file.readText',
   'file.appendText',
   'file.list',
@@ -108,8 +113,10 @@ export const MORPHEUS_AUTONOMOUS_FIRST_USE_ACTIONS = Object.freeze([
   'folder.create',
   'clipboard.writeText',
   'system.notify',
+  'reminder.schedule',
   'system.storage',
   'web.openUrl',
+  'site.verify',
   'dev.launchProject',
 ] as const satisfies readonly MorpheusActionId[]);
 
@@ -120,6 +127,7 @@ export function allowsAutonomousFirstUse(actionId: MorpheusActionId): boolean {
 /** Actions that create, change, or remove durable state inside a workspace. */
 export const MORPHEUS_WORKSPACE_WRITE_ACTIONS = Object.freeze([
   'file.createText',
+  'file.create',
   'file.appendText',
   'file.move',
   'file.copy',
@@ -157,11 +165,11 @@ export const MORPHEUS_CAPABILITY_GROUPS: Readonly<Record<MorpheusCapabilityGroup
   Object.freeze({
     /** Non-mutating inspection of an approved workspace. */
     'workspace.read': Object.freeze([
-      'file.readText', 'file.list', 'file.search',
+      'file.readText', 'file.list', 'file.search', 'site.verify',
     ] as const),
     /** Additive and reversible changes inside an approved workspace. */
     'workspace.write': Object.freeze([
-      'file.createText', 'file.appendText', 'file.move', 'file.copy', 'folder.create',
+      'file.createText', 'file.create', 'file.appendText', 'file.move', 'file.copy', 'folder.create',
     ] as const),
   } as const);
 
@@ -259,7 +267,22 @@ export const MORPHEUS_ACTIONS = Object.freeze({
       Object.freeze({ key: 'content', kind: 'textContent', required: true } as const),
     ] as const),
   } as const),
-  'file.readText': Object.freeze({
+  'file.create': Object.freeze({
+    id: 'file.create',
+    kind: 'filesystem',
+    riskTier: 'medium',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.fileCreate.label',
+    descriptionKey: 'dashboard:morpheus.actions.fileCreate.description',
+    platforms: Object.freeze(['win32'] as const),
+    rootKey: 'morpheusFiles',
+    group: 'workspace.write',
+    params: Object.freeze([
+      Object.freeze({ key: 'path', kind: 'writableRelativePath', required: true } as const),
+      Object.freeze({ key: 'content', kind: 'textContent', required: true } as const),
+    ] as const),
+  } as const),
+  'file.readText': Object.freeze({
     id: 'file.readText',
     kind: 'filesystem',
     riskTier: 'medium',
@@ -402,7 +425,7 @@ export const MORPHEUS_ACTIONS = Object.freeze({
       Object.freeze({ key: 'content', kind: 'textContent', required: true } as const),
     ] as const),
   } as const),
-  'system.notify': Object.freeze({
+  'system.notify': Object.freeze({
     id: 'system.notify',
     kind: 'notification',
     // Draws a transient OS notification. Discloses nothing, reads nothing and
@@ -445,6 +468,23 @@ export const MORPHEUS_ACTIONS = Object.freeze({
     rootKey: 'morpheusFiles',
     params: Object.freeze([] as const),
   } as const),
+  'reminder.schedule': Object.freeze({
+    id: 'reminder.schedule',
+    kind: 'schedule',
+    // Creates a reversible Morpheus-owned schedule. It does not grant the
+    // scheduled workflow any authority beyond its compiled notification step.
+    riskTier: 'medium',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.reminderSchedule.label',
+    descriptionKey: 'dashboard:morpheus.actions.reminderSchedule.description',
+    platforms: Object.freeze(['win32'] as const),
+    params: Object.freeze([
+      Object.freeze({ key: 'title', kind: 'shortText', required: true } as const),
+      Object.freeze({ key: 'body', kind: 'shortText', required: true } as const),
+      Object.freeze({ key: 'runAt', kind: 'isoDateTime', required: true } as const),
+      Object.freeze({ key: 'repeatDaily', kind: 'flag', required: false } as const),
+    ] as const),
+  } as const),
   'system.processes': Object.freeze({
     id: 'system.processes',
     kind: 'introspection',
@@ -465,6 +505,20 @@ export const MORPHEUS_ACTIONS = Object.freeze({
     platforms: Object.freeze(['win32'] as const),
     params: Object.freeze([
       Object.freeze({ key: 'url', kind: 'httpUrl', required: true } as const),
+    ] as const),
+  } as const),
+  'site.verify': Object.freeze({
+    id: 'site.verify',
+    kind: 'introspection',
+    riskTier: 'medium',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.siteVerify.label',
+    descriptionKey: 'dashboard:morpheus.actions.siteVerify.description',
+    platforms: Object.freeze(['win32'] as const),
+    rootKey: 'morpheusFiles',
+    group: 'workspace.read',
+    params: Object.freeze([
+      Object.freeze({ key: 'path', kind: 'relativePath', required: true } as const),
     ] as const),
   } as const),
   'dev.launchProject': Object.freeze({

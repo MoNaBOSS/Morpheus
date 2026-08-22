@@ -119,6 +119,8 @@ The Chat right panel has Workspace, Preview, and Changes tabs; it no longer incl
 
 All links are non-clickable. Links rendered by Morpheus appear as ordinary text, and links inside HTML Preview have their styling and pointer interaction removed. HTML Preview also blocks forms, script navigation, redirects, hash navigation, popups, downloads, network requests, and device permissions. It can render self-contained local HTML but cannot leave the selected document.
 
+With a configured provider, the Morpheus Objective Core can also build a bounded self-contained business-site project inside the approved Morpheus workspace, verify the real responsive files and analytics-ready configuration, expose the verified entry as an inspectable Command Center artifact, and create a real Morpheus-owned follow-up reminder. It does not claim public deployment unless a supported deployment capability actually succeeds.
+
 ### 📡 Multi-Channel Management
 Configure and monitor multiple AI channels simultaneously. Each channel operates independently, allowing you to run specialized agents for different tasks.
 Each channel now supports multiple accounts, per-account agent binding, and switching the channel default account directly from the Channels page.

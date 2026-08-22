@@ -263,6 +263,24 @@ export function executionArtifactFromResult(
     }
     case 'notification':
       return { kind: 'report', artifactId, createdAt, data: { notification: 'delivered' } };
+    case 'scheduled-reminder':
+      return {
+        kind: 'schedule', artifactId, createdAt,
+        scheduleId: result.scheduleId,
+        workflowId: result.workflowId,
+        triggerType: result.triggerType,
+        ...(result.nextRunAt ? { nextRunAt: result.nextRunAt } : {}),
+      };
+    case 'website':
+      return {
+        kind: 'website', artifactId, createdAt,
+        projectPath: result.manifest.projectPath,
+        workspaceRoot: result.manifest.workspaceRoot,
+        entryPath: result.manifest.entryPath,
+        relativeEntryPath: result.manifest.relativeEntryPath,
+        fileCount: result.manifest.fileCount,
+        totalBytes: result.manifest.totalBytes,
+      };
   }
 }
 
@@ -595,6 +613,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
           roots: options.roots.forWorkspace(workspaceId),
           appVersion: options.appVersion,
           env,
+          workspaceId,
         });
       } catch (error) {
         return { ok: false, error: toError(error, 'resolution-failed') };
@@ -790,6 +809,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
           roots: options.roots.forWorkspace(workspaceId),
           appVersion: options.appVersion,
           env,
+          workspaceId,
         });
       } catch (error) {
         await transition({

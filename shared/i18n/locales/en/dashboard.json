@@ -258,6 +258,10 @@
         "label": "Create a text file",
         "description": "Writes a new text file inside the approved Morpheus folder."
       },
+      "fileCreate": {
+        "label": "Create a project file",
+        "description": "Creates a new bounded text, HTML, CSS, JSON, or Markdown file inside the approved workspace without overwrite."
+      },
       "systemReport": {
         "label": "Report system information",
         "description": "Collects privacy-safe details about this machine's runtime."
@@ -306,6 +310,10 @@
         "label": "Show a notification",
         "description": "Shows a desktop notification. Reads nothing and leaves nothing behind."
       },
+      "reminderSchedule": {
+        "label": "Schedule a reminder",
+        "description": "Creates a one-time or daily Morpheus reminder that runs through the audited Objective Core."
+      },
       "screenCapture": {
         "label": "Take a screenshot",
         "description": "Captures the screen and saves it in the approved workspace. Every capture is shown and recorded."
@@ -321,6 +329,10 @@
       "webOpenUrl": {
         "label": "Open an approved web URL",
         "description": "Opens an explicit http or https URL in the system browser."
+      },
+      "siteVerify": {
+        "label": "Verify a website project",
+        "description": "Inspects a self-contained responsive website and creates a verified preview artifact."
       },
       "devLaunchProject": {
         "label": "Open a project in VS Code",
@@ -510,6 +522,9 @@
       "rootLabel": "Approved files location",
       "rootUnknown": "Not available",
       "open": "Open",
+      "previewWebsite": "Preview verified website",
+      "websiteVerified": "{{count}} files verified",
+      "reminderScheduled": "{{trigger}} reminder scheduled",
       "empty": "No artifacts yet. Completed actions appear here.",
       "more": "+{{count}} more"
     },
@@ -517,20 +532,26 @@
       "steps": {
         "systemReport": "Collect privacy-safe system information",
         "fileCreateText": "Create {{fileName}} in the approved folder",
+        "fileCreate": "Create {{path}} in the approved workspace",
         "appLaunch": "Launch {{application}}",
         "fileReadText": "Read {{path}}",
         "fileList": "List the workspace",
         "fileSearch": "Find files matching “{{query}}”",
+        "fileAppendText": "Append text to {{path}}",
+        "fileMove": "Move {{path}} to {{destination}}",
+        "fileCopy": "Copy {{path}} to {{destination}}",
         "fileDelete": "Permanently delete {{path}}",
         "folderCreate": "Create the folder {{path}}",
         "clipboardReadText": "Read the clipboard",
         "clipboardWriteText": "Copy text to the clipboard",
         "systemNotify": "Show a notification",
+        "reminderSchedule": "Schedule a reminder for {{runAt}}",
         "screenCapture": "Capture the screen",
         "systemStorage": "Inspect approved storage",
         "systemProcesses": "Inspect running processes",
         "webOpenUrl": "Open {{url}}",
         "webSearch": "Search the web for {{query}}",
+        "siteVerify": "Verify website project {{path}}",
         "devLaunchProject": "Open {{path}} in VS Code"
       },
       "title": "Execution plan",

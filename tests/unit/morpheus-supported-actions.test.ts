@@ -69,25 +69,7 @@ describe('launcher example commands', () => {
   });
 
   it('the example for a capability plans THAT capability', () => {
-    // Where an example is a stand-in (append/move/copy have no distinct phrase
-    // in the deterministic interpreter yet), it must at least plan something
-    // real — never a different capability than the one it claims to show.
-    const exact: Array<[string, string]> = [
-      ['system.report', 'system.report'],
-      ['app.launch', 'app.launch'],
-      ['file.createText', 'file.createText'],
-      ['file.readText', 'file.readText'],
-      ['file.list', 'file.list'],
-      ['file.search', 'file.search'],
-      ['folder.create', 'folder.create'],
-      ['file.delete', 'file.delete'],
-      ['system.storage', 'system.storage'],
-      ['system.processes', 'system.processes'],
-      ['web.openUrl', 'web.openUrl'],
-      ['dev.launchProject', 'dev.launchProject'],
-    ];
-
-    for (const [actionId, expected] of exact) {
+    for (const actionId of listMorpheusActionIds()) {
       const result = interpretCommand({
         objective: EXAMPLE_COMMAND[actionId],
         origin: { type: 'action-launcher' },
@@ -96,7 +78,7 @@ describe('launcher example commands', () => {
       });
       expect(result.ok, actionId).toBe(true);
       if (!result.ok) continue;
-      expect(result.plan.steps[0].capabilityId, actionId).toBe(expected);
+      expect(result.plan.steps[0].capabilityId, actionId).toBe(actionId);
     }
   });
 });

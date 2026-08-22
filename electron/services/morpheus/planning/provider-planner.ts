@@ -100,18 +100,33 @@ function capabilityPrompt(capabilities: readonly MorpheusPlanningCapability[]): 
   }).join('\n');
 }
 
+function specialistGuidance(capabilities: readonly MorpheusPlanningCapability[]): string {
+  const available = new Set(capabilities.map((capability) => capability.capabilityId));
+  if (!available.has('file.create') || !available.has('site.verify')) return '';
+  return `\nWEBSITE PROJECT RULES:\n`
+    + `For an objective that asks Morpheus to build a business website, produce a real local project rather than a report claiming it was built. `
+    + `Create one workspace-relative project folder, then create index.html, at least one local .css stylesheet, analytics.json, a concise business-plan.md, and a 30-day-plan.md. `
+    + `index.html must link the local stylesheet and include responsive viewport metadata. CSS must include at least one @media rule. `
+    + `The project must be self-contained: no script, iframe, object, embed, form, remote asset, remote URL, or active navigation. `
+    + `analytics.json must be valid JSON with {"schema":"morpheus.analytics.v1","events":["page_view",...]} and no credential or tracking id. `
+    + `Run site.verify only after every required project file succeeds. `
+    + `${available.has('reminder.schedule') ? 'If the objective asks for a reminder, run reminder.schedule after site.verify, use the supplied current time, and never claim the reminder exists unless that capability succeeds. ' : ''}`
+    + `Never claim public deployment, market research, analytics collection, income, or financial return unless a real capability result proves it.\n`;
+}
+
 function systemPrompt(capabilities: readonly MorpheusPlanningCapability[]): string {
   return `You are the planning component of Morpheus. You propose typed plans; you never execute anything.\n`
     + `Return JSON only, with exactly this shape: {"steps":[{"stepId":"lowercase-id","capabilityId":"id","params":{},"dependsOn":[],"summary":"short truthful description"}]}.\n`
     + `Use only the capabilities below. Never invent shell, PowerShell, executable paths, arguments, environment variables, absolute paths, credentials, or capabilities.\n`
     + `Use workspace-relative paths only. Prefer the smallest complete sequential plan. Ask for clarification by producing no plan only when the objective is materially ambiguous.\n\n`
-    + `AVAILABLE CAPABILITIES:\n${capabilityPrompt(capabilities)}`;
+    + `${specialistGuidance(capabilities)}\nAVAILABLE CAPABILITIES:\n${capabilityPrompt(capabilities)}`;
 }
 
-function userPlanPrompt(request: MorpheusPlanningRequest): string {
+function userPlanPrompt(request: MorpheusPlanningRequest, currentTime: Date): string {
   const context = (request.context ?? []).filter((item) => item.sensitivity === 'normal')
     .map((item) => `[${item.source}] ${item.text}`).join('\n');
-  return `OBJECTIVE:\n${request.objective}\n\n`
+  return `CURRENT LOCAL TIME:\n${currentTime.toString()}\nCURRENT ISO TIME:\n${currentTime.toISOString()}\n\n`
+    + `OBJECTIVE:\n${request.objective}\n\n`
     + `AGENT:\n${request.agent?.name ?? 'General Agent'}\n${request.agent?.instructions ?? ''}\n\n`
     + `BOUNDED CONTEXT:\n${context || '(none)'}`;
 }
@@ -264,7 +279,7 @@ export function createMorpheusProviderPlanner(options: MorpheusProviderPlannerOp
     async plan(request) {
       const capabilities = request.capabilities ?? [];
       const text = await invokeProvider(
-        options, protocol, model, systemPrompt(capabilities), userPlanPrompt(request), request.signal,
+        options, protocol, model, systemPrompt(capabilities), userPlanPrompt(request, now()), request.signal,
       );
       return {
         ok: true,

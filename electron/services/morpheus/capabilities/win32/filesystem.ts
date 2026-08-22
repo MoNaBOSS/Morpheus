@@ -11,13 +11,13 @@
  */
 import { constants as fsConstants } from 'node:fs';
 import {
-  appendFile, copyFile, mkdir, readFile, readdir, rename, rm, stat,
+  appendFile, copyFile, mkdir, open, readFile, readdir, rename, rm, stat, unlink,
 } from 'node:fs/promises';
 import { dirname, relative, sep } from 'node:path';
 
 import type { MorpheusActionResult } from '@shared/morpheus/action-types';
 import type { MorpheusParamsFor } from '@shared/morpheus/actions/registry';
-import { PARAM_LIMITS } from '@shared/morpheus/capabilities/params';
+import { PARAM_LIMITS, validateParam } from '@shared/morpheus/capabilities/params';
 
 import {
   MorpheusCapabilityError,
@@ -189,6 +189,79 @@ export const win32AppendTextCapability: MorpheusCapability<'file.appendText'> = 
   },
 };
 
+/**
+ * Creates one new bounded text artifact at a workspace-relative path.
+ *
+ * This is the reusable project-building counterpart to the legacy
+ * `file.createText` leaf-name action. The provider may choose only a relative
+ * logical path with a non-executable extension; Main chooses and revalidates
+ * the canonical workspace root. Existing files are never overwritten.
+ */
+export const win32CreateFileCapability: MorpheusCapability<'file.create'> = {
+  actionId: 'file.create',
+  platform: 'win32',
+
+  async resolve(
+    params: MorpheusParamsFor<'file.create'>,
+    context: MorpheusCapabilityContext,
+  ): Promise<MorpheusResolution> {
+    const pathValidation = validateParam('writableRelativePath', params.path);
+    const contentValidation = validateParam('textContent', params.content);
+    if (!pathValidation.ok) {
+      throw new MorpheusCapabilityError('invalid-params', `Path rejected: ${pathValidation.reason}`);
+    }
+    if (!contentValidation.ok) {
+      throw new MorpheusCapabilityError('invalid-params', `Content rejected: ${contentValidation.reason}`);
+    }
+
+    const initial = resolveWorkspacePath(context.roots, params.path);
+    if (initial.exists) throw new MorpheusCapabilityError('invalid-params', 'Destination already exists');
+    const content = params.content;
+    const bytes = Buffer.byteLength(content, 'utf8');
+
+    return {
+      target: { kind: 'file', path: initial.absolute, bytes, workspaceRoot: initial.workspaceRoot },
+      execute: async (): Promise<MorpheusActionResult> => {
+        await mkdir(dirname(initial.absolute), { recursive: true });
+
+        // The parent tree may have changed while a plan was awaiting consent.
+        // Re-resolve after creating it and before opening the leaf, so a newly
+        // introduced symlink never inherits an earlier safe resolution.
+        const current = resolveWorkspacePath(context.roots, params.path);
+        if (current.absolute !== initial.absolute || current.workspaceRoot !== initial.workspaceRoot) {
+          throw new MorpheusCapabilityError('execution-failed', 'Workspace target changed before creation');
+        }
+        if (current.exists) throw new MorpheusCapabilityError('execution-failed', 'Destination already exists');
+
+        let handle: Awaited<ReturnType<typeof open>> | undefined;
+        try {
+          handle = await open(current.absolute, 'wx');
+          await handle.writeFile(content, 'utf8');
+          await handle.sync();
+        } catch (error) {
+          const code = (error as NodeJS.ErrnoException)?.code;
+          await handle?.close().catch(() => undefined);
+          if (handle) await unlink(current.absolute).catch(() => undefined);
+          if (code === 'EEXIST') {
+            throw new MorpheusCapabilityError('execution-failed', 'Destination already exists');
+          }
+          throw new MorpheusCapabilityError('execution-failed', 'The workspace file could not be created');
+        }
+        // Durability was established by fsync. A close failure after that must
+        // not turn a successfully-created artifact into a false failed run.
+        await handle.close().catch(() => undefined);
+
+        return {
+          kind: 'file',
+          path: current.absolute,
+          bytes,
+          contentSha256: morpheusContentDigest(content),
+        };
+      },
+    };
+  },
+};
+
 export const win32MoveCapability: MorpheusCapability<'file.move'> = {
   actionId: 'file.move',
   platform: 'win32',
@@ -323,6 +396,7 @@ export const win32FilesystemCapabilities = [
   win32ReadTextCapability,
   win32ListCapability,
   win32SearchCapability,
+  win32CreateFileCapability,
   win32AppendTextCapability,
   win32MoveCapability,
   win32CopyCapability,

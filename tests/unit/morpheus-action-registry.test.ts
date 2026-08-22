@@ -89,6 +89,8 @@ describe('morpheus action registry', () => {
     expect([...listMorpheusActionIds()].sort()).toEqual(Object.keys(MORPHEUS_ACTIONS).sort());
     expect(listMorpheusActionIds()).toContain('app.launch');
     expect(listMorpheusActionIds()).toContain('file.createText');
+    expect(listMorpheusActionIds()).toContain('file.create');
+    expect(listMorpheusActionIds()).toContain('site.verify');
     expect(listMorpheusActionIds()).toContain('system.report');
     expect([...listMorpheusApplicationKeys()].sort())
       .toEqual(Object.keys(MORPHEUS_APPLICATIONS).sort());
@@ -100,6 +102,13 @@ describe('morpheus action registry', () => {
     expect(getMorpheusActionDescriptor('app.launch').params.map((p) => p.key)).toEqual(['applicationKey']);
     expect(getMorpheusActionDescriptor('file.createText').params.map((p) => p.key)).toEqual(['fileName', 'content']);
     expect(getMorpheusActionDescriptor('file.createText').rootKey).toBe('morpheusFiles');
+    expect(getMorpheusActionDescriptor('file.create').params.map((p) => p.kind))
+      .toEqual(['writableRelativePath', 'textContent']);
+    expect(getMorpheusActionDescriptor('site.verify')).toMatchObject({
+      rootKey: 'morpheusFiles',
+      group: 'workspace.read',
+      riskTier: 'medium',
+    });
   });
 
   it('constrains text file names to a traversal-proof grammar', () => {

@@ -7,6 +7,7 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   win32AppendTextCapability,
   win32CopyCapability,
+  win32CreateFileCapability,
   win32CreateFolderCapability,
   win32DeleteCapability,
   win32ListCapability,
@@ -158,6 +159,36 @@ describe('file.appendText', () => {
     await expect(
       win32AppendTextCapability.resolve({ path: 'missing.txt', content: 'x' }, context),
     ).rejects.toThrow();
+  });
+});
+
+describe('file.create', () => {
+  it('creates a nested project file without overwrite and keeps workspace-shaped trust', async () => {
+    const resolution = await win32CreateFileCapability.resolve({
+      path: 'sites/acme/index.html',
+      content: '<!doctype html><title>Acme</title>',
+    }, context);
+
+    expect(resolution.target).toMatchObject({
+      kind: 'file',
+      path: join(workspace, 'sites', 'acme', 'index.html'),
+      workspaceRoot: workspace,
+    });
+    const result = await resolution.execute();
+    expect(result).toMatchObject({ kind: 'file', bytes: 34 });
+    expect(readFileSync(join(workspace, 'sites', 'acme', 'index.html'), 'utf8'))
+      .toBe('<!doctype html><title>Acme</title>');
+  });
+
+  it('refuses executable extensions, traversal, and an existing destination', async () => {
+    for (const path of ['../escape.html', 'site/run.ps1', 'site/app.js']) {
+      await expect(win32CreateFileCapability.resolve({ path, content: 'x' }, context)).rejects.toThrow();
+    }
+    write('site/index.html', 'keep');
+    await expect(win32CreateFileCapability.resolve({
+      path: 'site/index.html', content: 'replace',
+    }, context)).rejects.toThrow();
+    expect(readFileSync(join(workspace, 'site', 'index.html'), 'utf8')).toBe('keep');
   });
 });
 

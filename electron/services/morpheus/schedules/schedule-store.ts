@@ -29,6 +29,7 @@ export function validateMorpheusSchedule(value: unknown): MorpheusSchedule | nul
   if (typeof value.scheduleId !== 'string' || !/^[a-z0-9][a-z0-9-]{1,80}$/.test(value.scheduleId)) return null;
   if (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 100) return null;
   if (typeof value.workflowId !== 'string' || !/^[a-z][a-z0-9-]{1,63}$/.test(value.workflowId)) return null;
+  if (value.managedKind !== undefined && value.managedKind !== 'reminder') return null;
   const workspaceId = value.workspaceId ?? MORPHEUS_DEFAULT_WORKSPACE_ID;
   if (!isMorpheusWorkspaceId(workspaceId)) return null;
   if (typeof value.enabled !== 'boolean' || !validIso(value.createdAt) || !validIso(value.updatedAt)) return null;

@@ -68,6 +68,45 @@ describe('supported command interpretation', () => {
     expect(result.plan.steps[0].capabilityId).toBe('file.createText');
     expect(result.plan.steps[0].params.fileName).toBe('notepad.txt');
   });
+
+  it('maps project files and exact workspace mutations to their own capabilities', () => {
+    const cases = [
+      ['Create project file projects/site/index.html saying "Hello"', 'file.create', { path: 'projects/site/index.html' }],
+      ['Append "Another line" to file notes.txt', 'file.appendText', { path: 'notes.txt' }],
+      ['Move file notes.txt to archive/notes.txt', 'file.move', { path: 'notes.txt', destination: 'archive/notes.txt' }],
+      ['Copy file notes.txt to archive/notes-copy.txt', 'file.copy', { path: 'notes.txt', destination: 'archive/notes-copy.txt' }],
+      ['Verify website project projects/site', 'site.verify', { path: 'projects/site' }],
+    ] as const;
+
+    for (const [command, capabilityId, params] of cases) {
+      const result = interpret(command);
+      expect(result.ok, command).toBe(true);
+      if (!result.ok) continue;
+      expect(result.plan.steps[0]).toMatchObject({ capabilityId, params });
+    }
+  });
+
+  it('turns a relative reminder into an absolute Main-executable schedule step', () => {
+    const result = interpretCommand({
+      objective: 'Remind me in 1 hour to review the Morpheus project',
+      origin: ORIGIN,
+      platform: 'win32',
+      filesRoot: FILES_ROOT,
+      now: () => new Date('2026-08-22T10:00:00.000Z'),
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.steps[0]).toMatchObject({
+      capabilityId: 'reminder.schedule',
+      params: {
+        title: 'Morpheus reminder',
+        body: 'review the Morpheus project',
+        runAt: '2026-08-22T11:00:00.000Z',
+        repeatDaily: false,
+      },
+    });
+  });
 });
 
 describe('typed plan structure', () => {
