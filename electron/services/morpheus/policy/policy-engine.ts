@@ -24,6 +24,7 @@ import {
   type PermissionScope,
 } from '@shared/morpheus/permission-types';
 import {
+  allowsAutonomousFirstUse,
   getMorpheusActionDescriptor,
   requiresMandatoryConfirmation,
 } from '@shared/morpheus/actions/registry';
@@ -96,10 +97,17 @@ export function createMorpheusPolicyEngine(store: MorpheusGrantStore): MorpheusP
       //    whole model exists to avoid. Strict is excluded because its contract
       //    is that anything beyond a privacy-safe READ asks every time.
       //
-      //    Medium and above still need an explicit trusted scope even under
-      //    Autonomous — that is what keeps Autonomous from meaning arbitrary
-      //    machine authority.
       if (effectiveTier === 'low' && profile !== 'strict') {
+        return { outcome: 'allow', reason: 'profile-auto' };
+      }
+
+      //    Autonomous is useful because Main may proceed with an explicitly
+      //    enumerated reversible capability after resolving its exact compiled
+      //    target or registered workspace. Risk alone never enables this path:
+      //    absence from the frozen allow-list fails toward a prompt.
+      if (profile === 'autonomous'
+        && effectiveTier === descriptor.riskTier
+        && allowsAutonomousFirstUse(scope.capabilityId)) {
         return { outcome: 'allow', reason: 'profile-auto' };
       }
 

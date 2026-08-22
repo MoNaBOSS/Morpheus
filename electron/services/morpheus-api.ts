@@ -117,6 +117,12 @@ import {
   type MorpheusMemoryIdPayload,
 } from '@shared/morpheus/memory-types';
 import type { CompleteMorpheusOnboardingPayload } from '@shared/morpheus/onboarding-types';
+import {
+  MORPHEUS_INTERACTION_MODES,
+  MORPHEUS_INTERACTION_SURFACES,
+  routeMorpheusInteraction,
+  type RouteMorpheusInteractionPayload,
+} from '@shared/morpheus/operator-types';
 import type { MorpheusCompanionSurfaceStatus } from '@shared/morpheus/companion-types';
 import {
   isMorpheusGoalId,
@@ -310,6 +316,26 @@ export function validateSubmitObjectivePayload(payload: unknown): SubmitMorpheus
     ...(record.workspaceId ? { workspaceId: record.workspaceId } : {}),
     ...(agentProfileId ? { agentProfileId } : {}),
     ...(record.projectId ? { projectId: record.projectId } : {}),
+  };
+}
+
+export function validateRouteInteractionPayload(payload: unknown): RouteMorpheusInteractionPayload {
+  const record = requireRecord(payload, 'routeInteraction payload');
+  assertNoUnknownKeys(record, ['text', 'mode', 'surface'], 'routeInteraction payload');
+  const text = requireNonEmptyString(record.text, 'interaction text').trim();
+  if (!text || text.length > 4_000) {
+    throw new MorpheusValidationError('interaction text must be between 1 and 4000 characters');
+  }
+  if (!MORPHEUS_INTERACTION_MODES.includes(record.mode as never)) {
+    throw new MorpheusValidationError('unsupported interaction mode');
+  }
+  if (!MORPHEUS_INTERACTION_SURFACES.includes(record.surface as never)) {
+    throw new MorpheusValidationError('unsupported interaction surface');
+  }
+  return {
+    text,
+    mode: record.mode as RouteMorpheusInteractionPayload['mode'],
+    surface: record.surface as RouteMorpheusInteractionPayload['surface'],
   };
 }
 
@@ -1113,6 +1139,7 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
   const now = options.now ?? (() => new Date());
   const planner = options.planner ?? createDeterministicMorpheusPlanner();
   return {
+    routeInteraction: (payload) => routeMorpheusInteraction(validateRouteInteractionPayload(payload)),
     interpretCommand: async (payload) => {
       const { objective, originType } = validateInterpretPayload(payload);
       const result = await planner.plan({

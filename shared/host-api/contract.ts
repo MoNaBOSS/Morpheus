@@ -99,6 +99,10 @@ import type {
   CompleteMorpheusOnboardingPayload,
   MorpheusOnboardingStatus,
 } from '../morpheus/onboarding-types';
+import type {
+  MorpheusInteractionDecision,
+  RouteMorpheusInteractionPayload,
+} from '../morpheus/operator-types';
 import type { MorpheusCompanionSurfaceStatus } from '../morpheus/companion-types';
 import type {
   MorpheusGoalDraft,
@@ -1159,6 +1163,8 @@ export type HostApiContract = {
    * `harness/reference/morpheus-execution-architecture.md`.
    */
   morpheus: {
+    /** Main-owned Ask/Auto/Act routing shared by every interaction surface. */
+    routeInteraction: (payload: RouteMorpheusInteractionPayload) => MorpheusInteractionDecision;
     describeActions: () => MorpheusDescribeActionsResult;
     systemInfo: () => MorpheusSystemInfo;
     requestAction: (payload: MorpheusRequestActionPayload) => MorpheusRequestActionResult;

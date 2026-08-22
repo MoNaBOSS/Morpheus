@@ -7,6 +7,7 @@ import {
   type MorpheusMemory,
   type MorpheusMemoryDraft,
   type MorpheusMemorySnapshot,
+  type MorpheusMemoryWriteMetadata,
 } from '@shared/morpheus/memory-types';
 
 import { readValidatedJson, writeJsonAtomically } from '../storage/atomic-json';
@@ -20,7 +21,8 @@ export interface MorpheusMemoryStore {
   list(projectId?: string): MorpheusMemorySnapshot;
   eligibleForPlanning(projectId?: string, limit?: number): MorpheusMemory[];
   get(memoryId: string): MorpheusMemory | undefined;
-  save(draft: MorpheusMemoryDraft): MorpheusMemory;
+  save(draft: MorpheusMemoryDraft, metadata?: MorpheusMemoryWriteMetadata): MorpheusMemory;
+  hasEquivalent(text: string, projectId?: string): boolean;
   remove(memoryId: string): MorpheusMemory | null;
   countForProject(projectId: string): number;
 }
@@ -38,6 +40,7 @@ function validateMemory(value: unknown): MorpheusMemory | null {
     || !['normal', 'sensitive'].includes(String(value.sensitivity))
     || !['allowed', 'local-only'].includes(String(value.providerUse))
     || !['user', 'mission'].includes(String(value.source))
+    || (value.sourceId !== undefined && typeof value.sourceId !== 'string')
     || (value.projectId !== undefined && typeof value.projectId !== 'string')
     || typeof value.enabled !== 'boolean' || typeof value.createdAt !== 'string'
     || typeof value.updatedAt !== 'string') return null;
@@ -60,6 +63,20 @@ function normalizeDraft(draft: MorpheusMemoryDraft): MorpheusMemoryDraft {
   if (!['normal', 'sensitive'].includes(draft.sensitivity)) throw new Error('Invalid memory sensitivity');
   if (!['allowed', 'local-only'].includes(draft.providerUse)) throw new Error('Invalid memory provider policy');
   return { ...draft, title, text };
+}
+
+function normalizeMetadata(metadata: MorpheusMemoryWriteMetadata): MorpheusMemoryWriteMetadata {
+  if (metadata.source !== undefined && !['user', 'mission'].includes(metadata.source)) {
+    throw new Error('Invalid memory source');
+  }
+  if (metadata.sourceId !== undefined
+    && (!metadata.sourceId.trim() || metadata.sourceId.length > 128)) {
+    throw new Error('Invalid memory source id');
+  }
+  return {
+    ...(metadata.source ? { source: metadata.source } : {}),
+    ...(metadata.sourceId ? { sourceId: metadata.sourceId.trim() } : {}),
+  };
 }
 
 export function createMorpheusMemoryStore(options: {
@@ -101,8 +118,9 @@ export function createMorpheusMemoryStore(options: {
       const memory = byId.get(memoryId);
       return memory ? structuredClone(memory) : undefined;
     },
-    save(input) {
+    save(input, metadata = {}) {
       const draft = normalizeDraft(input);
+      const writeMetadata = normalizeMetadata(metadata);
       const memoryId = draft.memoryId ?? createId();
       if (!isMorpheusMemoryId(memoryId)) throw new Error('Invalid generated memory id');
       const existing = byId.get(memoryId);
@@ -116,7 +134,10 @@ export function createMorpheusMemoryStore(options: {
         kind: draft.kind,
         sensitivity: draft.sensitivity,
         providerUse: draft.providerUse,
-        source: existing?.source ?? 'user',
+        source: existing?.source ?? writeMetadata.source ?? 'user',
+        ...(existing?.sourceId || writeMetadata.sourceId
+          ? { sourceId: existing?.sourceId ?? writeMetadata.sourceId }
+          : {}),
         ...(draft.projectId ? { projectId: draft.projectId } : {}),
         enabled: draft.enabled,
         createdAt: existing?.createdAt ?? timestamp,
@@ -131,6 +152,13 @@ export function createMorpheusMemoryStore(options: {
         throw error;
       }
       return structuredClone(memory);
+    },
+    hasEquivalent(text, projectId) {
+      const normalized = text.trim().toLocaleLowerCase();
+      return [...byId.values()].some((memory) => (
+        memory.projectId === projectId
+        && memory.text.trim().toLocaleLowerCase() === normalized
+      ));
     },
     remove(memoryId) {
       const memory = byId.get(memoryId);

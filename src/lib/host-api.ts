@@ -79,6 +79,7 @@ import type {
   MorpheusProactiveSettingsPatch,
 } from '@shared/morpheus/proactive-types';
 import type { CompleteMorpheusOnboardingPayload } from '@shared/morpheus/onboarding-types';
+import type { RouteMorpheusInteractionPayload } from '@shared/morpheus/operator-types';
 import type {
   CreateMorpheusSystemFromMissionPayload,
   MorpheusSystemDraft,
@@ -438,6 +439,9 @@ export const hostApi = {
     ),
   },
   morpheus: {
+    routeInteraction: (payload: RouteMorpheusInteractionPayload) => (
+      invokeHost('morpheus', 'routeInteraction', payload)
+    ),
     describeActions: () => invokeHost('morpheus', 'describeActions'),
     systemInfo: () => invokeHost('morpheus', 'systemInfo'),
     requestAction: (input: MorpheusRequestActionPayload) => invokeHost('morpheus', 'requestAction', input),

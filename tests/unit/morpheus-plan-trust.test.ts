@@ -15,7 +15,9 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 let counter = 0;
 function freshStore(): MorpheusGrantStore {
   counter += 1;
-  return createMorpheusGrantStore({ userDataDir: join(scratch, `case-${counter}`) });
+  const value = createMorpheusGrantStore({ userDataDir: join(scratch, `case-${counter}`) });
+  value.setProfile('balanced');
+  return value;
 }
 
 const FILES_ROOT = 'C:\\Users\\x\\AppData\\Roaming\\Morpheus\\files';

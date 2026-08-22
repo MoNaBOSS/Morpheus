@@ -35,6 +35,8 @@ import type {
 } from '@shared/morpheus/planner';
 import type { MorpheusProject } from '@shared/morpheus/project-types';
 import type { MorpheusMemory } from '@shared/morpheus/memory-types';
+import { extractMorpheusMemoryCandidate } from '@shared/morpheus/memory-candidates';
+import type { MorpheusMemoryDraft, MorpheusMemoryWriteMetadata } from '@shared/morpheus/memory-types';
 import {
   isMorpheusMissionId,
   type MorpheusObjectiveRoute,
@@ -193,7 +195,11 @@ export function createMorpheusObjectiveOrchestrator(options: {
   workspaces: Pick<MorpheusWorkspaceStore, 'get' | 'resolveRoot'>;
   missions: MorpheusMissionStore;
   projects?: { get(projectId: string): MorpheusProject | undefined };
-  memory?: { eligibleForPlanning(projectId?: string, limit?: number): MorpheusMemory[] };
+  memory?: {
+    eligibleForPlanning(projectId?: string, limit?: number): MorpheusMemory[];
+    hasEquivalent(text: string, projectId?: string): boolean;
+    save(draft: MorpheusMemoryDraft, metadata?: MorpheusMemoryWriteMetadata): MorpheusMemory;
+  };
   projectGoal?: (run: MorpheusObjectiveRun) => Promise<void>;
   isRuntimePaused?: () => boolean;
   emit: (event: MorpheusObjectiveEvent) => void;
@@ -250,9 +256,54 @@ export function createMorpheusObjectiveOrchestrator(options: {
       if (!existing) return;
       const timestamp = now().toISOString();
       const terminal = isObjectiveTerminalState(state);
+      let memoryUpdate = existing.memoryUpdate;
+      if (state === 'complete' && !memoryUpdate && options.memory) {
+        const extracted = extractMorpheusMemoryCandidate(effectiveObjective(existing));
+        if (extracted.kind === 'rejected') {
+          memoryUpdate = { status: 'rejected', reason: extracted.reason };
+          try {
+            await options.audit.recordControl({
+              category: 'memory',
+              event: 'candidate-rejected',
+              subjectId: existing.missionId ?? objectiveRunId,
+              details: { reason: extracted.reason },
+              appVersion: options.appVersion,
+            });
+          } catch {
+            // No memory mutation occurs on this path.
+          }
+        } else if (extracted.kind === 'candidate'
+          && !options.memory.hasEquivalent(extracted.candidate.text, existing.projectId)) {
+          const memoryId = `memory-${randomUUID()}`;
+          try {
+            // Audit is persisted before the corresponding durable memory write.
+            await options.audit.recordControl({
+              category: 'memory',
+              event: 'captured-from-mission',
+              subjectId: memoryId,
+              details: {
+                kind: extracted.candidate.kind,
+                scopedToProject: Boolean(existing.projectId),
+                source: 'mission',
+              },
+              appVersion: options.appVersion,
+            });
+            options.memory.save({
+              ...extracted.candidate,
+              memoryId,
+              ...(existing.projectId ? { projectId: existing.projectId } : {}),
+            }, { source: 'mission', sourceId: existing.missionId ?? objectiveRunId });
+            memoryUpdate = { status: 'saved', memoryId, title: extracted.candidate.title };
+          } catch {
+            // Objective success remains truthful even if optional memory cannot
+            // be persisted. Crucially, no unaudited memory write is attempted.
+          }
+        }
+      }
       const run: MorpheusObjectiveRun = {
         ...existing,
         ...patch,
+        ...(memoryUpdate ? { memoryUpdate } : {}),
         state,
         updatedAt: timestamp,
         ...(terminal ? { completedAt: patch.completedAt ?? timestamp } : {}),

@@ -120,7 +120,7 @@ describe('grant lifecycle', () => {
     store.createGrant(SCOPE, 'session');
 
     store.reset();
-    expect(store.getProfile()).toBe('balanced');
+    expect(store.getProfile()).toBe('autonomous');
     expect(store.listPersistentGrants()).toEqual([]);
     expect(store.listSessionGrants()).toEqual([]);
   });
@@ -182,14 +182,14 @@ describe('stored policy is untrusted input', () => {
     mkdirSync(join(broken, 'morpheus'), { recursive: true });
     writeFileSync(join(broken, 'morpheus', 'policy.json'), '{not json', 'utf8');
     const store = createMorpheusGrantStore({ userDataDir: broken });
-    expect(store.getProfile()).toBe('balanced');
+    expect(store.getProfile()).toBe('autonomous');
     expect(store.listPersistentGrants()).toEqual([]);
   });
 
   it('falls back to the default profile for an unknown stored profile', () => {
     const dir = freshDir();
     writePolicy(dir, { v: 1, profile: 'godmode', grants: [] });
-    expect(createMorpheusGrantStore({ userDataDir: dir }).getProfile()).toBe('balanced');
+    expect(createMorpheusGrantStore({ userDataDir: dir }).getProfile()).toBe('autonomous');
   });
 
   it('never accepts a session grant from disk', () => {

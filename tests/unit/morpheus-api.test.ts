@@ -602,6 +602,7 @@ describe('createMorpheusApi', () => {
       'respondPlanPermission',
       'revokeAllSessionGrants',
       'revokeGrant',
+      'routeInteraction',
       'runSchedule',
       'runSystem',
       'runWorkflow',

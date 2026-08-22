@@ -56,7 +56,7 @@ Every capability descriptor declares a tier:
 | Tier | Meaning | Default treatment |
 | --- | --- | --- |
 | `low` | No disclosure, no durable state, nothing to undo | Runs automatically outside Strict |
-| `medium` | Bounded side effect in an approved scope | Asks once per new scope; grantable |
+| `medium` | Bounded side effect in an approved scope | Balanced asks once; Autonomous may run a reviewed bounded capability on first use |
 | `high` | Sensitive or wide-reaching, but reversible | Asks once per new scope; **grantable**. Never auto-runs on an unseen scope. |
 | `critical` | Irreversible, financial, or security-affecting | **Unwaivable.** Always confirms. |
 
@@ -180,7 +180,7 @@ rather than permanently interrupting.
 - Everything else — including low-risk notifications — **asks every time**.
 - Grants are not consulted for medium and above.
 
-### Balanced — default
+### Balanced
 
 - Privacy-safe read-only operations run automatically.
 - Low-risk operations run automatically.
@@ -191,12 +191,22 @@ rather than permanently interrupting.
 ### Autonomous
 
 - Low-risk operations run automatically.
-- Medium-risk operations run automatically **inside explicitly trusted scopes**.
+- Medium-risk operations run automatically when the capability appears in the
+  frozen `MORPHEUS_AUTONOMOUS_FIRST_USE_ACTIONS` allow-list and Main has
+  resolved an exact compiled-in target or registered workspace scope.
+- Existing exact grants are still honoured; a persistent denial still wins.
 - High risk surfaces once for a scope the user has never seen, then follows the grant.
 - `critical` still confirms, always.
 
-> Autonomous is **not** arbitrary shell access. It widens where remembered trust
-> applies; it never removes the `critical` floor.
+Fresh private-alpha profiles use Autonomous. Unknown capabilities, risk-tier
+escalation, screen capture, clipboard reads, process inspection, deletion,
+credentials, finance, privilege, security settings, and arbitrary commands are
+absent from the first-use allow-list and therefore fail toward a prompt or a
+hard boundary.
+
+> Autonomous is **not** arbitrary shell access. It grants no wildcard, path,
+> executable, argument, environment, or shell authority and never removes the
+> `critical` floor.
 
 ## Decision options
 

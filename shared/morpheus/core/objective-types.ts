@@ -121,6 +121,10 @@ export type MorpheusObjectiveRun = {
   observations: readonly MorpheusPlanObservation[];
   artifacts: readonly ExecutionArtifact[];
   summary?: string;
+  /** Result of the bounded explicit-memory extractor, never raw remembered text. */
+  memoryUpdate?:
+    | { status: 'saved'; memoryId: string; title: string }
+    | { status: 'rejected'; reason: 'sensitive-content' };
   clarification?: string;
   error?: { code: string; message: string };
 };

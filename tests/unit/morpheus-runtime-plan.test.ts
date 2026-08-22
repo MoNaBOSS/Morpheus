@@ -60,6 +60,7 @@ function makeRuntime(options: {
 } = {}): MorpheusRuntime {
   counter += 1;
   store = createMorpheusGrantStore({ userDataDir: join(scratch, `case-${counter}`) });
+  store.setProfile('balanced');
   const engine = createMorpheusPolicyEngine(store);
 
   const audit: MorpheusAuditSink = {

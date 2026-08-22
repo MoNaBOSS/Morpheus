@@ -8,6 +8,7 @@ import { createMorpheusObjectiveOrchestrator } from '@electron/services/morpheus
 import { createMorpheusObjectiveStore } from '@electron/services/morpheus/core/objective-store';
 import { createMorpheusMissionStore } from '@electron/services/morpheus/missions/mission-store';
 import { createMorpheusAgentProfileStore } from '@electron/services/morpheus/agents/profile-store';
+import { createMorpheusMemoryStore } from '@electron/services/morpheus/memory/memory-store';
 import type { MorpheusAuditSink } from '@electron/services/morpheus/audit';
 import type { MorpheusRuntime } from '@electron/services/morpheus/runtime';
 import type { MorpheusPlanner } from '@shared/morpheus/planner';
@@ -56,6 +57,7 @@ function setup(
   const audit = {
     recordControl: vi.fn(async (entry: { event: string }) => { auditEvents.push(entry.event); }),
   } as unknown as MorpheusAuditSink;
+  const memory = createMorpheusMemoryStore({ userDataDir: root });
   const orchestrator = createMorpheusObjectiveOrchestrator({
     store: createMorpheusObjectiveStore({ userDataDir: root }),
     runtime,
@@ -79,6 +81,7 @@ function setup(
       resolveRoot: vi.fn(() => join(root, 'files')),
     },
     missions: createMorpheusMissionStore({ userDataDir: root }),
+    memory,
     platform: 'win32',
     isRuntimePaused,
     createId: (() => { let id = 0; return () => `objective-${++id}`; })(),
@@ -88,7 +91,7 @@ function setup(
       events.push(event);
     },
   });
-  return { orchestrator, runtime, events };
+  return { orchestrator, runtime, events, memory, auditEvents };
 }
 
 describe('Main-owned objective orchestration', () => {
@@ -222,6 +225,49 @@ describe('Main-owned objective orchestration', () => {
       origin: { type: 'workflow', workflowId: 'system-brief', agentProfileId: 'general' },
     }));
     await expect(orchestrator.waitForIdle()).resolves.toBeUndefined();
+    orchestrator.dispose();
+  });
+
+  it('captures an explicit stable preference only after truthful completion', async () => {
+    const planner: MorpheusPlanner = {
+      plannerId: 'provider:test', plannedBy: 'provider',
+      plan: vi.fn(async () => ({ ok: true, plan: plan('plan-memory') })),
+    };
+    const { orchestrator, memory, auditEvents } = setup(planner);
+    const submitted = await orchestrator.submit({
+      objective: 'Review system readiness and remember that I prefer concise progress updates.',
+      originType: 'command-bar',
+    });
+    const terminal = await orchestrator.waitForTerminal(submitted.objectiveRunId);
+
+    expect(terminal.state).toBe('complete');
+    expect(terminal.memoryUpdate).toMatchObject({ status: 'saved', title: 'User preference' });
+    expect(memory.list().memories).toHaveLength(1);
+    expect(memory.list().memories[0]).toMatchObject({
+      text: 'The user prefers concise progress updates.',
+      source: 'mission',
+      sourceId: terminal.missionId,
+    });
+    expect(auditEvents).toContain('captured-from-mission');
+    orchestrator.dispose();
+  });
+
+  it('rejects secret-like memory without persisting it', async () => {
+    const planner: MorpheusPlanner = {
+      plannerId: 'provider:test', plannedBy: 'provider',
+      plan: vi.fn(async () => ({ ok: true, plan: plan('plan-secret-memory') })),
+    };
+    const { orchestrator, memory, auditEvents } = setup(planner);
+    const submitted = await orchestrator.submit({
+      objective: 'Review system readiness and remember that my API key is sk-abcdefghijklmnop.',
+      originType: 'command-bar',
+    });
+    const terminal = await orchestrator.waitForTerminal(submitted.objectiveRunId);
+
+    expect(terminal.state).toBe('complete');
+    expect(terminal.memoryUpdate).toEqual({ status: 'rejected', reason: 'sensitive-content' });
+    expect(memory.list().memories).toEqual([]);
+    expect(auditEvents).toContain('candidate-rejected');
     orchestrator.dispose();
   });
 });

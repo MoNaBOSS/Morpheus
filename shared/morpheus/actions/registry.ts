@@ -86,6 +86,37 @@ export type MorpheusActionId =
   | 'web.openUrl'
   | 'dev.launchProject';
 
+/**
+ * Capabilities allowed on first use under Autonomous after Main resolves their
+ * exact compiled-in target or registered workspace scope.
+ *
+ * This is an allow-list, not a risk shortcut. Unknown capabilities are absent
+ * by default. Clipboard reads, process inspection, screen capture, deletion,
+ * credentials, finance, privilege, security, and arbitrary commands are
+ * deliberately not expressible here without a reviewed registry change.
+ */
+export const MORPHEUS_AUTONOMOUS_FIRST_USE_ACTIONS = Object.freeze([
+  'app.launch',
+  'system.report',
+  'file.createText',
+  'file.readText',
+  'file.appendText',
+  'file.list',
+  'file.search',
+  'file.move',
+  'file.copy',
+  'folder.create',
+  'clipboard.writeText',
+  'system.notify',
+  'system.storage',
+  'web.openUrl',
+  'dev.launchProject',
+] as const satisfies readonly MorpheusActionId[]);
+
+export function allowsAutonomousFirstUse(actionId: MorpheusActionId): boolean {
+  return MORPHEUS_AUTONOMOUS_FIRST_USE_ACTIONS.includes(actionId as never);
+}
+
 /** Actions that create, change, or remove durable state inside a workspace. */
 export const MORPHEUS_WORKSPACE_WRITE_ACTIONS = Object.freeze([
   'file.createText',

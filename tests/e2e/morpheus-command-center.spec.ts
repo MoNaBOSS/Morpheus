@@ -75,8 +75,8 @@ test.describe('Morpheus Command Center', () => {
       const page = await getStableWindow(app);
       await expect(page.getByTestId('command-center-page')).toBeVisible();
 
-      // Balanced is the default.
-      await expect(page.getByTestId('morpheus-runtime-profile')).toHaveAttribute('data-profile', 'balanced');
+      // Fresh private-alpha profiles begin in operator-first Autonomous mode.
+      await expect(page.getByTestId('morpheus-runtime-profile')).toHaveAttribute('data-profile', 'autonomous');
 
       await page.getByTestId('morpheus-command-input').fill('Show system information');
       await page.getByTestId('morpheus-command-submit').click();

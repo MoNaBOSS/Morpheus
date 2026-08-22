@@ -69,30 +69,41 @@ describe('permission profiles', () => {
     expect(evaluate(MEDIUM_FILE).outcome).toBe('prompt');
   });
 
-  it('Balanced is the default profile', () => {
-    expect(store.getProfile()).toBe('balanced');
+  it('Autonomous is the fresh private-alpha default profile', () => {
+    expect(store.getProfile()).toBe('autonomous');
   });
 
   it('Balanced: privacy-safe reads auto, medium asks the first time', () => {
+    store.setProfile('balanced');
     expect(evaluate(LOW)).toEqual({ outcome: 'allow', reason: 'privacy-safe-auto' });
     expect(evaluate(MEDIUM_APP)).toEqual({ outcome: 'prompt', reason: 'prompt-required' });
   });
 
   it('Balanced: a matching grant executes without another prompt', () => {
+    store.setProfile('balanced');
     const grant = store.createGrant(MEDIUM_APP, 'session');
     expect(evaluate(MEDIUM_APP)).toEqual({
       outcome: 'allow', reason: 'session-grant', grantId: grant.grantId,
     });
   });
 
-  it('Autonomous: low risk runs automatically, medium still needs a trusted scope', () => {
+  it('Autonomous: explicitly enumerated reversible work runs on first use', () => {
     store.setProfile('autonomous');
     expect(evaluate(LOW).outcome).toBe('allow');
-    // Autonomous is not arbitrary authority: an ungranted medium action prompts.
-    expect(evaluate(MEDIUM_APP)).toEqual({ outcome: 'prompt', reason: 'prompt-required' });
+    expect(evaluate(MEDIUM_APP)).toEqual({ outcome: 'allow', reason: 'profile-auto' });
+    expect(evaluate(MEDIUM_FILE)).toEqual({ outcome: 'allow', reason: 'profile-auto' });
+  });
 
-    store.createGrant(MEDIUM_APP, 'persistent');
-    expect(evaluate(MEDIUM_APP).reason).toBe('persistent-grant');
+  it('Autonomous still prompts for sensitive capabilities absent from the reviewed allow-list', () => {
+    store.setProfile('autonomous');
+    expect(evaluate({
+      capabilityId: 'clipboard.readText', platform: 'win32', resourceScope: 'runtime',
+      riskTier: 'high', originType: 'command-bar',
+    })).toEqual({ outcome: 'prompt', reason: 'prompt-required' });
+    expect(evaluate({
+      capabilityId: 'screen.capture', platform: 'win32', resourceScope: 'C:\\morpheus\\files',
+      riskTier: 'high', originType: 'command-bar',
+    })).toEqual({ outcome: 'prompt', reason: 'prompt-required' });
   });
 
   it('rejects an unknown profile', () => {
@@ -161,6 +172,7 @@ describe('high risk is grantable, never silently automatic', () => {
   });
 
   it('a grant for a different resource does not carry over', () => {
+    store.setProfile('balanced');
     store.createGrant(HIGH, 'persistent');
     expect(evaluate({ ...HIGH, resourceScope: 'calculator' }).outcome).toBe('prompt');
   });
@@ -173,32 +185,38 @@ describe('high risk is grantable, never silently automatic', () => {
 
 describe('grant scope matching', () => {
   it('a different resource is a different scope and prompts again', () => {
+    store.setProfile('balanced');
     store.createGrant(MEDIUM_APP, 'persistent');
     expect(evaluate({ ...MEDIUM_APP, resourceScope: 'calculator' }).outcome).toBe('prompt');
   });
 
   it('a different capability does not inherit trust', () => {
+    store.setProfile('balanced');
     store.createGrant(MEDIUM_APP, 'persistent');
     expect(evaluate({ ...MEDIUM_FILE }).outcome).toBe('prompt');
   });
 
   it('a different platform does not inherit trust', () => {
+    store.setProfile('balanced');
     store.createGrant(MEDIUM_APP, 'persistent');
     expect(evaluate({ ...MEDIUM_APP, platform: 'linux' }).outcome).toBe('prompt');
   });
 
   it('a different origin does not inherit trust', () => {
+    store.setProfile('balanced');
     store.createGrant(MEDIUM_APP, 'persistent');
     expect(evaluate({ ...MEDIUM_APP, originType: 'schedule' }).outcome).toBe('prompt');
   });
 
   it('a different agent identity does not inherit trust', () => {
+    store.setProfile('balanced');
     store.createGrant({ ...MEDIUM_APP, agentId: 'agent-a' }, 'persistent');
     expect(evaluate({ ...MEDIUM_APP, agentId: 'agent-b' }).outcome).toBe('prompt');
     expect(evaluate({ ...MEDIUM_APP, agentId: 'agent-a' }).outcome).toBe('allow');
   });
 
   it('a different risk tier does not inherit trust', () => {
+    store.setProfile('balanced');
     store.createGrant(MEDIUM_APP, 'persistent');
     expect(evaluate({ ...MEDIUM_APP, riskTier: 'low' }).outcome).not.toBe('allow');
   });

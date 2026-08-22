@@ -15,6 +15,8 @@ export type MorpheusMemory = {
   sensitivity: MorpheusMemorySensitivity;
   providerUse: MorpheusMemoryProviderUse;
   source: MorpheusMemorySource;
+  /** Mission or user-control identity that produced this memory, when known. */
+  sourceId?: string;
   projectId?: string;
   enabled: boolean;
   createdAt: string;
@@ -25,6 +27,11 @@ export type MorpheusMemoryDraft = Pick<
   MorpheusMemory,
   'title' | 'text' | 'kind' | 'sensitivity' | 'providerUse' | 'enabled'
 > & { memoryId?: string; projectId?: string };
+
+export type MorpheusMemoryWriteMetadata = {
+  source?: MorpheusMemorySource;
+  sourceId?: string;
+};
 
 export type MorpheusMemorySnapshot = { memories: readonly MorpheusMemory[] };
 export type MorpheusMemoryIdPayload = { memoryId: string };

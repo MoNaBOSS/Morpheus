@@ -24,6 +24,7 @@ let store: MorpheusGrantStore;
 beforeEach(() => {
   counter += 1;
   store = createMorpheusGrantStore({ userDataDir: join(scratch, `case-${counter}`) });
+  store.setProfile('balanced');
 });
 
 function scopeFor(capabilityId: MorpheusActionId, resourceScope: string): PermissionScope {
