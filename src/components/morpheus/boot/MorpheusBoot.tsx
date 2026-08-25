@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
+import { MorpheusSignal } from '@/components/morpheus/signal/MorpheusSignal';
 
 import { MatrixRain } from './MatrixRain';
 import { MORPHEUS_BOOT_PHASES, useBootPhases } from './use-boot-phases';
@@ -24,9 +25,17 @@ const READY_HOLD_MS = 420;
 
 type MorpheusBootProps = {
   enabled: boolean;
+  mode?: 'first-run' | 'returning';
+  preferredName?: string;
+  onDismissed?: () => void;
 };
 
-export function MorpheusBoot({ enabled }: MorpheusBootProps) {
+export function MorpheusBoot({
+  enabled,
+  mode = 'first-run',
+  preferredName = '',
+  onDismissed,
+}: MorpheusBootProps) {
   const { t } = useTranslation('dashboard');
   const [leaving, setLeaving] = useState(false);
   const [unmounted, setUnmounted] = useState(!enabled);
@@ -51,9 +60,12 @@ export function MorpheusBoot({ enabled }: MorpheusBootProps) {
 
   useEffect(() => {
     if (!leaving) return undefined;
-    const timer = setTimeout(() => setUnmounted(true), LEAVE_MS);
+    const timer = setTimeout(() => {
+      setUnmounted(true);
+      onDismissed?.();
+    }, LEAVE_MS);
     return () => clearTimeout(timer);
-  }, [leaving]);
+  }, [leaving, onDismissed]);
 
   useEffect(() => {
     if (!enabled || unmounted) return undefined;
@@ -71,6 +83,7 @@ export function MorpheusBoot({ enabled }: MorpheusBootProps) {
       data-morpheus
       data-testid="morpheus-boot"
       data-phase={phase}
+      data-arrival-mode={mode}
       role="status"
       aria-live="polite"
       onClick={skipNow}
@@ -79,14 +92,27 @@ export function MorpheusBoot({ enabled }: MorpheusBootProps) {
         leaving && 'morpheus-boot-leaving pointer-events-none',
       )}
     >
-      <MatrixRain />
+      <div className="morpheus-boot-rain absolute inset-0"><MatrixRain /></div>
+      <div aria-hidden className="morpheus-arrival-vignette absolute inset-0" />
 
-      <div className="relative flex flex-col items-center gap-6 px-6 text-center">
-        <h1 className="morpheus-boot-title font-mono text-3xl font-semibold sm:text-5xl">
-          {t('morpheus.boot.title')}
+      <div className="relative flex flex-col items-center px-6 text-center">
+        <MorpheusSignal
+          state={phase === 'ready' ? 'complete' : 'understanding'}
+          className="morpheus-arrival-signal h-52 w-52 sm:h-72 sm:w-72"
+          label={t('morpheus.boot.title')}
+        />
+        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.42em] text-[hsl(var(--morpheus-accent))]">
+          {t('morpheus.boot.identity')}
+        </p>
+        <h1 className="morpheus-boot-title mt-4 max-w-3xl font-serif text-3xl font-normal leading-tight sm:text-5xl">
+          {mode === 'returning'
+            ? preferredName
+              ? t('morpheus.boot.welcomeBack', { name: preferredName })
+              : t('morpheus.boot.welcomeBackGeneric')
+            : t('morpheus.boot.awakening')}
         </h1>
 
-        <div className="w-64 max-w-full">
+        <div className="mt-8 w-72 max-w-full">
           <div className="h-0.5 w-full overflow-hidden rounded-full bg-white/10">
             <div
               data-testid="morpheus-boot-progress"
@@ -103,7 +129,7 @@ export function MorpheusBoot({ enabled }: MorpheusBootProps) {
           </p>
         </div>
 
-        <p className="font-mono text-2xs uppercase tracking-[0.2em] text-white/40">
+        <p className="mt-6 font-mono text-2xs uppercase tracking-[0.2em] text-white/40">
           {t('morpheus.boot.skip')}
         </p>
       </div>

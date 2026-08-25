@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, BellRing, Check, Cpu, Mic, Power, ShieldCheck, UserRound, Volume2 } from 'lucide-react';
 
@@ -21,6 +21,7 @@ import { MorpheusSignal } from '@/components/morpheus/signal/MorpheusSignal';
 import { resolveMorpheusSignalState } from '@/components/morpheus/signal/signal-state';
 import { MorpheusInteractionModeControl } from '@/components/morpheus/operator/MorpheusInteractionModeControl';
 import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
+import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 
 type ActivationStage = 'loading' | 'intro' | 'calibrating' | 'preferences' | 'proof' | 'ready';
 type SignalLock = { id: 'core' | 'runtime' | 'provider' | 'voice'; available: boolean; detail: string };
@@ -53,6 +54,17 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const [proactiveCheckIns, setProactiveCheckIns] = useState(true);
   const [voiceAvailable, setVoiceAvailable] = useState(false);
   const [proofStarted, setProofStarted] = useState(false);
+  const [exiting, setExiting] = useState(false);
+  const voicePhase = useMorpheusVoiceStore((state) => state.phase);
+  const voiceSource = useMorpheusVoiceStore((state) => state.source);
+  const voiceTranscript = useMorpheusVoiceStore((state) => state.transcript);
+  const voiceError = useMorpheusVoiceStore((state) => state.error);
+  const startVoiceCalibration = useMorpheusVoiceStore((state) => state.startListening);
+  const stopVoiceCalibration = useMorpheusVoiceStore((state) => state.stopListening);
+  const dismissVoiceCalibration = useMorpheusVoiceStore((state) => state.dismiss);
+  const introductionSpoken = useRef(false);
+  const exitStarted = useRef(false);
+  const exitTimer = useRef<number | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -79,17 +91,50 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const visibleStage: ActivationStage = stage === 'proof' && proofStarted && objectiveRun && isObjectiveTerminalState(objectiveRun.state) ? 'ready' : stage;
   const signalState = resolveMorpheusSignalState({ objectiveState: visibleStage === 'proof' ? objectiveRun?.state : visibleStage === 'ready' ? 'complete' : visibleStage === 'calibrating' ? 'understanding' : undefined });
 
-  if (!enabled || dismissed || (onboarding?.completed && visibleStage !== 'proof' && visibleStage !== 'ready') || visibleStage === 'loading') return null;
-
-  const speakIntroduction = (): void => {
+  const speak = useCallback((text: string): void => {
     if (typeof window.speechSynthesis === 'undefined' || typeof SpeechSynthesisUtterance === 'undefined') return;
     window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(new SpeechSynthesisUtterance(t('morpheus.signalOs.activation.spokenIntroduction')));
-  };
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+  }, []);
+
+  useEffect(() => {
+    if (visibleStage !== 'intro' || introductionSpoken.current) return;
+    introductionSpoken.current = true;
+    speak(t('morpheus.activation.firstGreeting'));
+  }, [speak, t, visibleStage]);
+
+  const finishArrival = useCallback((): void => {
+    if (exitStarted.current) return;
+    exitStarted.current = true;
+    setExiting(true);
+    window.speechSynthesis?.cancel();
+    exitTimer.current = window.setTimeout(() => {
+      setDismissed(true);
+    }, 680);
+  }, []);
+
+  useEffect(() => {
+    if (visibleStage !== 'ready') return undefined;
+    const timer = window.setTimeout(finishArrival, 2600);
+    return () => window.clearTimeout(timer);
+  }, [finishArrival, visibleStage]);
+
+  useEffect(() => () => {
+    if (exitTimer.current !== null) window.clearTimeout(exitTimer.current);
+    window.speechSynthesis?.cancel();
+    if (useMorpheusVoiceStore.getState().source === 'onboarding') {
+      useMorpheusVoiceStore.getState().cancel();
+    }
+  }, []);
+
+  if (!enabled || dismissed || (onboarding?.completed && visibleStage !== 'proof' && visibleStage !== 'ready') || visibleStage === 'loading') return null;
 
   const calibrate = async (): Promise<void> => {
     setStage('calibrating');
-    speakIntroduction();
+    const name = preferredName.trim();
+    speak(name
+      ? t('morpheus.activation.personalGreeting', { name })
+      : t('morpheus.signalOs.activation.spokenIntroduction'));
     const [capabilities, voice] = await Promise.all([hostApi.morpheus.describeActions().catch(() => null), hostApi.morpheus.voiceStatus().catch(() => null)]);
     const runtimeReady = gatewayStatus.state === 'running' && gatewayStatus.gatewayReady !== false;
     setVoiceAvailable(Boolean(voice?.transcriptionAvailable));
@@ -124,8 +169,19 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const skip = async (): Promise<void> => {
     if (await completeOnboarding(preferences())) {
       setOperatorMode(interactionMode);
-      setDismissed(true);
+      finishArrival();
     }
+  };
+
+  const useVoiceName = (): void => {
+    if (!voiceTranscript?.trim()) return;
+    const name = voiceTranscript
+      .trim()
+      .replace(/^(?:my name is|call me|i am|i'm)\s+/i, '')
+      .replace(/[.!?]+$/u, '')
+      .slice(0, 80);
+    setPreferredName(name);
+    dismissVoiceCalibration();
   };
 
   const startProof = async (): Promise<void> => {
@@ -135,7 +191,7 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   };
 
   return (
-    <div data-morpheus data-testid="morpheus-activation" data-stage={visibleStage} className="morpheus-signal-activation fixed inset-0 z-[9997] overflow-hidden bg-[hsl(var(--morpheus-surface-1))] text-foreground" role="dialog" aria-modal="true" aria-label={t('morpheus.activation.title')}>
+    <div data-morpheus data-testid="morpheus-activation" data-stage={visibleStage} data-exiting={exiting ? 'true' : 'false'} className={cn('morpheus-signal-activation fixed inset-0 z-[9997] overflow-hidden bg-[hsl(var(--morpheus-surface-1))] text-foreground', exiting && 'morpheus-activation-leaving pointer-events-none')} role="dialog" aria-modal="true" aria-label={t('morpheus.activation.title')}>
       <div aria-hidden className="morpheus-activation-depth absolute inset-0" />
       <div aria-hidden className="morpheus-activation-streams absolute inset-0" />
 
@@ -156,9 +212,13 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
           {visibleStage === 'intro' ? (
             <div data-testid="morpheus-activation-intro" className="max-w-2xl">
               <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.eyebrow')}</p>
-              <h1 className="mt-5 font-serif text-6xl font-normal leading-[0.96] tracking-tight">{t('morpheus.signalOs.activation.title')}</h1>
+              <h1 className="mt-5 font-serif text-6xl font-normal leading-[0.96] tracking-tight">{t('morpheus.activation.firstGreeting')}</h1>
               <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">{t('morpheus.signalOs.activation.introduction')}</p>
-              <button type="button" data-testid="morpheus-activation-begin" autoFocus onClick={() => void calibrate()} className="mt-9 inline-flex items-center gap-3 border-b border-[hsl(var(--morpheus-accent))] pb-2 text-xs uppercase tracking-[0.18em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.signalOs.activation.begin')}<ArrowRight className="h-4 w-4" /></button>
+              <label className="mt-8 block max-w-xl">
+                <span className="sr-only">{t('morpheus.activation.preferredName')}</span>
+                <input data-testid="activation-intro-name" value={preferredName} maxLength={80} autoComplete="name" autoFocus onChange={(event) => setPreferredName(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void calibrate(); }} placeholder={t('morpheus.activation.preferredNamePlaceholder')} className="h-14 w-full border-x-0 border-b border-t-0 border-white/[0.14] bg-transparent px-0 font-serif text-2xl outline-none transition-colors placeholder:text-muted-foreground/35 focus:border-[hsl(var(--morpheus-accent)/0.7)]" />
+              </label>
+              <button type="button" data-testid="morpheus-activation-begin" onClick={() => void calibrate()} className="mt-9 inline-flex items-center gap-3 border-b border-[hsl(var(--morpheus-accent))] pb-2 text-xs uppercase tracking-[0.18em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.signalOs.activation.begin')}<ArrowRight className="h-4 w-4" /></button>
             </div>
           ) : null}
 
@@ -174,6 +234,18 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
                       return <li key={signal.id} data-testid={`activation-signal-${signal.id}`} data-available={signal.available} className="flex items-center gap-4 py-4"><Icon className="h-4 w-4 text-muted-foreground" /><div className="min-w-0 flex-1"><p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground">{t(`morpheus.activation.signal.${signal.id}`)}</p><p className="mt-1 truncate text-sm text-foreground/85">{signal.detail}</p></div><span className={cn('h-2 w-2 rounded-full', signal.available ? 'bg-[hsl(var(--morpheus-accent))]' : 'bg-[hsl(var(--morpheus-warn))]')} /></li>;
                     })}
                   </ol>
+                  <div data-testid="morpheus-voice-calibration" className="mt-5 border border-white/[0.08] bg-black/15 p-4">
+                    <div className="flex items-start justify-between gap-5">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground">{t('morpheus.activation.voiceCalibration.title')}</p>
+                        <p className="mt-1 text-xs leading-relaxed text-foreground/80">{voiceAvailable ? t('morpheus.activation.voiceCalibration.ready') : t('morpheus.activation.voiceCalibration.unavailable')}</p>
+                        {voiceSource === 'onboarding' && voiceTranscript ? <p data-testid="activation-voice-transcript" className="mt-3 font-serif text-lg text-[hsl(var(--morpheus-accent))]">“{voiceTranscript}”</p> : null}
+                        {voiceSource === 'onboarding' && voiceError ? <p className="mt-2 text-xs text-[hsl(var(--morpheus-danger))]">{t('morpheus.activation.voiceCalibration.failed')}</p> : null}
+                      </div>
+                      {voiceSource === 'onboarding' && voicePhase === 'listening' ? <button type="button" data-testid="activation-voice-stop" onClick={stopVoiceCalibration} className="shrink-0 border-b border-[hsl(var(--morpheus-accent))] pb-1 text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.voice.stop')}</button> : <button type="button" data-testid="activation-voice-start" disabled={!voiceAvailable || ['requesting', 'transcribing'].includes(voicePhase)} onClick={() => void startVoiceCalibration('onboarding')} className="shrink-0 border-b border-[hsl(var(--morpheus-accent))] pb-1 text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--morpheus-accent))] disabled:opacity-35">{t('morpheus.activation.voiceCalibration.try')}</button>}
+                    </div>
+                    {voiceSource === 'onboarding' && voicePhase === 'ready' && voiceTranscript ? <button type="button" data-testid="activation-use-voice-name" onClick={useVoiceName} className="mt-3 text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.voiceCalibration.useName')}</button> : null}
+                  </div>
                   <button type="button" data-testid="morpheus-activation-continue" onClick={() => setStage('preferences')} className="mt-7 inline-flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.continue')}<ArrowRight className="h-4 w-4" /></button>
                 </>
               )}
@@ -239,7 +311,7 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
               <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.readyLabel')}</p>
               <h2 className="mt-4 font-serif text-5xl font-normal">{t('morpheus.signalOs.activation.readyTitle')}</h2>
               <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{objectiveRun?.summary ?? t('morpheus.signalOs.activation.readyBody')}</p>
-              <button type="button" autoFocus data-testid="morpheus-activation-enter" onClick={() => setDismissed(true)} className="mt-8 inline-flex items-center gap-3 border-b border-[hsl(var(--morpheus-accent))] pb-2 text-xs uppercase tracking-[0.18em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.enter')}<ArrowRight className="h-4 w-4" /></button>
+              <button type="button" autoFocus data-testid="morpheus-activation-enter" onClick={finishArrival} className="mt-8 inline-flex items-center gap-3 border-b border-[hsl(var(--morpheus-accent))] pb-2 text-xs uppercase tracking-[0.18em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.enter')}<ArrowRight className="h-4 w-4" /></button>
             </div>
           ) : null}
         </section>

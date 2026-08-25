@@ -1026,14 +1026,30 @@
 /* Boot sequence overlay */
 .morpheus-boot {
   background:
-    radial-gradient(ellipse at center, hsl(var(--morpheus-glow)) 0%, transparent 70%),
-    hsl(0 0% 2%);
+    radial-gradient(ellipse at 50% 45%, hsl(var(--morpheus-glow)) 0%, transparent 52%),
+    linear-gradient(145deg, hsl(160 18% 4%), hsl(220 14% 2%) 74%);
+}
+
+.morpheus-boot-rain {
+  opacity: 0.17;
+  filter: blur(0.2px);
+  mask-image: radial-gradient(ellipse at center, transparent 2%, black 48%, transparent 88%);
+}
+
+.morpheus-arrival-vignette {
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0.72), transparent 28%, transparent 70%, rgb(0 0 0 / 0.8)),
+    radial-gradient(circle at center, transparent 24%, rgb(0 0 0 / 0.62) 86%);
+}
+
+.morpheus-arrival-signal {
+  animation: morpheus-arrival-form 1.2s cubic-bezier(0.2, 0.75, 0.25, 1) both;
 }
 
 .morpheus-boot-title {
-  color: hsl(var(--morpheus-accent));
-  text-shadow: 0 0 18px hsl(var(--morpheus-glow));
-  letter-spacing: 0.5em;
+  color: hsl(var(--foreground));
+  text-shadow: 0 0 30px hsl(var(--morpheus-glow));
+  letter-spacing: -0.025em;
 }
 
 .morpheus-boot-phase {
@@ -1052,6 +1068,31 @@
 
 .morpheus-boot-leaving {
   animation: morpheus-boot-fade-out 320ms ease-out forwards;
+}
+
+@keyframes morpheus-arrival-form {
+  from { opacity: 0; filter: blur(14px); transform: scale(0.72); }
+  55% { opacity: 0.72; filter: blur(2px); }
+  to { opacity: 1; filter: blur(0); transform: scale(1); }
+}
+
+.morpheus-activation-leaving {
+  animation: morpheus-activation-handoff 680ms cubic-bezier(0.22, 0.72, 0.2, 1) forwards;
+}
+
+.morpheus-activation-leaving [data-testid='morpheus-signal'] {
+  animation: morpheus-activation-signal-handoff 680ms cubic-bezier(0.22, 0.72, 0.2, 1) forwards;
+}
+
+@keyframes morpheus-activation-handoff {
+  0% { opacity: 1; filter: blur(0); }
+  56% { opacity: 0.82; }
+  100% { opacity: 0; filter: blur(8px); }
+}
+
+@keyframes morpheus-activation-signal-handoff {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(0.72); opacity: 0; }
 }
 
 /* One-time companion activation. Every signal shown here is populated from a
@@ -1141,6 +1182,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .morpheus-boot-leaving {
+    animation-duration: 1ms;
+  }
+
+  .morpheus-arrival-signal,
+  .morpheus-activation-leaving,
+  .morpheus-activation-leaving [data-testid='morpheus-signal'] {
     animation-duration: 1ms;
   }
 

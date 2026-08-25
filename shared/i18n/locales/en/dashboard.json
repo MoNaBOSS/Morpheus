@@ -467,7 +467,11 @@
         "ready": "Ready"
       },
       "skip": "Press Esc to skip",
-      "title": "MORPHEUS"
+      "title": "MORPHEUS",
+      "identity": "Morpheus intelligence",
+      "awakening": "Intelligence is coming online.",
+      "welcomeBack": "Welcome back, {{name}}.",
+      "welcomeBackGeneric": "Welcome back."
     },
     "command": {
       "label": "Command",
@@ -928,6 +932,8 @@
       "title": "Meet Morpheus",
       "introduction": "I turn objectives into plans, trusted actions and lasting Missions. Speak or type naturally; I will handle routine work and interrupt only when the trust boundary genuinely changes.",
       "spokenIntroduction": "Hello. I am Morpheus, your intelligent operating companion. Tell me what you want to accomplish, and I will plan and handle the work.",
+      "firstGreeting": "I'm Morpheus. What should I call you?",
+      "personalGreeting": "Good to meet you, {{name}}. Tell me the outcome. I'll handle the path.",
       "begin": "Activate Morpheus",
       "skip": "Skip activation",
       "calibrating": "Real system calibration",
@@ -958,6 +964,14 @@
       "replay": "Companion activation",
       "replayDescription": "Replay the real system introduction and choose companion behavior again.",
       "replayAction": "Replay activation",
+      "voiceCalibration": {
+        "title": "Voice calibration",
+        "ready": "Say your name, then stop. Audio is sent only to your configured transcription provider and is never stored by Morpheus.",
+        "unavailable": "Voice needs a transcription-compatible provider. You can finish with the keyboard and configure it later.",
+        "try": "Try microphone",
+        "useName": "Use this as my name",
+        "failed": "I couldn't hear that clearly. Try again or continue with the keyboard."
+      },
       "personalities": {
         "adaptive": { "name": "Adaptive", "description": "Match detail, tone and pace to the objective." },
         "witty": { "name": "Witty", "description": "Confident, concise and naturally humorous." },

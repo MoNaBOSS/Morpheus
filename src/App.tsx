@@ -35,11 +35,10 @@ import { rendererExtensionRegistry } from './extensions/registry';
 import { loadExternalRendererExtensions } from './extensions/_ext-bridge.generated';
 import { UpdateNotifier } from './components/update/UpdateNotifier';
 import { useNewChatAction } from './components/layout/use-new-chat-action';
-import { MorpheusBoot } from './components/morpheus/boot/MorpheusBoot';
 import { hostEvents } from './lib/host-events';
 import { MorpheusGlobalRuntime } from './components/morpheus/MorpheusGlobalRuntime';
 import { MorpheusQuickCommand } from './components/morpheus/MorpheusQuickCommand';
-import { MorpheusActivation } from './components/morpheus/onboarding/MorpheusActivation';
+import { MorpheusArrival } from './components/morpheus/onboarding/MorpheusArrival';
 
 
 /**
@@ -263,9 +262,9 @@ function App() {
           store initialisation and the setup redirect all proceed underneath it.
           Kept below the Toaster's z-index.
         */}
-        <MorpheusBoot enabled={morpheusBootEnabled} />
-        <MorpheusActivation
-          enabled={morpheusOnboardingEnabled && (Boolean(setupComplete) || skipSetupForE2E)}
+        <MorpheusArrival
+          bootEnabled={morpheusBootEnabled}
+          onboardingEnabled={morpheusOnboardingEnabled && (Boolean(setupComplete) || skipSetupForE2E)}
         />
 
         {/* Global toast notifications */}

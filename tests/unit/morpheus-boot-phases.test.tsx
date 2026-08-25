@@ -142,6 +142,16 @@ describe('MorpheusBoot', () => {
     expect(screen.getByTestId('morpheus-boot-phase')).toBeTruthy();
   });
 
+  it('projects a returning-user arrival without inventing another boot path', () => {
+    vi.useFakeTimers();
+    systemInfoMock.mockReturnValue(new Promise(() => {}));
+    render(<MorpheusBoot enabled mode="returning" preferredName="Larry" />);
+
+    expect(screen.getByTestId('morpheus-boot').getAttribute('data-arrival-mode')).toBe('returning');
+    expect(screen.getByText('morpheus.boot.welcomeBack')).toBeTruthy();
+    expect(screen.getByTestId('morpheus-signal')).toBeTruthy();
+  });
+
   it('cancels its animation frame on unmount', () => {
     // jsdom has no 2d canvas implementation, so the rain effect would bail out
     // before ever scheduling a frame. Stub a minimal context so the real

@@ -374,7 +374,11 @@
         "ready": "就绪"
       },
       "skip": "按 Esc 跳过",
-      "title": "MORPHEUS"
+      "title": "MORPHEUS",
+      "identity": "Morpheus 智能",
+      "awakening": "智能正在上线。",
+      "welcomeBack": "欢迎回来，{{name}}。",
+      "welcomeBackGeneric": "欢迎回来。"
     },
     "command": {
       "label": "命令",
@@ -665,7 +669,10 @@
       "eyebrow": "智能操作伙伴", "title": "认识 Morpheus", "introduction": "我把目标转化为计划、可信操作和持久任务。自然地说或输入；我会处理日常工作，只在信任边界真正变化时打断。", "spokenIntroduction": "你好，我是 Morpheus，你的智能操作伙伴。告诉我你想完成什么，我会规划并处理工作。", "begin": "激活 Morpheus", "skip": "跳过激活", "calibrating": "真实系统校准", "systemsTitle": "正在连接智能层", "checking": "正在检查此系统可用的能力…", "continue": "个性化伙伴", "personalize": "伙伴行为", "preferenceTitle": "Morpheus 应如何与你协作？", "preferenceBody": "这些偏好会影响沟通，但不会绕过能力政策或信任。", "preferredName": "我应该怎么称呼你？", "preferredNamePlaceholder": "你的名字或称呼", "autonomy": "自主性与保护", "launchAtStartup": "随 Windows 启动", "launchAtStartupDescription": "登录后让 Morpheus 在托盘中保持可用。", "ambientVoice": "聆听 Morpheus 唤醒词", "ambientVoiceDescription": "由提供商支持的聆听只在听到“{{wakePhrase}}”后响应。", "ambientVoiceUnavailable": "添加兼容转录的提供商以启用唤醒词。", "wakePhrase": "唤醒词", "proactiveCheckIns": "偶尔主动问候", "proactiveCheckInsDescription": "长时间工作时让 Morpheus 自然地询问进展。", "speak": "朗读最终响应", "speakDescription": "语音目标完成后使用 Windows 语音。", "finish": "完成激活", "readyLabel": "系统就绪", "readyTitle": "Morpheus 已就绪。", "readyBody": "在指挥中心管理任务；随时按 Ctrl+Shift+Space 打开快捷命令，或按 Ctrl+Alt+Space 说话。", "enter": "进入指挥中心", "replay": "伙伴激活", "replayDescription": "重新播放真实系统介绍并选择伙伴行为。", "replayAction": "重播激活",
       "personalities": { "adaptive": { "name": "自适应", "description": "根据目标调整细节、语气和节奏。" }, "witty": { "name": "幽默", "description": "自信、简洁且自然风趣。" }, "concise": { "name": "简洁", "description": "偏好简短直接的状态与结果。" }, "warm": { "name": "温暖", "description": "使用自然、乐于助人且略带幽默的语气。" } },
       "permissionProfiles": { "strict": { "name": "严格", "description": "在每个新操作边界询问。" }, "balanced": { "name": "平衡", "description": "复用精确信任，仅在范围变化时询问。" }, "autonomous": { "name": "自主", "description": "处理常规可逆工作，在受保护边界暂停。" } },
-      "signal": { "core": "执行核心", "runtime": "代理运行时", "provider": "推理提供商", "voice": "语音通道", "capabilities": "{{count}} 项真实能力", "unavailable": "不可用", "connected": "已连接", "starting": "正在后台启动", "optionalProvider": "需要开放式规划时配置", "available": "可用", "voiceSetup": "配置兼容转录的提供商" }
+      "signal": { "core": "执行核心", "runtime": "代理运行时", "provider": "推理提供商", "voice": "语音通道", "capabilities": "{{count}} 项真实能力", "unavailable": "不可用", "connected": "已连接", "starting": "正在后台启动", "optionalProvider": "需要开放式规划时配置", "available": "可用", "voiceSetup": "配置兼容转录的提供商" },
+      "firstGreeting": "我是 Morpheus。我该怎么称呼你？",
+      "personalGreeting": "很高兴认识你，{{name}}。告诉我结果，其余路径交给我。",
+      "voiceCalibration": { "title": "语音校准", "ready": "说出你的名字，然后停止。音频只发送给你配置的转录提供商，Morpheus 不会保存。", "unavailable": "语音需要兼容转录的提供商。你可以先用键盘完成，稍后再配置。", "try": "测试麦克风", "useName": "使用这个名字", "failed": "我没能听清。请重试或使用键盘继续。" }
     },
     "today": {
       "title": "今日",

@@ -27,7 +27,12 @@ export type MorpheusVoicePhase =
   | 'ready'
   | 'error';
 
-export type MorpheusVoiceSource = 'command-center' | 'quick-command' | 'global-shortcut' | 'ambient';
+export type MorpheusVoiceSource =
+  | 'command-center'
+  | 'quick-command'
+  | 'global-shortcut'
+  | 'ambient'
+  | 'onboarding';
 
 export type MorpheusVoiceState = {
   phase: MorpheusVoicePhase;
@@ -153,14 +158,22 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
       });
       if (generation !== operationGeneration) return;
       const status = get().status;
-      useMorpheusCommandStore.getState().setInput(result.transcript);
+      const source = get().source;
+      // Activation uses the same real microphone and provider-backed
+      // transcription path as normal voice commands, but calibration must
+      // never become an Objective or leak a person's name into the command
+      // composer. The transcript remains ephemeral renderer state until the
+      // user explicitly accepts it as their preferred name.
+      if (source !== 'onboarding') {
+        useMorpheusCommandStore.getState().setInput(result.transcript);
+      }
       set({
         phase: 'ready',
         transcript: result.transcript,
         error: null,
         startedAt: null,
       });
-      if (status?.settings.autoSubmitTranscript) {
+      if (status?.settings.autoSubmitTranscript && source !== 'onboarding') {
         await routeVoiceInput(result.transcript);
       }
     } catch (error) {

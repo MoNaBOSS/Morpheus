@@ -19,20 +19,26 @@ test.describe('Morpheus companion and persistent Missions', () => {
   test('activates once from real system signals and enters the Command Center', async ({ launchElectronApp }) => {
     const app = await launchElectronApp({
       skipSetup: true,
-      additionalArgs: ['--morpheus-onboarding=on'],
+      additionalArgs: ['--morpheus-boot=on', '--morpheus-onboarding=on'],
     });
     try {
       const page = await getStableWindow(app);
       await page.setViewportSize({ width: 1280, height: 800 });
+      await expect(page.getByTestId('morpheus-boot')).toHaveAttribute('data-arrival-mode', 'first-run');
+      await captureVisualEvidence(page, 'arrival-boot-1280x800.png');
       await expect(page.getByTestId('morpheus-activation')).toHaveAttribute('data-stage', 'intro');
       await expect(page.getByTestId('morpheus-activation')).toHaveCSS('background-image', /linear-gradient/);
       const activationBox = await page.getByTestId('morpheus-activation').boundingBox();
       expect(activationBox).toMatchObject({ x: 0, y: 0, width: 1280, height: 800 });
+      await captureVisualEvidence(page, 'activation-greeting-1280x800.png');
+      await page.getByTestId('activation-intro-name').fill('Larry');
       await page.getByTestId('morpheus-activation-begin').click();
       await expect(page.getByTestId('activation-signal-core')).toHaveAttribute('data-available', 'true');
       await expect(page.getByTestId('activation-signal-provider')).toHaveAttribute('data-available', 'false');
+      await expect(page.getByTestId('activation-voice-start')).toBeDisabled();
+      await captureVisualEvidence(page, 'activation-voice-calibration-1280x800.png');
       await page.getByTestId('morpheus-activation-continue').click();
-      await page.getByTestId('activation-preferred-name').fill('Larry');
+      await expect(page.getByTestId('activation-preferred-name')).toHaveValue('Larry');
       await page.getByTestId('activation-personality-warm').click();
       await expect(page.getByTestId('morpheus-activation-preferences').getByTestId('morpheus-mode-auto')).toHaveAttribute('aria-checked', 'true');
       await expect(page.getByTestId('activation-permission-autonomous')).toHaveAttribute('data-selected', 'true');
@@ -43,8 +49,13 @@ test.describe('Morpheus companion and persistent Missions', () => {
       await expect(page.getByTestId('morpheus-activation-ready')).toBeVisible();
       await captureVisualEvidence(page, 'activation-ready-1280x800.png');
       await page.getByTestId('morpheus-activation-enter').click();
+      await expect(page.getByTestId('morpheus-activation')).toHaveAttribute('data-exiting', 'true');
       await expect(page.getByTestId('command-center-page')).toBeVisible();
       await page.reload();
+      await expect(page.getByTestId('morpheus-boot')).toHaveAttribute('data-arrival-mode', 'returning');
+      await expect(page.getByTestId('morpheus-boot')).toContainText('Larry');
+      await captureVisualEvidence(page, 'arrival-returning-1280x800.png');
+      await expect(page.getByTestId('morpheus-boot')).toHaveCount(0);
       await expect(page.getByTestId('morpheus-activation')).toHaveCount(0);
     } finally {
       await closeElectronApp(app);

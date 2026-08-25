@@ -130,4 +130,22 @@ describe('Morpheus renderer voice controller', () => {
     expect(payload).toMatchObject({ mimeType: 'audio/webm', durationMs: 100 });
     expect(payload.audioBase64).toBe(window.btoa('voice-bytes'));
   });
+
+  it('uses the real transcription path for onboarding without submitting a command', async () => {
+    mocks.transcribeAudio.mockResolvedValue({
+      transcript: 'My name is Larry', providerAccountId: 'openai', modelId: 'whisper-1', durationMs: 800,
+    });
+
+    await useMorpheusVoiceStore.getState().startListening('onboarding');
+    useMorpheusVoiceStore.getState().stopListening();
+
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState()).toMatchObject({
+      phase: 'ready', transcript: 'My name is Larry', source: 'onboarding',
+    }));
+    expect(mocks.transcribeAudio).toHaveBeenCalledOnce();
+    expect(mocks.routeInteraction).not.toHaveBeenCalled();
+    expect(mocks.submitObjective).not.toHaveBeenCalled();
+    expect(useMorpheusCommandStore.getState().input).toBe('');
+    expect(track.stop).toHaveBeenCalled();
+  });
 });
