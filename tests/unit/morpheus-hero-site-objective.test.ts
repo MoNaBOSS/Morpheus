@@ -160,7 +160,8 @@ describe('private-alpha hero website objective', () => {
       workspaceId: 'morpheus-files', enabled: true, trigger: { type: 'daily' },
     });
     expect(actionEvents.filter((event) => event.endsWith(':succeeded'))).toHaveLength(7);
-    expect(providerCall).toBe(2);
+    // A conclusive completed plan does not need a second provider review call.
+    expect(providerCall).toBe(1);
 
     const auditRaw = readdirSync(auditDir).map((name) => readFileSync(join(auditDir, name), 'utf8')).join('\n');
     expect(auditRaw).not.toContain(HTML);

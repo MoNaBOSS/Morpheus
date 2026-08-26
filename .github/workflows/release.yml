@@ -53,11 +53,7 @@ jobs:
         run: pnpm run lint:check -- --quiet
 
       - name: Run Morpheus unit tests
-        shell: pwsh
-        run: |
-          $tests = Get-ChildItem tests/unit -Filter 'morpheus-*.test.ts' | ForEach-Object { $_.FullName }
-          if (-not $tests) { throw 'No Morpheus unit tests were found.' }
-          pnpm exec vitest run $tests
+        run: pnpm exec vitest run tests/unit/morpheus-
 
       - name: Build Windows installer
         run: pnpm run package:win
