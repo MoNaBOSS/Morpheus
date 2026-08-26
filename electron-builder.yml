@@ -59,8 +59,8 @@ npmRebuild: false
 # with a different application.
 #
 # Auto-update stays inert until a real Morpheus endpoint is configured, at which
-# point a provider entry is added here and MORPHEUS_UPDATE_FEED_CONFIGURED in
-# electron/main/updater-policy.ts is flipped. Until then the interface reports
+# point a provider entry is added here and MORPHEUS_UPDATE_FEED in
+# electron/main/updater-policy.ts is configured. Until then the interface reports
 # "not configured" rather than surfacing a broken updater.
 publish: null
 

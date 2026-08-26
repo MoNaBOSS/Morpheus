@@ -86,6 +86,18 @@ describe('update feed', () => {
     expect(builder).not.toMatch(/^\s+repo:\s*ClawX/m);
     expect(builder).not.toMatch(/^\s+url:\s*https:\/\/oss\.intelli-spectrum\.com/m);
   });
+
+  it('keeps release automation Windows-only and out of the inherited ClawX feed', () => {
+    const workflow = read('.github/workflows/release.yml');
+    expect(workflow).toContain('name: Morpheus Windows Release');
+    expect(workflow).toContain('release/Morpheus-*-win-x64.exe');
+    expect(workflow).toContain('SHA256SUMS-windows.txt');
+    expect(workflow).not.toContain('valuecell-clawx');
+    expect(workflow).not.toContain('ossutil');
+    expect(workflow).not.toContain('ClawX-*');
+    expect(workflow).not.toContain('package:mac');
+    expect(workflow).not.toContain('package:linux');
+  });
 });
 
 describe('visible branding', () => {
