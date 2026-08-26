@@ -7,7 +7,7 @@ import type {
 } from '@shared/morpheus/core/objective-types';
 
 export const MORPHEUS_CONTEXT_MAX_ITEMS = 32;
-export const MORPHEUS_CONTEXT_MAX_CHARS = 12_000;
+export const MORPHEUS_CONTEXT_MAX_CHARS = 8_000;
 const MAX_ITEM_CHARS = 1_000;
 
 export type MorpheusContextSelectionInput = {
@@ -34,14 +34,9 @@ export function selectMorpheusContext(input: MorpheusContextSelectionInput): Mor
   if (itemLimit <= 0 || input.agent.memory.mode === 'none') return [];
   const charLimit = Math.min(input.maxChars ?? MORPHEUS_CONTEXT_MAX_CHARS, MORPHEUS_CONTEXT_MAX_CHARS);
 
+  // Agent instructions have their own bounded field in the planner request.
+  // Duplicating them here wastes tokens and increases provider latency.
   const candidates: MorpheusContextItem[] = [{
-    contextId: `agent:${input.agent.profileId}`,
-    source: 'agent-profile',
-    text: input.agent.instructions.slice(0, MAX_ITEM_CHARS),
-    createdAt: input.agent.updatedAt,
-    sensitivity: 'normal',
-    agentProfileId: input.agent.profileId,
-  }, {
     contextId: 'workspace:morpheus-files',
     source: 'workspace',
     text: `Active approved workspace: ${input.workspaceLabel}. All file parameters must be relative to this workspace.`,

@@ -64,6 +64,45 @@ describe('real provider planner adapter', () => {
     expect(init?.redirect).toBe('error');
   });
 
+  it('sends Agent Profile instructions once instead of duplicating them in context', async () => {
+    const marker = 'UNIQUE_AGENT_INSTRUCTION_MARKER';
+    const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      const serialized = String(init?.body);
+      expect(serialized.split(marker)).toHaveLength(2);
+      return new Response(JSON.stringify({
+        choices: [{ message: { content: JSON.stringify({
+          steps: [{
+            stepId: 'report', capabilityId: 'system.report', params: {}, dependsOn: [], summary: 'Report',
+          }],
+        }) } }],
+      }), { status: 200 });
+    });
+    const planner = createMorpheusProviderPlanner({
+      account: ACCOUNT,
+      apiKey: 'key',
+      fetchImpl: fetchImpl as typeof fetch,
+      createId: () => 'provider-plan-deduplicated',
+    });
+
+    await planner.plan({
+      ...REQUEST,
+      agent: {
+        profileId: 'general',
+        name: 'General',
+        instructions: marker,
+        capabilityIds: ['system.report'],
+      },
+      context: [{
+        contextId: 'workspace:main',
+        source: 'workspace',
+        text: 'Approved workspace.',
+        createdAt: '2026-08-11T00:00:00.000Z',
+        sensitivity: 'normal',
+      }],
+    });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
   it('rejects provider plans that reference a non-approved application', async () => {
     const fetchImpl = vi.fn(async () => new Response(JSON.stringify({
       choices: [{ message: { content: JSON.stringify({

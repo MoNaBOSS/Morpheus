@@ -117,7 +117,7 @@ function userPlanPrompt(request: MorpheusPlanningRequest, currentTime: Date): st
     .map((item) => `[${item.source}] ${item.text}`).join('\n');
   return `CURRENT LOCAL TIME:\n${currentTime.toString()}\nCURRENT ISO TIME:\n${currentTime.toISOString()}\n\n`
     + `OBJECTIVE:\n${request.objective}\n\n`
-    + `AGENT:\n${request.agent?.name ?? 'General Agent'}\n${request.agent?.instructions ?? ''}\n\n`
+    + `AGENT:\n${request.agent?.name ?? 'General Agent'}\n${(request.agent?.instructions ?? '').slice(0, 8_000)}\n\n`
     + `BOUNDED CONTEXT:\n${context || '(none)'}`;
 }
 

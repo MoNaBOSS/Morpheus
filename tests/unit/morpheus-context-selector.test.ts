@@ -25,6 +25,7 @@ describe('bounded objective context', () => {
     });
     expect(selected.some((item) => item.text === 'Created a safe report.')).toBe(true);
     expect(JSON.stringify(selected)).not.toContain('private objective');
+    expect(selected.some((item) => item.source === 'agent-profile')).toBe(false);
     expect(selected.every((item) => item.sensitivity === 'normal')).toBe(true);
   });
 
