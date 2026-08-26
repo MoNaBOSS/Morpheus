@@ -179,9 +179,11 @@ final safe summary -> Renderer speech adapter -> system voice
 - The transcript is shown before or while submitted and remains cancellable.
 - Text-to-speech speaks only an explicit final/user-facing summary, never hidden
   reasoning, secrets or raw file contents.
-- Push-to-talk and a global voice shortcut ship first. Always-on wake-word
-  support remains prepared but is not claimed until a reliable local detector
-  and privacy model exist.
+- Push-to-talk, a global voice shortcut and explicitly enabled ambient voice
+  share the same Main-owned transcription path. Provider transcription has a
+  30-second hard timeout, reports only privacy-safe latency metadata and offers
+  a direct retry for transient network failure. Ambient capture remains visibly
+  indicated and never persists audio or transcript content.
 
 ## OpenClaw and Chat
 

@@ -127,6 +127,7 @@ describe('Morpheus renderer voice controller', () => {
 
   it('does not mislabel provider, permission or Audit failures as unclear speech', () => {
     expect(classifyMorpheusVoiceError(new Error('No compatible transcription provider is configured.'))).toBe('configuration');
+    expect(classifyMorpheusVoiceError(new Error('Transcription provider timed out after 30 seconds.'))).toBe('network');
     expect(classifyMorpheusVoiceError(new Error('Microphone permission denied.'))).toBe('permission');
     expect(classifyMorpheusVoiceError(new Error('Voice is blocked while Audit is unavailable.'))).toBe('security');
   });
@@ -134,6 +135,15 @@ describe('Morpheus renderer voice controller', () => {
   it('keeps recording ephemeral, transcribes through Main and enters the unified objective pipeline', async () => {
     await useMorpheusVoiceStore.getState().startListening('global-shortcut');
     expect(useMorpheusVoiceStore.getState().phase).toBe('listening');
+    expect(getUserMedia).toHaveBeenCalledWith({
+      audio: {
+        autoGainControl: true,
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+      },
+      video: false,
+    });
     useMorpheusVoiceStore.getState().stopListening();
 
     await vi.waitFor(() => expect(mocks.transcribeAudio).toHaveBeenCalledOnce());

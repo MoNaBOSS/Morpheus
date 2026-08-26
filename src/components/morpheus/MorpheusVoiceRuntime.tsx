@@ -145,6 +145,8 @@ export function MorpheusVoiceRuntime() {
             <p data-testid="morpheus-voice-error" className="mt-0.5 truncate text-2xs text-[hsl(var(--morpheus-danger))]">
               {errorKind === 'repeat'
                 ? t('morpheus.voice.repeatBody')
+                : errorKind === 'network'
+                  ? t('morpheus.voice.networkBody')
                 : errorKind === 'configuration'
                   ? t('morpheus.voice.configurationBody')
                   : t('morpheus.voice.errorBody')}
@@ -152,7 +154,7 @@ export function MorpheusVoiceRuntime() {
           ) : null}
         </div>
 
-        {errorKind === 'repeat' && source !== 'ambient' ? (
+        {(errorKind === 'repeat' || errorKind === 'network') && source !== 'ambient' ? (
           <button
             type="button"
             data-testid="morpheus-voice-retry"

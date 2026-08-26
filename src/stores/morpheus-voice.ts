@@ -36,6 +36,7 @@ export type MorpheusVoiceSource =
 
 export type MorpheusVoiceErrorKind =
   | 'repeat'
+  | 'network'
   | 'configuration'
   | 'permission'
   | 'security'
@@ -45,6 +46,9 @@ export function classifyMorpheusVoiceError(error: unknown): MorpheusVoiceErrorKi
   const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
   if (message.includes('empty') || message.includes('no speech') || message.includes("couldn't hear")) {
     return 'repeat';
+  }
+  if (message.includes('timed out') || message.includes('network') || message.includes('could not be reached')) {
+    return 'network';
   }
   if (message.includes('provider') || message.includes('api key') || message.includes('endpoint')
     || message.includes('http ') || message.includes('transcription is not configured')) {
@@ -364,6 +368,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           audio: {
             channelCount: 1,
+            autoGainControl: true,
             echoCancellation: true,
             noiseSuppression: true,
           },

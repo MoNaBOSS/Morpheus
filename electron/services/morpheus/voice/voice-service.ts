@@ -14,6 +14,7 @@ import {
   MORPHEUS_VOICE_MAX_DURATION_MS,
   MORPHEUS_VOICE_MAX_TRANSCRIPT_CHARS,
   MORPHEUS_VOICE_MIME_TYPES,
+  MORPHEUS_VOICE_PROVIDER_TIMEOUT_MS,
   MORPHEUS_VOICE_VERSION,
   type MorpheusTranscribeAudioPayload,
   type MorpheusTranscriptionResult,
@@ -165,10 +166,12 @@ export function createMorpheusVoiceService(options: {
   audit: MorpheusAuditSink;
   appVersion: string;
   fetchImpl?: typeof fetch;
+  transcriptionTimeoutMs?: number;
   now?: () => Date;
   emitPresence?: (presence: MorpheusVoicePresence) => void;
 }): MorpheusVoiceService {
   const now = options.now ?? (() => new Date());
+  const transcriptionTimeoutMs = options.transcriptionTimeoutMs ?? MORPHEUS_VOICE_PROVIDER_TIMEOUT_MS;
   const settingsPath = join(options.userDataDir, 'morpheus', 'voice-settings.json');
   let settings = readValidatedJson(settingsPath, validateSettings) ?? structuredClone(DEFAULT_VOICE_SETTINGS);
   let ambientSession: { sessionId: string; startedAt: string; providerLabel: string } | null = null;
@@ -262,14 +265,29 @@ export function createMorpheusVoiceService(options: {
       form.append('model', modelId);
       form.append('file', new Blob([audio], { type: payload.mimeType }), `morpheus-voice.${audioExtension(payload.mimeType)}`);
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(new DOMException('Transcription timed out', 'TimeoutError')), 60_000);
+      let timedOut = false;
+      const providerStartedAt = Date.now();
+      const timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort(new DOMException('Transcription timed out', 'TimeoutError'));
+      }, transcriptionTimeoutMs);
       timer.unref?.();
       let response: Response;
       try {
-        response = await (options.fetchImpl ?? fetch)(endpoint, {
-          method: 'POST', headers: safeHeaders(resolved.account, resolved.apiKey),
-          body: form, signal: controller.signal, redirect: 'error',
-        });
+        try {
+          response = await (options.fetchImpl ?? fetch)(endpoint, {
+            method: 'POST', headers: safeHeaders(resolved.account, resolved.apiKey),
+            body: form, signal: controller.signal, redirect: 'error',
+          });
+        } catch (error) {
+          if (timedOut) {
+            throw new Error(
+              `Transcription provider timed out after ${Math.ceil(transcriptionTimeoutMs / 1_000)} seconds.`,
+              { cause: error },
+            );
+          }
+          throw error;
+        }
       } finally {
         clearTimeout(timer);
       }
@@ -282,14 +300,21 @@ export function createMorpheusVoiceService(options: {
       if (!transcript || transcript.length > MORPHEUS_VOICE_MAX_TRANSCRIPT_CHARS) {
         throw new Error('Transcription provider returned an empty or oversized transcript.');
       }
+      const providerLatencyMs = Math.max(0, Date.now() - providerStartedAt);
 
       await options.audit.recordControl({
         category: 'voice', event: 'transcription-completed', subjectId: resolved.account.id,
-        details: { durationMs: payload.durationMs, transcriptChars: transcript.length, modelId, ambient },
+        details: {
+          durationMs: payload.durationMs, transcriptChars: transcript.length,
+          providerLatencyMs, modelId, ambient,
+        },
         appVersion: options.appVersion,
       });
       if (ambient) publish('armed');
-      return { transcript, providerAccountId: resolved.account.id, modelId, durationMs: payload.durationMs };
+      return {
+        transcript, providerAccountId: resolved.account.id, modelId,
+        durationMs: payload.durationMs, providerLatencyMs,
+      };
     } catch (error) {
       try {
         await options.audit.recordControl({

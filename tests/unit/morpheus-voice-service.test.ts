@@ -45,6 +45,7 @@ function createHarness(options?: {
   apiKey?: string | null;
   healthy?: boolean;
   fetchImpl?: typeof fetch;
+  transcriptionTimeoutMs?: number;
 }) {
   const userDataDir = mkdtempSync(join(tmpdir(), 'morpheus-voice-'));
   temporaryDirectories.push(userDataDir);
@@ -70,6 +71,7 @@ function createHarness(options?: {
     } as never,
     appVersion: '1.0.0',
     fetchImpl,
+    transcriptionTimeoutMs: options?.transcriptionTimeoutMs,
     emitPresence: (presence) => {
       presenceEvents.push(presence.state);
       auditOrder.push(`emit:${presence.state}`);
@@ -116,12 +118,13 @@ describe('Morpheus voice service', () => {
     const harness = createHarness();
     const result = await harness.service.transcribe(PAYLOAD);
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       transcript: 'Open Notepad',
       providerAccountId: ACCOUNT.id,
       modelId: 'whisper-1',
       durationMs: PAYLOAD.durationMs,
     });
+    expect(result.providerLatencyMs).toEqual(expect.any(Number));
     expect(harness.auditOrder).toEqual([
       'audit:transcription-started',
       'network',
@@ -138,6 +141,21 @@ describe('Morpheus voice service', () => {
     expect(init.redirect).toBe('error');
     expect(init.headers.authorization).toBe('Bearer sk-voice-secret');
     expect(init.body).toBeInstanceOf(FormData);
+  });
+
+  it('turns provider timeout into a safe retryable failure without auditing content', async () => {
+    const fetchImpl = vi.fn((_url: URL | RequestInfo, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(init.signal?.reason), { once: true });
+    })) as typeof fetch;
+    const harness = createHarness({ fetchImpl, transcriptionTimeoutMs: 5 });
+
+    await expect(harness.service.transcribe(PAYLOAD)).rejects.toThrow(/timed out after 1 seconds/);
+    expect(harness.recordControl).toHaveBeenCalledWith(expect.objectContaining({
+      category: 'voice', event: 'transcription-failed',
+    }));
+    const serializedAudit = JSON.stringify(harness.recordControl.mock.calls);
+    expect(serializedAudit).not.toContain(PAYLOAD.audioBase64);
+    expect(serializedAudit).not.toContain('Open Notepad');
   });
 
   it('blocks external disclosure while audit persistence is unhealthy', async () => {

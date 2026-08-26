@@ -2,6 +2,7 @@ export const MORPHEUS_VOICE_VERSION = 2 as const;
 export const MORPHEUS_VOICE_MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 export const MORPHEUS_VOICE_MAX_DURATION_MS = 120_000;
 export const MORPHEUS_VOICE_MAX_TRANSCRIPT_CHARS = 8_000;
+export const MORPHEUS_VOICE_PROVIDER_TIMEOUT_MS = 30_000;
 export const MORPHEUS_AMBIENT_MIN_SILENCE_MS = 500;
 export const MORPHEUS_AMBIENT_MAX_SILENCE_MS = 3_000;
 export const MORPHEUS_AMBIENT_MIN_UTTERANCE_MS = 2_000;
@@ -98,4 +99,6 @@ export type MorpheusTranscriptionResult = {
   providerAccountId: string;
   modelId: string;
   durationMs: number;
+  /** Privacy-safe provider round-trip timing. Audio and transcript content are excluded. */
+  providerLatencyMs?: number;
 };

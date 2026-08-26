@@ -1120,6 +1120,7 @@
       "speaking": "Morpheus is speaking",
       "errorBody": "Voice input could not continue. Check the microphone and transcription provider in Settings.",
       "repeatBody": "I couldn't hear that clearly. Please say it once more.",
+      "networkBody": "The voice provider did not respond in time. Try once more.",
       "configurationBody": "Voice needs a compatible transcription provider before it can listen.",
       "retry": "Try again",
       "connectProvider": "Connect provider",
