@@ -1,4 +1,4 @@
-# Morpheus Signal OS — Release-Candidate Handoff
+# Morpheus Operator Private Alpha — Release-Candidate Handoff
 
 Read [`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md), and the canonical
 product, architecture, design, security, roadmap, and release documents before
@@ -9,8 +9,7 @@ changing the runtime.
 Morpheus now has a coherent Windows operator experience rather than an
 OpenClaw-first shell. The **Signal OS** review candidate is implemented,
 committed, packaged, and verified through automated tests, visual checks,
-normal packaged startup, an existing-profile runtime smoke, and a fresh-profile
-first-run smoke. Larry's focused review instructions are in
+normal packaged startup, and fresh-profile Electron journey tests. Larry's focused review instructions are in
 [`docs/releases/LARRY_REVIEW_GUIDE.md`](docs/releases/LARRY_REVIEW_GUIDE.md).
 
 The visible product now provides:
@@ -21,6 +20,12 @@ The visible product now provides:
   capability/runtime/provider/voice readiness, offers companion behavior, runs
   a real privacy-safe first mission, reaches **Morpheus is ready**, and
   transitions naturally into the Command Center;
+- truthful Objective Core readiness that requires a credentialed,
+  planner-compatible account and routes missing setup directly to the existing
+  Models provider dialog;
+- natural voice recovery that asks for one repeat after unclear audio, routes
+  configuration failures directly to provider setup, and speaks both completed
+  results and necessary clarifications;
 - a compact Signal OS rail centered on Command, Missions, Systems, Library,
   Chat, and Invoke, with inherited administration surfaces kept under More;
 - a Command Center organized as **Today / Mission / Context**, with the command
@@ -48,7 +53,10 @@ and compatible credentials.
 
 | Item | Value |
 | --- | --- |
-| Current branch | `codex/morpheus-production-companion` |
+| Current branch | `codex/morpheus-operator-private-alpha` |
+| Current verified source | `765b5da` |
+| Cinematic voice-first arrival | `6cf5211` |
+| Operator private-alpha core | `dcf0eaf` |
 | Larry review runtime source | `0d85962` |
 | Signal OS runtime source | `8ba4568` |
 | Signal OS doctrine | `1af1f25` |
@@ -64,14 +72,14 @@ application behavior. `git rev-parse HEAD` is the authoritative latest commit.
 | Field | Verified value |
 | --- | --- |
 | Installer | `C:\Morpheus\morpheus-core\release\Morpheus-1.0.0-win-x64.exe` |
-| Size | 263,671,900 bytes |
-| SHA-256 | `1F97350612062BE49D2FD6B03B79C9A81FE8E14591EB95FAA4AEDEA0D721C6B5` |
+| Size | 263,684,018 bytes |
+| SHA-256 | `B415A32DA74B50A07E43D166886AA191D0ACA06EB8705EFC39875335EDD15988` |
 | Authenticode | `NotSigned`; production signing remains CI/credential-owned |
 | Unpacked executable | `C:\Morpheus\morpheus-core\release\win-unpacked\Morpheus.exe` |
 | Unpacked size | 213,989,888 bytes |
-| Unpacked SHA-256 | `A1866BD27451C0A5E582CCD7B27E39E47DF1968ADFED18591B6EA745D336006E` |
+| Unpacked SHA-256 | `7177C25C45AFBA1F5608DC7A4F6E91998CAA22B8C51A16AF6E29C81FF277AC15` |
 
-`pnpm package:win` completed from committed runtime source `0d85962`.
+`pnpm package:win` completed from committed runtime source `765b5da`.
 Generated release files are ignored and untracked.
 
 ## Test and verification status
@@ -81,42 +89,39 @@ Generated release files are ignored and untracked.
 | `git diff --check` | Pass before the documentation checkpoint |
 | Typecheck | Pass |
 | Lint | 0 errors; 12 inherited Fast Refresh warnings |
-| Morpheus unit tests | 615/615 pass across 65 files |
-| Signal OS harness validation and dry run | Pass |
+| Morpheus unit tests | 677/677 pass across 73 files |
+| Operator private-alpha harness validation and dry run | Pass |
 | Communication replay and comparison | Pass |
-| Core Signal OS E2E | 23/23 pass |
-| Full Morpheus E2E | 51/51 pass |
-| Chat/Gateway regression canaries | 16/16 pass |
-| Repository-wide unit suite | 2,570 pass, 2 pending, 16 inherited Windows path/mock failures in three untouched OpenClaw test files |
+| Focused activation/provider/voice/Signal OS E2E | 12/12 pass |
+| Full Morpheus E2E | 55/56 in one serial run; the one worker exited before test start and that exact test passed 1/1 in isolation |
+| Chat/Gateway regression canaries | 8/8 pass |
+| Repository-wide unit suite | 2,633 pass, 2 skipped, 16 inherited Windows path/mock failures in three untouched OpenClaw test files |
 | Vite production build | Pass |
 | Windows NSIS package | Pass |
-| Normal packaged startup | Pass at 1280×800; Morpheus setup rendered correctly |
-| Existing-profile packaged smoke | Pass |
-| Fresh-profile activation smoke | Pass |
+| Visual verification | Pass at 1280×800 for activation, Command Center, Presence, trust, provider setup, Missions, and Quick Command |
+| Normal packaged startup | Pass; responsive process tree remained stable and embedded Gateway listened on port 18789 |
+| Cleanup | Packaged processes closed, temporary profile removed, previously installed tray copy restored |
 
-The fresh-profile packaged smoke used the real unpacked production executable,
-not an E2E bypass. It verified setup into the full-screen Signal activation,
-real calibration (19 capabilities and connected runtime), companion
-personalization, automatic execution of the privacy-safe system-report mission,
-one genuine artifact, the final **Morpheus is ready** state, and transition into
-the 1280×800 Command Center. The isolated profile was removed after the test;
-all packaged processes and the port 18789 Gateway listener were clean.
-
-The existing-profile smoke verified live Gateway readiness, the real system
-report, sequential progress, artifact projection, Invoke/Presence, and fresh
-Chat usability. Runtime source `0d85962` also fixes the misleading restored
-session composer state: workspace/session readiness now has its own exact
-message and no longer reports a Gateway disconnection when the Gateway is live.
+The current packaged smoke used the real unpacked production executable with no
+debugger and no E2E lock bypass. It started from the user's existing background
+preference, remained responsive with the stable six-process Electron tree, and
+started the embedded Gateway on port 18789 without a duplicate process or
+restart loop. The package was then closed and the installed tray copy restored.
+Fresh activation, provider recovery, Command Center, Quick Command, Mission,
+trust, reduced-motion, and voice recovery are verified through isolated Electron
+journeys against the same production bundles.
 
 Verification screenshots remain outside Git:
 
-- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\activation-ready-1280x800.png`
-- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\signal-command-center-1280x800.png`
-- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\signal-presence.png`
-- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\signal-trust-boundary.png`
-- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\command-center-mission-1280x800.png`
-- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\mission-history-1280x800.png`
-- `C:\Morpheus\morpheus-verification\signal-os-2026-08-18\quick-command-overlay.png`
+- `C:\Morpheus\verification\operator-complete-2026-08-26\activation-ready-1280x800.png`
+- `C:\Morpheus\verification\operator-complete-2026-08-26\activation-voice-calibration-1280x800.png`
+- `C:\Morpheus\verification\operator-complete-2026-08-26\signal-command-center-1280x800.png`
+- `C:\Morpheus\verification\operator-complete-2026-08-26\signal-provider-setup.png`
+- `C:\Morpheus\verification\operator-complete-2026-08-26\signal-presence.png`
+- `C:\Morpheus\verification\operator-complete-2026-08-26\signal-trust-boundary.png`
+- `C:\Morpheus\verification\operator-complete-2026-08-26\command-center-mission-1280x800.png`
+- `C:\Morpheus\verification\operator-complete-2026-08-26\mission-history-1280x800.png`
+- `C:\Morpheus\verification\operator-complete-2026-08-26\quick-command-overlay.png`
 
 ## Known limitations
 
@@ -183,7 +188,7 @@ output is untrusted planning input and receives no direct OS authority.
 ```powershell
 git clone https://github.com/MoNaBOSS/Morpheus.git morpheus-core
 Set-Location morpheus-core
-git checkout codex/morpheus-production-companion
+git checkout codex/morpheus-operator-private-alpha
 corepack enable
 corepack prepare pnpm@10.33.4 --activate
 pnpm run init
@@ -199,8 +204,8 @@ pnpm exec vitest run morpheus
 pnpm run test:e2e
 pnpm run comms:replay
 pnpm run comms:compare
-pnpm harness validate --spec harness/specs/tasks/morpheus-signal-os.md
-pnpm harness run --spec harness/specs/tasks/morpheus-signal-os.md --dry-run
+pnpm harness validate --spec harness/specs/tasks/morpheus-operator-private-alpha.md
+pnpm harness run --spec harness/specs/tasks/morpheus-operator-private-alpha.md --dry-run
 pnpm package:win
 ```
 
