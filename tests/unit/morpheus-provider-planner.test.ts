@@ -121,4 +121,23 @@ describe('real provider planner adapter', () => {
       }],
     })).rejects.toMatchObject({ code: 'invalid-params' });
   });
+
+  it.each([
+    [503, true],
+    [429, true],
+    [401, false],
+    [400, false],
+  ])('classifies HTTP %s retryability without reading or exposing response content', async (status, retryable) => {
+    const planner = createMorpheusProviderPlanner({
+      account: ACCOUNT,
+      apiKey: 'key',
+      fetchImpl: vi.fn(async () => new Response('secret upstream body', { status })) as typeof fetch,
+    });
+    await expect(planner.plan(REQUEST)).rejects.toMatchObject({
+      name: 'MorpheusProviderRequestError',
+      status,
+      retryable,
+      message: `Planning provider returned HTTP ${status}.`,
+    });
+  });
 });

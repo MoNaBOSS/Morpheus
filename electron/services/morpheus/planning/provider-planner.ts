@@ -23,6 +23,17 @@ const MAX_PROVIDER_RESPONSE_BYTES = 64 * 1024;
 
 export type SupportedPlannerProtocol = MorpheusPlannerProtocol;
 
+export class MorpheusProviderRequestError extends Error {
+  constructor(
+    message: string,
+    readonly retryable: boolean,
+    readonly status?: number,
+  ) {
+    super(message);
+    this.name = 'MorpheusProviderRequestError';
+  }
+}
+
 export type MorpheusProviderPlannerOptions = {
   account: ProviderAccount;
   apiKey: string | null;
@@ -235,10 +246,24 @@ async function invokeProvider(
   }
 
   try {
-    const response = await (options.fetchImpl ?? fetch)(url, {
-      method: 'POST', headers, body: JSON.stringify(body), signal: controller.signal, redirect: 'error',
-    });
-    if (!response.ok) throw new Error(`Planning provider returned HTTP ${response.status}.`);
+    let response: Response;
+    try {
+      response = await (options.fetchImpl ?? fetch)(url, {
+        method: 'POST', headers, body: JSON.stringify(body), signal: controller.signal, redirect: 'error',
+      });
+    } catch (error) {
+      if (controller.signal.aborted) throw error;
+      throw new MorpheusProviderRequestError('The planning provider could not be reached.', true);
+    }
+    if (!response.ok) {
+      const retryable = response.status === 408 || response.status === 409
+        || response.status === 425 || response.status === 429 || response.status >= 500;
+      throw new MorpheusProviderRequestError(
+        `Planning provider returned HTTP ${response.status}.`,
+        retryable,
+        response.status,
+      );
+    }
     const text = await response.text();
     if (Buffer.byteLength(text, 'utf8') > MAX_PROVIDER_RESPONSE_BYTES) {
       throw new Error('Planning provider response exceeded the permitted size.');

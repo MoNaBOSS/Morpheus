@@ -21,6 +21,7 @@ describe('Morpheus objective contracts', () => {
       maxTotalSteps: 24,
       maxDurationMs: 900_000,
       providerTimeoutMs: 60_000,
+      providerMaxAttempts: 2,
     });
     expect(Object.isFrozen(DEFAULT_OBJECTIVE_LIMITS)).toBe(true);
   });

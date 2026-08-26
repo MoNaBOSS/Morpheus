@@ -64,6 +64,7 @@ export type MorpheusObjectiveLimits = {
   maxTotalSteps: number;
   maxDurationMs: number;
   providerTimeoutMs: number;
+  providerMaxAttempts: number;
 };
 
 export const DEFAULT_OBJECTIVE_LIMITS: Readonly<MorpheusObjectiveLimits> = Object.freeze({
@@ -72,6 +73,7 @@ export const DEFAULT_OBJECTIVE_LIMITS: Readonly<MorpheusObjectiveLimits> = Objec
   maxTotalSteps: 24,
   maxDurationMs: 15 * 60_000,
   providerTimeoutMs: 60_000,
+  providerMaxAttempts: 2,
 });
 
 export type MorpheusStepObservation = {

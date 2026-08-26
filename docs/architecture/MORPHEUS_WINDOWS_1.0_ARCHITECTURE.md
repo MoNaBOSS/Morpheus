@@ -106,6 +106,11 @@ Replanning is bounded by:
 - one active objective per interactive surface by default;
 - no continuation after a critical denial or explicit user stop.
 
+Provider planning and review may retry once before native execution only for an
+explicitly classified transient network, rate-limit or server failure. Invalid
+plans, authentication failures, user cancellation and provider timeouts are not
+retried. Native capability execution is never repeated by this mechanism.
+
 A continuation plan is independently validated. Existing exact grants are
 reused; only new trust boundaries introduced by the continuation may interrupt.
 

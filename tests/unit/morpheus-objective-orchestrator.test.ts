@@ -12,6 +12,7 @@ import { createMorpheusMemoryStore } from '@electron/services/morpheus/memory/me
 import type { MorpheusAuditSink } from '@electron/services/morpheus/audit';
 import type { MorpheusRuntime } from '@electron/services/morpheus/runtime';
 import type { MorpheusPlanner } from '@shared/morpheus/planner';
+import { MorpheusProviderRequestError } from '@electron/services/morpheus/planning/provider-planner';
 import type { ExecutionPlan } from '@shared/morpheus/execution-types';
 import type { MorpheusObjectiveEvent } from '@shared/morpheus/core/objective-types';
 import { DEFAULT_OBJECTIVE_LIMITS, type MorpheusObjectiveLimits } from '@shared/morpheus/core/objective-types';
@@ -216,6 +217,50 @@ describe('Main-owned objective orchestration', () => {
       outcome: 'timed-out',
       plannerId: 'provider:slow',
     }));
+    orchestrator.dispose();
+  });
+
+  it('retries one transient planning failure before execution and never duplicates native work', async () => {
+    const planner: MorpheusPlanner = {
+      plannerId: 'provider:recovering',
+      plannedBy: 'provider',
+      plan: vi.fn()
+        .mockRejectedValueOnce(new MorpheusProviderRequestError('temporary upstream failure', true, 503))
+        .mockResolvedValueOnce({ ok: true, plan: plan('plan-recovered') }),
+    };
+    const { orchestrator, runtime } = setup(planner);
+    const submitted = await orchestrator.submit({
+      objective: 'Conduct a provider-backed readiness analysis',
+      originType: 'command-bar',
+    });
+    const terminal = await orchestrator.waitForTerminal(submitted.objectiveRunId);
+
+    expect(terminal.state).toBe('complete');
+    expect(planner.plan).toHaveBeenCalledTimes(2);
+    expect(runtime.executePlan).toHaveBeenCalledTimes(1);
+    expect(terminal.planIds).toEqual(['plan-recovered']);
+    orchestrator.dispose();
+  });
+
+  it('does not retry a non-retryable invalid provider response', async () => {
+    const planner: MorpheusPlanner = {
+      plannerId: 'provider:invalid',
+      plannedBy: 'provider',
+      plan: vi.fn().mockRejectedValue(new MorpheusProviderRequestError('invalid response', false, 400)),
+    };
+    const { orchestrator, runtime } = setup(planner);
+    const submitted = await orchestrator.submit({
+      objective: 'Conduct an invalid provider-backed readiness analysis',
+      originType: 'command-bar',
+      agentProfileId: 'general',
+    });
+    const terminal = await orchestrator.waitForTerminal(submitted.objectiveRunId);
+
+    // Auto profiles truthfully fall back to deterministic interpretation, but
+    // the failed provider request itself is never repeated.
+    expect(terminal.state).toBe('needs-clarification');
+    expect(planner.plan).toHaveBeenCalledTimes(1);
+    expect(runtime.executePlan).not.toHaveBeenCalled();
     orchestrator.dispose();
   });
 

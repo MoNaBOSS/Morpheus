@@ -60,6 +60,7 @@ import type {
   MorpheusPlannerSelection,
   MorpheusPlannerSelector,
 } from '../planning/planner-selector';
+import { MorpheusProviderRequestError } from '../planning/provider-planner';
 import type { MorpheusWorkspaceStore } from '../workspaces/workspace-store';
 import type { MorpheusMissionStore } from '../missions/mission-store';
 
@@ -456,6 +457,44 @@ export function createMorpheusObjectiveOrchestrator(options: {
     }
   };
 
+  const waitBeforeProviderRetry = async (owner: ActiveObjective, attempt: number): Promise<void> => {
+    await new Promise<void>((resolve, reject) => {
+      let timer: NodeJS.Timeout | undefined;
+      const complete = (): void => {
+        owner.controller.signal.removeEventListener('abort', abort);
+        resolve();
+      };
+      const abort = (): void => {
+        if (timer) clearTimeout(timer);
+        reject(owner.controller.signal.reason ?? new DOMException('Objective cancelled', 'AbortError'));
+      };
+      if (owner.controller.signal.aborted) {
+        abort();
+        return;
+      }
+      owner.controller.signal.addEventListener('abort', abort, { once: true });
+      timer = setTimeout(complete, Math.min(750, 200 * attempt));
+      timer.unref?.();
+    });
+  };
+
+  const callProviderWithRetry = async <T>(
+    owner: ActiveObjective,
+    operation: (signal: AbortSignal) => Promise<T> | T,
+  ): Promise<T> => {
+    for (let attempt = 1; attempt <= limits.providerMaxAttempts; attempt += 1) {
+      try {
+        return await callWithTimeout(owner, operation);
+      } catch (error) {
+        const mayRetry = error instanceof MorpheusProviderRequestError && error.retryable
+          && attempt < limits.providerMaxAttempts && !owner.controller.signal.aborted;
+        if (!mayRetry) throw error;
+        await waitBeforeProviderRetry(owner, attempt);
+      }
+    }
+    throw new Error('Planning provider retry limit reached.');
+  };
+
   const recordStageTiming = async (
     objectiveRunId: string,
     timing: MorpheusObjectiveStageTiming,
@@ -660,7 +699,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
         if (!proposed) {
           try {
             proposed = await measureStage(objectiveRunId, 'planning', iteration, () => (
-              callWithTimeout(owner, (signal) => Promise.resolve(planner.plan({
+              callProviderWithRetry(owner, (signal) => Promise.resolve(planner.plan({
                 objective,
                 origin: run.origin,
                 platform,
@@ -793,7 +832,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
         let review: MorpheusPlannerReviewResult;
         try {
           review = await measureStage(objectiveRunId, 'review', iteration, () => (
-            callWithTimeout(owner, (signal): Promise<MorpheusPlannerReviewResult> => Promise.resolve(reviewPlanner({
+            callProviderWithRetry(owner, (signal): Promise<MorpheusPlannerReviewResult> => Promise.resolve(reviewPlanner({
               objectiveRunId,
               objective,
               origin: run.origin,
