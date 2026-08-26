@@ -27,7 +27,7 @@ sequence, and three deterministic Windows capabilities.
   transitive skipping, partial completion, cancellation, and real step results.
 - Plan-level trust-delta evaluation and one batched consent decision for all new
   scopes. High risk is grantable; critical risk remains unwaivable.
-- Nineteen controlled Windows capabilities across workspace filesystem, approved
+- Twenty-two controlled Windows capabilities across workspace filesystem, approved
   apps, clipboard, notifications, screenshots, system inspection, URLs, and a
   bounded VS Code project launcher. No unrestricted shell surface.
 - Reusable Agent Profile contract with General, Research, and Developer starters.

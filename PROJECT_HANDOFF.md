@@ -38,7 +38,7 @@ The visible product now provides:
 - OpenClaw Chat as a secondary conversational surface while the Main-owned
   Objective Core remains the execution authority.
 
-The runtime foundation remains intact: 19 controlled Windows capabilities,
+The runtime foundation remains intact: 22 controlled Windows capabilities,
 sequential typed plans, whole-plan trust evaluation, exact grants, Missions,
 Projects/context, Goals, Agent Profiles, workflows, Morpheus schedules,
 Systems, Activity, artifacts, push-to-talk, opt-in ambient voice, and a
@@ -57,7 +57,7 @@ and compatible credentials.
 | Current verified source | `765b5da` |
 | Cinematic voice-first arrival | `6cf5211` |
 | Operator private-alpha core | `dcf0eaf` |
-| Larry review runtime source | `0d85962` |
+| Larry review runtime source | `765b5da` |
 | Signal OS runtime source | `8ba4568` |
 | Signal OS doctrine | `1af1f25` |
 | Windows 1.0 Foundation checkpoint | `4895fa4` |

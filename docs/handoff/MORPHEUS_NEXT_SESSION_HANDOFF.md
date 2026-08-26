@@ -60,19 +60,19 @@ A fresh synthetic packaged profile completed the full first-user journey:
 8. all packaged processes and the Gateway listener were clean after shutdown.
 
 The existing-profile smoke separately verified Gateway readiness, Command,
-Invoke, real execution and a fresh usable Chat. Runtime source `0d85962` fixes
+Invoke, real execution and a fresh usable Chat. Runtime source `765b5da` fixes
 the misleading restored-session composer state: workspace/session readiness is
 now reported separately and never masquerades as a Gateway disconnection.
 
 ## Current technical and release state
 
-- Branch: `codex/morpheus-production-companion`
-- Larry review runtime source: `0d85962`
+- Branch: `codex/morpheus-windows-production-candidate`
+- Larry review runtime source: `765b5da`
 - Signal OS runtime source: `8ba4568`
 - Signal OS doctrine: `1af1f25`
 - Installer: `C:\Morpheus\morpheus-core\release\Morpheus-1.0.0-win-x64.exe`
-- Size: 263,671,900 bytes
-- SHA-256: `1F97350612062BE49D2FD6B03B79C9A81FE8E14591EB95FAA4AEDEA0D721C6B5`
+- Size: 263,684,018 bytes
+- SHA-256: `B415A32DA74B50A07E43D166886AA191D0ACA06EB8705EFC39875335EDD15988`
 - Authenticode: `NotSigned`
 - Generated release files and screenshots are ignored and must not be committed.
 
