@@ -200,6 +200,10 @@ operating experience:
   reusable work without minting permission grants;
 - the first-run companion introduction reaches a real **MORPHEUS IS READY** state and
   explains Command Center, global Quick Command and voice entry points.
+- activation and Command Center report Objective Core readiness only for a
+  credentialed planner-compatible account and link missing setup directly to
+  Models; unclear voice asks for one natural repeat while configuration errors
+  offer the same direct setup route.
 
 - **Sequential typed plans** — multi-step plans honour dependencies, expose real
   step status/results/errors/artifacts, and skip only transitive dependants after

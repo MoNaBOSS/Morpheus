@@ -521,6 +521,9 @@
       "runtimeStarting": "Starting",
       "runtimeStopped": "Stopped",
       "providerUnknown": "Not configured",
+      "providerReadyBody": "Ready for open-ended Morpheus planning.",
+      "providerMissingBody": "Connect a compatible account for broader planning and voice.",
+      "connectProvider": "Connect provider",
       "auditDegraded": "Audit unavailable"
     },
     "artifacts": {
@@ -961,6 +964,8 @@
       "readyTitle": "Morpheus is ready.",
       "readyBody": "Use the Command Center for Missions, press Ctrl+Shift+Space from anywhere for Quick Command, or press Ctrl+Alt+Space to speak.",
       "enter": "Enter Command Center",
+      "connectProvider": "Connect AI provider",
+      "providerNeeded": "Morpheus can run registered local actions now. Connect a compatible provider to understand broader objectives and enable transcription.",
       "replay": "Companion activation",
       "replayDescription": "Replay the real system introduction and choose companion behavior again.",
       "replayAction": "Replay activation",
@@ -1112,6 +1117,10 @@
       "dismiss": "Dismiss voice status",
       "speaking": "Morpheus is speaking",
       "errorBody": "Voice input could not continue. Check the microphone and transcription provider in Settings.",
+      "repeatBody": "I couldn't hear that clearly. Please say it once more.",
+      "configurationBody": "Voice needs a compatible transcription provider before it can listen.",
+      "retry": "Try again",
+      "connectProvider": "Connect provider",
       "wakeHint": "Say “{{phrase}}…”",
       "providerDisclosure": "Bounded audio is transcribed through {{provider}}",
       "presence": {

@@ -1,19 +1,29 @@
 import { useTranslation } from 'react-i18next';
 import { Cpu, FolderOpen, Layers3, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 import { MorpheusObjectiveContextPicker } from '@/components/morpheus/MorpheusObjectiveContextPicker';
 import { useGatewayStore } from '@/stores/gateway';
 import { useProviderStore } from '@/stores/providers';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
+import { hasConfiguredCredentials } from '@/lib/provider-accounts';
+import { isMorpheusPlannerAccountCompatible } from '@shared/morpheus/provider-readiness';
 import { ArtifactsPanel } from './ArtifactsPanel';
 
 export function SignalContextHorizon() {
   const { t } = useTranslation('dashboard');
   const gateway = useGatewayStore((state) => state.status);
   const accounts = useProviderStore((state) => state.accounts);
+  const statuses = useProviderStore((state) => state.statuses);
   const defaultAccountId = useProviderStore((state) => state.defaultAccountId);
   const permission = useMorpheusCommandStore((state) => state.permission);
   const account = accounts.find((candidate) => candidate.id === defaultAccountId);
+  const accountStatus = statuses.find((candidate) => candidate.id === account?.id);
+  const providerReady = Boolean(
+    account
+      && isMorpheusPlannerAccountCompatible(account)
+      && hasConfiguredCredentials(account, accountStatus),
+  );
   const runtimeReady = gateway.state === 'running' && gateway.gatewayReady !== false;
 
   return (
@@ -30,7 +40,26 @@ export function SignalContextHorizon() {
         </div>
         <div className="flex items-start gap-3 py-3">
           <Layers3 className="mt-0.5 h-3.5 w-3.5 text-muted-foreground" />
-          <div className="min-w-0"><dt className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground">{t('morpheus.status.provider')}</dt><dd data-testid="morpheus-runtime-provider" className="mt-1 truncate text-[11px] text-foreground/85">{account ? `${account.label}${account.model ? ` · ${account.model}` : ''}` : t('morpheus.status.providerUnknown')}</dd></div>
+          <div className="min-w-0 flex-1">
+            <dt className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground">{t('morpheus.status.provider')}</dt>
+            <dd data-testid="morpheus-runtime-provider" data-ready={String(providerReady)} className="mt-1 truncate text-[11px] text-foreground/85">
+              {providerReady && account
+                ? `${account.label}${account.model ? ` · ${account.model}` : ''}`
+                : t('morpheus.status.providerUnknown')}
+            </dd>
+            <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">
+              {providerReady ? t('morpheus.status.providerReadyBody') : t('morpheus.status.providerMissingBody')}
+            </p>
+            {!providerReady ? (
+              <Link
+                to="/models?addProvider=1"
+                data-testid="morpheus-provider-connect"
+                className="mt-2 inline-flex border-b border-[hsl(var(--morpheus-accent)/0.55)] pb-0.5 text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--morpheus-accent))]"
+              >
+                {t('morpheus.status.connectProvider')}
+              </Link>
+            ) : null}
+          </div>
         </div>
         <div className="flex items-start gap-3 py-3">
           <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-[hsl(var(--morpheus-accent))]" />

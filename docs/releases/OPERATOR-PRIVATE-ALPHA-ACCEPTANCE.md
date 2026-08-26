@@ -18,6 +18,11 @@ The private alpha is accepted only when these real packaged journeys work.
 - Ambient capture is opt-in, visibly armed, immediately mutable, and truthful
   about local versus provider-backed detection.
 - Unclear speech requests one repeat; a valid transcript creates one Mission.
+- Missing voice configuration links directly to provider setup, while an
+  unclear recording remains a simple retry rather than a false provider error.
+- Activation and Command Center report provider readiness only for a
+  credentialed planner-compatible account; Chat-only accounts remain usable but
+  are not presented as Objective Core ready.
 
 ## Autonomy and memory
 
@@ -66,4 +71,3 @@ The private alpha is accepted only when these real packaged journeys work.
   packaged smoke have run.
 - The installer is unsigned unless authorized production signing credentials
   are available; the report states that truthfully.
-

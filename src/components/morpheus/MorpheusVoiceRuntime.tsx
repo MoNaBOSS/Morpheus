@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Activity, Loader2, Mic, Radio, Volume2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
 import { hostEvents } from '@/lib/host-events';
 import { hostApi } from '@/lib/host-api';
+import { morpheusVoiceSpeechFor } from '@/lib/morpheus-voice-runtime';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
@@ -14,6 +16,8 @@ export function MorpheusVoiceRuntime() {
   const phase = useMorpheusVoiceStore((state) => state.phase);
   const transcript = useMorpheusVoiceStore((state) => state.transcript);
   const error = useMorpheusVoiceStore((state) => state.error);
+  const errorKind = useMorpheusVoiceStore((state) => state.errorKind);
+  const source = useMorpheusVoiceStore((state) => state.source);
   const status = useMorpheusVoiceStore((state) => state.status);
   const presence = useMorpheusVoiceStore((state) => state.presence);
   const loadStatus = useMorpheusVoiceStore((state) => state.loadStatus);
@@ -22,7 +26,7 @@ export function MorpheusVoiceRuntime() {
   const cancel = useMorpheusVoiceStore((state) => state.cancel);
   const dismiss = useMorpheusVoiceStore((state) => state.dismiss);
   const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
-  const spokenRunId = useRef<string | null>(null);
+  const spokenStateKey = useRef<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
 
   useEffect(() => {
@@ -34,14 +38,18 @@ export function MorpheusVoiceRuntime() {
   }, [loadStatus, showQuickCommand, startListening]);
 
   useEffect(() => {
-    if (!objectiveRun || objectiveRun.state !== 'complete' || objectiveRun.origin.type !== 'voice'
-      || !objectiveRun.summary || !status?.settings.speakResponses
-      || spokenRunId.current === objectiveRun.objectiveRunId
+    const message = morpheusVoiceSpeechFor(objectiveRun);
+    const stateKey = objectiveRun
+      ? `${objectiveRun.objectiveRunId}:${objectiveRun.state}:${objectiveRun.updatedAt}`
+      : null;
+    if (!objectiveRun || objectiveRun.origin.type !== 'voice'
+      || !message || !status?.settings.speakResponses
+      || spokenStateKey.current === stateKey
       || typeof window.speechSynthesis === 'undefined'
       || typeof SpeechSynthesisUtterance === 'undefined') return;
 
-    spokenRunId.current = objectiveRun.objectiveRunId;
-    const utterance = new SpeechSynthesisUtterance(objectiveRun.summary);
+    spokenStateKey.current = stateKey;
+    const utterance = new SpeechSynthesisUtterance(message);
     utterance.onstart = () => {
       setSpeaking(true);
       void hostApi.morpheus.setVoiceSpeaking({ speaking: true });
@@ -77,7 +85,7 @@ export function MorpheusVoiceRuntime() {
       ? t(`morpheus.voice.presence.${presence?.state ?? 'armed'}`)
       : t(`morpheus.voice.states.${phase}`);
 
-  if (ambientActive && !ambientEngaged && phase === 'idle' && !speaking) {
+  if (ambientActive && !ambientEngaged && phase === 'idle' && !speaking && !error) {
     return (
       <aside
         data-morpheus
@@ -135,11 +143,35 @@ export function MorpheusVoiceRuntime() {
           ) : null}
           {error ? (
             <p data-testid="morpheus-voice-error" className="mt-0.5 truncate text-2xs text-[hsl(var(--morpheus-danger))]">
-              {t('morpheus.voice.errorBody')}
+              {errorKind === 'repeat'
+                ? t('morpheus.voice.repeatBody')
+                : errorKind === 'configuration'
+                  ? t('morpheus.voice.configurationBody')
+                  : t('morpheus.voice.errorBody')}
             </p>
           ) : null}
         </div>
 
+        {errorKind === 'repeat' && source !== 'ambient' ? (
+          <button
+            type="button"
+            data-testid="morpheus-voice-retry"
+            onClick={() => void startListening(source ?? 'command-center')}
+            className="shrink-0 border-b border-[hsl(var(--morpheus-accent-dim))] pb-1 text-2xs text-[hsl(var(--morpheus-accent))]"
+          >
+            {t('morpheus.voice.retry')}
+          </button>
+        ) : null}
+        {errorKind === 'configuration' ? (
+          <Link
+            to="/models?addProvider=1"
+            data-testid="morpheus-voice-connect-provider"
+            onClick={dismiss}
+            className="shrink-0 border-b border-[hsl(var(--morpheus-accent-dim))] pb-1 text-2xs text-[hsl(var(--morpheus-accent))]"
+          >
+            {t('morpheus.voice.connectProvider')}
+          </Link>
+        ) : null}
         {listening ? (
           <button
             type="button"

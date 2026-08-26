@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, BellRing, Check, Cpu, Mic, Power, ShieldCheck, UserRound, Volume2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 import { cn } from '@/lib/utils';
 import { hostApi } from '@/lib/host-api';
@@ -22,6 +23,8 @@ import { resolveMorpheusSignalState } from '@/components/morpheus/signal/signal-
 import { MorpheusInteractionModeControl } from '@/components/morpheus/operator/MorpheusInteractionModeControl';
 import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { hasConfiguredCredentials } from '@/lib/provider-accounts';
+import { isMorpheusPlannerAccountCompatible } from '@shared/morpheus/provider-readiness';
 
 type ActivationStage = 'loading' | 'intro' | 'calibrating' | 'preferences' | 'proof' | 'ready';
 type SignalLock = { id: 'core' | 'runtime' | 'provider' | 'voice'; available: boolean; detail: string };
@@ -31,12 +34,14 @@ const PROOF_OBJECTIVE = 'Show system information';
 
 export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const { t } = useTranslation('dashboard');
+  const navigate = useNavigate();
   const onboarding = useMorpheusCompanionStore((state) => state.onboarding);
   const loadOnboarding = useMorpheusCompanionStore((state) => state.loadOnboarding);
   const completeOnboarding = useMorpheusCompanionStore((state) => state.completeOnboarding);
   const setOperatorMode = useMorpheusOperatorStore((state) => state.setMode);
   const gatewayStatus = useGatewayStore((state) => state.status);
   const accounts = useProviderStore((state) => state.accounts);
+  const providerStatuses = useProviderStore((state) => state.statuses);
   const defaultAccountId = useProviderStore((state) => state.defaultAccountId);
   const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
   const runObjective = useMorpheusCommandStore((state) => state.runObjective);
@@ -87,7 +92,19 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     return () => { cancelled = true; };
   }, [enabled, loadOnboarding]);
 
-  const provider = useMemo(() => accounts.find((account) => account.id === defaultAccountId && account.enabled), [accounts, defaultAccountId]);
+  const provider = useMemo(
+    () => accounts.find((account) => account.id === defaultAccountId && account.enabled),
+    [accounts, defaultAccountId],
+  );
+  const providerStatus = useMemo(
+    () => providerStatuses.find((status) => status.id === provider?.id),
+    [provider?.id, providerStatuses],
+  );
+  const providerReady = Boolean(
+    provider
+      && isMorpheusPlannerAccountCompatible(provider)
+      && hasConfiguredCredentials(provider, providerStatus),
+  );
   const visibleStage: ActivationStage = stage === 'proof' && proofStarted && objectiveRun && isObjectiveTerminalState(objectiveRun.state) ? 'ready' : stage;
   const signalState = resolveMorpheusSignalState({ objectiveState: visibleStage === 'proof' ? objectiveRun?.state : visibleStage === 'ready' ? 'complete' : visibleStage === 'calibrating' ? 'understanding' : undefined });
 
@@ -103,21 +120,22 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     speak(t('morpheus.activation.firstGreeting'));
   }, [speak, t, visibleStage]);
 
-  const finishArrival = useCallback((): void => {
+  const finishArrival = useCallback((destination?: string): void => {
     if (exitStarted.current) return;
     exitStarted.current = true;
     setExiting(true);
     window.speechSynthesis?.cancel();
     exitTimer.current = window.setTimeout(() => {
       setDismissed(true);
+      if (destination) navigate(destination);
     }, 680);
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     if (visibleStage !== 'ready') return undefined;
-    const timer = window.setTimeout(finishArrival, 2600);
+    const timer = window.setTimeout(() => finishArrival(), providerReady ? 2600 : 8000);
     return () => window.clearTimeout(timer);
-  }, [finishArrival, visibleStage]);
+  }, [finishArrival, providerReady, visibleStage]);
 
   useEffect(() => () => {
     if (exitTimer.current !== null) window.clearTimeout(exitTimer.current);
@@ -141,7 +159,7 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     setSignals([
       { id: 'core', available: Boolean(capabilities?.actions.length), detail: capabilities ? t('morpheus.activation.signal.capabilities', { count: capabilities.actions.length }) : t('morpheus.activation.signal.unavailable') },
       { id: 'runtime', available: runtimeReady, detail: runtimeReady ? t('morpheus.activation.signal.connected') : t('morpheus.activation.signal.starting') },
-      { id: 'provider', available: Boolean(provider), detail: provider ? `${provider.label}${provider.model ? ` · ${provider.model}` : ''}` : t('morpheus.activation.signal.optionalProvider') },
+      { id: 'provider', available: providerReady, detail: providerReady && provider ? `${provider.label}${provider.model ? ` · ${provider.model}` : ''}` : t('morpheus.activation.signal.optionalProvider') },
       { id: 'voice', available: Boolean(voice?.transcriptionAvailable), detail: voice?.transcriptionAvailable ? (voice.providerLabel ?? t('morpheus.activation.signal.available')) : t('morpheus.activation.signal.voiceSetup') },
     ]);
   };
@@ -311,7 +329,15 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
               <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.readyLabel')}</p>
               <h2 className="mt-4 font-serif text-5xl font-normal">{t('morpheus.signalOs.activation.readyTitle')}</h2>
               <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{objectiveRun?.summary ?? t('morpheus.signalOs.activation.readyBody')}</p>
-              <button type="button" autoFocus data-testid="morpheus-activation-enter" onClick={finishArrival} className="mt-8 inline-flex items-center gap-3 border-b border-[hsl(var(--morpheus-accent))] pb-2 text-xs uppercase tracking-[0.18em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.enter')}<ArrowRight className="h-4 w-4" /></button>
+              {!providerReady ? <p className="mt-3 max-w-xl text-xs leading-relaxed text-[hsl(var(--morpheus-warn))]">{t('morpheus.activation.providerNeeded')}</p> : null}
+              <div className="mt-8 flex flex-wrap items-center gap-6">
+                <button type="button" autoFocus data-testid="morpheus-activation-enter" onClick={() => finishArrival()} className="inline-flex items-center gap-3 border-b border-[hsl(var(--morpheus-accent))] pb-2 text-xs uppercase tracking-[0.18em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.enter')}<ArrowRight className="h-4 w-4" /></button>
+                {!providerReady ? (
+                  <button type="button" data-testid="morpheus-activation-connect-provider" onClick={() => finishArrival('/models?addProvider=1')} className="inline-flex items-center gap-2 border-b border-white/15 pb-2 text-[10px] uppercase tracking-[0.14em] text-foreground/70 hover:border-[hsl(var(--morpheus-accent)/0.55)] hover:text-foreground">
+                    {t('morpheus.activation.connectProvider')}<ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+              </div>
             </div>
           ) : null}
         </section>

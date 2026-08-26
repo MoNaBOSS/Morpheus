@@ -68,6 +68,21 @@ test.describe('Morpheus Signal OS', () => {
     }
   });
 
+  test('guides an offline user directly into real provider setup', async ({ launchElectronApp }) => {
+    const app = await launchElectronApp({ skipSetup: true });
+    try {
+      const page = await getStableWindow(app);
+      await expect(page.getByTestId('morpheus-runtime-provider')).toHaveAttribute('data-ready', 'false');
+      await page.getByTestId('morpheus-provider-connect').click();
+      await expect(page.getByTestId('providers-settings')).toBeVisible();
+      await expect(page.getByTestId('add-provider-dialog')).toBeVisible();
+      await expect(page).not.toHaveURL(/addProvider=1/);
+      await capture(page, 'signal-provider-setup.png');
+    } finally {
+      await closeElectronApp(app);
+    }
+  });
+
   test('renders a new plan trust boundary once and keeps denial as keyboard default', async ({ launchElectronApp }) => {
     const app = await launchElectronApp({ skipSetup: true });
     try {

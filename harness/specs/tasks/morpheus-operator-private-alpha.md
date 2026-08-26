@@ -14,6 +14,7 @@ touchedAreas:
   - electron/main/**
   - src/lib/host-api.ts
   - src/lib/host-events.ts
+  - src/lib/morpheus-voice-runtime.ts
   - src/stores/morpheus-**
   - src/components/morpheus/**
   - src/components/file-preview/FilePreviewOverlay.tsx
@@ -21,6 +22,7 @@ touchedAreas:
   - src/pages/Chat/**
   - src/pages/Missions/**
   - src/pages/Settings/**
+  - src/components/settings/ProvidersSettings.tsx
   - src/styles/globals.css
   - tests/unit/morpheus-**
   - tests/unit/chat-input.test.tsx
@@ -38,6 +40,8 @@ touchedAreas:
   - README.ru-RU.md
 expectedUserBehavior:
   - A user invokes Morpheus from tray, shortcut, voice, Command, or Chat and reaches the same operator state.
+  - First-run activation and Command Center distinguish a Chat account from a credentialed planner-compatible provider and link missing setup directly to Models.
+  - Unclear push-to-talk audio asks for one natural repeat while configuration failures offer a direct provider setup path.
   - Auto answers conversational questions and executes clear objectives without requiring the user to supervise tool calls.
   - Morpheus remembers useful explicit context in an inspectable local-first memory system.
   - A configured provider can build and verify a real business website inside an approved Project and create ongoing follow-up.
@@ -69,6 +73,8 @@ requiredTests:
 acceptance:
   - Ask, Auto, and Act route truthfully over one Objective Core and one OpenClaw Chat runtime.
   - Background voice and tray behavior remain explicit, visible, bounded, and cancellable.
+  - Provider presence is never presented as Objective Core readiness unless the account protocol is planner-compatible and credentials are configured.
+  - Voice recovery distinguishes unclear audio from missing provider configuration and never stores audio or raw transcripts.
   - Autonomous behavior cannot widen beyond frozen reversible capabilities and Main-resolved scopes.
   - Automatic memory is bounded, inspectable, local-first, and excludes sensitive payloads.
   - The business-site objective creates verified real artifacts and never fakes research, deployment, analytics, or earnings.

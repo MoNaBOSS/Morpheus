@@ -418,6 +418,9 @@
       "runtimeStarting": "起動中",
       "runtimeStopped": "停止",
       "providerUnknown": "未設定",
+      "providerReadyBody": "Morpheus の自由な計画に使用できます。",
+      "providerMissingBody": "より広い計画と音声のために互換アカウントを接続してください。",
+      "connectProvider": "プロバイダーを接続",
       "auditDegraded": "監査利用不可"
     },
     "artifacts": {
@@ -666,7 +669,7 @@
       }
     },
     "activation": {
-      "eyebrow": "インテリジェント操作コンパニオン", "title": "Morpheus へようこそ", "introduction": "目的を計画、信頼された操作、継続するミッションへ変換します。自然に話すか入力してください。日常作業を処理し、信頼境界が本当に変わる場合だけ中断します。", "spokenIntroduction": "こんにちは。私は Morpheus、あなたのインテリジェント操作コンパニオンです。達成したいことを伝えてください。計画して作業を進めます。", "begin": "Morpheus を起動", "skip": "起動案内をスキップ", "calibrating": "実システムの調整", "systemsTitle": "知能レイヤーを接続中", "checking": "このシステムで利用可能な能力を確認中…", "continue": "コンパニオンを設定", "personalize": "コンパニオンの動作", "preferenceTitle": "Morpheus はどのように協働すべきですか？", "preferenceBody": "これらはコミュニケーションを調整します。能力ポリシーや信頼を迂回しません。", "preferredName": "何とお呼びすればよいですか？", "preferredNamePlaceholder": "名前または希望する呼び名", "autonomy": "自律性と保護", "launchAtStartup": "Windows と同時に起動", "launchAtStartupDescription": "サインイン後もトレイで Morpheus を利用できます。", "ambientVoice": "Morpheus の呼びかけを待機", "ambientVoiceDescription": "プロバイダー対応の待機は「{{wakePhrase}}」の後だけ応答します。", "ambientVoiceUnavailable": "ウェイクフレーズには文字起こし対応プロバイダーが必要です。", "wakePhrase": "ウェイクフレーズ", "proactiveCheckIns": "時々声をかける", "proactiveCheckInsDescription": "長い作業中に Morpheus が自然に状況を尋ねます。", "speak": "最終応答を読み上げる", "speakDescription": "音声目的の完了後に Windows 音声を使います。", "finish": "起動設定を完了", "readyLabel": "システム準備完了", "readyTitle": "Morpheus の準備が整いました。", "readyBody": "コマンドセンターでミッションを管理し、どこからでも Ctrl+Shift+Space でクイックコマンド、Ctrl+Alt+Space で音声入力できます。", "enter": "コマンドセンターへ", "replay": "コンパニオン起動案内", "replayDescription": "実システムの紹介を再生し、コンパニオン動作を選び直します。", "replayAction": "起動案内を再生",
+      "eyebrow": "インテリジェント操作コンパニオン", "title": "Morpheus へようこそ", "introduction": "目的を計画、信頼された操作、継続するミッションへ変換します。自然に話すか入力してください。日常作業を処理し、信頼境界が本当に変わる場合だけ中断します。", "spokenIntroduction": "こんにちは。私は Morpheus、あなたのインテリジェント操作コンパニオンです。達成したいことを伝えてください。計画して作業を進めます。", "begin": "Morpheus を起動", "skip": "起動案内をスキップ", "calibrating": "実システムの調整", "systemsTitle": "知能レイヤーを接続中", "checking": "このシステムで利用可能な能力を確認中…", "continue": "コンパニオンを設定", "personalize": "コンパニオンの動作", "preferenceTitle": "Morpheus はどのように協働すべきですか？", "preferenceBody": "これらはコミュニケーションを調整します。能力ポリシーや信頼を迂回しません。", "preferredName": "何とお呼びすればよいですか？", "preferredNamePlaceholder": "名前または希望する呼び名", "autonomy": "自律性と保護", "launchAtStartup": "Windows と同時に起動", "launchAtStartupDescription": "サインイン後もトレイで Morpheus を利用できます。", "ambientVoice": "Morpheus の呼びかけを待機", "ambientVoiceDescription": "プロバイダー対応の待機は「{{wakePhrase}}」の後だけ応答します。", "ambientVoiceUnavailable": "ウェイクフレーズには文字起こし対応プロバイダーが必要です。", "wakePhrase": "ウェイクフレーズ", "proactiveCheckIns": "時々声をかける", "proactiveCheckInsDescription": "長い作業中に Morpheus が自然に状況を尋ねます。", "speak": "最終応答を読み上げる", "speakDescription": "音声目的の完了後に Windows 音声を使います。", "finish": "起動設定を完了", "readyLabel": "システム準備完了", "readyTitle": "Morpheus の準備が整いました。", "readyBody": "コマンドセンターでミッションを管理し、どこからでも Ctrl+Shift+Space でクイックコマンド、Ctrl+Alt+Space で音声入力できます。", "enter": "コマンドセンターへ", "connectProvider": "AI プロバイダーを接続", "providerNeeded": "Morpheus は登録済みのローカル操作を実行できます。互換プロバイダーを接続すると、より広い目的の理解と文字起こしが有効になります。", "replay": "コンパニオン起動案内", "replayDescription": "実システムの紹介を再生し、コンパニオン動作を選び直します。", "replayAction": "起動案内を再生",
       "personalities": { "adaptive": { "name": "適応", "description": "目的に合わせて詳細、口調、速度を調整します。" }, "witty": { "name": "ウィット", "description": "自信があり、簡潔で自然なユーモア。" }, "concise": { "name": "簡潔", "description": "短く直接的な状態と結果を優先します。" }, "warm": { "name": "親しみやすい", "description": "会話的で役立ち、少しユーモアのある口調です。" } },
       "permissionProfiles": { "strict": { "name": "厳格", "description": "新しい操作境界ごとに確認します。" }, "balanced": { "name": "バランス", "description": "正確な信頼を再利用し、範囲変更時だけ確認します。" }, "autonomous": { "name": "自律", "description": "通常の可逆作業を処理し、保護境界で停止します。" } },
       "signal": { "core": "実行コア", "runtime": "エージェントランタイム", "provider": "推論プロバイダー", "voice": "音声チャネル", "capabilities": "{{count}} 件の実能力", "unavailable": "利用不可", "connected": "接続済み", "starting": "バックグラウンドで起動中", "optionalProvider": "自由な計画が必要なときに設定", "available": "利用可能", "voiceSetup": "文字起こし対応プロバイダーを設定" },
@@ -760,6 +763,10 @@
       "dismiss": "音声状態を閉じる",
       "speaking": "Morpheus が応答中",
       "errorBody": "音声入力を続行できませんでした。設定でマイクと文字起こしプロバイダーを確認してください。",
+      "repeatBody": "よく聞き取れませんでした。もう一度話してください。",
+      "configurationBody": "音声を使うには互換性のある文字起こしプロバイダーが必要です。",
+      "retry": "もう一度",
+      "connectProvider": "プロバイダーを接続",
       "wakeHint": "「{{phrase}}…」と話しかける",
       "providerDisclosure": "限定された音声を {{provider}} で文字起こし",
       "presence": {

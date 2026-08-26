@@ -55,4 +55,19 @@ test.describe('Morpheus production companion intelligence', () => {
       await closeElectronApp(app);
     }
   });
+
+  test('turns missing voice configuration into a direct recovery path', async ({ launchElectronApp }) => {
+    const app = await launchElectronApp({ skipSetup: true });
+    try {
+      const page = await getStableWindow(app);
+      await page.getByTestId('morpheus-voice-button-command-center').click();
+      await expect(page.getByTestId('morpheus-voice-indicator')).toHaveAttribute('data-phase', 'error');
+      await expect(page.getByTestId('morpheus-voice-error')).toContainText(/transcription provider/i);
+      await page.getByTestId('morpheus-voice-connect-provider').click();
+      await expect(page.getByTestId('providers-settings')).toBeVisible();
+      await expect(page.getByTestId('add-provider-dialog')).toBeVisible();
+    } finally {
+      await closeElectronApp(app);
+    }
+  });
 });

@@ -47,6 +47,7 @@ test.describe('Morpheus companion and persistent Missions', () => {
       await expect(page.getByTestId('morpheus-activation-proof')).toBeVisible();
       await page.getByTestId('morpheus-activation-skip-proof').click();
       await expect(page.getByTestId('morpheus-activation-ready')).toBeVisible();
+      await expect(page.getByTestId('morpheus-activation-connect-provider')).toBeVisible();
       await captureVisualEvidence(page, 'activation-ready-1280x800.png');
       await page.getByTestId('morpheus-activation-enter').click();
       await expect(page.getByTestId('morpheus-activation')).toHaveAttribute('data-exiting', 'true');

@@ -3,6 +3,7 @@
  * Manage AI provider configurations and API keys
  */
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Plus,
   Trash2,
@@ -154,6 +155,8 @@ function getAuthModeLabel(
 
 export function ProvidersSettings() {
   const { t } = useTranslation('settings');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openAddProviderFromRoute = searchParams.get('addProvider') === '1';
   const devModeUnlocked = useSettingsStore((state) => state.devModeUnlocked);
   const {
     statuses,
@@ -169,7 +172,7 @@ export function ProvidersSettings() {
     validateAccountApiKey,
   } = useProviderStore();
 
-  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(openAddProviderFromRoute);
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
   const vendorMap = new Map(vendors.map((vendor) => [vendor.id, vendor]));
   const existingVendorIds = new Set(accounts.map((account) => account.vendorId));
@@ -182,6 +185,13 @@ export function ProvidersSettings() {
   useEffect(() => {
     refreshProviderSnapshot();
   }, [refreshProviderSnapshot]);
+
+  useEffect(() => {
+    if (!openAddProviderFromRoute) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('addProvider');
+    setSearchParams(next, { replace: true });
+  }, [openAddProviderFromRoute, searchParams, setSearchParams]);
 
   const handleAddProvider = async (
     type: ProviderType,

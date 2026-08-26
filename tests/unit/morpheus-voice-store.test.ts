@@ -28,7 +28,7 @@ vi.mock('@/lib/host-events', () => ({
 }));
 
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
-import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { classifyMorpheusVoiceError, useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
 
 class FakeMediaRecorder {
@@ -81,7 +81,7 @@ beforeEach(() => {
     mode: 'auto', lastDecision: null, clarification: null, pendingConversation: null,
   });
   useMorpheusVoiceStore.setState({
-    phase: 'idle', status: null, transcript: null, error: null, source: null, startedAt: null,
+    phase: 'idle', status: null, transcript: null, error: null, errorKind: null, source: null, startedAt: null,
   });
   useMorpheusCommandStore.setState({
     input: '', plan: null, unsupported: null, interpreting: false, executing: false,
@@ -103,6 +103,32 @@ describe('Morpheus renderer voice controller', () => {
     await useMorpheusVoiceStore.getState().startListening();
     expect(getUserMedia).not.toHaveBeenCalled();
     expect(useMorpheusVoiceStore.getState().phase).toBe('error');
+    expect(useMorpheusVoiceStore.getState().errorKind).toBe('configuration');
+  });
+
+  it('asks for one natural repeat after an empty transcript and can listen again', async () => {
+    mocks.transcribeAudio.mockRejectedValueOnce(
+      new Error('Transcription provider returned an empty or oversized transcript.'),
+    );
+
+    await useMorpheusVoiceStore.getState().startListening('quick-command');
+    useMorpheusVoiceStore.getState().stopListening();
+
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState()).toMatchObject({
+      phase: 'error', errorKind: 'repeat', source: 'quick-command',
+    }));
+    await useMorpheusVoiceStore.getState().startListening('quick-command');
+    expect(useMorpheusVoiceStore.getState()).toMatchObject({
+      phase: 'listening', errorKind: null, source: 'quick-command',
+    });
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+    useMorpheusVoiceStore.getState().cancel();
+  });
+
+  it('does not mislabel provider, permission or Audit failures as unclear speech', () => {
+    expect(classifyMorpheusVoiceError(new Error('No compatible transcription provider is configured.'))).toBe('configuration');
+    expect(classifyMorpheusVoiceError(new Error('Microphone permission denied.'))).toBe('permission');
+    expect(classifyMorpheusVoiceError(new Error('Voice is blocked while Audit is unavailable.'))).toBe('security');
   });
 
   it('keeps recording ephemeral, transcribes through Main and enters the unified objective pipeline', async () => {

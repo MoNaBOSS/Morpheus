@@ -4,6 +4,10 @@ import type { ProviderAccount, ProviderProtocol } from '../../../shared/provider
 import { getProviderDefinition } from '../../../shared/providers/registry';
 import type { MorpheusPlatform } from '@shared/morpheus/actions/registry';
 import {
+  morpheusPlannerProtocolFor,
+  type MorpheusPlannerProtocol,
+} from '@shared/morpheus/provider-readiness';
+import {
   createPlanFromProviderText,
   createReviewFromProviderText,
   MorpheusProviderPlanError,
@@ -17,12 +21,7 @@ import type {
 
 const MAX_PROVIDER_RESPONSE_BYTES = 64 * 1024;
 
-export type SupportedPlannerProtocol =
-  | 'openai-completions'
-  | 'openai-responses'
-  | 'anthropic-messages'
-  | 'google-generative-ai'
-  | 'ollama';
+export type SupportedPlannerProtocol = MorpheusPlannerProtocol;
 
 export type MorpheusProviderPlannerOptions = {
   account: ProviderAccount;
@@ -34,16 +33,7 @@ export type MorpheusProviderPlannerOptions = {
 };
 
 function protocolFor(account: ProviderAccount): SupportedPlannerProtocol | null {
-  const configured = account.apiProtocol
-    ?? getProviderDefinition(account.vendorId)?.providerConfig?.api
-    ?? (account.vendorId === 'anthropic' ? 'anthropic-messages'
-      : account.vendorId === 'google' ? 'google-generative-ai'
-        : account.vendorId === 'ollama' ? 'ollama'
-          : 'openai-completions');
-  return (['openai-completions', 'openai-responses', 'anthropic-messages', 'google-generative-ai', 'ollama'] as const)
-    .includes(configured as SupportedPlannerProtocol)
-    ? configured as SupportedPlannerProtocol
-    : null;
+  return morpheusPlannerProtocolFor(account);
 }
 
 export function isProviderPlannerProtocolSupported(protocol: ProviderProtocol | undefined, vendorId?: string): boolean {

@@ -36,3 +36,12 @@ Renderer-authored arbitrary URL.
 Reminder creation may persist only one bounded notification workflow and one
 Morpheus-owned one-time or daily schedule. Reminder parameters cannot include a
 command, executable, URL, path, environment, shell, or ambiguous local time.
+
+Provider account presence must not be conflated with Objective Core readiness.
+Only a credentialed account using a planner-compatible direct protocol may be
+reported ready. Credentials remain Main-owned and may never be copied into
+Renderer state, route parameters, telemetry, Audit, or voice errors.
+
+Voice recovery may classify an error and offer a retry or provider-setup route,
+but must not persist microphone audio or raw transcripts. Unclear speech asks
+for one repeat; configuration failure must not masquerade as failed execution.
