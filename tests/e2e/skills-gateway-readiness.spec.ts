@@ -1,4 +1,11 @@
+import type { Page } from '@playwright/test';
+
 import { completeSetup, expect, installIpcMocks, test } from './fixtures/electron';
+
+async function openSkills(page: Page): Promise<void> {
+  await page.getByTestId('signal-nav-advanced').click();
+  await page.getByTestId('sidebar-nav-skills').click();
+}
 
 test.describe('Skills page gateway readiness', () => {
   test('shows local skills even when gateway is stopped', async ({ electronApp, page }) => {
@@ -38,7 +45,7 @@ test.describe('Skills page gateway readiness', () => {
       },
     });
 
-    await page.getByTestId('sidebar-nav-skills').click();
+    await openSkills(page);
     await expect(page.getByTestId('skills-page')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'PDF' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'XLSX' })).toBeVisible();
@@ -83,7 +90,7 @@ test.describe('Skills page gateway readiness', () => {
       },
     });
 
-    await page.getByTestId('sidebar-nav-skills').click();
+    await openSkills(page);
     await expect(page.getByRole('heading', { name: 'Browser Automation' })).toBeVisible();
     await page.getByText('Browser Automation').click();
     await expect(page.getByRole('button', { name: /Uninstall|卸载|アンインストール|Удалить/i })).toHaveCount(0);
@@ -110,7 +117,7 @@ test.describe('Skills page gateway readiness', () => {
       },
     });
 
-    await page.getByTestId('sidebar-nav-skills').click();
+    await openSkills(page);
     await expect(page.getByTestId('skills-page')).toBeVisible();
     await expect(page.getByTestId('skills-gateway-banner')).toHaveAttribute('data-state', 'stopped', { timeout: 3_500 });
 
