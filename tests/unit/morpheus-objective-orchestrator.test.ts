@@ -14,6 +14,7 @@ import type { MorpheusRuntime } from '@electron/services/morpheus/runtime';
 import type { MorpheusPlanner } from '@shared/morpheus/planner';
 import type { ExecutionPlan } from '@shared/morpheus/execution-types';
 import type { MorpheusObjectiveEvent } from '@shared/morpheus/core/objective-types';
+import { DEFAULT_OBJECTIVE_LIMITS, type MorpheusObjectiveLimits } from '@shared/morpheus/core/objective-types';
 
 const roots: string[] = [];
 afterEach(() => {
@@ -38,11 +39,16 @@ function setup(
   planner: MorpheusPlanner,
   execute?: MorpheusRuntime['executePlan'],
   isRuntimePaused?: () => boolean,
+  configuration: {
+    now?: () => Date;
+    limits?: MorpheusObjectiveLimits;
+  } = {},
 ) {
   const root = mkdtempSync(join(tmpdir(), 'morpheus-orchestrator-'));
   roots.push(root);
   const events: MorpheusObjectiveEvent[] = [];
   const auditEvents: string[] = [];
+  const agents = createMorpheusAgentProfileStore({ userDataDir: root });
   const runtime: MorpheusRuntime = {
     registerPlan: vi.fn((value) => value),
     executePlan: execute ?? vi.fn(async ({ planId }) => ({
@@ -61,7 +67,7 @@ function setup(
   const orchestrator = createMorpheusObjectiveOrchestrator({
     store: createMorpheusObjectiveStore({ userDataDir: root }),
     runtime,
-    agents: createMorpheusAgentProfileStore({ userDataDir: root }),
+    agents,
     planners: { select: vi.fn(async () => ({ ok: true as const, planner, providerAccountId: 'provider-1', modelId: 'model-1' })) },
     audit,
     appVersion: '1.0.0',
@@ -84,6 +90,8 @@ function setup(
     memory,
     platform: 'win32',
     isRuntimePaused,
+    now: configuration.now,
+    limits: configuration.limits,
     createId: (() => { let id = 0; return () => `objective-${++id}`; })(),
     emit: (event) => {
       // Audit completes before every state emission.
@@ -91,7 +99,7 @@ function setup(
       events.push(event);
     },
   });
-  return { orchestrator, runtime, events, memory, auditEvents };
+  return { orchestrator, runtime, events, memory, auditEvents, agents };
 }
 
 describe('Main-owned objective orchestration', () => {
@@ -110,18 +118,26 @@ describe('Main-owned objective orchestration', () => {
   });
 
   it('plans, executes, observes, replans once, and completes through one pipeline', async () => {
-    let reviewCount = 0;
     const planner: MorpheusPlanner = {
       plannerId: 'provider:test', plannedBy: 'provider',
       plan: vi.fn(async () => ({ ok: true, plan: plan('plan-1') })),
-      review: vi.fn(async () => {
-        reviewCount += 1;
-        return reviewCount === 1
-          ? { outcome: 'continue' as const, reason: 'verify storage once', plan: plan('plan-2', 'system.storage') }
-          : { outcome: 'complete' as const, summary: 'System information verified.' };
-      }),
+      review: vi.fn(async () => ({
+        outcome: 'continue' as const,
+        reason: 'verify storage once',
+        plan: plan('plan-2', 'system.storage'),
+      })),
     };
-    const { orchestrator, runtime, events } = setup(planner);
+    const execute = vi.fn(async ({ planId }: { planId: string }) => ({
+      planId,
+      status: planId === 'plan-1' ? 'partially-completed' as const : 'completed' as const,
+      steps: [{
+        stepId: 'report',
+        status: planId === 'plan-1' ? 'failed' as const : 'succeeded' as const,
+        durationMs: 1,
+        ...(planId === 'plan-1' ? { error: { code: 'temporary', message: 'Retry with storage report.' } } : {}),
+      }],
+    }));
+    const { orchestrator, runtime, events } = setup(planner, execute as MorpheusRuntime['executePlan']);
     const submitted = await orchestrator.submit({ objective: 'Conduct a platform readiness analysis', originType: 'command-bar' });
     expect(submitted.accepted).toBe(true);
     await vi.waitFor(() => expect(orchestrator.snapshot().runsById[submitted.objectiveRunId]?.state).toBe('complete'));
@@ -129,15 +145,77 @@ describe('Main-owned objective orchestration', () => {
     const run = orchestrator.snapshot().runsById[submitted.objectiveRunId];
     expect(run.planIds).toEqual(['plan-1', 'plan-2']);
     expect(run.observations).toHaveLength(2);
-    expect(run.artifacts).toHaveLength(2);
-    expect(run.summary).toBe('System information verified.');
+    expect(run.artifacts).toHaveLength(0);
+    expect(run.summary).toBe('Completed 1 step.');
     expect(runtime.executePlan).toHaveBeenCalledTimes(2);
+    expect(planner.review).toHaveBeenCalledTimes(1);
     expect(runtime.registerPlan).toHaveBeenNthCalledWith(1, expect.objectContaining({
       workspaceId: 'morpheus-files',
     }));
     expect(events.map((event) => event.state)).toEqual(expect.arrayContaining([
       'understanding', 'planning', 'executing', 'observing', 'replanning', 'complete',
     ]));
+    orchestrator.dispose();
+  });
+
+  it('skips redundant provider review after a conclusive completed plan and records safe stage timings', async () => {
+    let clock = Date.parse('2026-08-11T00:00:00.000Z');
+    const now = vi.fn(() => new Date((clock += 10)));
+    const planner: MorpheusPlanner = {
+      plannerId: 'provider:fast',
+      plannedBy: 'provider',
+      plan: vi.fn(async () => ({ ok: true, plan: plan('plan-fast') })),
+      review: vi.fn(async () => ({ outcome: 'complete' as const, summary: 'Redundant review.' })),
+    };
+    const { orchestrator } = setup(planner, undefined, undefined, { now });
+    const submitted = await orchestrator.submit({
+      objective: 'Conduct a platform readiness analysis',
+      originType: 'command-bar',
+    });
+    const terminal = await orchestrator.waitForTerminal(submitted.objectiveRunId);
+
+    expect(terminal.state).toBe('complete');
+    expect(planner.review).not.toHaveBeenCalled();
+    expect(terminal.timings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ stage: 'planning', outcome: 'completed', plannerId: 'provider:fast' }),
+      expect.objectContaining({ stage: 'execution', outcome: 'completed', planId: 'plan-fast' }),
+    ]));
+    expect(terminal.timings?.some((timing) => timing.stage === 'review')).toBe(false);
+    orchestrator.dispose();
+  });
+
+  it('reports a provider timeout as an error rather than a user cancellation', async () => {
+    const planner: MorpheusPlanner = {
+      plannerId: 'provider:slow',
+      plannedBy: 'provider',
+      plan: vi.fn((request) => new Promise((_resolve, reject) => {
+        request.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true });
+      })),
+    };
+    const { orchestrator, agents } = setup(planner, undefined, undefined, {
+      limits: { ...DEFAULT_OBJECTIVE_LIMITS, providerTimeoutMs: 5 },
+    });
+    const general = agents.get('general');
+    expect(general).toBeDefined();
+    agents.save({
+      ...general!,
+      planner: { kind: 'provider', providerId: 'provider-1', modelId: 'model-1' },
+      updatedAt: '2026-08-11T00:00:00.000Z',
+    });
+    const submitted = await orchestrator.submit({
+      objective: 'Conduct an extended platform readiness analysis',
+      originType: 'command-bar',
+      agentProfileId: 'general',
+    });
+    const terminal = await orchestrator.waitForTerminal(submitted.objectiveRunId, 1_000);
+
+    expect(terminal.state).toBe('error');
+    expect(terminal.error).toMatchObject({ code: 'provider-timeout' });
+    expect(terminal.timings).toContainEqual(expect.objectContaining({
+      stage: 'planning',
+      outcome: 'timed-out',
+      plannerId: 'provider:slow',
+    }));
     orchestrator.dispose();
   });
 

@@ -58,6 +58,7 @@ export function SignalMissionStage() {
   const terminal = objectiveRun ? isObjectiveTerminalState(objectiveRun.state) : true;
   const artifacts = objectiveRun?.artifacts ?? activeMission?.artifacts ?? [];
   const resultByStep = new Map(planResult?.steps.map((step) => [step.stepId, step]) ?? []);
+  const latestTimingByStage = new Map(objectiveRun?.timings?.map((timing) => [timing.stage, timing]) ?? []);
   const signalState = resolveMorpheusSignalState({ objectiveState: objectiveRun?.state });
 
   if (!objective) {
@@ -158,6 +159,22 @@ export function SignalMissionStage() {
         <aside className="border-l border-white/[0.07] pl-4" data-testid="signal-mission-results">
           <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">{t('morpheus.signalOs.result')}</p>
           <p data-testid="command-center-objective-summary" className="mt-2 text-xs leading-relaxed text-foreground/80">{objectiveRun?.summary ?? activeMission?.summary ?? t('morpheus.signalOs.resultPending')}</p>
+          {latestTimingByStage.size > 0 ? (
+            <div className="mt-5" data-testid="signal-mission-timing">
+              <p className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground">{t('morpheus.signalOs.performance')}</p>
+              <dl className="mt-2 space-y-1 font-mono text-[9px] text-foreground/65">
+                {(['planning', 'execution', 'review'] as const).map((stage) => {
+                  const timing = latestTimingByStage.get(stage);
+                  return timing ? (
+                    <div key={stage} className="flex items-center justify-between gap-3">
+                      <dt>{t(`morpheus.signalOs.timing.${stage}`)}</dt>
+                      <dd>{formatDuration(timing.durationMs)}</dd>
+                    </div>
+                  ) : null;
+                })}
+              </dl>
+            </div>
+          ) : null}
           <div className="mt-5">
             <p className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground">{t('morpheus.signalOs.artifacts')}</p>
             {artifacts.length ? (
@@ -181,4 +198,9 @@ export function SignalMissionStage() {
       </div>
     </section>
   );
+}
+
+function formatDuration(durationMs: number): string {
+  if (durationMs < 1_000) return `${durationMs}ms`;
+  return `${(durationMs / 1_000).toFixed(durationMs < 10_000 ? 1 : 0)}s`;
 }

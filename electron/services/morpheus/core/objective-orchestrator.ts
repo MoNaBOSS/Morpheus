@@ -10,6 +10,8 @@ import {
   type MorpheusObjectiveLimits,
   type MorpheusObjectiveRun,
   type MorpheusObjectiveSnapshot,
+  type MorpheusObjectiveStage,
+  type MorpheusObjectiveStageTiming,
   type MorpheusPlanObservation,
   type MorpheusSystemState,
   type SubmitMorpheusObjectivePayload,
@@ -186,6 +188,15 @@ function interpretationClarification(result: Extract<InterpretationResult, { ok:
 
 function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
+}
+
+class MorpheusProviderTimeoutError extends Error {
+  readonly code = 'provider-timeout';
+
+  constructor(timeoutMs: number) {
+    super(`The planning provider did not respond within ${Math.round(timeoutMs / 1_000)} seconds.`);
+    this.name = 'MorpheusProviderTimeoutError';
+  }
 }
 
 export function createMorpheusObjectiveOrchestrator(options: {
@@ -424,15 +435,85 @@ export function createMorpheusObjectiveOrchestrator(options: {
     operation: (signal: AbortSignal) => Promise<T> | T,
   ): Promise<T> => {
     const controller = new AbortController();
+    let timedOut = false;
     const relay = (): void => controller.abort(owner.controller.signal.reason);
     owner.controller.signal.addEventListener('abort', relay, { once: true });
-    const timer = setTimeout(() => controller.abort(new DOMException('Provider timed out', 'TimeoutError')), limits.providerTimeoutMs);
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort(new DOMException('Provider timed out', 'TimeoutError'));
+    }, limits.providerTimeoutMs);
     timer.unref?.();
     try {
       return await operation(controller.signal);
+    } catch (error) {
+      if (timedOut && !owner.controller.signal.aborted) {
+        throw new MorpheusProviderTimeoutError(limits.providerTimeoutMs);
+      }
+      throw error;
     } finally {
       clearTimeout(timer);
       owner.controller.signal.removeEventListener('abort', relay);
+    }
+  };
+
+  const recordStageTiming = async (
+    objectiveRunId: string,
+    timing: MorpheusObjectiveStageTiming,
+  ): Promise<void> => {
+    const run = options.store.get(objectiveRunId);
+    if (!run) return;
+    try {
+      await options.audit.recordControl({
+        category: 'objective',
+        event: 'stage-timing',
+        subjectId: objectiveRunId,
+        details: {
+          stage: timing.stage,
+          iteration: timing.iteration,
+          durationMs: timing.durationMs,
+          outcome: timing.outcome,
+          ...(timing.plannerId ? { plannerId: timing.plannerId } : {}),
+          ...(timing.planId ? { planId: timing.planId } : {}),
+        },
+        appVersion: options.appVersion,
+      });
+      options.store.put({ ...run, timings: [...(run.timings ?? []), timing] });
+    } catch {
+      // Diagnostics never become execution authority. Audit health is enforced
+      // independently by the runtime before unsafe native work can begin.
+    }
+  };
+
+  const measureStage = async <T>(
+    objectiveRunId: string,
+    stage: MorpheusObjectiveStage,
+    iteration: number,
+    operation: () => Promise<T>,
+    metadata: { plannerId?: string; planId?: string } = {},
+  ): Promise<T> => {
+    const started = now();
+    let outcome: MorpheusObjectiveStageTiming['outcome'] = 'completed';
+    try {
+      return await operation();
+    } catch (error) {
+      const owner = active.get(objectiveRunId);
+      outcome = error instanceof MorpheusProviderTimeoutError
+        ? 'timed-out'
+        : owner?.controller.signal.aborted || isAbortError(error)
+          ? 'cancelled'
+          : 'failed';
+      throw error;
+    } finally {
+      const completed = now();
+      await recordStageTiming(objectiveRunId, {
+        stage,
+        iteration,
+        startedAt: started.toISOString(),
+        completedAt: completed.toISOString(),
+        durationMs: Math.max(0, completed.getTime() - started.getTime()),
+        outcome,
+        ...metadata,
+      });
     }
   };
 
@@ -578,24 +659,26 @@ export function createMorpheusObjectiveOrchestrator(options: {
 
         if (!proposed) {
           try {
-            proposed = await callWithTimeout(owner, (signal) => Promise.resolve(planner.plan({
-              objective,
-              origin: run.origin,
-              platform,
-              filesRoot,
-              objectiveRunId,
-              iteration,
-              capabilities,
-              context,
-              agent: {
-                profileId: agent.profileId,
-                name: agent.name,
-                instructions: agent.instructions,
-                capabilityIds: agent.permissionBoundary.capabilityIds,
-              },
-              limits,
-              signal,
-            })));
+            proposed = await measureStage(objectiveRunId, 'planning', iteration, () => (
+              callWithTimeout(owner, (signal) => Promise.resolve(planner.plan({
+                objective,
+                origin: run.origin,
+                platform,
+                filesRoot,
+                objectiveRunId,
+                iteration,
+                capabilities,
+                context,
+                agent: {
+                  profileId: agent.profileId,
+                  name: agent.name,
+                  instructions: agent.instructions,
+                  capabilityIds: agent.permissionBoundary.capabilityIds,
+                },
+                limits,
+                signal,
+              })))
+            ), { plannerId: planner.plannerId });
           } catch (error) {
             if (!isCurrent(objectiveRunId, generation) || owner.controller.signal.aborted) return;
             // Auto mode remains useful offline, but the fallback is recorded and
@@ -649,7 +732,13 @@ export function createMorpheusObjectiveOrchestrator(options: {
           planIds: [...run.planIds, plan.planId],
         });
 
-        const execution = await options.runtime.executePlan({ planId: plan.planId });
+        const execution = await measureStage(
+          objectiveRunId,
+          'execution',
+          iteration,
+          () => options.runtime.executePlan({ planId: plan.planId }),
+          { plannerId: planner.plannerId, planId: plan.planId },
+        );
         owner.currentPlanId = undefined;
         if (!isCurrent(objectiveRunId, generation)) return;
         const observedAt = now().toISOString();
@@ -679,13 +768,23 @@ export function createMorpheusObjectiveOrchestrator(options: {
         }
 
         const reviewPlanner = planner.review;
+        // A validated plan is expected to be complete. When every step has a
+        // conclusive successful observation, another provider round trip adds
+        // latency without adding authority or evidence. Partial, rejected, or
+        // failed work still enters bounded semantic review and replanning.
+        if (execution.status === 'completed') {
+          options.store.setActivePlan(objectiveRunId, null);
+          await transition(objectiveRunId, 'complete', {
+            summary: summaryForExecution(execution),
+          });
+          finishActive(objectiveRunId);
+          return;
+        }
         if (!reviewPlanner) {
           options.store.setActivePlan(objectiveRunId, null);
-          await transition(objectiveRunId, execution.status === 'completed' ? 'complete' : 'error', {
+          await transition(objectiveRunId, 'error', {
             summary: summaryForExecution(execution),
-            ...(execution.status === 'completed' ? {} : {
-              error: execution.rejection ?? { code: 'execution-incomplete', message: summaryForExecution(execution) },
-            }),
+            error: execution.rejection ?? { code: 'execution-incomplete', message: summaryForExecution(execution) },
           });
           finishActive(objectiveRunId);
           return;
@@ -693,29 +792,30 @@ export function createMorpheusObjectiveOrchestrator(options: {
 
         let review: MorpheusPlannerReviewResult;
         try {
-          review = await callWithTimeout(owner, (signal): Promise<MorpheusPlannerReviewResult> => Promise.resolve(reviewPlanner({
-            objectiveRunId,
-            objective,
-            origin: run.origin,
-            iteration,
-            plan,
-            planStatus: execution.status,
-            stepResults: execution.steps,
-            context,
-            capabilities,
-            limits,
-            signal,
-          })));
+          review = await measureStage(objectiveRunId, 'review', iteration, () => (
+            callWithTimeout(owner, (signal): Promise<MorpheusPlannerReviewResult> => Promise.resolve(reviewPlanner({
+              objectiveRunId,
+              objective,
+              origin: run.origin,
+              iteration,
+              plan,
+              planStatus: execution.status,
+              stepResults: execution.steps,
+              context,
+              capabilities,
+              limits,
+              signal,
+            })))
+          ), { plannerId: planner.plannerId, planId: plan.planId });
         } catch (error) {
           if (!isCurrent(objectiveRunId, generation) || owner.controller.signal.aborted) return;
-          // Execution truth is more important than a failed summarisation call.
+          // Incomplete execution cannot be promoted to success when semantic
+          // review is unavailable.
           options.store.setActivePlan(objectiveRunId, null);
-          await transition(objectiveRunId, execution.status === 'completed' ? 'complete' : 'error', {
+          await transition(objectiveRunId, 'error', {
             summary: summaryForExecution(execution),
             plannerNotice: `Planner review was unavailable: ${error instanceof Error ? error.message : String(error)}`,
-            ...(execution.status === 'completed' ? {} : {
-              error: { code: 'review-unavailable', message: summaryForExecution(execution) },
-            }),
+            error: { code: 'review-unavailable', message: summaryForExecution(execution) },
           });
           finishActive(objectiveRunId);
           return;
@@ -752,7 +852,10 @@ export function createMorpheusObjectiveOrchestrator(options: {
         if (run && !isObjectiveTerminalState(run.state)) await transition(objectiveRunId, 'cancelled');
       } else {
         await transition(objectiveRunId, 'error', {
-          error: { code: 'objective-failed', message: error instanceof Error ? error.message : String(error) },
+          error: {
+            code: error instanceof MorpheusProviderTimeoutError ? error.code : 'objective-failed',
+            message: error instanceof Error ? error.message : String(error),
+          },
         });
       }
       finishActive(objectiveRunId);
@@ -822,6 +925,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
       corrections: [],
       planIds: [],
       observations: [],
+      timings: [],
       artifacts: [],
     };
     options.store.put(run);

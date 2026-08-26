@@ -93,6 +93,23 @@ export type MorpheusPlanObservation = {
   steps: readonly MorpheusStepObservation[];
 };
 
+export type MorpheusObjectiveStage = 'planning' | 'execution' | 'review';
+
+/**
+ * Privacy-safe performance evidence. It deliberately excludes prompts,
+ * responses, objective text, transcripts, file content, and credentials.
+ */
+export type MorpheusObjectiveStageTiming = {
+  stage: MorpheusObjectiveStage;
+  iteration: number;
+  startedAt: string;
+  completedAt: string;
+  durationMs: number;
+  outcome: 'completed' | 'failed' | 'cancelled' | 'timed-out';
+  plannerId?: string;
+  planId?: string;
+};
+
 export type MorpheusObjectiveRun = {
   v: typeof MORPHEUS_OBJECTIVE_VERSION;
   objectiveRunId: string;
@@ -119,6 +136,8 @@ export type MorpheusObjectiveRun = {
   corrections: readonly { text: string; createdAt: string }[];
   planIds: readonly string[];
   observations: readonly MorpheusPlanObservation[];
+  /** Safe stage-level latency evidence for diagnostics and UI projection. */
+  timings?: readonly MorpheusObjectiveStageTiming[];
   artifacts: readonly ExecutionArtifact[];
   summary?: string;
   /** Result of the bounded explicit-memory extractor, never raw remembered text. */

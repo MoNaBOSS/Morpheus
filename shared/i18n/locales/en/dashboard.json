@@ -157,6 +157,8 @@
       "inspect": "Inspect",
       "result": "Result",
       "resultPending": "Morpheus is still working toward a verified result.",
+      "performance": "Performance",
+      "timing": { "planning": "Plan", "execution": "Execute", "review": "Review" },
       "artifacts": "Artifacts",
       "noArtifacts": "No artifacts produced yet.",
       "observable": "Live events are recorded as Morpheus works.",

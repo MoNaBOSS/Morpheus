@@ -99,6 +99,7 @@ test.describe('Morpheus Command Center', () => {
       await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i);
       await expect(page.getByTestId('plan-timeline').locator('li').first())
         .toHaveAttribute('data-status', 'succeeded', { timeout: 20_000 });
+      await expect(page.getByTestId('signal-mission-timing')).toContainText(/execute/i);
       await expect(page.getByTestId('morpheus-plan-consent-dialog')).toHaveCount(0);
     } finally {
       await closeElectronApp(app);

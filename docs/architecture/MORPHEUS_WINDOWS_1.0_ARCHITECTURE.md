@@ -89,6 +89,13 @@ After each plan, the orchestrator records a reduced structured observation:
 step status, typed result metadata, error code, duration and artifact references.
 It does not give a provider arbitrary filesystem access or raw audit files.
 
+Planning, execution and review also record privacy-safe stage timings: duration,
+outcome, planner id, iteration and plan id only. Prompts, responses, objective
+text, credentials, audio, transcripts and file content are excluded. A fully
+completed validated plan is conclusive and skips a redundant provider review
+round trip. Partial, failed, rejected or ambiguous execution retains bounded
+review and replanning.
+
 Replanning is bounded by:
 
 - maximum planning iterations;
