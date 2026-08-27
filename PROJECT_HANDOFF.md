@@ -42,7 +42,10 @@ The runtime foundation remains intact: 22 controlled Windows capabilities,
 sequential typed plans, whole-plan trust evaluation, exact grants, Missions,
 Projects/context, Goals, Agent Profiles, workflows, Morpheus schedules,
 Systems, Activity, artifacts, push-to-talk, opt-in ambient voice, and a
-provider-neutral planning boundary.
+provider-neutral planning boundary. The embedded OpenClaw Gateway now drains
+its managed stdout pipe, uses local-first background pairing discovery, and
+preserves stable Gateway session keys for legacy transcript replay. Ambient
+voice startup is readiness-gated and stops retrying after a provider failure.
 
 This is a strong internal release candidate for hands-on product testing. It is
 not yet a signed public release, and microphone/acoustic quality plus broad
@@ -54,7 +57,7 @@ and compatible credentials.
 | Item | Value |
 | --- | --- |
 | Current branch | `codex/morpheus-windows-production-candidate` |
-| Current verified runtime source | `15c229f` |
+| Current verified runtime source | `67aa05a` |
 | Cinematic voice-first arrival | `6cf5211` |
 | Operator private-alpha core | `dcf0eaf` |
 | Larry review runtime source | `765b5da` |
@@ -72,14 +75,14 @@ application behavior. `git rev-parse HEAD` is the authoritative latest commit.
 | Field | Verified value |
 | --- | --- |
 | Installer | `C:\Morpheus\morpheus-core\release\Morpheus-1.0.0-win-x64.exe` |
-| Size | 263,682,304 bytes |
-| SHA-256 | `FCBF2F01B2B337E6F1B29A5EAA9956505657EE39C0B11C3825804C29557A943B` |
+| Size | 263,684,091 bytes |
+| SHA-256 | `4025D87223794269B82A342449B6FA08E25E0514044BBADF9B3B72D4089A07D8` |
 | Authenticode | `NotSigned`; production signing remains CI/credential-owned |
 | Unpacked executable | `C:\Morpheus\morpheus-core\release\win-unpacked\Morpheus.exe` |
 | Unpacked size | 213,989,888 bytes |
-| Unpacked SHA-256 | `CA279690F0731F6C6BF27BA78EDA0E9A1F6D63A73708F3CC08637AB220104888` |
+| Unpacked SHA-256 | `9779B43E7A9C2F07C1892E422E88BA07EED7922A81BAED39FB72DA65A0518058` |
 
-`pnpm package:win` completed from committed runtime source `15c229f`.
+`pnpm package:win` completed from committed runtime source `67aa05a`.
 Generated release files are ignored and untracked.
 
 ## Test and verification status
@@ -89,18 +92,20 @@ Generated release files are ignored and untracked.
 | `git diff --check` | Pass before the documentation checkpoint |
 | Typecheck | Pass |
 | Lint | 0 errors; 12 inherited Fast Refresh warnings |
-| Morpheus unit tests | 688/688 pass across 73 files |
-| Windows production-candidate harness validation and dry run | Pass |
+| Morpheus unit tests | 690/690 pass across 73 files |
+| Gateway/chat stabilization tests | 54/54 pass across 4 focused files |
+| Windows production-candidate and Gateway/chat harness validation/dry run | Pass |
 | Communication replay and comparison | Pass |
-| Full Morpheus E2E | 56/56 pass in one serial run |
+| Full Morpheus E2E | 55/56 pass in one serial run; one Electron worker exited before test start and that exact journey passed 1/1 in isolation |
 | Setup/Chat/Gateway/Skills regression canaries | 10/10 pass |
 | Signal OS Channels regression journeys | 5/5 pass after following the intentional More navigation |
-| Repository-wide unit suite | 2,644 pass, 2 skipped, 16 inherited Windows path/mock failures in three untouched OpenClaw test files |
+| Repository-wide unit suite | 2,648 pass, 2 skipped, 16 inherited Windows path/mock failures in three untouched OpenClaw test files |
 | Vite production build | Pass |
 | Windows NSIS package | Pass |
 | Visual verification | Pass at 1280×800 for activation, Command Center, Presence, trust, provider setup, Missions, and Quick Command |
-| Normal packaged startup | Pass; responsive process tree remained stable and embedded Gateway listened on port 18789 |
-| Cleanup | Packaged processes closed, temporary profile removed, previously installed tray copy restored |
+| Normal packaged startup | Pass; responsive process tree remained stable, Gateway health returned HTTP 200, and the embedded Gateway listened on port 18789 |
+| Existing-profile Chat replay | Pass; the legacy `Hello There` transcript and its real tool-call result loaded within seconds |
+| Cleanup | All processes started by the unpacked package closed and port 18789 released |
 
 The current packaged smoke used the real unpacked production executable with no
 debugger and no E2E lock bypass. It started from the user's existing background
@@ -113,6 +118,12 @@ Notepad processes were then closed.
 Fresh activation, provider recovery, Command Center, Quick Command, Mission,
 trust, reduced-motion, and voice recovery are verified through isolated Electron
 journeys against the same production bundles.
+
+The current stabilization smoke additionally opened the packaged companion and
+full 1280x800 Command Center, confirmed truthful missing-provider/voice state,
+loaded the previously stuck `Hello There` conversation with its stored user
+message, five tool calls, and assistant result, and observed no new Gateway
+configuration timeout or fatal log entry during idle operation.
 
 Verification screenshots remain outside Git:
 
@@ -134,10 +145,6 @@ Verification screenshots remain outside Git:
 - Real provider-backed broad planning and transcription require compatible
   provider/STT credentials configured locally. Deterministic registered
   capabilities remain usable without them.
-- On the existing long-lived local profile, one legacy `Hello There` session
-  remained in `Opening this conversation...`; a fresh Chat opened normally and
-  the live Gateway remained connected. Treat this as profile/session-specific
-  follow-up rather than evidence that fresh Chat is unavailable.
 - Ambient voice is explicit opt-in and provider-backed; it is not an offline
   wake-word engine. Microphone recognition, latency, speaker output, barge-in,
   and acoustic quality need hands-on testing on the target device.
@@ -198,7 +205,7 @@ output is untrusted planning input and receives no direct OS authority.
 ```powershell
 git clone https://github.com/MoNaBOSS/Morpheus.git morpheus-core
 Set-Location morpheus-core
-git checkout codex/morpheus-operator-private-alpha
+git checkout codex/morpheus-windows-production-candidate
 corepack enable
 corepack prepare pnpm@10.33.4 --activate
 pnpm run init
@@ -214,8 +221,10 @@ pnpm exec vitest run morpheus
 pnpm run test:e2e
 pnpm run comms:replay
 pnpm run comms:compare
-pnpm harness validate --spec harness/specs/tasks/morpheus-operator-private-alpha.md
-pnpm harness run --spec harness/specs/tasks/morpheus-operator-private-alpha.md --dry-run
+pnpm harness validate --spec harness/specs/tasks/morpheus-windows-production-candidate.md
+pnpm harness run --spec harness/specs/tasks/morpheus-windows-production-candidate.md --dry-run
+pnpm harness validate --spec harness/specs/tasks/stabilize-openclaw-gateway-chat.md
+pnpm exec vitest run tests/unit/acp-chat-service.test.ts tests/unit/control-ui-device-pairing.test.ts tests/unit/gateway-process-launcher.test.ts tests/unit/morpheus-voice-store.test.ts
 pnpm package:win
 ```
 
