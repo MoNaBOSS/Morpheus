@@ -95,7 +95,10 @@ export async function readLocalPendingPairingRequests(): Promise<PendingDevicePa
   }
 }
 
-async function listPendingPairingRequests(gateway: GatewayPairingRpcClient): Promise<PendingDevicePairingRequest[]> {
+async function listPendingPairingRequests(
+  gateway: GatewayPairingRpcClient,
+  discovery: 'all' | 'local',
+): Promise<PendingDevicePairingRequest[]> {
   const merged = new Map<string, PendingDevicePairingRequest>();
 
   for (const request of await readLocalPendingPairingRequests()) {
@@ -103,7 +106,7 @@ async function listPendingPairingRequests(gateway: GatewayPairingRpcClient): Pro
     if (requestId) merged.set(requestId, request);
   }
 
-  if (gateway.isConnected()) {
+  if (discovery === 'all' && gateway.isConnected()) {
     try {
       const list = parseDevicePairingList(
         await gateway.rpc<unknown>('device.pair.list', {}, LIST_RPC_TIMEOUT_MS),
@@ -229,11 +232,11 @@ function sleep(ms: number, signal: { cancelled: boolean }): Promise<void> {
  */
 export async function approvePendingLocalDeviceRequests(
   gateway: GatewayPairingRpcClient,
-  options?: { approvedRequestIds?: Set<string> },
+  options?: { approvedRequestIds?: Set<string>; discovery?: 'all' | 'local' },
 ): Promise<string[]> {
   const port = resolveGatewayPort(gateway);
   const approvedRequestIds = options?.approvedRequestIds ?? new Set<string>();
-  const pending = await listPendingPairingRequests(gateway);
+  const pending = await listPendingPairingRequests(gateway, options?.discovery ?? 'all');
 
   const approved: string[] = [];
   for (const request of pending) {
@@ -266,7 +269,7 @@ export async function approvePendingLocalDeviceRequests(
  */
 export async function approvePendingControlUiPairingRequests(
   gateway: GatewayPairingRpcClient,
-  options?: { approvedRequestIds?: Set<string> },
+  options?: { approvedRequestIds?: Set<string>; discovery?: 'all' | 'local' },
 ): Promise<string[]> {
   return approvePendingLocalDeviceRequests(gateway, options);
 }
@@ -282,7 +285,7 @@ async function watchLocalDeviceApprovals(
 
   while (!signal.cancelled && (deadline == null || Date.now() < deadline)) {
     try {
-      await approvePendingLocalDeviceRequests(gateway, { approvedRequestIds });
+      await approvePendingLocalDeviceRequests(gateway, { approvedRequestIds, discovery: 'local' });
     } catch (error) {
       logger.debug(`[device-auto-approve] Poll error: ${String(error)}`);
     }

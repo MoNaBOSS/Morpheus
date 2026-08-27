@@ -16,3 +16,6 @@ Durable invariants:
 5. Every background execution enters Objective Core, plan trust, sequential
    capability execution and Audit.
 6. Renderer may request logical operations only and cannot author state results.
+7. Ambient auto-start is readiness-gated. A missing transcription provider or
+   emitted ambient error is surfaced once and must not create a retry or
+   Gateway-configuration polling loop.

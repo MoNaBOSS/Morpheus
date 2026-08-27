@@ -6,6 +6,9 @@ const mocks = vi.hoisted(() => ({
   submitObjective: vi.fn(),
   routeInteraction: vi.fn(),
   expandCompanionSurface: vi.fn(),
+  beginAmbientVoice: vi.fn(),
+  endAmbientVoice: vi.fn(),
+  voicePresenceHandler: null as ((...args: unknown[]) => void) | null,
 }));
 
 vi.mock('@/lib/host-api', () => ({
@@ -16,6 +19,8 @@ vi.mock('@/lib/host-api', () => ({
       submitObjective: mocks.submitObjective,
       routeInteraction: mocks.routeInteraction,
       expandCompanionSurface: mocks.expandCompanionSurface,
+      beginAmbientVoice: mocks.beginAmbientVoice,
+      endAmbientVoice: mocks.endAmbientVoice,
     },
   },
 }));
@@ -24,6 +29,10 @@ vi.mock('@/lib/host-events', () => ({
   hostEvents: {
     onMorpheusObjectiveEvent: vi.fn(() => vi.fn()),
     onMorpheusPlanConsent: vi.fn(() => vi.fn()),
+    onMorpheusVoicePresence: vi.fn((handler: (...args: unknown[]) => void) => {
+      mocks.voicePresenceHandler = handler;
+      return vi.fn();
+    }),
   },
 }));
 
@@ -77,6 +86,15 @@ beforeEach(() => {
     route: 'objective', reason: 'actionable-intent', confidence: 'high', text: 'Open Notepad',
   });
   mocks.expandCompanionSurface.mockResolvedValue({ mode: 'full' });
+  mocks.beginAmbientVoice.mockResolvedValue({
+    state: 'armed', ambientEnabled: true, listening: false,
+    providerLabel: 'OpenAI Voice', sessionId: 'ambient-session', reason: null,
+  });
+  mocks.endAmbientVoice.mockResolvedValue({
+    state: 'asleep', ambientEnabled: false, listening: false,
+    providerLabel: null, sessionId: null, reason: null,
+  });
+  mocks.voicePresenceHandler = null;
   useMorpheusOperatorStore.setState({
     mode: 'auto', lastDecision: null, clarification: null, pendingConversation: null,
   });
@@ -90,6 +108,63 @@ beforeEach(() => {
 });
 
 describe('Morpheus renderer voice controller', () => {
+  it('does not start or retry ambient capture when transcription is unavailable', async () => {
+    const unavailableStatus = {
+      settings: {
+        v: 1, enabled: true, ambientEnabled: true, providerAccountId: null, modelId: 'whisper-1',
+        speakResponses: true, autoSubmitTranscript: true,
+      },
+      transcriptionAvailable: false,
+      providers: [],
+      providerLabel: null,
+      reason: 'Configure a provider.',
+      presence: {
+        state: 'error', ambientEnabled: true, listening: false,
+        providerLabel: null, sessionId: null, reason: 'Configure a provider.',
+      },
+    } as const;
+    useMorpheusVoiceStore.setState({
+      status: unavailableStatus,
+      presence: unavailableStatus.presence,
+    });
+
+    await useMorpheusVoiceStore.getState().ensureAmbient();
+    const unsubscribe = useMorpheusVoiceStore.getState().subscribePresence();
+    mocks.voicePresenceHandler?.(unavailableStatus.presence);
+    await Promise.resolve();
+
+    expect(mocks.beginAmbientVoice).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
+  it('does not restart ambient capture from the cleanup presence after a failed start', async () => {
+    const readyStatus = {
+      settings: {
+        v: 1, enabled: true, ambientEnabled: true, providerAccountId: null, modelId: 'whisper-1',
+        speakResponses: true, autoSubmitTranscript: true,
+      },
+      transcriptionAvailable: true,
+      providers: [{ accountId: 'openai', label: 'OpenAI Voice', isDefault: true, configured: true }],
+      providerLabel: 'OpenAI Voice',
+      presence: {
+        state: 'asleep', ambientEnabled: true, listening: false,
+        providerLabel: null, sessionId: null, reason: null,
+      },
+    } as const;
+    mocks.voiceStatus.mockResolvedValue(readyStatus);
+    mocks.beginAmbientVoice.mockRejectedValueOnce(new Error('Provider runtime unavailable.'));
+    await useMorpheusVoiceStore.getState().loadStatus();
+    const unsubscribe = useMorpheusVoiceStore.getState().subscribePresence();
+
+    await expect(useMorpheusVoiceStore.getState().ensureAmbient()).rejects.toThrow('Provider runtime unavailable.');
+    mocks.voicePresenceHandler?.(readyStatus.presence);
+    await Promise.resolve();
+
+    expect(mocks.beginAmbientVoice).toHaveBeenCalledOnce();
+    expect(mocks.endAmbientVoice).toHaveBeenCalledOnce();
+    unsubscribe();
+  });
+
   it('does not request the microphone when transcription is unavailable', async () => {
     mocks.voiceStatus.mockResolvedValue({
       settings: {

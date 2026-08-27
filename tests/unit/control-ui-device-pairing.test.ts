@@ -149,4 +149,16 @@ describe('control-ui-device-pairing', () => {
     expect(approved).toEqual([]);
     expect(rpc).toHaveBeenCalledTimes(1);
   });
+
+  it('does not poll Gateway RPC during local-only background discovery when no pending file exists', async () => {
+    const rpc = vi.fn();
+
+    const approved = await approvePendingLocalDeviceRequests(
+      { isConnected: () => true, getStatus: () => ({ port: 18789 }), rpc },
+      { discovery: 'local' },
+    );
+
+    expect(approved).toEqual([]);
+    expect(rpc).not.toHaveBeenCalled();
+  });
 });

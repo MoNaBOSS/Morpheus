@@ -42,7 +42,7 @@ export function MorpheusGlobalRuntime() {
     const unsubscribeVoice = subscribeVoicePresence();
     void Promise.all([
       loadCapabilities(), loadPermissionCenter(), loadFilesRoot(), loadWorkspaces(), loadArtifacts(), loadObjectives(),
-      loadCompanion(), loadIntelligence(), loadVoiceStatus().then(() => ensureAmbient()),
+      loadCompanion(), loadIntelligence(), loadVoiceStatus().then(() => ensureAmbient()).catch(() => undefined),
     ]);
     return () => {
       unsubscribe();

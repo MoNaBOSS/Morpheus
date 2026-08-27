@@ -12,7 +12,7 @@ vi.mock('electron', () => ({
   },
 }));
 
-import { buildGatewayRuntimeEnv } from '@electron/gateway/process-launcher';
+import { buildGatewayRuntimeEnv, drainGatewayStdout } from '@electron/gateway/process-launcher';
 
 describe('Gateway process launcher environment', () => {
   it('enables safe startup tracing and preserves the source environment', () => {
@@ -32,5 +32,14 @@ describe('Gateway process launcher environment', () => {
       OPENCLAW_DISABLE_BONJOUR: '0',
       OPENCLAW_GATEWAY_STARTUP_TRACE: '0',
     });
+  });
+
+  it('consumes piped Gateway stdout so OpenClaw cannot block on a full pipe', () => {
+    const on = vi.fn();
+
+    drainGatewayStdout({ on } as unknown as NodeJS.ReadableStream);
+
+    expect(on).toHaveBeenCalledTimes(1);
+    expect(on).toHaveBeenCalledWith('data', expect.any(Function));
   });
 });

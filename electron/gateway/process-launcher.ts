@@ -94,6 +94,15 @@ export function buildGatewayRuntimeEnv(
   };
 }
 
+/**
+ * A piped child stdout stream must always be consumed. OpenClaw writes normal
+ * lifecycle output to stdout; leaving the pipe unread eventually fills the OS
+ * buffer and blocks the Gateway event loop, including RPC and heartbeats.
+ */
+export function drainGatewayStdout(stdout: NodeJS.ReadableStream | null): void {
+  stdout?.on('data', () => undefined);
+}
+
 function ensureGatewayFetchPreload(): string {
   const dest = path.join(app.getPath('userData'), 'gateway-fetch-preload.cjs');
   try {
@@ -216,6 +225,8 @@ export async function launchGatewayProcess(options: {
         options.onStderrLine(line);
       }
     });
+
+    drainGatewayStdout(child.stdout);
 
     child.on('spawn', () => {
       logger.info(`Gateway process started (pid=${child.pid})`);

@@ -190,11 +190,37 @@ describe('AcpChatService', () => {
   });
 
   it('loads historical sessions without explicit routing metadata so replay can resolve by session key', async () => {
-    const { service, connection } = await createService();
+    const connection = createConnection();
+    let service!: Awaited<ReturnType<typeof createService>>['service'];
+    connection.loadSession.mockImplementationOnce(async ({ sessionId }) => {
+      await service.client.sessionUpdate({
+        sessionId,
+        update: {
+          sessionUpdate: 'agent_message_chunk',
+          messageId: 'legacy-message',
+          content: { type: 'text', text: 'restored' },
+        },
+      } as never);
+      return {};
+    });
+    ({ service } = await createService(connection));
 
     await expect(service.loadSession({ sessionKey: 'agent:pi:s1', workspaceRoot: '/repo', cwd: '/repo' })).resolves.toEqual({
       success: true,
       generation: 1,
+      sessionUpdates: [{
+        sessionKey: 'agent:pi:s1',
+        generation: 1,
+        historical: true,
+        notification: {
+          sessionId: 'agent:pi:s1',
+          update: {
+            sessionUpdate: 'agent_message_chunk',
+            messageId: 'legacy-message',
+            content: { type: 'text', text: 'restored' },
+          },
+        },
+      }],
     });
 
     expect(connection.initialize).toHaveBeenCalledWith({

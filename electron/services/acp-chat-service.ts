@@ -529,7 +529,7 @@ export class AcpChatService {
   private async approveLocalDeviceRequests(): Promise<void> {
     if (!this.gateway) return;
     try {
-      await approvePendingLocalDeviceRequests(this.gateway);
+      await approvePendingLocalDeviceRequests(this.gateway, { discovery: 'local' });
     } catch (error) {
       logger.debug(`[acp-chat] Local device auto-approve skipped: ${String(error)}`);
     }

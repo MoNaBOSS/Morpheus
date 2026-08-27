@@ -91,6 +91,7 @@ let operationGeneration = 0;
 let discardRecording = false;
 let ambientCapture: MorpheusAmbientVoiceCapture | null = null;
 let ambientStarting: Promise<void> | null = null;
+let ambientAutoStartBlocked = false;
 
 function clearDurationTimer(): void {
   if (durationTimer !== null) window.clearTimeout(durationTimer);
@@ -266,6 +267,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
     try {
       await ambientStarting;
     } catch (error) {
+      ambientAutoStartBlocked = true;
       stopAmbientLocal();
       await hostApi.morpheus.endAmbientVoice().catch(() => undefined);
       set({
@@ -292,7 +294,11 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
 
     async loadStatus() {
       try {
+        const previousStatus = get().status;
         const status = await hostApi.morpheus.voiceStatus();
+        if (status.transcriptionAvailable && previousStatus?.transcriptionAvailable !== true) {
+          ambientAutoStartBlocked = false;
+        }
         set({ status, presence: status.presence, error: null, errorKind: null });
         return status;
       } catch (error) {
@@ -311,8 +317,14 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
           presence,
           status: state.status ? { ...state.status, presence } : state.status,
         }));
-        if (presence.ambientEnabled && !ambientCapture && !ambientStarting) {
-          void get().ensureAmbient();
+        const status = get().status;
+        if (presence.ambientEnabled
+          && presence.state !== 'error'
+          && status?.transcriptionAvailable
+          && !ambientAutoStartBlocked
+          && !ambientCapture
+          && !ambientStarting) {
+          void get().ensureAmbient().catch(() => undefined);
         } else if (!presence.ambientEnabled) stopAmbientLocal();
       });
     },
@@ -320,6 +332,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
     async updateSettings(patch) {
       try {
         const status = await hostApi.morpheus.updateVoiceSettings(patch);
+        ambientAutoStartBlocked = false;
         set({ status, presence: status.presence, error: null, errorKind: null });
         if (status.settings.ambientEnabled) await startAmbientCapture(status);
         else stopAmbientLocal();
@@ -330,11 +343,12 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
 
     async ensureAmbient() {
       const status = get().status ?? await get().loadStatus();
-      if (!status?.settings.ambientEnabled) return;
+      if (!status?.settings.ambientEnabled || !status.transcriptionAvailable || ambientAutoStartBlocked) return;
       await startAmbientCapture(status);
     },
 
     async stopAmbient() {
+      ambientAutoStartBlocked = true;
       stopAmbientLocal();
       try {
         const presence = await hostApi.morpheus.endAmbientVoice();
