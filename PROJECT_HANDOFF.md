@@ -1,4 +1,4 @@
-# Morpheus Operator Private Alpha — Release-Candidate Handoff
+# Morpheus Windows Production Candidate — Handoff
 
 Read [`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md), and the canonical
 product, architecture, design, security, roadmap, and release documents before
@@ -7,7 +7,7 @@ changing the runtime.
 ## Current project status
 
 Morpheus now has a coherent Windows operator experience rather than an
-OpenClaw-first shell. The **Signal OS** review candidate is implemented,
+OpenClaw-first shell. The **Signal OS** production candidate is implemented,
 committed, packaged, and verified through automated tests, visual checks,
 normal packaged startup, and fresh-profile Electron journey tests. Larry's focused review instructions are in
 [`docs/releases/LARRY_REVIEW_GUIDE.md`](docs/releases/LARRY_REVIEW_GUIDE.md).
@@ -53,8 +53,8 @@ and compatible credentials.
 
 | Item | Value |
 | --- | --- |
-| Current branch | `codex/morpheus-operator-private-alpha` |
-| Current verified source | `765b5da` |
+| Current branch | `codex/morpheus-windows-production-candidate` |
+| Current verified runtime source | `15c229f` |
 | Cinematic voice-first arrival | `6cf5211` |
 | Operator private-alpha core | `dcf0eaf` |
 | Larry review runtime source | `765b5da` |
@@ -62,7 +62,7 @@ and compatible credentials.
 | Signal OS doctrine | `1af1f25` |
 | Windows 1.0 Foundation checkpoint | `4895fa4` |
 | Origin | `https://github.com/MoNaBOSS/Morpheus.git` |
-| Remote state | This branch is local unless a later operator explicitly pushes it |
+| Remote state | Pushed to `origin/codex/morpheus-windows-production-candidate` |
 
 The documentation checkpoint follows the packaged runtime and does not change
 application behavior. `git rev-parse HEAD` is the authoritative latest commit.
@@ -72,14 +72,14 @@ application behavior. `git rev-parse HEAD` is the authoritative latest commit.
 | Field | Verified value |
 | --- | --- |
 | Installer | `C:\Morpheus\morpheus-core\release\Morpheus-1.0.0-win-x64.exe` |
-| Size | 263,684,018 bytes |
-| SHA-256 | `B415A32DA74B50A07E43D166886AA191D0ACA06EB8705EFC39875335EDD15988` |
+| Size | 263,682,304 bytes |
+| SHA-256 | `FCBF2F01B2B337E6F1B29A5EAA9956505657EE39C0B11C3825804C29557A943B` |
 | Authenticode | `NotSigned`; production signing remains CI/credential-owned |
 | Unpacked executable | `C:\Morpheus\morpheus-core\release\win-unpacked\Morpheus.exe` |
 | Unpacked size | 213,989,888 bytes |
-| Unpacked SHA-256 | `7177C25C45AFBA1F5608DC7A4F6E91998CAA22B8C51A16AF6E29C81FF277AC15` |
+| Unpacked SHA-256 | `CA279690F0731F6C6BF27BA78EDA0E9A1F6D63A73708F3CC08637AB220104888` |
 
-`pnpm package:win` completed from committed runtime source `765b5da`.
+`pnpm package:win` completed from committed runtime source `15c229f`.
 Generated release files are ignored and untracked.
 
 ## Test and verification status
@@ -89,13 +89,13 @@ Generated release files are ignored and untracked.
 | `git diff --check` | Pass before the documentation checkpoint |
 | Typecheck | Pass |
 | Lint | 0 errors; 12 inherited Fast Refresh warnings |
-| Morpheus unit tests | 677/677 pass across 73 files |
-| Operator private-alpha harness validation and dry run | Pass |
+| Morpheus unit tests | 688/688 pass across 73 files |
+| Windows production-candidate harness validation and dry run | Pass |
 | Communication replay and comparison | Pass |
-| Focused activation/provider/voice/Signal OS E2E | 12/12 pass |
-| Full Morpheus E2E | 55/56 in one serial run; the one worker exited before test start and that exact test passed 1/1 in isolation |
-| Chat/Gateway regression canaries | 8/8 pass |
-| Repository-wide unit suite | 2,633 pass, 2 skipped, 16 inherited Windows path/mock failures in three untouched OpenClaw test files |
+| Full Morpheus E2E | 56/56 pass in one serial run |
+| Setup/Chat/Gateway/Skills regression canaries | 10/10 pass |
+| Signal OS Channels regression journeys | 5/5 pass after following the intentional More navigation |
+| Repository-wide unit suite | 2,644 pass, 2 skipped, 16 inherited Windows path/mock failures in three untouched OpenClaw test files |
 | Vite production build | Pass |
 | Windows NSIS package | Pass |
 | Visual verification | Pass at 1280×800 for activation, Command Center, Presence, trust, provider setup, Missions, and Quick Command |
@@ -106,7 +106,10 @@ The current packaged smoke used the real unpacked production executable with no
 debugger and no E2E lock bypass. It started from the user's existing background
 preference, remained responsive with the stable six-process Electron tree, and
 started the embedded Gateway on port 18789 without a duplicate process or
-restart loop. The package was then closed and the installed tray copy restored.
+restart loop. System reporting, workspace file creation, Notepad launch, measured
+Mission progress, artifacts, Activity/audit projection, and a fresh Chat were
+verified against the production bundle. All owned Morpheus, Gateway, and test
+Notepad processes were then closed.
 Fresh activation, provider recovery, Command Center, Quick Command, Mission,
 trust, reduced-motion, and voice recovery are verified through isolated Electron
 journeys against the same production bundles.
@@ -122,12 +125,19 @@ Verification screenshots remain outside Git:
 - `C:\Morpheus\verification\operator-complete-2026-08-26\command-center-mission-1280x800.png`
 - `C:\Morpheus\verification\operator-complete-2026-08-26\mission-history-1280x800.png`
 - `C:\Morpheus\verification\operator-complete-2026-08-26\quick-command-overlay.png`
+- `C:\Morpheus\verification\windows-production-candidate-2026-08-27\command-center-final-1280x800.png`
+- `C:\Morpheus\verification\windows-production-candidate-2026-08-27\live-chat-gateway-1280x800.png`
+- `C:\Morpheus\verification\windows-production-candidate-2026-08-27\activity-audit-1280x800.png`
 
 ## Known limitations
 
 - Real provider-backed broad planning and transcription require compatible
   provider/STT credentials configured locally. Deterministic registered
   capabilities remain usable without them.
+- On the existing long-lived local profile, one legacy `Hello There` session
+  remained in `Opening this conversation...`; a fresh Chat opened normally and
+  the live Gateway remained connected. Treat this as profile/session-specific
+  follow-up rather than evidence that fresh Chat is unavailable.
 - Ambient voice is explicit opt-in and provider-backed; it is not an offline
   wake-word engine. Microphone recognition, latency, speaker output, barge-in,
   and acoustic quality need hands-on testing on the target device.

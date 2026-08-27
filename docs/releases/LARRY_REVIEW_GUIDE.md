@@ -10,9 +10,9 @@ assistant vision is complete.
 | Field | Value |
 | --- | --- |
 | Installer | `Morpheus-1.0.0-win-x64.exe` |
-| Runtime source | `765b5da` |
-| Size | 263,684,018 bytes |
-| SHA-256 | `B415A32DA74B50A07E43D166886AA191D0ACA06EB8705EFC39875335EDD15988` |
+| Runtime source | `15c229f` |
+| Size | 263,682,304 bytes |
+| SHA-256 | `FCBF2F01B2B337E6F1B29A5EAA9956505657EE39C0B11C3825804C29557A943B` |
 | Authenticode | `NotSigned` — production signing is not configured locally |
 | Supported host | Windows 10/11 x64 |
 

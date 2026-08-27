@@ -55,6 +55,7 @@ test.describe('Channels account editor behavior', () => {
     });
 
     await completeSetup(page);
+    await page.getByTestId('signal-nav-advanced').click();
     await page.getByTestId('sidebar-nav-channels').click();
     await expect(page.getByTestId('channels-page')).toBeVisible();
 

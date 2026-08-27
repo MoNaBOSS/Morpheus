@@ -99,6 +99,7 @@ test.describe('Channels binding regression', () => {
 
     await completeSetup(page);
 
+    await page.getByTestId('signal-nav-advanced').click();
     await page.getByTestId('sidebar-nav-channels').click();
     await expect(page.getByTestId('channels-page')).toBeVisible();
     await expect(page.getByText('Feishu / Lark')).toBeVisible();
