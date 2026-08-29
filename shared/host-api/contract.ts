@@ -62,6 +62,8 @@ import type {
 import type {
   MorpheusTranscribeAudioPayload,
   MorpheusTranscriptionResult,
+  MorpheusSynthesizeSpeechPayload,
+  MorpheusSynthesizeSpeechResult,
   MorpheusAmbientListeningPayload,
   MorpheusVoicePresence,
   MorpheusVoiceSettingsPatch,
@@ -1232,6 +1234,7 @@ export type HostApiContract = {
     voiceStatus: () => MorpheusVoiceStatus;
     updateVoiceSettings: (payload: MorpheusVoiceSettingsPatch) => MorpheusVoiceStatus;
     transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => MorpheusTranscriptionResult;
+    synthesizeSpeech: (payload: MorpheusSynthesizeSpeechPayload) => MorpheusSynthesizeSpeechResult;
     beginAmbientVoice: () => MorpheusVoicePresence;
     endAmbientVoice: () => MorpheusVoicePresence;
     setAmbientVoiceListening: (payload: MorpheusAmbientListeningPayload) => MorpheusVoicePresence;

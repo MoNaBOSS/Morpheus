@@ -1158,7 +1158,14 @@
         "autoSubmit": "Run after transcription",
         "autoSubmitDescription": "Send a successful transcript into the same Objective Core without another click.",
         "speakResponses": "Speak final responses",
-        "speakResponsesDescription": "Read concise completion or clarification messages through Windows speech synthesis."
+        "speakResponsesDescription": "Speak concise results through a configured neural voice, with Windows speech as fallback.",
+        "neuralSpeech": "Morpheus neural voice",
+        "neuralSpeechReady": "Neural speech is configured through {{provider}}. If that provider does not support speech, Morpheus falls back to Windows voice.",
+        "neuralSpeechFallback": "No compatible speech provider is ready. Windows speech will be used.",
+        "speechProvider": "Speech provider",
+        "speechProviderAutomatic": "Automatic · transcription provider",
+        "speechModel": "Speech model",
+        "speechVoice": "Voice"
       },
       "states": {
         "idle": "Voice ready",

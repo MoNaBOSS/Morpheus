@@ -13,9 +13,15 @@ together. Contracts, placeholder pages and mocked providers do not count.
 - A transcript without the exact wake phrase creates no objective.
 - A wake phrase plus objective creates one real Mission.
 - Audio/transcripts are never persisted or audited.
+- Provider-generated speech uses a fixed Main-owned endpoint, bounded ephemeral
+  audio, no persisted response payload, and a truthful Windows fallback.
+- The user's communication personality affects wording and supported neural
+  delivery only; it cannot change plans, trust or capability authority.
 - Barge-in stops speech; Escape cancels capture; runtime cancellation remains
   Main-owned.
 - Reduced-motion and no-provider states are truthful and usable.
+- Boot, activation, Command Center, Invoke and trust show one original living
+  Signal driven by real lifecycle state.
 
 ## Today and proactivity
 

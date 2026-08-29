@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import { hostEvents } from '@/lib/host-events';
-import { hostApi } from '@/lib/host-api';
 import { morpheusVoiceSpeechFor } from '@/lib/morpheus-voice-runtime';
+import { playMorpheusSpeech, stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
@@ -44,32 +44,22 @@ export function MorpheusVoiceRuntime() {
       : null;
     if (!objectiveRun || objectiveRun.origin.type !== 'voice'
       || !message || !status?.settings.speakResponses
-      || spokenStateKey.current === stateKey
-      || typeof window.speechSynthesis === 'undefined'
-      || typeof SpeechSynthesisUtterance === 'undefined') return;
+      || spokenStateKey.current === stateKey) return;
 
     spokenStateKey.current = stateKey;
-    const utterance = new SpeechSynthesisUtterance(message);
-    utterance.onstart = () => {
-      setSpeaking(true);
-      void hostApi.morpheus.setVoiceSpeaking({ speaking: true });
-    };
-    utterance.onend = () => {
-      setSpeaking(false);
-      void hostApi.morpheus.setVoiceSpeaking({ speaking: false });
-    };
-    utterance.onerror = () => {
-      setSpeaking(false);
-      void hostApi.morpheus.setVoiceSpeaking({ speaking: false });
-    };
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+    let active = true;
+    void playMorpheusSpeech(message, {
+      neuralAvailable: status.neuralSpeechAvailable,
+      onSpeakingChange: (next) => {
+        if (active) setSpeaking(next);
+      },
+    }).catch(() => {
+      if (active) setSpeaking(false);
+    });
     return () => {
-      utterance.onstart = null;
-      utterance.onend = null;
-      utterance.onerror = null;
+      active = false;
     };
-  }, [objectiveRun, status?.settings.speakResponses]);
+  }, [objectiveRun, status?.neuralSpeechAvailable, status?.settings.speakResponses]);
 
   const ambientActive = Boolean(presence?.ambientEnabled && presence.state !== 'asleep');
   if (phase === 'idle' && !speaking && !ambientActive) return null;
@@ -190,9 +180,8 @@ export function MorpheusVoiceRuntime() {
           aria-label={processing || listening ? t('morpheus.voice.cancel') : t('morpheus.voice.dismiss')}
           onClick={() => {
             if (speaking) {
-              window.speechSynthesis.cancel();
+              stopMorpheusSpeech();
               setSpeaking(false);
-              void hostApi.morpheus.setVoiceSpeaking({ speaking: false });
             }
             if (processing || listening) cancel();
             else dismiss();

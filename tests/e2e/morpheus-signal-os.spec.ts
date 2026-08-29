@@ -34,6 +34,11 @@ test.describe('Morpheus Signal OS', () => {
       await expect(page.getByTestId('signal-os-live-state')).toHaveText(/ready/i);
       await expect(page.getByText(/Give Morpheus an outcome/i)).toBeVisible();
       await expect(page.getByText(/^\s*ClawX\s*$/i)).toHaveCount(0);
+      const livingSignal = page.getByTestId('command-center-plan').getByTestId('morpheus-signal');
+      await expect(livingSignal.locator('.morpheus-signal-core')).toBeVisible();
+      await expect(livingSignal.locator('.morpheus-signal-orbits ellipse')).toHaveCount(3);
+      const signalBox = await livingSignal.boundingBox();
+      expect(signalBox?.width).toBeGreaterThanOrEqual(220);
 
       const overflow = await page.getByTestId('command-center-page').evaluate((element) => ({
         horizontal: element.scrollWidth - element.clientWidth,

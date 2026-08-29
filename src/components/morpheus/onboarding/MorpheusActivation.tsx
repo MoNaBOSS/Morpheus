@@ -25,6 +25,7 @@ import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { hasConfiguredCredentials } from '@/lib/provider-accounts';
 import { isMorpheusPlannerAccountCompatible } from '@shared/morpheus/provider-readiness';
+import { playMorpheusSpeech, stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
 
 type ActivationStage = 'loading' | 'intro' | 'calibrating' | 'preferences' | 'proof' | 'ready';
 type SignalLock = { id: 'core' | 'runtime' | 'provider' | 'voice'; available: boolean; detail: string };
@@ -58,6 +59,7 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const [permissionProfile, setPermissionProfile] = useState<PermissionProfile>('autonomous');
   const [proactiveCheckIns, setProactiveCheckIns] = useState(true);
   const [voiceAvailable, setVoiceAvailable] = useState(false);
+  const [neuralSpeechAvailable, setNeuralSpeechAvailable] = useState(false);
   const [proofStarted, setProofStarted] = useState(false);
   const [exiting, setExiting] = useState(false);
   const voicePhase = useMorpheusVoiceStore((state) => state.phase);
@@ -109,10 +111,8 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const signalState = resolveMorpheusSignalState({ objectiveState: visibleStage === 'proof' ? objectiveRun?.state : visibleStage === 'ready' ? 'complete' : visibleStage === 'calibrating' ? 'understanding' : undefined });
 
   const speak = useCallback((text: string): void => {
-    if (typeof window.speechSynthesis === 'undefined' || typeof SpeechSynthesisUtterance === 'undefined') return;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
-  }, []);
+    void playMorpheusSpeech(text, { neuralAvailable: neuralSpeechAvailable }).catch(() => undefined);
+  }, [neuralSpeechAvailable]);
 
   useEffect(() => {
     if (visibleStage !== 'intro' || introductionSpoken.current) return;
@@ -124,7 +124,7 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     if (exitStarted.current) return;
     exitStarted.current = true;
     setExiting(true);
-    window.speechSynthesis?.cancel();
+    stopMorpheusSpeech();
     exitTimer.current = window.setTimeout(() => {
       setDismissed(true);
       if (destination) navigate(destination);
@@ -139,7 +139,7 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
 
   useEffect(() => () => {
     if (exitTimer.current !== null) window.clearTimeout(exitTimer.current);
-    window.speechSynthesis?.cancel();
+    stopMorpheusSpeech();
     if (useMorpheusVoiceStore.getState().source === 'onboarding') {
       useMorpheusVoiceStore.getState().cancel();
     }
@@ -156,6 +156,7 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     const [capabilities, voice] = await Promise.all([hostApi.morpheus.describeActions().catch(() => null), hostApi.morpheus.voiceStatus().catch(() => null)]);
     const runtimeReady = gatewayStatus.state === 'running' && gatewayStatus.gatewayReady !== false;
     setVoiceAvailable(Boolean(voice?.transcriptionAvailable));
+    setNeuralSpeechAvailable(Boolean(voice?.neuralSpeechAvailable));
     setSignals([
       { id: 'core', available: Boolean(capabilities?.actions.length), detail: capabilities ? t('morpheus.activation.signal.capabilities', { count: capabilities.actions.length }) : t('morpheus.activation.signal.unavailable') },
       { id: 'runtime', available: runtimeReady, detail: runtimeReady ? t('morpheus.activation.signal.connected') : t('morpheus.activation.signal.starting') },

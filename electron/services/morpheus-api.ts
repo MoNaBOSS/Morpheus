@@ -79,7 +79,10 @@ import {
   MORPHEUS_AMBIENT_MIN_SILENCE_MS,
   MORPHEUS_AMBIENT_MIN_UTTERANCE_MS,
   MORPHEUS_AMBIENT_WAKE_PHRASE_PATTERN,
+  MORPHEUS_SPEECH_MAX_TEXT_CHARS,
+  MORPHEUS_SPEECH_VOICES,
   type MorpheusTranscribeAudioPayload,
+  type MorpheusSynthesizeSpeechPayload,
   type MorpheusVoiceSettingsPatch,
 } from '@shared/morpheus/voice-types';
 import type { MorpheusVoiceService } from './morpheus/voice/voice-service';
@@ -905,6 +908,7 @@ export function validateVoiceSettingsPatch(payload: unknown): MorpheusVoiceSetti
   const record = requireRecord(payload, 'updateVoiceSettings payload');
   assertNoUnknownKeys(record, [
     'enabled', 'providerAccountId', 'modelId', 'speakResponses', 'autoSubmitTranscript',
+    'speechProviderAccountId', 'speechModelId', 'speechVoice',
     'ambientEnabled', 'wakePhrase', 'ambientSilenceMs', 'ambientMaxUtteranceMs', 'bargeIn',
   ], 'updateVoiceSettings payload');
   for (const key of ['enabled', 'speakResponses', 'autoSubmitTranscript', 'ambientEnabled', 'bargeIn'] as const) {
@@ -916,9 +920,22 @@ export function validateVoiceSettingsPatch(payload: unknown): MorpheusVoiceSetti
     && (typeof record.providerAccountId !== 'string' || !/^[A-Za-z0-9._-]{1,128}$/.test(record.providerAccountId))) {
     throw new MorpheusValidationError('invalid providerAccountId');
   }
+  if (record.speechProviderAccountId !== undefined && record.speechProviderAccountId !== null
+    && (typeof record.speechProviderAccountId !== 'string'
+      || !/^[A-Za-z0-9._-]{1,128}$/.test(record.speechProviderAccountId))) {
+    throw new MorpheusValidationError('invalid speechProviderAccountId');
+  }
   if (record.modelId !== undefined && (typeof record.modelId !== 'string'
     || !record.modelId.trim() || record.modelId.length > 200)) {
     throw new MorpheusValidationError('invalid voice modelId');
+  }
+  if (record.speechModelId !== undefined && (typeof record.speechModelId !== 'string'
+    || !record.speechModelId.trim() || record.speechModelId.length > 200)) {
+    throw new MorpheusValidationError('invalid speechModelId');
+  }
+  if (record.speechVoice !== undefined
+    && !MORPHEUS_SPEECH_VOICES.includes(record.speechVoice as never)) {
+    throw new MorpheusValidationError('invalid speechVoice');
   }
   if (record.wakePhrase !== undefined && (typeof record.wakePhrase !== 'string'
     || !MORPHEUS_AMBIENT_WAKE_PHRASE_PATTERN.test(record.wakePhrase.trim()))) {
@@ -973,6 +990,16 @@ export function validateTranscribeAudioPayload(payload: unknown): MorpheusTransc
     throw new MorpheusValidationError('invalid voice durationMs');
   }
   return record as MorpheusTranscribeAudioPayload;
+}
+
+export function validateSynthesizeSpeechPayload(payload: unknown): MorpheusSynthesizeSpeechPayload {
+  const record = requireRecord(payload, 'synthesizeSpeech payload');
+  assertNoUnknownKeys(record, ['text'], 'synthesizeSpeech payload');
+  if (typeof record.text !== 'string' || !record.text.trim()
+    || record.text.length > MORPHEUS_SPEECH_MAX_TEXT_CHARS) {
+    throw new MorpheusValidationError('speech text is empty or too large');
+  }
+  return { text: record.text.trim() };
 }
 
 function validateIdPayload(payload: unknown, label: string): { id: string } {
@@ -1287,6 +1314,7 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
         ambientEnabled: preferences.ambientVoiceEnabled,
         wakePhrase: preferences.wakePhrase,
       });
+      await proactive.updateSettings({ enabled: preferences.proactiveCheckIns });
       await options.applyDesktopSetup?.({ launchAtStartup: preferences.launchAtStartup });
       await audit.recordControl({
         category: 'permission', event: 'profile-changed',
@@ -1314,6 +1342,32 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
           enabled: true,
         }, { source: 'user', sourceId: 'onboarding-preferred-name' });
       }
+      const personalityMemory = memory.list().memories.find((entry) => (
+        entry.sourceId === 'onboarding-personality'
+      ));
+      const personalityMemoryId = personalityMemory?.memoryId ?? `memory-${randomUUID()}`;
+      await audit.recordControl({
+        category: 'memory',
+        event: personalityMemory ? 'updated-from-onboarding' : 'captured-from-onboarding',
+        subjectId: personalityMemoryId,
+        details: { kind: 'preference', source: 'user' },
+        appVersion,
+      });
+      const personalityText = {
+        adaptive: 'Adapt communication detail, tone, and pace to the objective.',
+        concise: 'Communicate briefly and directly without unnecessary narration.',
+        warm: 'Communicate naturally and warmly, with light humor when appropriate.',
+        witty: 'Communicate confidently and concisely, with subtle human wit when appropriate.',
+      }[preferences.personality];
+      memory.save({
+        memoryId: personalityMemoryId,
+        title: 'Companion communication style',
+        text: personalityText,
+        kind: 'preference',
+        sensitivity: 'normal',
+        providerUse: 'allowed',
+        enabled: true,
+      }, { source: 'user', sourceId: 'onboarding-personality' });
       return onboarding.complete(preferences);
     },
     resetOnboarding: async () => {
@@ -1356,6 +1410,7 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     voiceStatus: () => voice.status(),
     updateVoiceSettings: (payload) => voice.updateSettings(validateVoiceSettingsPatch(payload)),
     transcribeAudio: (payload) => voice.transcribe(validateTranscribeAudioPayload(payload)),
+    synthesizeSpeech: (payload) => voice.synthesize(validateSynthesizeSpeechPayload(payload)),
     beginAmbientVoice: () => voice.beginAmbientSession(),
     endAmbientVoice: () => voice.endAmbientSession(),
     setAmbientVoiceListening: (payload) => (

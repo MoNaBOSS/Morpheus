@@ -64,7 +64,7 @@ export function SignalMissionStage() {
   if (!objective) {
     return (
       <section data-testid="command-center-plan" className="signal-mission-stage signal-mission-stage-idle flex min-h-0 flex-1 flex-col items-center justify-center px-8 text-center">
-        <MorpheusSignal state="ready" className="h-40 w-40 text-foreground/70" label={t('morpheus.signalOs.signal.ready')} />
+        <MorpheusSignal state="ready" className="h-56 w-56 text-[hsl(var(--morpheus-accent))]" label={t('morpheus.signalOs.signal.ready')} />
         <p className="mt-5 text-[10px] uppercase tracking-[0.28em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.signalOs.ready')}</p>
         <h2 className="mt-3 max-w-2xl font-serif text-3xl font-normal tracking-tight text-foreground">{t('morpheus.signalOs.idleTitle')}</h2>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">{t('morpheus.signalOs.idleBody')}</p>

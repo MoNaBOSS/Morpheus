@@ -802,7 +802,14 @@
         "autoSubmit": "Запускать после распознавания",
         "autoSubmitDescription": "Успешный текст сразу поступает в тот же Objective Core без дополнительного клика.",
         "speakResponses": "Озвучивать итоговые ответы",
-        "speakResponsesDescription": "Озвучивать краткие сообщения о завершении или уточнении средствами Windows."
+        "speakResponsesDescription": "Озвучивать краткие результаты настроенным нейронным голосом, используя речь Windows как резерв.",
+        "neuralSpeech": "Нейронный голос Morpheus",
+        "neuralSpeechReady": "Нейронная речь настроена через {{provider}}. Если провайдер не поддерживает речь, используется голос Windows.",
+        "neuralSpeechFallback": "Совместимый голосовой провайдер недоступен. Будет использована речь Windows.",
+        "speechProvider": "Провайдер речи",
+        "speechProviderAutomatic": "Автоматически · провайдер распознавания",
+        "speechModel": "Модель речи",
+        "speechVoice": "Голос"
       },
       "states": {
         "idle": "Голос готов",

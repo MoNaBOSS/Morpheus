@@ -141,6 +141,15 @@ function stubOptions(runtime = stubRuntime()) {
       })),
       updateSettings: vi.fn(),
       transcribe: vi.fn(),
+      synthesize: vi.fn(),
+    } as never,
+    proactive: {
+      snapshot: vi.fn(() => ({ settings: { enabled: false }, attentions: [] })),
+      updateSettings: vi.fn(async (patch) => ({ settings: patch, attentions: [] })),
+      refresh: vi.fn(),
+      dismiss: vi.fn(),
+      snooze: vi.fn(),
+      act: vi.fn(),
     } as never,
     runtimeControl: {
       snapshot: vi.fn(() => ({ v: 1 as const, paused: false, updatedAt: '2026-08-11T00:00:00.000Z' })),
@@ -440,6 +449,7 @@ describe('Mission and explicit context validation', () => {
       ambientEnabled: false,
       wakePhrase: 'Morpheus',
     });
+    expect(options.proactive.updateSettings).toHaveBeenCalledWith({ enabled: true });
     expect(applyDesktopSetup).toHaveBeenCalledWith({ launchAtStartup: true });
     expect(options.grants.setProfile).toHaveBeenCalledWith('autonomous');
     expect(options.memory.save).toHaveBeenCalledWith(expect.objectContaining({
@@ -661,6 +671,7 @@ describe('createMorpheusApi', () => {
       'setVoiceSpeaking',
       'snoozeAttention',
       'submitObjective',
+      'synthesizeSpeech',
       'system',
       'systemInfo',
       'systems',

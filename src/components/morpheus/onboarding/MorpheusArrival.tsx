@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { MorpheusBoot } from '@/components/morpheus/boot/MorpheusBoot';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { MorpheusActivation } from './MorpheusActivation';
+import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { playMorpheusSpeech } from '@/lib/morpheus-speech-player';
 
 type MorpheusArrivalProps = {
   bootEnabled: boolean;
@@ -19,25 +21,26 @@ export function MorpheusArrival({ bootEnabled, onboardingEnabled }: MorpheusArri
   const onboarding = useMorpheusCompanionStore((state) => state.onboarding);
   const loadOnboarding = useMorpheusCompanionStore((state) => state.loadOnboarding);
   const [bootDone, setBootDone] = useState(!bootEnabled);
+  const voiceStatus = useMorpheusVoiceStore((state) => state.status);
+  const loadVoiceStatus = useMorpheusVoiceStore((state) => state.loadStatus);
   const returningGreetingSpoken = useRef(false);
 
   useEffect(() => {
-    void loadOnboarding();
-  }, [loadOnboarding]);
+    void Promise.all([loadOnboarding(), loadVoiceStatus()]);
+  }, [loadOnboarding, loadVoiceStatus]);
 
   useEffect(() => {
     if (bootDone || !onboarding?.completed || !onboarding.preferences.speakResponses
-      || returningGreetingSpoken.current
-      || typeof window.speechSynthesis === 'undefined'
-      || typeof SpeechSynthesisUtterance === 'undefined') return;
+      || returningGreetingSpoken.current) return;
     returningGreetingSpoken.current = true;
     const name = onboarding.preferences.preferredName.trim();
-    const utterance = new SpeechSynthesisUtterance(name
+    const message = name
       ? t('morpheus.boot.welcomeBack', { name })
-      : t('morpheus.boot.welcomeBackGeneric'));
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
-  }, [bootDone, onboarding, t]);
+      : t('morpheus.boot.welcomeBackGeneric');
+    void playMorpheusSpeech(message, {
+      neuralAvailable: Boolean(voiceStatus?.neuralSpeechAvailable),
+    }).catch(() => undefined);
+  }, [bootDone, onboarding, t, voiceStatus?.neuralSpeechAvailable]);
 
   const finishBoot = useCallback(() => setBootDone(true), []);
 

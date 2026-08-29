@@ -802,7 +802,14 @@
         "autoSubmit": "转录后运行",
         "autoSubmitDescription": "转录成功后无需再次点击，直接进入同一目标核心。",
         "speakResponses": "朗读最终响应",
-        "speakResponsesDescription": "通过 Windows 语音合成朗读简洁的完成或澄清消息。"
+        "speakResponsesDescription": "通过已配置的神经语音朗读简洁结果，并以 Windows 语音作为备用。",
+        "neuralSpeech": "Morpheus 神经语音",
+        "neuralSpeechReady": "已通过 {{provider}} 配置神经语音。若提供商不支持语音，Morpheus 将回退到 Windows 语音。",
+        "neuralSpeechFallback": "没有可用的兼容语音提供商，将使用 Windows 语音。",
+        "speechProvider": "语音提供商",
+        "speechProviderAutomatic": "自动 · 转录提供商",
+        "speechModel": "语音模型",
+        "speechVoice": "声音"
       },
       "states": {
         "idle": "语音已就绪",

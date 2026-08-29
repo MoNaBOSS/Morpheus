@@ -802,7 +802,14 @@
         "autoSubmit": "文字起こし後に実行",
         "autoSubmitDescription": "文字起こし成功後、追加クリックなしで同じ Objective Core に送ります。",
         "speakResponses": "最終応答を読み上げる",
-        "speakResponsesDescription": "Windows 音声合成で簡潔な完了・確認メッセージを読み上げます。"
+        "speakResponsesDescription": "設定済みのニューラル音声で簡潔な結果を読み上げ、Windows 音声を代替として使用します。",
+        "neuralSpeech": "Morpheus ニューラル音声",
+        "neuralSpeechReady": "{{provider}} でニューラル音声を設定済みです。音声非対応の場合は Windows 音声に切り替わります。",
+        "neuralSpeechFallback": "対応する音声プロバイダーがありません。Windows 音声を使用します。",
+        "speechProvider": "音声プロバイダー",
+        "speechProviderAutomatic": "自動 · 文字起こしプロバイダー",
+        "speechModel": "音声モデル",
+        "speechVoice": "声"
       },
       "states": {
         "idle": "音声入力の準備完了",

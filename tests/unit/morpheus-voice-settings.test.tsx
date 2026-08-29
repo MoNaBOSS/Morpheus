@@ -15,15 +15,24 @@ import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 
 const STATUS = {
   settings: {
-    v: 1 as const,
+    v: 3 as const,
     enabled: true,
     providerAccountId: null,
     modelId: 'whisper-1',
     speakResponses: true,
     autoSubmitTranscript: true,
+    ambientEnabled: false,
+    wakePhrase: 'Morpheus',
+    sensitivity: 0.58,
+    silenceMs: 900,
+    speechProviderAccountId: null,
+    speechModelId: 'gpt-4o-mini-tts',
+    speechVoice: 'onyx' as const,
   },
   transcriptionAvailable: true,
+  neuralSpeechAvailable: true,
   providerLabel: 'OpenAI Voice',
+  speechProviderLabel: 'OpenAI Voice',
   providers: [
     { accountId: 'openai', label: 'OpenAI Voice', isDefault: true, configured: true },
     { accountId: 'custom', label: 'Local Transcriber', isDefault: false, configured: false },
@@ -45,11 +54,12 @@ beforeEach(() => {
 describe('Morpheus voice settings', () => {
   it('shows safe provider metadata and persists logical settings through Main', async () => {
     render(<MorpheusVoiceSettings />);
-    await screen.findByText(/OpenAI Voice/);
+    await screen.findByTestId('morpheus-voice-provider');
 
     const provider = screen.getByTestId('morpheus-voice-provider');
     expect(provider).toHaveTextContent('Local Transcriber');
     expect(document.body.textContent).not.toContain('sk-');
+    expect(screen.getByTestId('morpheus-speech-voice')).toHaveValue('onyx');
 
     fireEvent.change(provider, { target: { value: 'openai' } });
     await waitFor(() => expect(mocks.updateVoiceSettings).toHaveBeenCalledWith({

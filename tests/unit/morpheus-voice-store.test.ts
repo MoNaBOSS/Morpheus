@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   expandCompanionSurface: vi.fn(),
   beginAmbientVoice: vi.fn(),
   endAmbientVoice: vi.fn(),
+  setVoiceSpeaking: vi.fn(),
   voicePresenceHandler: null as ((...args: unknown[]) => void) | null,
 }));
 
@@ -21,6 +22,7 @@ vi.mock('@/lib/host-api', () => ({
       expandCompanionSurface: mocks.expandCompanionSurface,
       beginAmbientVoice: mocks.beginAmbientVoice,
       endAmbientVoice: mocks.endAmbientVoice,
+      setVoiceSpeaking: mocks.setVoiceSpeaking,
     },
   },
 }));

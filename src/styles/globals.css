@@ -847,7 +847,7 @@
 .morpheus-signal {
   --signal-color: var(--morpheus-accent);
   color: hsl(var(--signal-color));
-  filter: drop-shadow(0 0 18px hsl(var(--morpheus-glow)));
+  filter: drop-shadow(0 0 22px hsl(var(--morpheus-glow)));
   transition: color 180ms ease, filter 180ms ease, opacity 180ms ease;
 }
 
@@ -858,33 +858,92 @@
 .morpheus-signal[data-signal-state='complete'] { filter: drop-shadow(0 0 24px hsl(var(--morpheus-glow))); }
 
 .morpheus-signal-mark {
-  stroke-width: 1.4;
+  stroke-width: 0.9;
   stroke-dasharray: 250;
   stroke-dashoffset: 0;
+  opacity: 0.76;
 }
 
 .morpheus-signal-horizon {
-  stroke-width: 0.7;
-  opacity: 0.42;
+  stroke-width: 0.32;
+  opacity: 0.2;
+}
+
+.morpheus-signal-atmosphere {
+  stroke-width: 0.3;
+  stroke-dasharray: 1.5 3.5;
+  opacity: 0.26;
+  transform-origin: center;
+  animation: morpheus-signal-orbit 24s linear infinite;
+}
+
+.morpheus-signal-orbits {
+  stroke-width: 0.34;
+  opacity: 0.58;
+  transform-origin: center;
+  animation: morpheus-signal-orbit 19s linear infinite reverse;
+}
+
+.morpheus-signal-rings {
+  stroke-width: 0.28;
+  opacity: 0.34;
+  stroke-dasharray: 2 2.8;
+  transform-origin: center;
+  animation: morpheus-signal-orbit 31s linear infinite;
 }
 
 .morpheus-signal-traces path {
-  stroke-dasharray: 9 13;
+  stroke-dasharray: 7 12;
   animation: morpheus-signal-stream 5.4s linear infinite;
+}
+
+.morpheus-signal-wave {
+  stroke-width: 0.44;
+  opacity: 0.48;
+  stroke-dasharray: 5 5;
+  animation: morpheus-signal-wave 3.4s ease-in-out infinite;
+}
+
+.morpheus-signal-core {
+  opacity: 0.9;
+  transform-origin: center;
+  animation: morpheus-signal-core 3.8s ease-in-out infinite;
+}
+
+.morpheus-signal-core-point {
+  opacity: 0.95;
+  filter: drop-shadow(0 0 4px white);
 }
 
 .morpheus-signal-aperture {
   position: absolute;
-  inset: 43%;
+  inset: 40%;
   border: 1px solid currentColor;
-  opacity: 0.28;
+  border-radius: 9999px;
+  opacity: 0.18;
   transform: rotate(45deg);
   animation: morpheus-signal-breathe 3.8s ease-in-out infinite;
+}
+
+.morpheus-signal-halo {
+  position: absolute;
+  inset: 17%;
+  z-index: -1;
+  border-radius: 9999px;
+  background: hsl(var(--signal-color) / 0.08);
+  filter: blur(22px);
+  animation: morpheus-signal-halo 5.2s ease-in-out infinite;
 }
 
 .morpheus-signal[data-signal-state='listening'] .morpheus-signal-traces path,
 .morpheus-signal[data-signal-state='speaking'] .morpheus-signal-traces path {
   animation-duration: 720ms;
+}
+
+.morpheus-signal[data-signal-state='listening'] .morpheus-signal-wave,
+.morpheus-signal[data-signal-state='speaking'] .morpheus-signal-wave {
+  animation-duration: 640ms;
+  opacity: 0.92;
 }
 
 .morpheus-signal[data-signal-state='understanding'] .morpheus-signal-mark,
@@ -904,9 +963,28 @@
   to { stroke-dashoffset: -44; }
 }
 
+@keyframes morpheus-signal-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes morpheus-signal-wave {
+  0%, 100% { stroke-dashoffset: 0; transform: scaleY(0.72); opacity: 0.28; }
+  50% { stroke-dashoffset: -18; transform: scaleY(1.2); opacity: 0.72; }
+}
+
+@keyframes morpheus-signal-core {
+  0%, 100% { transform: scale(0.78); opacity: 0.66; }
+  50% { transform: scale(1.16); opacity: 1; }
+}
+
+@keyframes morpheus-signal-halo {
+  0%, 100% { transform: scale(0.82); opacity: 0.35; }
+  50% { transform: scale(1.12); opacity: 0.8; }
+}
+
 @keyframes morpheus-signal-breathe {
-  0%, 100% { opacity: 0.15; transform: rotate(45deg) scale(0.76); }
-  50% { opacity: 0.56; transform: rotate(45deg) scale(1.12); }
+  0%, 100% { opacity: 0.08; transform: scale(0.76); }
+  50% { opacity: 0.38; transform: scale(1.12); }
 }
 
 @keyframes morpheus-signal-resolve {

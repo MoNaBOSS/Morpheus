@@ -200,6 +200,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     providerService,
     audit,
     appVersion: options.appVersion,
+    getPersonality: () => onboarding.status().preferences.personality,
     emitPresence: options.emitVoicePresence,
   });
   objectives = createMorpheusObjectiveOrchestrator({

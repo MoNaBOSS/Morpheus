@@ -11,6 +11,12 @@ transcripts may not be persisted or written to Audit. Renderer microphone state
 cannot establish an ambient Main session id. Provider disclosure requires an
 explicit stored user setting and healthy Audit.
 
+Provider speech generation is Main-owned and may return only bounded ephemeral
+audio. API keys never cross the host boundary. Speech text and audio may not be
+persisted or written to Audit; only privacy-safe provider, model, voice, size,
+latency and outcome metadata may be recorded. Audit degradation blocks the
+provider call. Renderer playback state is presentation, not execution authority.
+
 Proactive observations may read only validated Mission, Goal, schedule,
 workflow and workspace projections. They cannot invoke native behavior directly.
 Any action or notification enters the single Objective Core and plan/runtime

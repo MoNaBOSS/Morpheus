@@ -60,6 +60,7 @@ import type {
 } from '@shared/morpheus/core/objective-types';
 import type {
   MorpheusTranscribeAudioPayload,
+  MorpheusSynthesizeSpeechPayload,
   MorpheusAmbientListeningPayload,
   MorpheusVoiceSettingsPatch,
 } from '@shared/morpheus/voice-types';
@@ -526,6 +527,9 @@ export const hostApi = {
     ),
     transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => (
       invokeHost('morpheus', 'transcribeAudio', payload)
+    ),
+    synthesizeSpeech: (payload: MorpheusSynthesizeSpeechPayload) => (
+      invokeHost('morpheus', 'synthesizeSpeech', payload)
     ),
     beginAmbientVoice: () => invokeHost('morpheus', 'beginAmbientVoice'),
     endAmbientVoice: () => invokeHost('morpheus', 'endAmbientVoice'),

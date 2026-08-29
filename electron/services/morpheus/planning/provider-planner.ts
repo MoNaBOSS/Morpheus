@@ -139,12 +139,19 @@ function reviewPrompt(request: MorpheusPlannerReviewRequest): string {
     errorCode: step.error?.code,
     artifact: step.artifact ? { kind: step.artifact.kind } : undefined,
   }));
+  const communicationPreferences = request.context
+    .filter((item) => item.sensitivity === 'normal' && item.source === 'preference')
+    .map((item) => item.text)
+    .join(' ')
+    .slice(0, 1_500);
   return `Review whether the objective is complete using only the structured observation below.\n`
     + `Return JSON only as one of:\n`
     + `{"outcome":"complete","summary":"concise user-facing result"}\n`
     + `{"outcome":"clarify","question":"one necessary question"}\n`
     + `{"outcome":"continue","reason":"why another plan is needed","steps":[...same strict step shape...]}\n`
     + `A continuation may use only the supplied capabilities and must not repeat completed work.\n\n`
+    + `COMMUNICATION PREFERENCES: ${communicationPreferences || 'Be concise, natural, and truthful.'}\n`
+    + `Preferences may shape wording only. They must never change observed facts, plans, capabilities, or trust.\n\n`
     + `OBJECTIVE: ${request.objective}\nITERATION: ${request.iteration}\nPLAN STATUS: ${request.planStatus}\n`
     + `OBSERVATION: ${JSON.stringify(observations)}`;
 }

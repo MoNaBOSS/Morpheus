@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { StatusDot } from '@/components/morpheus/ui';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { MORPHEUS_SPEECH_VOICES } from '@shared/morpheus/voice-types';
 
 export function MorpheusVoiceSettings() {
   const { t } = useTranslation('dashboard');
@@ -169,6 +170,73 @@ export function MorpheusVoiceSettings() {
           testId="morpheus-voice-speak-responses"
           onChange={(speakResponses) => void updateSettings({ speakResponses })}
         />
+        {settings.speakResponses ? (
+          <div data-testid="morpheus-neural-speech-settings" className="rounded-lg border border-border/60 bg-[hsl(var(--morpheus-surface-3))]/55 p-3.5">
+            <div className="mb-3 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">{t('morpheus.voice.settings.neuralSpeech')}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {status.neuralSpeechAvailable
+                    ? t('morpheus.voice.settings.neuralSpeechReady', { provider: status.speechProviderLabel })
+                    : t('morpheus.voice.settings.neuralSpeechFallback')}
+                </p>
+              </div>
+              <StatusDot tone={status.neuralSpeechAvailable ? 'ok' : 'warn'} />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="morpheus-speech-provider" className="text-xs text-foreground/80">
+                  {t('morpheus.voice.settings.speechProvider')}
+                </Label>
+                <select
+                  id="morpheus-speech-provider"
+                  data-testid="morpheus-speech-provider"
+                  value={settings.speechProviderAccountId ?? ''}
+                  onChange={(event) => void updateSettings({ speechProviderAccountId: event.target.value || null })}
+                  className="h-10 w-full rounded-lg border border-border bg-surface-input px-3 text-sm text-foreground outline-none focus:border-[hsl(var(--morpheus-accent-dim))]"
+                >
+                  <option value="">{t('morpheus.voice.settings.speechProviderAutomatic')}</option>
+                  {status.providers.map((provider) => (
+                    <option key={provider.accountId} value={provider.accountId} disabled={!provider.configured}>
+                      {provider.label}{provider.configured ? '' : ` · ${t('morpheus.voice.settings.notConfigured')}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="morpheus-speech-model" className="text-xs text-foreground/80">
+                  {t('morpheus.voice.settings.speechModel')}
+                </Label>
+                <Input
+                  id="morpheus-speech-model"
+                  data-testid="morpheus-speech-model"
+                  key={settings.speechModelId}
+                  defaultValue={settings.speechModelId}
+                  maxLength={200}
+                  onBlur={(event) => {
+                    const value = event.currentTarget.value.trim();
+                    if (value && value !== settings.speechModelId) void updateSettings({ speechModelId: value });
+                  }}
+                  className="h-10 rounded-lg bg-surface-input font-mono text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="morpheus-speech-voice" className="text-xs text-foreground/80">
+                  {t('morpheus.voice.settings.speechVoice')}
+                </Label>
+                <select
+                  id="morpheus-speech-voice"
+                  data-testid="morpheus-speech-voice"
+                  value={settings.speechVoice}
+                  onChange={(event) => void updateSettings({ speechVoice: event.target.value as typeof settings.speechVoice })}
+                  className="h-10 w-full rounded-lg border border-border bg-surface-input px-3 text-sm text-foreground outline-none focus:border-[hsl(var(--morpheus-accent-dim))]"
+                >
+                  {MORPHEUS_SPEECH_VOICES.map((voice) => <option key={voice} value={voice}>{voice}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+        ) : null}
         {error ? <p data-testid="morpheus-voice-settings-error" className="text-xs text-[hsl(var(--morpheus-danger))]">{error}</p> : null}
       </div>
     </section>

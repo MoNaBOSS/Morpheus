@@ -30,6 +30,7 @@ test.describe('Morpheus companion and persistent Missions', () => {
       await expect(page.getByTestId('morpheus-activation')).toHaveCSS('background-image', /linear-gradient/);
       const activationBox = await page.getByTestId('morpheus-activation').boundingBox();
       expect(activationBox).toMatchObject({ x: 0, y: 0, width: 1280, height: 800 });
+      await expect(page.getByTestId('morpheus-activation').getByTestId('morpheus-signal').locator('.morpheus-signal-core')).toBeVisible();
       await captureVisualEvidence(page, 'activation-greeting-1280x800.png');
       await page.getByTestId('activation-intro-name').fill('Larry');
       await page.getByTestId('morpheus-activation-begin').click();

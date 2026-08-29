@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { hostApi } from '@/lib/host-api';
+import { stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
 import { hostEvents } from '@/lib/host-events';
 import {
   extractMorpheusWakeObjective,
@@ -237,7 +238,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
           set({ presence: next });
         },
         onBargeIn() {
-          if (status.settings.bargeIn) window.speechSynthesis?.cancel();
+          if (status.settings.bargeIn) stopMorpheusSpeech();
         },
         async onUtterance(blob, mimeType, durationMs) {
           const result = await hostApi.morpheus.transcribeAmbientAudio({
@@ -434,7 +435,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
       }
       releaseRecording();
       ambientCapture?.setSuppressed(false);
-      window.speechSynthesis?.cancel();
+      stopMorpheusSpeech();
       set({ phase: 'idle', transcript: null, error: null, errorKind: null, source: null, startedAt: null });
     },
 

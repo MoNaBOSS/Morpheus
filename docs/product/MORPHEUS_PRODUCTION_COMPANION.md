@@ -41,6 +41,18 @@ enables that mode. A loopback/local provider keeps that disclosure local. The
 product must explain this before activation and audit session metadata without
 persisting audio or transcripts.
 
+Final responses may use a separately selectable OpenAI-compatible neural speech
+provider. Main owns the credential, endpoint construction, bounded request and
+bounded ephemeral audio response. Neither speech text nor generated audio is
+persisted or written to Audit. If the configured provider does not implement
+the speech endpoint, Morpheus falls back to Windows speech instead of pretending
+neural output succeeded.
+
+The original Morpheus Signal is the common visible presence across boot,
+activation, Command Center, Invoke and trust. Its orbit, waveform, colour and
+motion project only real Voice and Objective Core lifecycle state. It is not a
+portrait, actor likeness or decorative fake diagnostic.
+
 ## Long-horizon work
 
 A **Goal** gives multiple Missions a durable purpose. It records success
@@ -95,6 +107,9 @@ Morpheus is concise, calm and adaptive. It may be warm or humorous when the
 moment supports it. It does not always call the user "sir", narrate hidden
 reasoning, or force ordinary work into a chat exchange. Speech output is
 interruptible and never claims success before audited execution has completed.
+The selected concise, warm, witty or adaptive preference also informs
+provider-planning communication context and supported neural delivery style; it
+never changes permission, capability or scope authority.
 
 ## Completion boundary
 

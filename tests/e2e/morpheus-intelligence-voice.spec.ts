@@ -46,6 +46,9 @@ test.describe('Morpheus production companion intelligence', () => {
       await settings.scrollIntoViewIfNeeded();
       await expect(settings).toBeVisible();
       await expect(page.getByTestId('morpheus-voice-ambient')).toHaveAttribute('data-state', 'unchecked');
+      await expect(page.getByTestId('morpheus-speech-model')).toHaveValue('gpt-4o-mini-tts');
+      await expect(page.getByTestId('morpheus-speech-voice')).toHaveValue('onyx');
+      await expect(settings).toContainText(/Windows speech|Windows voice/i);
 
       await page.getByTestId('morpheus-voice-ambient').click();
       await expect(page.getByTestId('morpheus-voice-settings-error')).toContainText(/No compatible transcription provider/i);

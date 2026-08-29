@@ -46,6 +46,8 @@ function createHarness(options?: {
   healthy?: boolean;
   fetchImpl?: typeof fetch;
   transcriptionTimeoutMs?: number;
+  speechTimeoutMs?: number;
+  personality?: 'adaptive' | 'witty' | 'warm' | 'concise';
 }) {
   const userDataDir = mkdtempSync(join(tmpdir(), 'morpheus-voice-'));
   temporaryDirectories.push(userDataDir);
@@ -72,6 +74,8 @@ function createHarness(options?: {
     appVersion: '1.0.0',
     fetchImpl,
     transcriptionTimeoutMs: options?.transcriptionTimeoutMs,
+    speechTimeoutMs: options?.speechTimeoutMs,
+    getPersonality: () => options?.personality ?? 'adaptive',
     emitPresence: (presence) => {
       presenceEvents.push(presence.state);
       auditOrder.push(`emit:${presence.state}`);
@@ -198,7 +202,7 @@ describe('Morpheus voice service', () => {
     const settingsPath = join(harness.userDataDir, 'morpheus', 'voice-settings.json');
     expect(existsSync(settingsPath)).toBe(true);
     expect(JSON.parse(readFileSync(settingsPath, 'utf8'))).toMatchObject({
-      v: 2,
+      v: 3,
       speakResponses: false,
       autoSubmitTranscript: true,
       ambientEnabled: false,
@@ -218,10 +222,52 @@ describe('Morpheus voice service', () => {
       speakResponses: true,
       autoSubmitTranscript: true,
     })).toMatchObject({
-      v: 2,
+      v: 3,
       ambientEnabled: false,
       wakePhrase: 'Morpheus',
+      speechProviderAccountId: null,
+      speechModelId: 'gpt-4o-mini-tts',
+      speechVoice: 'onyx',
     });
+  });
+
+  it('generates ephemeral neural speech through a fixed Main-owned endpoint without auditing text or audio', async () => {
+    const audio = Buffer.from('provider-generated-mp3');
+    const fetchImpl = vi.fn(async () => new Response(audio, {
+      status: 200,
+      headers: { 'content-type': 'audio/mpeg', 'content-length': String(audio.length) },
+    })) as typeof fetch;
+    const harness = createHarness({ fetchImpl, personality: 'witty' });
+
+    const result = await harness.service.synthesize({ text: 'Mission complete. That was almost suspiciously easy.' });
+
+    expect(result).toMatchObject({
+      audioBase64: audio.toString('base64'),
+      mimeType: 'audio/mpeg',
+      providerAccountId: ACCOUNT.id,
+      modelId: 'gpt-4o-mini-tts',
+      voice: 'onyx',
+    });
+    const [url, init] = (fetchImpl as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(String(url)).toBe('https://api.example.test/v1/audio/speech');
+    expect(init.redirect).toBe('error');
+    expect(init.headers.authorization).toBe('Bearer sk-voice-secret');
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      model: 'gpt-4o-mini-tts', voice: 'onyx', response_format: 'mp3',
+      instructions: expect.stringContaining('human wit'),
+    });
+    expect(harness.auditOrder).toEqual(['audit:speech-started', 'audit:speech-completed']);
+    const serializedAudit = JSON.stringify(harness.recordControl.mock.calls);
+    expect(serializedAudit).not.toContain('Mission complete');
+    expect(serializedAudit).not.toContain(audio.toString('base64'));
+    expect(serializedAudit).not.toContain('sk-voice-secret');
+  });
+
+  it('blocks neural speech before network disclosure when Audit is unavailable', async () => {
+    const harness = createHarness({ healthy: false });
+    await expect(harness.service.synthesize({ text: 'Do not disclose me.' })).rejects.toThrow(/Audit is unavailable/);
+    expect(harness.fetchImpl).not.toHaveBeenCalled();
+    expect(harness.recordControl).not.toHaveBeenCalled();
   });
 
   it('audits ambient session and capture transitions before presence emission', async () => {
