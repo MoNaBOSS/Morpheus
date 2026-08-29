@@ -10,9 +10,9 @@ assistant vision is complete.
 | Field | Value |
 | --- | --- |
 | Installer | `Morpheus-1.0.0-win-x64.exe` |
-| Runtime source | `15c229f` |
-| Size | 263,682,304 bytes |
-| SHA-256 | `FCBF2F01B2B337E6F1B29A5EAA9956505657EE39C0B11C3825804C29557A943B` |
+| Runtime source | `9222a10` |
+| Size | 263,687,066 bytes |
+| SHA-256 | `FD0F78187FEBDA46BD76AB7BF672CC0813F38F27B46C5A36948716FAE41419E5` |
 | Authenticode | `NotSigned` — production signing is not configured locally |
 | Supported host | Windows 10/11 x64 |
 
@@ -23,13 +23,15 @@ this filename or distribute a binary with a different digest under this guide.
 
 1. Morpheus-branded setup followed by the full-window Signal activation.
 2. Real readiness calibration and a final **Morpheus is ready** state.
-3. A Command Center built around an objective, Mission progress, trust,
+3. A luminous living Morpheus Signal whose motion reflects real listening,
+   planning, execution, trust and result state.
+4. A Command Center built around an objective, Mission progress, trust,
    results, and artifacts—not a chat transcript.
-4. **Invoke** for immediate text or voice objectives and **Chat** as a separate,
+5. **Invoke** for immediate text or voice objectives and **Chat** as a separate,
    secondary OpenClaw surface.
-5. One permission decision for a genuinely new scope, with remembered exact
+6. One permission decision for a genuinely new scope, with remembered exact
    grants preventing repeated interruption.
-6. Real Activity and audit history for work Morpheus actually attempted.
+7. Real Activity and audit history for work Morpheus actually attempted.
 
 ## Recommended 15-minute review
 
@@ -57,6 +59,9 @@ this filename or distribute a binary with a different digest under this guide.
   locally in **Models**.
 - Voice transcription requires a provider with an OpenAI-compatible audio
   transcription endpoint; a chat-only reseller key is insufficient.
+- Neural spoken output requires a provider with an OpenAI-compatible audio
+  speech endpoint. Select its account, model and voice in Settings. Unsupported
+  providers fall back to Windows speech without storing generated audio.
 - Never send provider keys in email, chat, screenshots, this document, or the
   repository. Each reviewer should configure their own test credential.
 

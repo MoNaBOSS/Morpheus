@@ -26,6 +26,10 @@ The visible product now provides:
 - natural voice recovery that asks for one repeat after unclear audio, routes
   configuration failures directly to provider setup, and speaks both completed
   results and necessary clarifications;
+- selectable provider-backed neural speech for final responses, with bounded
+  ephemeral audio, personality-aware delivery and a truthful Windows fallback;
+- a larger state-driven living Signal across boot, activation, Command Center,
+  Invoke and trust, with reduced-motion support and no fake telemetry;
 - a compact Signal OS rail centered on Command, Missions, Systems, Library,
   Chat, and Invoke, with inherited administration surfaces kept under More;
 - a Command Center organized as **Today / Mission / Context**, with the command
@@ -57,7 +61,8 @@ and compatible credentials.
 | Item | Value |
 | --- | --- |
 | Current branch | `codex/morpheus-windows-production-candidate` |
-| Current verified runtime source | `67aa05a` |
+| Current verified runtime source | `9222a10` |
+| Living presence and neural voice | `9222a10` |
 | Cinematic voice-first arrival | `6cf5211` |
 | Operator private-alpha core | `dcf0eaf` |
 | Larry review runtime source | `765b5da` |
@@ -75,14 +80,14 @@ application behavior. `git rev-parse HEAD` is the authoritative latest commit.
 | Field | Verified value |
 | --- | --- |
 | Installer | `C:\Morpheus\morpheus-core\release\Morpheus-1.0.0-win-x64.exe` |
-| Size | 263,684,091 bytes |
-| SHA-256 | `4025D87223794269B82A342449B6FA08E25E0514044BBADF9B3B72D4089A07D8` |
+| Size | 263,687,066 bytes |
+| SHA-256 | `FD0F78187FEBDA46BD76AB7BF672CC0813F38F27B46C5A36948716FAE41419E5` |
 | Authenticode | `NotSigned`; production signing remains CI/credential-owned |
 | Unpacked executable | `C:\Morpheus\morpheus-core\release\win-unpacked\Morpheus.exe` |
 | Unpacked size | 213,989,888 bytes |
-| Unpacked SHA-256 | `9779B43E7A9C2F07C1892E422E88BA07EED7922A81BAED39FB72DA65A0518058` |
+| Unpacked SHA-256 | `233EF9157D8718654BBEF881BDCDC9F021A5150B4A67FED5706638B484F1AEB5` |
 
-`pnpm package:win` completed from committed runtime source `67aa05a`.
+`pnpm package:win` completed from committed runtime source `9222a10`.
 Generated release files are ignored and untracked.
 
 ## Test and verification status
@@ -92,14 +97,15 @@ Generated release files are ignored and untracked.
 | `git diff --check` | Pass before the documentation checkpoint |
 | Typecheck | Pass |
 | Lint | 0 errors; 12 inherited Fast Refresh warnings |
-| Morpheus unit tests | 690/690 pass across 73 files |
+| Morpheus unit tests | 695/695 pass across 74 files |
 | Gateway/chat stabilization tests | 54/54 pass across 4 focused files |
 | Windows production-candidate and Gateway/chat harness validation/dry run | Pass |
 | Communication replay and comparison | Pass |
 | Full Morpheus E2E | 55/56 pass in one serial run; one Electron worker exited before test start and that exact journey passed 1/1 in isolation |
 | Setup/Chat/Gateway/Skills regression canaries | 10/10 pass |
 | Signal OS Channels regression journeys | 5/5 pass after following the intentional More navigation |
-| Repository-wide unit suite | 2,648 pass, 2 skipped, 16 inherited Windows path/mock failures in three untouched OpenClaw test files |
+| Living-presence Electron journeys | 12/12 pass, including fresh activation, 1280x800 Command Center, voice recovery, trust and reduced motion |
+| Repository-wide unit suite | 2,650 pass, 2 skipped, 19 inherited failures in untouched OpenClaw path/plugin fixtures and known chat/image timing tests |
 | Vite production build | Pass |
 | Windows NSIS package | Pass |
 | Visual verification | Pass at 1280×800 for activation, Command Center, Presence, trust, provider setup, Missions, and Quick Command |
@@ -139,6 +145,9 @@ Verification screenshots remain outside Git:
 - `C:\Morpheus\verification\windows-production-candidate-2026-08-27\command-center-final-1280x800.png`
 - `C:\Morpheus\verification\windows-production-candidate-2026-08-27\live-chat-gateway-1280x800.png`
 - `C:\Morpheus\verification\windows-production-candidate-2026-08-27\activity-audit-1280x800.png`
+- `C:\Users\monir\AppData\Local\Temp\morpheus-living-presence-20260829\arrival-boot-1280x800.png`
+- `C:\Users\monir\AppData\Local\Temp\morpheus-living-presence-20260829\activation-greeting-1280x800.png`
+- `C:\Users\monir\AppData\Local\Temp\morpheus-living-presence-20260829\signal-command-center-1280x800.png`
 
 ## Known limitations
 
@@ -148,9 +157,12 @@ Verification screenshots remain outside Git:
 - Ambient voice is explicit opt-in and provider-backed; it is not an offline
   wake-word engine. Microphone recognition, latency, speaker output, barge-in,
   and acoustic quality need hands-on testing on the target device.
-- The repository-wide unit suite retains 16 pre-existing Windows path/mock
-  expectation failures in `openclaw-cli`, `openclaw-upgrade-snapshot`, and
-  `plugin-install`; the Morpheus suite and packaged runtime checks are green.
+- Neural output requires an API account that implements the configured
+  OpenAI-compatible speech endpoint. Chat-only compatible providers may fall
+  back to Windows speech; actual voice quality and cost remain provider-owned.
+- The repository-wide unit suite retains 19 pre-existing failures in untouched
+  OpenClaw path/plugin fixtures and known Chat/image timing tests; the complete
+  Morpheus suite and packaged runtime checks are green.
 - The controlled capability set intentionally excludes arbitrary shell or
   PowerShell, unrestricted executables/arguments/paths, financial transactions,
   credential access, and privilege elevation.

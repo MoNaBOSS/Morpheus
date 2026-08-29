@@ -119,3 +119,22 @@ together. Contracts, placeholder pages and mocked providers do not count.
 - The rebuilt unpacked production executable started normally at 1280×800,
   rendered the Morpheus setup identity without fatal errors, and left zero
   packaged processes or owned Gateway listeners after cleanup.
+
+## Living-presence completion — 2026-08-29
+
+- Runtime source: `9222a10`.
+- Original living Signal, provider-neutral neural speech output, communication
+  personality propagation and onboarding-to-proactive preference wiring are
+  implemented without widening native or permission authority.
+- Typecheck, harness validation, communication replay/comparison, 695/695
+  Morpheus unit tests and 12/12 focused Electron journeys pass.
+- Visual inspection passed for boot, activation and Command Center at 1280x800;
+  screenshots remain outside Git.
+- `pnpm package:win` produced `release/Morpheus-1.0.0-win-x64.exe`
+  (263,687,066 bytes), SHA-256
+  `FD0F78187FEBDA46BD76AB7BF672CC0813F38F27B46C5A36948716FAE41419E5`.
+- The exact unpacked production executable started with a stable five-process
+  tree, rendered the new Signal, brought Gateway health to HTTP 200, and left
+  zero packaged processes or listeners after cleanup.
+- Authenticode remains `NotSigned`; production signing is still CI and
+  credential-owned.
