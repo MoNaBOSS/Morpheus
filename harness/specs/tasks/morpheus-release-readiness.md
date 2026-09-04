@@ -37,6 +37,7 @@ requiredTests:
   - pnpm test
   - pnpm exec playwright test tests/e2e/morpheus-intelligence-voice.spec.ts tests/e2e/morpheus-update-status.spec.ts --workers=1
 acceptance:
+  - Same-version managed plugins refresh when the bundled dependency revision changes.
   - Cross-platform unit fixtures use the semantics of the emulated platform.
   - Voice failure state never exports credentials or provider response bodies.
   - Full unit and focused Electron checks precede release packaging in CI.

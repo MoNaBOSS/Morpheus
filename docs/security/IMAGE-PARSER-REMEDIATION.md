@@ -48,6 +48,13 @@ The raw `pnpm audit` command will still show two high-severity advisories becaus
 the upstream version remains 2.0.2. This is intentionally visible. Remove the
 local patch and classification only when a verified upstream release replaces it.
 
+Both plugin packaging paths stamp a Morpheus bundle revision derived from the
+app version and lockfile (including the patch hash). Main's channel installation
+and gateway prelaunch checks compare that revision, not just the unchanged
+upstream plugin version. Thus previously installed managed mirrors receive the
+updated dependency payload once, without reinstalling on every startup. Upstream
+npm names/versions and OpenClaw configuration identity remain unchanged.
+
 This remediation is not a claim that the whole dependency tree is vulnerability
 free. It addresses these concrete loops and current published audit findings.
 

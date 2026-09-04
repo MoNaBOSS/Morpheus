@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import { logger } from './logger';
 import { getOpenClawResolvedDir } from './paths';
 import { safeRmSync } from './safe-fs';
+import { needsPluginBundleRefresh } from './plugin-bundle-revision';
 import {
   upsertPluginInstallRecordsIntoSqlite,
   removePluginInstallRecordsFromSqlite,
@@ -742,7 +743,8 @@ export async function ensurePluginInstalled(
     }
     const installedVersion = readPluginVersion(targetPkgJson);
     const sourceVersion = readPluginVersion(join(sourceDir, 'package.json'));
-    if (!sourceVersion || !installedVersion || sourceVersion === installedVersion) {
+    if ((!sourceVersion || !installedVersion || sourceVersion === installedVersion)
+      && !needsPluginBundleRefresh(sourceDir, targetDir)) {
       await syncTrustedOfficialPluginInstallRecord(pluginDirName, targetDir);
       return { installed: true }; // same version or unable to compare
     }

@@ -35,6 +35,7 @@ import { logger } from '../utils/logger';
 import { prependPathEntry } from '../utils/env-path';
 import { copyPluginFromNodeModules, fixupPluginManifest, cpSyncSafe, buildCandidateSources, repairTrustedOfficialPluginInstallRecords, removeTrustedOfficialPluginInstallRecord, resolvePluginNpmPackagePath } from '../utils/plugin-install';
 import { safeRmSync } from '../utils/safe-fs';
+import { needsPluginBundleRefresh } from '../utils/plugin-bundle-revision';
 import { CLAWX_OPENAI_IMAGE_PROVIDER_KEY } from '../utils/openclaw-image-relay-constants';
 import { ensureOpenClaw2026_7_1UpgradeSnapshot } from '../utils/openclaw-upgrade-snapshot';
 import { stripSystemdSupervisorEnv } from './config-sync-env';
@@ -189,7 +190,8 @@ function ensureConfiguredPluginsUpgraded(configuredChannels: string[]): boolean 
     if (bundledDir) {
       const sourceVersion = readPluginVersion(join(bundledDir, 'package.json'));
       // Install or upgrade if version differs or plugin not installed
-      if (!isInstalled || (sourceVersion && installedVersion && sourceVersion !== installedVersion)) {
+      if (!isInstalled || (sourceVersion && installedVersion && sourceVersion !== installedVersion)
+        || needsPluginBundleRefresh(bundledDir, targetDir)) {
         logger.info(`[plugin] ${isInstalled ? 'Auto-upgrading' : 'Installing'} ${channelType} plugin${isInstalled ? `: ${installedVersion} → ${sourceVersion}` : `: ${sourceVersion}`} (bundled)`);
         try {
           mkdirSync(fsPath(join(homedir(), '.openclaw', 'extensions')), { recursive: true });

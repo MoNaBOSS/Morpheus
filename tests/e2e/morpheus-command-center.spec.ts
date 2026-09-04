@@ -39,7 +39,11 @@ test.describe('Morpheus Command Center', () => {
         'signal-nav-systems',
       ]) {
         await expect(page.getByTestId(testId), testId).toBeVisible();
-        expect(await isAboveFold(page, testId), `${testId} must be above the fold`).toBe(true);
+        // MainLayout enters from y=8 over 240ms. Visibility alone does not wait
+        // for that transform; assert the settled geometry without disabling motion.
+        await expect.poll(() => isAboveFold(page, testId), {
+          message: `${testId} must be above the fold`, timeout: 2_000,
+        }).toBe(true);
       }
 
       // The page itself must not scroll horizontally.

@@ -236,6 +236,24 @@ describe('plugin installer diagnostics', () => {
     expect(mockLoggerWarn).not.toHaveBeenCalled();
   });
 
+  it('installs a same-version dependency backport once through the real managed-mirror decision', async () => {
+    setPlatform('linux');
+    const source = '/bundle/feishu-openclaw-plugin';
+    const revision = 'a'.repeat(64);
+    let installedRevision: string | undefined;
+    mockExistsSync.mockImplementation((input: string) => /(?:openclaw\.plugin|package)\.json$/.test(String(input)));
+    mockReadFileSync.mockImplementation((input: string) => String(input).endsWith('package.json')
+      ? JSON.stringify({ name: '@larksuite/openclaw-lark', version: '2026.7.9',
+        morpheusBundleRevision: String(input).startsWith(source) ? revision : installedRevision })
+      : JSON.stringify({ id: 'feishu-openclaw-plugin' }));
+    mockCpSync.mockImplementation(() => { installedRevision = revision; });
+    const { ensurePluginInstalled } = await import('@electron/utils/plugin-install');
+    expect(await ensurePluginInstalled('feishu-openclaw-plugin', [source], 'Feishu')).toEqual({ installed: true });
+    expect(mockCpSync).toHaveBeenCalledTimes(1);
+    expect(await ensurePluginInstalled('feishu-openclaw-plugin', [source], 'Feishu')).toEqual({ installed: true });
+    expect(mockCpSync).toHaveBeenCalledTimes(1);
+  });
+
   it('retries once on Windows and logs diagnostic details when bundled copy fails', async () => {
     setPlatform('win32');
     mockHomedir.mockReturnValue('C:\\Users\\test');

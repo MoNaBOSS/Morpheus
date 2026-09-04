@@ -25,6 +25,7 @@ const { ELECTRON_MAIN_RUNTIME_PACKAGES } = require('./openclaw-bundle-config.mjs
 const { patchNsisExtractTemplate } = require('./patch-nsis-extract.mjs');
 const { patchNsisInstallSectionTemplate } = require('./patch-nsis-install-section.mjs');
 const { patchNsisUninstallTemplate } = require('./patch-nsis-uninstall.mjs');
+const { stampPluginBundleRevision } = require('./plugin-bundle-revision.mjs');
 
 // On Windows, paths in pnpm's virtual store can exceed the default MAX_PATH
 // limit (260 chars). Node.js 18.17+ respects the system LongPathsEnabled
@@ -722,6 +723,7 @@ exports.default = async function afterPack(context) {
       }
       // Fix hardcoded plugin ID mismatches in compiled JS
       patchPluginIds(pluginDestDir, pluginId);
+      stampPluginBundleRevision(pluginDestDir, join(__dirname, '..'));
     }
   }
 
