@@ -529,6 +529,7 @@ export const hostApi = {
     transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => (
       invokeHost('morpheus', 'transcribeAudio', payload)
     ),
+    cancelSpeech: () => invokeHost('morpheus', 'cancelSpeech'),
     synthesizeSpeech: (payload: MorpheusSynthesizeSpeechPayload) => (
       invokeHost('morpheus', 'synthesizeSpeech', payload)
     ),

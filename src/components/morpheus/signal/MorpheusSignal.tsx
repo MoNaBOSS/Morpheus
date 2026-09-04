@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 import { cn } from '@/lib/utils';
 import type { MorpheusSignalState } from './signal-state';
@@ -31,9 +31,19 @@ const PARTICLES = Array.from({ length: 42 }, (_, index) => {
 
 export function MorpheusSignal({ state, className, label, compact = false }: MorpheusSignalProps) {
   const gradientId = useId().replaceAll(':', '');
+  const element = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const update = (): void => {
+      element.current?.toggleAttribute('data-paused', document.hidden);
+    };
+    update();
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
+  }, []);
 
   return (
     <div
+      ref={element}
       data-testid="morpheus-signal"
       data-signal-state={state}
       className={cn('morpheus-signal relative isolate', compact && 'morpheus-signal-compact', className)}
@@ -102,6 +112,7 @@ export function MorpheusSignal({ state, className, label, compact = false }: Mor
       </svg>
       <span className="morpheus-signal-aperture" aria-hidden />
       <span className="morpheus-signal-halo" aria-hidden />
+      {!compact ? <span className="morpheus-signal-corona" aria-hidden /> : null}
     </div>
   );
 }

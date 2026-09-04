@@ -18,6 +18,7 @@ export function MorpheusWelcome() {
   const close = useMorpheusArrivalStore((s) => s.closeWelcome);
   const onboarding = useMorpheusCompanionStore((s) => s.onboarding);
   const voice = useMorpheusVoiceStore((s) => s.status);
+  const preparingSpeech = useMorpheusVoiceStore((s) => s.presence?.state === 'preparing-speech');
   const loadVoice = useMorpheusVoiceStore((s) => s.loadStatus);
   const [speaking, setSpeaking] = useState(false);
   const greeted = useRef(false);
@@ -57,7 +58,7 @@ export function MorpheusWelcome() {
         </header>
         <div className="morpheus-welcome-body">
           <div className="morpheus-welcome-presence">
-            <MorpheusSignal state={speaking ? 'speaking' : 'ready'} className="morpheus-hero-signal" label={t('morpheus.title')} />
+            <MorpheusSignal state={speaking ? 'speaking' : preparingSpeech ? 'understanding' : 'ready'} className="morpheus-hero-signal" label={t('morpheus.title')} />
           </div>
           <div className="morpheus-welcome-copy">
             <Dialog.Title className="font-serif text-5xl font-normal leading-[1.07] tracking-tight">{greeting}</Dialog.Title>
@@ -73,10 +74,10 @@ export function MorpheusWelcome() {
               <div className="mt-4 flex flex-wrap items-center gap-5">
                 <button type="button" data-testid="morpheus-welcome-voice-settings" onClick={() => finish('/settings?section=voice')} className="morpheus-fluid-link">{t('morpheus.arrival.voiceSettings')}</button>
                 <button type="button" data-testid="morpheus-welcome-speech" onClick={() => {
-                  if (speaking) stopMorpheusSpeech();
+                  if (speaking || preparingSpeech) stopMorpheusSpeech();
                   else void playMorpheusSpeech(greeting, { neuralAvailable: Boolean(voice?.neuralSpeechAvailable), onSpeakingChange: setSpeaking }).catch(() => undefined);
                 }} className="morpheus-fluid-link inline-flex items-center gap-2" disabled={!voice?.settings.speakResponses}>
-                  {speaking ? <VolumeX size={14} /> : <Volume2 size={14} />}{t(speaking ? 'morpheus.arrival.mute' : 'morpheus.arrival.hear')}
+                  {speaking || preparingSpeech ? <VolumeX size={14} /> : <Volume2 size={14} />}{t(speaking || preparingSpeech ? 'morpheus.arrival.mute' : 'morpheus.arrival.hear')}
                 </button>
               </div>
             </div>

@@ -8,6 +8,31 @@ import {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ambient Morpheus wake phrase', () => {
+  it('monitors audio without animation frames and releases the timer on stop', async () => {
+    vi.useFakeTimers();
+    const frames = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', frames);
+    const capture = new MorpheusAmbientVoiceCapture({
+      silenceMs: 1_000, maxUtteranceMs: 20_000,
+      onCaptureStarted: vi.fn(async () => undefined), onCaptureEnded: vi.fn(async () => undefined),
+      onBargeIn: vi.fn(), onUtterance: vi.fn(async () => undefined), onError: vi.fn(),
+    });
+    const read = vi.fn((sample: Uint8Array) => sample.fill(128));
+    const internal = capture as unknown as {
+      stopped: boolean; analyser: unknown; monitor(mimeType: 'audio/webm'): void;
+    };
+    internal.stopped = false;
+    internal.analyser = { fftSize: 32, getByteTimeDomainData: read };
+    try {
+      internal.monitor('audio/webm');
+      await vi.advanceTimersByTimeAsync(150);
+      expect(read).toHaveBeenCalledTimes(3);
+      expect(frames).not.toHaveBeenCalled();
+      capture.stop();
+      await vi.advanceTimersByTimeAsync(500);
+      expect(read).toHaveBeenCalledTimes(3);
+    } finally { capture.stop(); vi.useRealTimers(); }
+  });
   it('extracts an objective only after the exact normalized token sequence', () => {
     expect(extractMorpheusWakeObjective('Hey, MORPHEUS — open Notepad.', 'hey morpheus'))
       .toBe('open Notepad.');

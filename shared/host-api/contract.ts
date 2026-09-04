@@ -1236,6 +1236,7 @@ export type HostApiContract = {
     updateVoiceSettings: (payload: MorpheusVoiceSettingsPatch) => MorpheusVoiceStatus;
     transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => MorpheusTranscriptionResult;
     synthesizeSpeech: (payload: MorpheusSynthesizeSpeechPayload) => MorpheusSynthesizeSpeechResult;
+    cancelSpeech: () => void;
     beginAmbientVoice: () => MorpheusVoicePresence;
     endAmbientVoice: () => MorpheusVoicePresence;
     setAmbientVoiceListening: (payload: MorpheusAmbientListeningPayload) => MorpheusVoicePresence;

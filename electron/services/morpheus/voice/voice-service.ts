@@ -59,6 +59,7 @@ export interface MorpheusVoiceService {
   updateSettings(patch: MorpheusVoiceSettingsPatch): Promise<MorpheusVoiceStatus>;
   transcribe(payload: MorpheusTranscribeAudioPayload): Promise<MorpheusTranscriptionResult>;
   synthesize(payload: MorpheusSynthesizeSpeechPayload): Promise<MorpheusSynthesizeSpeechResult>;
+  cancelSpeech(): void;
   beginAmbientSession(): Promise<MorpheusVoicePresence>;
   endAmbientSession(): Promise<MorpheusVoicePresence>;
   setAmbientListening(listening: boolean): Promise<MorpheusVoicePresence>;
@@ -145,11 +146,11 @@ function speechInstructions(personality: 'adaptive' | 'concise' | 'warm' | 'witt
   return 'Speak naturally, calmly, and confidently. Match the seriousness of the result.';
 }
 
-async function readBoundedAudio(response: Response): Promise<Buffer> {
+async function readBoundedAudio(response: Response, maxBytes = MORPHEUS_SPEECH_MAX_AUDIO_BYTES, label = 'Speech'): Promise<Buffer> {
   if (!response.body) {
     const audio = Buffer.from(await response.arrayBuffer());
-    if (!audio.length || audio.length > MORPHEUS_SPEECH_MAX_AUDIO_BYTES) {
-      throw new Error('Speech provider returned empty or oversized audio.');
+    if (!audio.length || audio.length > maxBytes) {
+      throw new Error(`${label} provider returned an empty or oversized response.`);
     }
     return audio;
   }
@@ -161,16 +162,16 @@ async function readBoundedAudio(response: Response): Promise<Buffer> {
       const { done, value } = await reader.read();
       if (done) break;
       total += value.byteLength;
-      if (total > MORPHEUS_SPEECH_MAX_AUDIO_BYTES) {
+      if (total > maxBytes) {
         await reader.cancel();
-        throw new Error('Speech provider response exceeded the permitted size.');
+        throw new Error(`${label} provider response exceeded the permitted size.`);
       }
       chunks.push(Buffer.from(value));
     }
   } finally {
     reader.releaseLock();
   }
-  if (!total) throw new Error('Speech provider returned empty or oversized audio.');
+  if (!total) throw new Error(`${label} provider returned an empty response.`);
   return Buffer.concat(chunks, total);
 }
 
@@ -234,6 +235,16 @@ export function createMorpheusVoiceService(options: {
   const settingsPath = join(options.userDataDir, 'morpheus', 'voice-settings.json');
   let settings = readValidatedJson(settingsPath, validateSettings) ?? structuredClone(DEFAULT_VOICE_SETTINGS);
   let ambientSession: { sessionId: string; startedAt: string; providerLabel: string } | null = null;
+  let speechGeneration = 0;
+  let speechController: AbortController | null = null;
+  const cancelSpeech = (): void => {
+    speechGeneration += 1;
+    speechController?.abort(new DOMException('Speech cancelled', 'AbortError'));
+    speechController = null;
+    if (currentPresence.state === 'preparing-speech' || currentPresence.state === 'speaking') {
+      publish(ambientSession ? 'armed' : 'asleep');
+    }
+  };
   let currentPresence: MorpheusVoicePresence = {
     v: MORPHEUS_VOICE_VERSION,
     state: 'asleep',
@@ -333,6 +344,7 @@ export function createMorpheusVoiceService(options: {
       }, transcriptionTimeoutMs);
       timer.unref?.();
       let response: Response;
+      let raw: string;
       try {
         try {
           response = await (options.fetchImpl ?? fetch)(endpoint, {
@@ -348,11 +360,14 @@ export function createMorpheusVoiceService(options: {
           }
           throw error;
         }
+        if (!response.ok) throw new Error(`Transcription provider returned HTTP ${response.status}.`);
+        raw = (await readBoundedAudio(response, 64 * 1024, 'Transcription')).toString('utf8');
+      } catch (error) {
+        if (timedOut) throw new Error(`Transcription provider timed out after ${Math.ceil(transcriptionTimeoutMs / 1_000)} seconds.`, { cause: error });
+        throw error;
       } finally {
         clearTimeout(timer);
       }
-      if (!response.ok) throw new Error(`Transcription provider returned HTTP ${response.status}.`);
-      const raw = await response.text();
       if (raw.length > 64 * 1024) throw new Error('Transcription response was too large.');
       let body: unknown;
       try { body = JSON.parse(raw); } catch { throw new Error('Transcription provider returned invalid JSON.'); }
@@ -391,6 +406,11 @@ export function createMorpheusVoiceService(options: {
   const synthesize = async (
     payload: MorpheusSynthesizeSpeechPayload,
   ): Promise<MorpheusSynthesizeSpeechResult> => {
+    cancelSpeech();
+    const generation = speechGeneration;
+    const checkCurrent = (): void => {
+      if (generation !== speechGeneration) throw new DOMException('Speech cancelled', 'AbortError');
+    };
     if (!settings.speakResponses) throw new Error('Spoken responses are disabled.');
     if (!options.audit.isHealthy()) throw new Error('Neural speech is blocked while Audit is unavailable.');
     const text = payload.text.trim();
@@ -402,6 +422,7 @@ export function createMorpheusVoiceService(options: {
       settings.speechProviderAccountId ?? settings.providerAccountId,
     );
     if (!resolved) throw new Error('No compatible neural speech provider is configured.');
+    checkCurrent();
     const endpoint = providerEndpoint(resolved.account, '/audio/speech');
     const modelId = settings.speechModelId.trim();
     const voice = settings.speechVoice;
@@ -421,6 +442,9 @@ export function createMorpheusVoiceService(options: {
     timer.unref?.();
 
     try {
+      checkCurrent();
+      speechController = controller;
+      publish('preparing-speech');
       let response: Response;
       try {
         response = await (options.fetchImpl ?? fetch)(endpoint, {
@@ -453,24 +477,30 @@ export function createMorpheusVoiceService(options: {
         throw new Error('Speech provider response exceeded the permitted size.');
       }
       const audio = await readBoundedAudio(response);
+      checkCurrent();
       const providerLatencyMs = Math.max(0, Date.now() - startedAt);
       await options.audit.recordControl({
         category: 'voice', event: 'speech-completed', subjectId: resolved.account.id,
         details: { textChars: text.length, bytes: audio.length, modelId, voice, providerLatencyMs },
         appVersion: options.appVersion,
       });
+      checkCurrent();
       return {
         audioBase64: audio.toString('base64'), mimeType: 'audio/mpeg',
         providerAccountId: resolved.account.id, modelId, voice, providerLatencyMs,
       };
     } catch (error) {
       await options.audit.recordControl({
-        category: 'voice', event: 'speech-failed', subjectId: resolved.account.id,
+        category: 'voice', event: generation !== speechGeneration ? 'speech-cancelled' : 'speech-failed', subjectId: resolved.account.id,
         details: { textChars: text.length, modelId, voice }, appVersion: options.appVersion,
       });
       throw error;
     } finally {
       clearTimeout(timer);
+      if (speechController === controller) speechController = null;
+      if (generation === speechGeneration && currentPresence.state === 'preparing-speech') {
+        publish(ambientSession ? 'armed' : 'asleep');
+      }
     }
   };
 
@@ -515,6 +545,7 @@ export function createMorpheusVoiceService(options: {
 
     transcribe: (payload) => transcribeWithMode(payload, false),
     synthesize,
+    cancelSpeech,
 
     async beginAmbientSession() {
       if (ambientSession) return structuredClone(currentPresence);
@@ -576,6 +607,7 @@ export function createMorpheusVoiceService(options: {
     },
 
     dispose() {
+      cancelSpeech();
       ambientSession = null;
       currentPresence = {
         v: MORPHEUS_VOICE_VERSION, state: 'asleep', ambientEnabled: settings.ambientEnabled,

@@ -31,6 +31,7 @@ function releaseAudio(): void {
 
 export function stopMorpheusSpeech(callback?: SpeechOptions['onSpeakingChange']): void {
   generation += 1;
+  void Promise.resolve(hostApi.morpheus.cancelSpeech()).catch(() => undefined);
   releaseAudio();
   cancelPlayback?.();
   cancelPlayback = null;

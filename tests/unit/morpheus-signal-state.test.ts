@@ -32,4 +32,10 @@ describe('Morpheus Signal state grammar', () => {
   it('defaults to a truthful ready state', () => {
     expect(resolveMorpheusSignalState({})).toBe('ready');
   });
+
+  it('does not let a completed mission mask real speech or ambient capture', () => {
+    expect(resolveMorpheusSignalState({ objectiveState: 'complete', voicePresence: 'speaking' })).toBe('speaking');
+    expect(resolveMorpheusSignalState({ objectiveState: 'complete', voicePresence: 'listening' })).toBe('listening');
+    expect(resolveMorpheusSignalState({ objectiveState: 'complete', voicePresence: 'armed' })).toBe('complete');
+  });
 });

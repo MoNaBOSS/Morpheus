@@ -364,6 +364,8 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
 
     async startListening(source = 'command-center') {
       if (!['idle', 'ready', 'error'].includes(get().phase)) return;
+      // Explicit push-to-talk interrupts output before opening the microphone.
+      stopMorpheusSpeech();
       const generation = operationGeneration += 1;
       discardRecording = false;
       releaseRecording();

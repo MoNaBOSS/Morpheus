@@ -85,6 +85,29 @@ function createHarness(options?: {
 }
 
 describe('Morpheus voice service', () => {
+  it('cancels preflight before sending speech to the provider', async () => {
+    const harness = createHarness();
+    const request = harness.service.synthesize({ text: 'Do not send this.' });
+    harness.service.cancelSpeech();
+    await expect(request).rejects.toMatchObject({ name: 'AbortError' });
+    expect(harness.fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('aborts an in-flight speech request and audits cancellation without text', async () => {
+    let signal: AbortSignal | null | undefined;
+    const harness = createHarness({ fetchImpl: vi.fn(async (_url, init) => {
+      signal = init?.signal;
+      return new Promise<Response>((_resolve, reject) => signal?.addEventListener('abort', () => reject(signal?.reason)));
+    }) });
+    const request = harness.service.synthesize({ text: 'A private spoken result.' });
+    const assertion = expect(request).rejects.toMatchObject({ name: 'AbortError' });
+    await vi.waitFor(() => expect(signal).toBeDefined());
+    harness.service.cancelSpeech();
+    await assertion;
+    expect(signal?.aborted).toBe(true);
+    expect(harness.recordControl).toHaveBeenLastCalledWith(expect.objectContaining({ event: 'speech-cancelled' }));
+    expect(JSON.stringify(harness.recordControl.mock.calls)).not.toContain('private spoken');
+  });
   it('reports a truthful unavailable state without a compatible configured provider', async () => {
     const harness = createHarness({ accounts: [] });
     await expect(harness.service.status()).resolves.toMatchObject({
@@ -256,7 +279,7 @@ describe('Morpheus voice service', () => {
       model: 'gpt-4o-mini-tts', voice: 'onyx', response_format: 'mp3',
       instructions: expect.stringContaining('human wit'),
     });
-    expect(harness.auditOrder).toEqual(['audit:speech-started', 'audit:speech-completed']);
+    expect(harness.auditOrder).toEqual(['audit:speech-started', 'emit:preparing-speech', 'audit:speech-completed', 'emit:asleep']);
     const serializedAudit = JSON.stringify(harness.recordControl.mock.calls);
     expect(serializedAudit).not.toContain('Mission complete');
     expect(serializedAudit).not.toContain(audio.toString('base64'));

@@ -62,7 +62,7 @@ export class MorpheusAmbientVoiceCapture {
   private context: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private recorder: MediaRecorder | null = null;
-  private animationFrame: number | null = null;
+  private monitorTimer: number | null = null;
   private chunks: Blob[] = [];
   private chunkBytes = 0;
   private utteranceStartedAt = 0;
@@ -111,8 +111,8 @@ export class MorpheusAmbientVoiceCapture {
 
   stop(): void {
     this.stopped = true;
-    if (this.animationFrame !== null) cancelAnimationFrame(this.animationFrame);
-    this.animationFrame = null;
+    if (this.monitorTimer !== null) window.clearTimeout(this.monitorTimer);
+    this.monitorTimer = null;
     if (this.recorder?.state === 'recording') this.finishUtterance(true);
     if (this.maxTimer !== null) window.clearTimeout(this.maxTimer);
     this.maxTimer = null;
@@ -157,9 +157,10 @@ export class MorpheusAmbientVoiceCapture {
         if (rms > threshold) this.lastVoiceAt = now;
         if (now - this.lastVoiceAt >= this.options.silenceMs) this.finishUtterance(false);
       }
-      this.animationFrame = requestAnimationFrame(frame);
+      // Audio activity is not visual animation. rAF stops when the window hides.
+      this.monitorTimer = window.setTimeout(frame, 50);
     };
-    this.animationFrame = requestAnimationFrame(frame);
+    this.monitorTimer = window.setTimeout(frame, 50);
   }
 
   private async startUtterance(mimeType: MorpheusVoiceMimeType): Promise<void> {

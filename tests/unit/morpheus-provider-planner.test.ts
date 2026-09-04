@@ -33,6 +33,66 @@ const REQUEST: MorpheusPlanningRequest = {
 };
 
 describe('real provider planner adapter', () => {
+  it.each([
+    ['openai-completions', 'max_completion_tokens'],
+    ['openai-responses', 'max_output_tokens'],
+    ['anthropic-messages', 'max_tokens'],
+    ['google-generative-ai', 'maxOutputTokens'],
+    ['ollama', 'max_tokens'],
+  ] as const)('bounds %s generation without an uncapped compatibility retry', async (protocol, key) => {
+    const fetchImpl = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body));
+      expect((body.generationConfig ?? body)[key]).toBe(4_096);
+      return new Response('unsupported parameter', { status: 400 });
+    });
+    const planner = createMorpheusProviderPlanner({ account: { ...ACCOUNT, apiProtocol: protocol }, apiKey: 'key', fetchImpl });
+    await expect(planner.plan(REQUEST)).rejects.toMatchObject({ retryable: false });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it('reserves allowance even for failed website requests and stops before more paid work', async () => {
+    const fetchImpl = vi.fn(async () => new Response('', { status: 503 }));
+    const planner = createMorpheusProviderPlanner({ account: ACCOUNT, apiKey: 'key', fetchImpl });
+    for (let i = 0; i < 4; i++) await expect(planner.plan({ ...REQUEST, objective: 'Build a website' })).rejects.toThrow(/503/);
+    await expect(planner.plan({ ...REQUEST, objective: 'Build a website' })).rejects.toThrow(/allowance reached/);
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+
+  it('rejects oversized input and already cancelled requests without calling the provider', async () => {
+    const fetchImpl = vi.fn();
+    const planner = createMorpheusProviderPlanner({ account: ACCOUNT, apiKey: 'key', fetchImpl });
+    await expect(planner.plan({ ...REQUEST, objective: 'a'.repeat(50_000) })).rejects.toThrow(/context allowance/);
+    await expect(planner.plan({ ...REQUEST, signal: AbortSignal.abort() })).rejects.toThrow();
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('never automatically retries ambiguous transport failures', async () => {
+    const planner = createMorpheusProviderPlanner({ account: ACCOUNT, apiKey: 'key', fetchImpl: vi.fn().mockRejectedValue(new TypeError('failed')) });
+    await expect(planner.plan(REQUEST)).rejects.toMatchObject({ retryable: false });
+  });
+
+  it('records only validated numeric usage, not raw provider payloads', async () => {
+    const recordUsage = vi.fn(async () => undefined);
+    const planner = createMorpheusProviderPlanner({ account: ACCOUNT, apiKey: 'key', recordUsage,
+      fetchImpl: vi.fn(async () => new Response(JSON.stringify({
+        usage: { prompt_tokens: 120, completion_tokens: 50, total_tokens: 170, secret: 'never-record' },
+        choices: [{ message: { content: JSON.stringify({ steps: [{ stepId: 'report', capabilityId: 'system.report', params: {}, dependsOn: [], summary: 'Report' }] }) } }],
+      }))),
+    });
+    await planner.plan(REQUEST);
+    expect(recordUsage).toHaveBeenCalledTimes(2);
+    expect(recordUsage).toHaveBeenLastCalledWith({ requestId: expect.any(String), phase: 'completed', requestNumber: 1, inputChars: expect.any(Number), outputTokenLimit: 4096, inputTokens: 120, outputTokens: 50, totalTokens: 170 });
+    expect(JSON.stringify(recordUsage.mock.calls)).not.toContain('never-record');
+  });
+
+  it('cancels an oversized streamed response instead of buffering it without a limit', async () => {
+    const cancel = vi.fn();
+    const planner = createMorpheusProviderPlanner({ account: ACCOUNT, apiKey: 'key', fetchImpl: vi.fn(async () => new Response(new ReadableStream({
+      start(controller) { controller.enqueue(new Uint8Array(65 * 1024)); }, cancel,
+    }))) });
+    await expect(planner.plan(REQUEST)).rejects.toThrow(/permitted size/);
+    expect(cancel).toHaveBeenCalledOnce();
+  });
   it('uses Main-held credentials without putting secrets or canonical paths in the prompt', async () => {
     const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body)) as { messages: Array<{ content: string }> };

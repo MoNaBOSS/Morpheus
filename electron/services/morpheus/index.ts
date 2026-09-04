@@ -194,6 +194,12 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   const providerService = options.providerService ?? getProviderService();
   const plannerSelector = createMorpheusPlannerSelector({
     providerService,
+    recordUsage: async (accountId, modelId, usage) => {
+      await audit.recordControl({
+        category: 'objective', event: 'provider-usage', subjectId: accountId,
+        details: { ...usage, ...(modelId ? { modelId } : {}) }, appVersion: options.appVersion,
+      });
+    },
   });
   const voice = createMorpheusVoiceService({
     userDataDir: options.userDataDir,

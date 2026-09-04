@@ -1133,6 +1133,7 @@
       "cancel": "Cancel voice input",
       "dismiss": "Dismiss voice status",
       "speaking": "Morpheus is speaking",
+      "preparingSpeech": "Preparing voice · you can interrupt",
       "errorBody": "Voice input could not continue. Check the microphone and transcription provider in Settings.",
       "repeatBody": "I couldn't hear that clearly. Please say it once more.",
       "networkBody": "The voice provider did not respond in time. Try once more.",

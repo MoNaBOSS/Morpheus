@@ -77,6 +77,13 @@ export function sanitizeAuditParams(
   if (!params) return undefined;
   const out: Record<string, string | number | boolean> = {};
   for (const [key, value] of Object.entries(params)) {
+    // "token" normally means a credential. These exact numeric counters are
+    // metering evidence; strings or arbitrary token-named keys stay redacted.
+    if (['inputTokens', 'outputTokens', 'totalTokens', 'outputTokenLimit'].includes(key)
+      && typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) {
+      out[key] = value;
+      continue;
+    }
     if (PAYLOAD_KEYS.has(key.toLowerCase()) || SENSITIVE_KEY_RE.test(key)) {
       out[key] = '[redacted]';
       continue;

@@ -29,4 +29,10 @@ describe('Morpheus spoken objective outcomes', () => {
     expect(morpheusVoiceSpeechFor(run('executing', { summary: 'Working' }))).toBeNull();
     expect(morpheusVoiceSpeechFor(run('complete', { summary: '   ' }))).toBeNull();
   });
+
+  it('keeps expensive spoken output brief without changing the full result', () => {
+    const objective = run('complete', { summary: 'A useful result. '.repeat(100) });
+    expect(morpheusVoiceSpeechFor(objective)!.length).toBeLessThanOrEqual(420);
+    expect(objective.summary!.length).toBeGreaterThan(1000);
+  });
 });

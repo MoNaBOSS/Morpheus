@@ -38,6 +38,20 @@ test.describe('Fluid Morpheus arrival', () => {
       await page.getByTestId('morpheus-command-input').fill('Show system information');
       await page.getByTestId('morpheus-command-submit').click();
       await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i);
+      const signal = page.getByTestId('command-center-plan').getByTestId('morpheus-signal');
+      await expect(signal).toHaveAttribute('data-signal-state', 'complete');
+      await expect(signal.locator('.morpheus-signal-corona')).toHaveCSS('animation-play-state', 'paused');
+      // Real Main presentation event after a completed objective: speech wins,
+      // and completion resumes when playback ends. No synthetic execution data.
+      await page.evaluate(() => window.clawx.hostInvoke({
+        id: crypto.randomUUID(), module: 'morpheus', action: 'setVoiceSpeaking', payload: { speaking: true },
+      }));
+      await expect(signal).toHaveAttribute('data-signal-state', 'speaking');
+      await expect(page.getByTestId('morpheus-voice-indicator')).toHaveAttribute('data-phase', 'speaking');
+      await page.evaluate(() => window.clawx.hostInvoke({
+        id: crypto.randomUUID(), module: 'morpheus', action: 'setVoiceSpeaking', payload: { speaking: false },
+      }));
+      await expect(signal).toHaveAttribute('data-signal-state', 'complete');
       if (folder) await page.screenshot({ path: join(folder, 'fluid-command-result-1280x800.png'), animations: 'disabled' });
       expect(errors).toEqual([]);
     } finally { await closeElectronApp(app); }

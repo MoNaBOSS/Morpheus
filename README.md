@@ -164,6 +164,13 @@ with an original signal identity, cinematic activation, compact product rail,
 and a **Today / Mission / Context** Command Center. Chat remains available but
 does not define the home experience.
 
+The 1.0.2 update adds bounded planner requests and output, privacy-safe usage
+records, Main-side speech cancellation, and live voice feedback over completed
+Missions. Spoken results stay brief; full results remain visible. Explicit ambient
+listening keeps its audio monitor alive in the tray while visual effects pause.
+These are resource limits, not a currency spending guarantee, and do not govern
+independent OpenClaw conversation calls. No pricing screen is introduced.
+
 The 1.0.1 arrival update greets returning users after boot and offers **Open
 workspace** or **Keep me in the tray**. **Companion** in the Command Center
 reopens this screen. Tray mode never enables the microphone by itself. The final

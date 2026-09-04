@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Activity, Loader2, Mic, Radio, Volume2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -27,7 +27,14 @@ export function MorpheusVoiceRuntime() {
   const dismiss = useMorpheusVoiceStore((state) => state.dismiss);
   const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
   const spokenStateKey = useRef<string | null>(null);
-  const [speaking, setSpeaking] = useState(false);
+  const speaking = presence?.state === 'speaking';
+  const preparingSpeech = presence?.state === 'preparing-speech';
+  const message = morpheusVoiceSpeechFor(objectiveRun);
+  // Metadata updates are not new utterances. Stable semantic dependencies also
+  // keep the playback callback alive until audio actually ends.
+  const stateKey = objectiveRun && message
+    ? JSON.stringify([objectiveRun.objectiveRunId, objectiveRun.state, message]) : null;
+  const voiceOrigin = objectiveRun?.origin.type === 'voice';
 
   useEffect(() => {
     void loadStatus();
@@ -38,40 +45,30 @@ export function MorpheusVoiceRuntime() {
   }, [loadStatus, showQuickCommand, startListening]);
 
   useEffect(() => {
-    const message = morpheusVoiceSpeechFor(objectiveRun);
-    const stateKey = objectiveRun
-      ? `${objectiveRun.objectiveRunId}:${objectiveRun.state}:${objectiveRun.updatedAt}`
-      : null;
-    if (!objectiveRun || objectiveRun.origin.type !== 'voice'
+    if (!voiceOrigin
       || !message || !status?.settings.speakResponses
       || spokenStateKey.current === stateKey) return;
 
     spokenStateKey.current = stateKey;
-    let active = true;
     void playMorpheusSpeech(message, {
       neuralAvailable: status.neuralSpeechAvailable,
-      onSpeakingChange: (next) => {
-        if (active) setSpeaking(next);
-      },
-    }).catch(() => {
-      if (active) setSpeaking(false);
-    });
+    }).catch(() => undefined);
     return () => {
-      active = false;
+      stopMorpheusSpeech();
     };
-  }, [objectiveRun, status?.neuralSpeechAvailable, status?.settings.speakResponses]);
+  }, [voiceOrigin, message, stateKey, status?.neuralSpeechAvailable, status?.settings.speakResponses]);
 
   const ambientActive = Boolean(presence?.ambientEnabled && presence.state !== 'asleep');
-  if (phase === 'idle' && !speaking && !ambientActive) return null;
+  if (phase === 'idle' && !speaking && !preparingSpeech && !ambientActive) return null;
 
   const listening = phase === 'listening' || presence?.state === 'listening';
-  const processing = phase === 'requesting' || phase === 'transcribing'
+  const processing = preparingSpeech || phase === 'requesting' || phase === 'transcribing'
     || presence?.state === 'transcribing' || presence?.state === 'understanding'
     || presence?.state === 'working';
   const ambientEngaged = ambientActive && presence?.state !== 'armed';
   const label = speaking
     ? t('morpheus.voice.speaking')
-    : ambientActive
+    : preparingSpeech ? t('morpheus.voice.preparingSpeech') : ambientActive
       ? t(`morpheus.voice.presence.${presence?.state ?? 'armed'}`)
       : t(`morpheus.voice.states.${phase}`);
 
@@ -102,7 +99,7 @@ export function MorpheusVoiceRuntime() {
     <aside
       data-morpheus
       data-testid="morpheus-voice-indicator"
-      data-phase={speaking ? 'speaking' : ambientEngaged ? presence?.state : phase}
+      data-phase={speaking ? 'speaking' : preparingSpeech ? 'preparing-speech' : ambientEngaged ? presence?.state : phase}
       role="status"
       aria-live="polite"
       className="pointer-events-auto fixed left-1/2 top-11 z-[100100] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-xl border border-[hsl(var(--morpheus-accent-dim))]/35 bg-[linear-gradient(135deg,hsl(var(--morpheus-surface-2))_0%,hsl(var(--morpheus-surface-1))_100%)]/95 shadow-2xl shadow-black/50 backdrop-blur-xl"
@@ -179,9 +176,8 @@ export function MorpheusVoiceRuntime() {
           data-testid="morpheus-voice-dismiss"
           aria-label={processing || listening ? t('morpheus.voice.cancel') : t('morpheus.voice.dismiss')}
           onClick={() => {
-            if (speaking) {
+            if (speaking || preparingSpeech) {
               stopMorpheusSpeech();
-              setSpeaking(false);
             }
             if (processing || listening) cancel();
             else dismiss();

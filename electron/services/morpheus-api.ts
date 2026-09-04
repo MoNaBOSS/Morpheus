@@ -1411,6 +1411,7 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     updateVoiceSettings: (payload) => voice.updateSettings(validateVoiceSettingsPatch(payload)),
     transcribeAudio: (payload) => voice.transcribe(validateTranscribeAudioPayload(payload)),
     synthesizeSpeech: (payload) => voice.synthesize(validateSynthesizeSpeechPayload(payload)),
+    cancelSpeech: () => voice.cancelSpeech(),
     beginAmbientVoice: () => voice.beginAmbientSession(),
     endAmbientVoice: () => voice.endAmbientSession(),
     setAmbientVoiceListening: (payload) => (

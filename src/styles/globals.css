@@ -867,6 +867,40 @@
 .morpheus-signal-filaments { transform-origin: center; animation: morpheus-signal-orbit 48s linear infinite; }
 .morpheus-signal-particles { transform-origin: center; animation: morpheus-signal-orbit 65s linear infinite reverse; }
 .morpheus-signal[data-signal-state='asleep'] * { animation-play-state: paused; }
+.morpheus-signal[data-paused] * { animation-play-state: paused !important; }
+
+.morpheus-signal-corona {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(from 45deg, transparent 0 24%, hsl(var(--signal-color) / 0.38) 30%, transparent 38% 70%, hsl(var(--signal-color) / 0.18) 80%, transparent 88%);
+  mask: radial-gradient(circle, transparent 67%, black 69% 70%, transparent 72%);
+  opacity: 0.45;
+  animation: morpheus-signal-orbit 16s linear infinite;
+  transition: opacity 240ms ease;
+}
+.morpheus-signal[data-signal-state='planning'] .morpheus-signal-corona,
+.morpheus-signal[data-signal-state='executing'] .morpheus-signal-corona {
+  opacity: 1;
+  animation-duration: 4s;
+}
+.morpheus-signal[data-signal-state='complete'] :is(.morpheus-signal-filaments, .morpheus-signal-particles, .morpheus-signal-orbits, .morpheus-signal-rings, .morpheus-signal-traces path, .morpheus-signal-corona) {
+  animation-play-state: paused;
+}
+
+.signal-mission-stage { animation: morpheus-mission-enter 260ms ease-out both; }
+.signal-mission-stage [data-testid='morpheus-run-card'] {
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+.signal-mission-stage [data-status='running'] { background-color: hsl(var(--morpheus-accent) / 0.06); }
+@keyframes morpheus-mission-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .signal-mission-stage { animation: none; }
+}
 
 .morpheus-signal-horizon {
   stroke-width: 0.32;

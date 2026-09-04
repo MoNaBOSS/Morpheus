@@ -194,6 +194,17 @@ startup. It can be reopened from Companion without resetting the profile. Its
 close, workspace, tray and voice setup controls must fit at 1280×800. Tray errors
 keep the window visible. Fresh activation's final choice never times out.
 
+### Responsive command presence (1.0.2)
+
+Active planning/execution carries a slow luminous corona; completed work settles
+the rotating strands rather than implying continuing execution. New mission
+content enters with a 260ms opacity transition, without transient scroll overflow.
+Hidden Signal artwork pauses,
+independently of explicitly enabled background audio monitoring. Reduced motion
+removes the transition and corona rotation. Actual speech/capture takes precedence
+over an old completed Mission. Provider speech preparation is labelled and
+cancellable, never portrayed as already audible speech.
+
 - Say what happened, not what might have. "Created notes.txt" not "Operation completed."
 - Name the real thing: absolute paths, real capability ids.
 - Never claim unknown state. "No provider configured" beats a guessed name.

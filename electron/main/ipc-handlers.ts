@@ -7,6 +7,7 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, extname, basename, resolve, sep, relative } from 'node:path';
 import { syncMacTrafficLightPosition } from './traffic-light-layout';
+import { updateMorpheusVoiceBackground } from './morpheus-voice-background';
 import { GatewayManager } from '../gateway/manager';
 import { ClawHubService } from '../gateway/clawhub';
 import {
@@ -199,6 +200,7 @@ function registerTypedHostHandlers(
     },
     emitVoicePresence: (presence) => {
       if (mainWindow.isDestroyed()) return;
+      updateMorpheusVoiceBackground(mainWindow.webContents, presence);
       mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.voicePresence, presence);
     },
   });

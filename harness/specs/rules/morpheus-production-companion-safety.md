@@ -35,3 +35,7 @@ activation while leaving local read-only inspection available.
 Tray handoff must be explicit and must not enable microphone capture, startup or
 new grants. Main must verify a live tray before hiding the window. Stopping or
 superseding speech invalidates pending audio and fallback as well as playback.
+
+Planner calls must carry protocol-specific output limits and bounded input and
+request allowances. Cancellation must abort Main-owned provider speech. Neither
+usage diagnostics nor audit records may contain prompt, speech or audio payloads.

@@ -53,6 +53,7 @@ export type MorpheusVoicePresenceState =
   | 'understanding'
   | 'waiting-for-approval'
   | 'working'
+  | 'preparing-speech'
   | 'speaking'
   | 'error';
 

@@ -7,6 +7,7 @@ import type { ProviderService } from '../../providers/provider-service';
 import {
   createMorpheusProviderPlanner,
   isProviderPlannerProtocolSupported,
+  type MorpheusPlannerUsage,
 } from './provider-planner';
 
 export type MorpheusPlannerSelection =
@@ -32,6 +33,7 @@ async function providerSelection(
   service: ProviderService,
   account: ProviderAccount,
   modelId?: string,
+  recordUsage?: (accountId: string, modelId: string | undefined, usage: MorpheusPlannerUsage) => Promise<void>,
 ): Promise<MorpheusPlannerSelection> {
   if (!account.enabled) return { ok: false, reason: `Provider ${account.label} is disabled.` };
   if (!isProviderPlannerProtocolSupported(account.apiProtocol, account.vendorId)) {
@@ -47,7 +49,8 @@ async function providerSelection(
   try {
     return {
       ok: true,
-      planner: createMorpheusProviderPlanner({ account, apiKey, modelId }),
+      planner: createMorpheusProviderPlanner({ account, apiKey, modelId,
+        recordUsage: recordUsage ? (usage) => recordUsage(account.id, modelId ?? account.model, usage) : undefined }),
       providerAccountId: account.id,
       modelId: modelId ?? account.model,
     };
@@ -59,6 +62,7 @@ async function providerSelection(
 export function createMorpheusPlannerSelector(options: {
   providerService: ProviderService;
   deterministic?: MorpheusPlanner;
+  recordUsage?: (accountId: string, modelId: string | undefined, usage: MorpheusPlannerUsage) => Promise<void>;
 }): MorpheusPlannerSelector {
   const deterministic = options.deterministic ?? createDeterministicMorpheusPlanner();
   return {
@@ -73,7 +77,7 @@ export function createMorpheusPlannerSelector(options: {
         const binding = agent.planner;
         const account = accounts.find((entry) => entry.id === binding.providerId);
         if (!account) return { ok: false, reason: `Configured provider ${binding.providerId} is unavailable.` };
-        return providerSelection(options.providerService, account, binding.modelId);
+        return providerSelection(options.providerService, account, binding.modelId, options.recordUsage);
       }
 
       const defaultId = await options.providerService.getDefaultAccountId();
@@ -82,7 +86,7 @@ export function createMorpheusPlannerSelector(options: {
       ));
       const failures: string[] = [];
       for (const account of ordered) {
-        const selection = await providerSelection(options.providerService, account);
+        const selection = await providerSelection(options.providerService, account, undefined, options.recordUsage);
         if (selection.ok) return selection;
         failures.push(selection.reason);
       }

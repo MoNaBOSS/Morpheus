@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   synthesizeSpeech: vi.fn(),
   setVoiceSpeaking: vi.fn(),
+  cancelSpeech: vi.fn(),
 }));
 
 vi.mock('@/lib/host-api', () => ({

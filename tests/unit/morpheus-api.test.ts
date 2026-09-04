@@ -142,6 +142,7 @@ function stubOptions(runtime = stubRuntime()) {
       updateSettings: vi.fn(),
       transcribe: vi.fn(),
       synthesize: vi.fn(),
+      cancelSpeech: vi.fn(),
     } as never,
     proactive: {
       snapshot: vi.fn(() => ({ settings: { enabled: false }, attentions: [] })),
@@ -605,6 +606,7 @@ describe('createMorpheusApi', () => {
       'beginAmbientVoice',
       'cancelAction',
       'cancelObjective',
+      'cancelSpeech',
       'companionSurfaceStatus',
       'completeOnboarding',
       'continueGoal',

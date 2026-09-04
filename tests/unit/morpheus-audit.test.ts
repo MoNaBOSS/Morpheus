@@ -47,6 +47,15 @@ function readLines(auditDir: string, day = new Date()): string[] {
 }
 
 describe('morpheus audit sink', () => {
+  it('persists exact numeric usage counters while still redacting token credentials', async () => {
+    const auditDir = freshDir();
+    const sink = createMorpheusAuditSink({ auditDir });
+    await sink.recordControl({ category: 'objective', event: 'provider-usage', subjectId: 'provider', appVersion: '1.0.2',
+      details: { inputTokens: 100, outputTokens: 20, totalTokens: 120, outputTokenLimit: 4096, apiToken: 'secret' },
+    });
+    expect(JSON.parse(readLines(auditDir)[0]).details).toEqual({ inputTokens: 100, outputTokens: 20, totalTokens: 120, outputTokenLimit: 4096, apiToken: '[redacted]' });
+    expect(sanitizeAuditParams({ inputTokens: 'secret', outputTokens: -1, totalTokens: Infinity })).toEqual({ inputTokens: '[redacted]', outputTokens: '[redacted]', totalTokens: '[redacted]' });
+  });
   it('writes one parseable JSON object per line', async () => {
     const auditDir = freshDir();
     const sink = createMorpheusAuditSink({ auditDir });

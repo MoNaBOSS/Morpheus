@@ -23,6 +23,7 @@ vi.mock('@/lib/host-api', () => ({
       beginAmbientVoice: mocks.beginAmbientVoice,
       endAmbientVoice: mocks.endAmbientVoice,
       setVoiceSpeaking: mocks.setVoiceSpeaking,
+      cancelSpeech: vi.fn(),
     },
   },
 }));

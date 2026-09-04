@@ -6,6 +6,15 @@ changing the runtime.
 
 ## Current project status
 
+### In verification: 1.0.2 Responsive Operator (2026-09-04)
+
+Adds bounded Core provider generation and usage evidence, Main-side speech
+cancellation, duplicate-speech prevention, visible speech preparation, tray-safe
+audio monitoring and refined state-driven motion. No pricing UI or profile reset.
+See [1.0.2 acceptance](docs/releases/1.0.2-RESPONSIVE-OPERATOR.md).
+The reported EUR80 charge is not reconciled by available local transcript usage.
+Core limits do not cover independent OpenClaw Chat traffic or guarantee a euro cap.
+
 ### Latest update: 1.0.1 Fluid Arrival (2026-09-04)
 
 Runtime `7336fba7a705d3e7536896aed0924f2fe3c7d018` adds a visible returning

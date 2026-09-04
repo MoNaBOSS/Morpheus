@@ -46,6 +46,7 @@ const PRESENCE_SIGNAL: Readonly<Record<MorpheusVoicePresenceState, MorpheusSigna
   understanding: 'understanding',
   'waiting-for-approval': 'trust',
   working: 'executing',
+  'preparing-speech': 'understanding',
   speaking: 'speaking',
   error: 'failed',
 };
@@ -58,6 +59,10 @@ export function resolveMorpheusSignalState({
   if (voicePhase === 'listening') return 'listening';
   if (voicePhase === 'requesting' || voicePhase === 'transcribing') return 'understanding';
   if (voicePhase === 'error') return 'failed';
+  // A previous completed Mission must not hide live microphone or playback state.
+  // Trust/failure still remains visible in the Mission's own status and controls.
+  if (voicePresence === 'speaking' || voicePresence === 'listening'
+    || voicePresence === 'transcribing' || voicePresence === 'preparing-speech') return PRESENCE_SIGNAL[voicePresence];
   if (objectiveState) return OBJECTIVE_SIGNAL[objectiveState];
   if (voicePresence) return PRESENCE_SIGNAL[voicePresence];
   return 'ready';

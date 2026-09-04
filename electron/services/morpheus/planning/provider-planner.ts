@@ -20,6 +20,61 @@ import type {
 } from '@shared/morpheus/planner';
 
 const MAX_PROVIDER_RESPONSE_BYTES = 64 * 1024;
+const MAX_PROMPT_CHARS = 48_000;
+const MAX_REQUESTS = 6;
+const MAX_RESERVED_OUTPUT_TOKENS = 32_768;
+
+export type MorpheusPlannerUsage = {
+  requestId: string;
+  objectiveRunId?: string;
+  phase: 'started' | 'completed';
+  requestNumber: number;
+  inputChars: number;
+  outputTokenLimit: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+};
+
+function usageCounts(payload: unknown): Pick<MorpheusPlannerUsage, 'inputTokens' | 'outputTokens' | 'totalTokens'> {
+  const body = payload as Record<string, unknown> | null;
+  const raw = body?.usage ?? body?.usageMetadata;
+  if (!raw || typeof raw !== 'object') return {};
+  const usage = raw as Record<string, unknown>;
+  const result: Record<string, number> = {};
+  for (const [key, value] of Object.entries({
+    inputTokens: usage.input_tokens ?? usage.prompt_tokens ?? usage.promptTokenCount,
+    outputTokens: usage.output_tokens ?? usage.completion_tokens ?? usage.candidatesTokenCount,
+    totalTokens: usage.total_tokens ?? usage.totalTokenCount,
+  })) {
+    if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) result[key] = value;
+  }
+  return result;
+}
+
+async function readBoundedResponse(response: Response): Promise<string> {
+  if (Number(response.headers.get('content-length')) > MAX_PROVIDER_RESPONSE_BYTES) {
+    await response.body?.cancel();
+    throw new Error('Planning provider response exceeded the permitted size.');
+  }
+  if (!response.body) throw new Error('Planning provider returned an empty response.');
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.length;
+      if (size > MAX_PROVIDER_RESPONSE_BYTES) {
+        await reader.cancel();
+        throw new Error('Planning provider response exceeded the permitted size.');
+      }
+      chunks.push(value);
+    }
+    return Buffer.concat(chunks).toString('utf8');
+  } finally { reader.releaseLock(); }
+}
 
 export type SupportedPlannerProtocol = MorpheusPlannerProtocol;
 
@@ -41,6 +96,7 @@ export type MorpheusProviderPlannerOptions = {
   fetchImpl?: typeof fetch;
   now?: () => Date;
   createId?: () => string;
+  recordUsage?: (usage: MorpheusPlannerUsage) => Promise<void>;
 };
 
 function protocolFor(account: ProviderAccount): SupportedPlannerProtocol | null {
@@ -210,8 +266,10 @@ async function invokeProvider(
   model: string,
   system: string,
   user: string,
+  allowance: MorpheusPlannerUsage,
   signal?: AbortSignal,
 ): Promise<string> {
+  signal?.throwIfAborted();
   if (options.account.authMode !== 'local' && !options.apiKey) {
     throw new Error(`Provider ${options.account.label} has no API key available for direct planning.`);
   }
@@ -229,16 +287,21 @@ async function invokeProvider(
   if (protocol === 'openai-completions' || protocol === 'ollama') {
     url = endpoint(base, '/chat/completions');
     if (options.apiKey) headers.authorization = `Bearer ${options.apiKey}`;
-    body = { model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] };
+    const modernOpenAI = options.account.vendorId === 'openai' || /^(gpt-5|o[134])(?:[.-]|$)/.test(model);
+    body = { model,
+      ...(modernOpenAI && protocol !== 'ollama'
+        ? { max_completion_tokens: allowance.outputTokenLimit }
+        : { max_tokens: allowance.outputTokenLimit }),
+      messages: [{ role: 'system', content: system }, { role: 'user', content: user }] };
   } else if (protocol === 'openai-responses') {
     url = endpoint(base, '/responses');
     headers.authorization = `Bearer ${options.apiKey}`;
-    body = { model, instructions: system, input: user };
+    body = { model, instructions: system, input: user, max_output_tokens: allowance.outputTokenLimit };
   } else if (protocol === 'anthropic-messages') {
     url = endpoint(base, '/v1/messages');
     headers['x-api-key'] = options.apiKey ?? '';
     headers['anthropic-version'] = '2023-06-01';
-    body = { model, max_tokens: 4_096, temperature: 0, system, messages: [{ role: 'user', content: user }] };
+    body = { model, max_tokens: allowance.outputTokenLimit, temperature: 0, system, messages: [{ role: 'user', content: user }] };
   } else {
     const modelPath = encodeURIComponent(model);
     const googleBase = new URL(base.toString());
@@ -248,7 +311,7 @@ async function invokeProvider(
     body = {
       systemInstruction: { parts: [{ text: system }] },
       contents: [{ role: 'user', parts: [{ text: user }] }],
-      generationConfig: { temperature: 0, responseMimeType: 'application/json' },
+      generationConfig: { temperature: 0, responseMimeType: 'application/json', maxOutputTokens: allowance.outputTokenLimit },
     };
   }
 
@@ -260,7 +323,7 @@ async function invokeProvider(
       });
     } catch (error) {
       if (controller.signal.aborted) throw error;
-      throw new MorpheusProviderRequestError('The planning provider could not be reached.', true);
+      throw new MorpheusProviderRequestError('The planning provider could not be reached. No automatic retry was made because the request may already have been processed.', false);
     }
     if (!response.ok) {
       const retryable = response.status === 408 || response.status === 409
@@ -271,12 +334,10 @@ async function invokeProvider(
         response.status,
       );
     }
-    const text = await response.text();
-    if (Buffer.byteLength(text, 'utf8') > MAX_PROVIDER_RESPONSE_BYTES) {
-      throw new Error('Planning provider response exceeded the permitted size.');
-    }
+    const text = await readBoundedResponse(response);
     let payload: unknown;
     try { payload = JSON.parse(text); } catch { throw new Error('Planning provider returned invalid JSON transport data.'); }
+    await options.recordUsage?.({ ...allowance, phase: 'completed', ...usageCounts(payload) });
     return extractText(protocol, payload);
   } finally {
     signal?.removeEventListener('abort', relayAbort);
@@ -294,14 +355,34 @@ export function createMorpheusProviderPlanner(options: MorpheusProviderPlannerOp
   const model = modelFor(options.account, options.modelId);
   const now = options.now ?? (() => new Date());
   const createId = options.createId ?? (() => randomUUID());
+  let requestCount = 0;
+  let reservedOutput = 0;
+  const invoke = async (system: string, user: string, objective: string, signal?: AbortSignal, objectiveRunId?: string): Promise<string> => {
+    signal?.throwIfAborted();
+    // Reserve before awaiting: failed requests and retries still consume allowance.
+    const outputTokenLimit = /\b(website|web site|landing page)\b/i.test(objective) ? 8_192 : 4_096;
+    const inputChars = system.length + user.length;
+    if (inputChars > MAX_PROMPT_CHARS) throw new Error('Planning input exceeds the bounded context allowance. Narrow this objective.');
+    if (requestCount >= MAX_REQUESTS || reservedOutput + outputTokenLimit > MAX_RESERVED_OUTPUT_TOKENS) {
+      throw new Error('Planning request allowance reached. Review the current result before starting more provider work.');
+    }
+    requestCount += 1;
+    reservedOutput += outputTokenLimit;
+    const allowance: MorpheusPlannerUsage = {
+      requestId: randomUUID(), phase: 'started', requestNumber: requestCount, inputChars, outputTokenLimit,
+      ...(objectiveRunId ? { objectiveRunId } : {}),
+    };
+    await options.recordUsage?.(allowance);
+    return invokeProvider(options, protocol, model, system, user, allowance, signal);
+  };
 
   return {
     plannerId: `provider:${options.account.id}`,
     plannedBy: 'provider',
     async plan(request) {
       const capabilities = request.capabilities ?? [];
-      const text = await invokeProvider(
-        options, protocol, model, systemPrompt(capabilities), userPlanPrompt(request, now()), request.signal,
+      const text = await invoke(
+        systemPrompt(capabilities), userPlanPrompt(request, now()), request.objective, request.signal, request.objectiveRunId,
       );
       return {
         ok: true,
@@ -316,13 +397,12 @@ export function createMorpheusProviderPlanner(options: MorpheusProviderPlannerOp
       };
     },
     async review(request) {
-      const text = await invokeProvider(
-        options,
-        protocol,
-        model,
+      const text = await invoke(
         systemPrompt(request.capabilities),
         reviewPrompt(request),
+        request.objective,
         request.signal,
+        request.objectiveRunId,
       );
       return createReviewFromProviderText(text, {
         planId: createId(),
