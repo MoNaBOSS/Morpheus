@@ -9,10 +9,10 @@ assistant vision is complete.
 
 | Field | Value |
 | --- | --- |
-| Installer | `Morpheus-1.0.0-win-x64.exe` |
-| Runtime source | `9222a10` |
-| Size | 263,687,066 bytes |
-| SHA-256 | `FD0F78187FEBDA46BD76AB7BF672CC0813F38F27B46C5A36948716FAE41419E5` |
+| Installer | `Morpheus-1.0.1-win-x64.exe` |
+| Runtime source | `7336fba` |
+| Size | 263,685,547 bytes |
+| SHA-256 | `90A24F92509DBE32FBFDC7AF15F44824C49482CEA3E1426A57D8467ADD7C05E1` |
 | Authenticode | `NotSigned` — production signing is not configured locally |
 | Supported host | Windows 10/11 x64 |
 
@@ -20,6 +20,13 @@ Verify the SHA-256 before sharing the installer. Do not rename another build to
 this filename or distribute a binary with a different digest under this guide.
 
 ## What Larry should see
+
+For an existing profile, a personalized welcome now appears after boot with
+**Open workspace** and **Keep me in the tray**. **Companion** at the top of the
+Command Center reopens it. For the Matrix appearance choose **Settings >
+Appearance > Dark**; an existing light/system choice is otherwise preserved.
+Tray mode does not automatically enable microphone capture. The welcome's voice
+setup link takes you directly to the voice controls.
 
 1. Morpheus-branded setup followed by the full-window Signal activation.
 2. Real readiness calibration and a final **Morpheus is ready** state.

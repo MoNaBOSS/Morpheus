@@ -5,6 +5,10 @@ together. Contracts, placeholder pages and mocked providers do not count.
 
 ## Voice companion
 
+The latest packaged experience update is documented in
+[1.0.1 Fluid Arrival](1.0.1-FLUID-ARRIVAL.md). Earlier completion records below
+remain historical and do not supersede its exact artifact or validation results.
+
 - Push-to-talk and opt-in ambient voice use the same Voice service and Objective
   Core.
 - Ambient mode is off by default and explains provider disclosure before enable.

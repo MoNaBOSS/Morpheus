@@ -6,6 +6,16 @@ changing the runtime.
 
 ## Current project status
 
+### Latest update: 1.0.1 Fluid Arrival (2026-09-04)
+
+Runtime `7336fba7a705d3e7536896aed0924f2fe3c7d018` adds a visible returning
+greeting, explicit tray handoff, direct voice setup, larger filament Signal,
+smooth stage transitions and race-safe speech cancellation. No profile reset.
+The user's existing light appearance was changed to Dark through Settings as
+requested. The packaged app and its owned processes were closed after testing.
+See [1.0.1 acceptance](docs/releases/1.0.1-FLUID-ARRIVAL.md) for current results
+and limitations; older validation rows below are historical unless updated.
+
 Morpheus now has a coherent Windows operator experience rather than an
 OpenClaw-first shell. The **Signal OS** production candidate is implemented,
 committed, packaged, and verified through automated tests, visual checks,
@@ -61,7 +71,7 @@ and compatible credentials.
 | Item | Value |
 | --- | --- |
 | Current branch | `codex/morpheus-windows-production-candidate` |
-| Current verified runtime source | `9222a10` |
+| Current verified runtime source | `7336fba` |
 | Living presence and neural voice | `9222a10` |
 | Cinematic voice-first arrival | `6cf5211` |
 | Operator private-alpha core | `dcf0eaf` |
@@ -79,15 +89,15 @@ application behavior. `git rev-parse HEAD` is the authoritative latest commit.
 
 | Field | Verified value |
 | --- | --- |
-| Installer | `C:\Morpheus\morpheus-core\release\Morpheus-1.0.0-win-x64.exe` |
-| Size | 263,687,066 bytes |
-| SHA-256 | `FD0F78187FEBDA46BD76AB7BF672CC0813F38F27B46C5A36948716FAE41419E5` |
+| Installer | `E:\Larry Lee\Morpheus\Releases\Windows\1.0.1\Morpheus-1.0.1-win-x64.exe` |
+| Size | 263,685,547 bytes |
+| SHA-256 | `90A24F92509DBE32FBFDC7AF15F44824C49482CEA3E1426A57D8467ADD7C05E1` |
 | Authenticode | `NotSigned`; production signing remains CI/credential-owned |
 | Unpacked executable | `C:\Morpheus\morpheus-core\release\win-unpacked\Morpheus.exe` |
 | Unpacked size | 213,989,888 bytes |
-| Unpacked SHA-256 | `233EF9157D8718654BBEF881BDCDC9F021A5150B4A67FED5706638B484F1AEB5` |
+| Unpacked SHA-256 | `222589D562F1D4578F7737984132609510BF30C587CF34214556D1B52F672C44` |
 
-`pnpm package:win` completed from committed runtime source `9222a10`.
+`pnpm package:win` completed from committed runtime source `7336fba`.
 Generated release files are ignored and untracked.
 
 ## Test and verification status
@@ -97,7 +107,7 @@ Generated release files are ignored and untracked.
 | `git diff --check` | Pass before the documentation checkpoint |
 | Typecheck | Pass |
 | Lint | 0 errors; 12 inherited Fast Refresh warnings |
-| Morpheus unit tests | 695/695 pass across 74 files |
+| Morpheus unit tests (1.0.1) | 702/702 pass across 75 files |
 | Gateway/chat stabilization tests | 54/54 pass across 4 focused files |
 | Windows production-candidate and Gateway/chat harness validation/dry run | Pass |
 | Communication replay and comparison | Pass |
@@ -105,7 +115,7 @@ Generated release files are ignored and untracked.
 | Setup/Chat/Gateway/Skills regression canaries | 10/10 pass |
 | Signal OS Channels regression journeys | 5/5 pass after following the intentional More navigation |
 | Living-presence Electron journeys | 12/12 pass, including fresh activation, 1280x800 Command Center, voice recovery, trust and reduced motion |
-| Repository-wide unit suite | 2,650 pass, 2 skipped, 19 inherited failures in untouched OpenClaw path/plugin fixtures and known chat/image timing tests |
+| Repository-wide unit suite (1.0.1) | 2,658 pass, 2 skipped, 18 inherited path/plugin/upgrade and chat timing failures; chat passes 5/5 in isolation |
 | Vite production build | Pass |
 | Windows NSIS package | Pass |
 | Visual verification | Pass at 1280×800 for activation, Command Center, Presence, trust, provider setup, Missions, and Quick Command |
