@@ -9,9 +9,11 @@ import { MAC_SIDEBAR_CHROME_HEIGHT } from '@shared/sidebar-layout';
 import { cn } from '@/lib/utils';
 import { WebBrowserHost } from '@/components/web-browser/WebBrowserHost';
 import { MorpheusProductNav } from '@/components/morpheus/signal/MorpheusProductNav';
+import { motion, useReducedMotion } from 'framer-motion';
 
 export function MainLayout() {
   const location = useLocation();
+  const reducedMotion = useReducedMotion();
   const platform = window.electron?.platform;
   const isMac = platform === 'darwin';
   const isWin = platform === 'win32';
@@ -51,7 +53,11 @@ export function MainLayout() {
               style={{ height: MAC_SIDEBAR_CHROME_HEIGHT }}
             />
           )}
-          <Outlet />
+          {isMorpheusProductSurface ? (
+            <motion.div key={location.pathname} className="h-full min-h-0" initial={{ opacity: 0, y: reducedMotion ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reducedMotion ? 0 : 0.24 }}>
+              <Outlet />
+            </motion.div>
+          ) : <Outlet />}
         </main>
         <WebBrowserHost />
       </div>

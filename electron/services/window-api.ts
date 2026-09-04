@@ -1,6 +1,7 @@
 import type { BrowserWindow } from 'electron';
 import type { CompleteHostServiceRegistry } from '../main/ipc/host-contract';
 import { syncMacTrafficLightPosition } from '../main/traffic-light-layout';
+import { hideWindowToTray } from '../main/tray';
 
 export function createWindowApi(mainWindow: BrowserWindow): CompleteHostServiceRegistry['window'] {
   return {
@@ -20,6 +21,7 @@ export function createWindowApi(mainWindow: BrowserWindow): CompleteHostServiceR
     close: () => {
       mainWindow.close();
     },
+    hideToTray: () => hideWindowToTray(mainWindow),
     isMaximized: () => mainWindow.isMaximized(),
   };
 }

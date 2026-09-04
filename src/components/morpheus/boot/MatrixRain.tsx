@@ -42,7 +42,7 @@ export function MatrixRain() {
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
       columns = new Array(Math.ceil(innerWidth / FONT_SIZE))
         .fill(0)
-        .map(() => Math.random() * -50);
+        .map(() => Math.random() * innerHeight / FONT_SIZE);
     };
 
     const drawFrame = () => {
@@ -80,6 +80,7 @@ export function MatrixRain() {
 
     const loop = (timestamp: number) => {
       frameId = window.requestAnimationFrame(loop);
+      if (document.hidden) return;
       if (timestamp - lastFrame < FRAME_MS) return;
       lastFrame = timestamp;
       drawFrame();

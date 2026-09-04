@@ -187,3 +187,11 @@ export function destroyTray(): void {
   activeWindow = null;
   activeOptions = null;
 }
+
+/** An explicit handoff must never strand a hidden window without its tray. */
+export function hideWindowToTray(window: BrowserWindow): void {
+  if (!tray || tray.isDestroyed() || activeWindow !== window || window.isDestroyed()) {
+    throw new Error('Morpheus tray is unavailable. Keep the workspace open.');
+  }
+  window.hide();
+}

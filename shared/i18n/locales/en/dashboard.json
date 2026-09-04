@@ -932,6 +932,21 @@
         "act": { "name": "Act", "description": "Treat the instruction as an objective to execute." }
       }
     },
+    "arrival": {
+      "subtitle": "One goal. We take it from there. Stay in the workspace, or let Morpheus stay beside you while you get on with your day.",
+      "witty": "Big plans? Excellent. I have cleared my imaginary calendar.",
+      "open": "Open workspace",
+      "tray": "Keep me in the tray",
+      "transferring": "Moving to tray…",
+      "trayHint": "Morpheus stays running. Click its icon in the Windows notification area to return, or choose Quit Morpheus there to exit.",
+      "voiceHonesty": "Moving to the tray does not enable your microphone. Listening follows your voice settings; configure voice before using a wake phrase.",
+      "voiceSettings": "Set up voice & providers",
+      "close": "Close welcome",
+      "mute": "Stop greeting",
+      "hear": "Hear greeting",
+      "trayUnavailable": "The tray is not available yet. Your workspace remains open. Please try again.",
+      "companion": "Companion"
+    },
     "activation": {
       "eyebrow": "Intelligent operating companion",
       "title": "Meet Morpheus",

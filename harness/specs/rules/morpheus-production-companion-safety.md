@@ -31,3 +31,7 @@ register a capability, accept a Renderer-authored path or introduce shell access
 All state mutations and emitted transitions must be audited in order. Audit
 degradation blocks provider disclosure, unsafe background execution and System
 activation while leaving local read-only inspection available.
+
+Tray handoff must be explicit and must not enable microphone capture, startup or
+new grants. Main must verify a live tray before hiding the window. Stopping or
+superseding speech invalidates pending audio and fallback as well as playback.

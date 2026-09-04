@@ -11,6 +11,23 @@ type MorpheusSignalProps = {
 };
 
 const TRACE_X = [13, 22, 31, 40, 50, 60, 69, 78, 87] as const;
+// Deterministic vector filaments: generated once, not per render or animation frame.
+// These are identity artwork, never a waveform or a measure of model activity.
+const FILAMENTS = Array.from({ length: 18 }, (_, strand) => {
+  const phase = strand * Math.PI / 9;
+  return Array.from({ length: 129 }, (_, point) => {
+    const angle = point / 128 * Math.PI * 2;
+    const radius = 30 + 5 * Math.sin(angle * 3 + phase);
+    const x = 50 + radius * Math.cos(angle) * Math.cos(phase) - 9 * Math.sin(angle * 2 + phase);
+    const y = 50 + radius * Math.sin(angle);
+    return `${point ? 'L' : 'M'}${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(' ') + ' Z';
+});
+const PARTICLES = Array.from({ length: 42 }, (_, index) => {
+  const angle = index * 2.399963;
+  const radius = 19 + (index % 9) * 3.1;
+  return { x: 50 + Math.cos(angle) * radius, y: 50 + Math.sin(angle) * radius };
+});
 
 export function MorpheusSignal({ state, className, label, compact = false }: MorpheusSignalProps) {
   const gradientId = useId().replaceAll(':', '');
@@ -37,6 +54,12 @@ export function MorpheusSignal({ state, className, label, compact = false }: Mor
             <stop offset="1" stopColor="currentColor" stopOpacity="0" />
           </radialGradient>
         </defs>
+        {!compact ? <g className="morpheus-signal-filaments" fill="none" stroke={`url(#${gradientId})`} strokeWidth="0.16">
+          {FILAMENTS.map((path, index) => <path key={index} d={path} opacity={0.24 + (index % 4) * 0.13} />)}
+        </g> : null}
+        {!compact ? <g className="morpheus-signal-particles" fill="currentColor">
+          {PARTICLES.map((point, index) => <circle key={index} cx={point.x} cy={point.y} r={index % 5 ? 0.14 : 0.28} opacity={0.2 + index % 4 * 0.15} />)}
+        </g> : null}
         <circle className="morpheus-signal-atmosphere" cx="50" cy="50" r="46" fill="none" stroke="currentColor" />
         <g className="morpheus-signal-orbits" fill="none" stroke={`url(#${gradientId})`}>
           <ellipse cx="50" cy="50" rx="42" ry="17" />

@@ -982,6 +982,7 @@ export type HostApiContract = {
     minimize: () => void;
     maximize: () => void;
     close: () => void;
+    hideToTray: () => void;
     isMaximized: () => boolean;
   };
   updates: {

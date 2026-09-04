@@ -12,9 +12,12 @@ import { useMorpheusSystemsStore } from '@/stores/morpheus-systems';
 import { resolveMorpheusSignalState } from '@/components/morpheus/signal/signal-state';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
+import { useMorpheusArrivalStore } from '@/stores/morpheus-arrival';
+import { PanelBottomClose } from 'lucide-react';
 
 export function CommandCenter() {
   const { t } = useTranslation('dashboard');
+  const openWelcome = useMorpheusArrivalStore((s) => s.openWelcome);
   const loadModels = useMorpheusFoundationStore((state) => state.loadModels);
   const loadActivity = useMorpheusFoundationStore((state) => state.loadActivity);
   const loadCompanion = useMorpheusCompanionStore((state) => state.loadAll);
@@ -45,6 +48,7 @@ export function CommandCenter() {
           </div>
         </div>
         <div className="flex items-center gap-2" aria-live="polite">
+          <button type="button" data-testid="morpheus-open-welcome" onClick={openWelcome} className="morpheus-fluid-link mr-5 inline-flex items-center gap-2"><PanelBottomClose size={15} />{t('morpheus.arrival.companion')}</button>
           <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--morpheus-accent))] shadow-[0_0_10px_hsl(var(--morpheus-glow))]" />
           <span data-testid="signal-os-live-state" className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">{t(`morpheus.signalOs.signal.${signalState}`)}</span>
         </div>

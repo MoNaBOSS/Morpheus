@@ -175,6 +175,7 @@ export const hostApi = {
     minimize: () => invokeHost('window', 'minimize'),
     maximize: () => invokeHost('window', 'maximize'),
     close: () => invokeHost('window', 'close'),
+    hideToTray: () => invokeHost('window', 'hideToTray'),
     isMaximized: () => invokeHost('window', 'isMaximized'),
   },
   updates: {

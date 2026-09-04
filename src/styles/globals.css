@@ -864,6 +864,10 @@
   opacity: 0.76;
 }
 
+.morpheus-signal-filaments { transform-origin: center; animation: morpheus-signal-orbit 48s linear infinite; }
+.morpheus-signal-particles { transform-origin: center; animation: morpheus-signal-orbit 65s linear infinite reverse; }
+.morpheus-signal[data-signal-state='asleep'] * { animation-play-state: paused; }
+
 .morpheus-signal-horizon {
   stroke-width: 0.32;
   opacity: 0.2;
@@ -1109,7 +1113,7 @@
 }
 
 .morpheus-boot-rain {
-  opacity: 0.17;
+  opacity: 0.32;
   filter: blur(0.2px);
   mask-image: radial-gradient(ellipse at center, transparent 2%, black 48%, transparent 88%);
 }
@@ -1155,11 +1159,11 @@
 }
 
 .morpheus-activation-leaving {
-  animation: morpheus-activation-handoff 680ms cubic-bezier(0.22, 0.72, 0.2, 1) forwards;
+  animation: morpheus-activation-handoff 420ms cubic-bezier(0.22, 0.72, 0.2, 1) forwards;
 }
 
 .morpheus-activation-leaving [data-testid='morpheus-signal'] {
-  animation: morpheus-activation-signal-handoff 680ms cubic-bezier(0.22, 0.72, 0.2, 1) forwards;
+  animation: morpheus-activation-signal-handoff 420ms cubic-bezier(0.22, 0.72, 0.2, 1) forwards;
 }
 
 @keyframes morpheus-activation-handoff {
@@ -1171,6 +1175,70 @@
 @keyframes morpheus-activation-signal-handoff {
   from { transform: scale(1); opacity: 1; }
   to { transform: scale(0.72); opacity: 0; }
+}
+
+/* Fluid companion arrival: transform/opacity only, no layout animation loop. */
+.morpheus-welcome-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9995;
+  background: rgb(0 0 0 / 0.72);
+}
+.morpheus-welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 9996;
+  overflow: auto;
+  color: hsl(var(--foreground));
+  outline: none;
+  animation: morpheus-scene-enter 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.morpheus-welcome[data-state='closed'] { animation: morpheus-scene-exit 180ms ease-in both; }
+.morpheus-welcome-body {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(300px, 0.95fr) minmax(440px, 1.05fr);
+  align-items: center;
+  min-height: calc(100% - 4rem);
+  max-width: 1600px;
+  margin: auto;
+  padding: 40px 6vw;
+  gap: 5vw;
+}
+.morpheus-welcome-presence { display: flex; align-items: center; justify-content: center; }
+.morpheus-hero-signal { width: clamp(280px, 34vw, 520px); height: clamp(280px, 34vw, 520px); }
+.morpheus-fluid-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 46px; padding: 12px 20px; border-radius: 14px;
+  border: 1px solid hsl(var(--morpheus-accent) / 0.32);
+  background: linear-gradient(160deg, hsl(var(--morpheus-accent) / 0.18), hsl(var(--morpheus-accent) / 0.06));
+  color: hsl(var(--foreground)); font-size: 13px; font-weight: 500;
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), background-color 160ms, border-color 160ms;
+}
+.morpheus-fluid-button:hover { transform: translateY(-2px); border-color: hsl(var(--morpheus-accent) / 0.65); }
+.morpheus-fluid-button:active { transform: scale(0.98); }
+.morpheus-fluid-button:disabled { opacity: 0.5; transform: none; }
+.morpheus-fluid-button-secondary { background: hsl(var(--foreground) / 0.025); border-color: hsl(var(--foreground) / 0.14); }
+.morpheus-fluid-link { font-size: 12px; color: hsl(var(--muted-foreground)); transition: color 160ms; }
+.morpheus-fluid-link:hover { color: hsl(var(--foreground)); }
+.morpheus-fluid-link:disabled { opacity: 0.45; }
+.morpheus-fluid-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; }
+.morpheus-fluid-icon:hover { background: hsl(var(--foreground) / 0.06); }
+.morpheus-fluid-button:focus-visible, .morpheus-fluid-link:focus-visible, .morpheus-fluid-icon:focus-visible {
+  outline: 2px solid hsl(var(--morpheus-accent)); outline-offset: 4px;
+}
+@keyframes morpheus-scene-enter { from { opacity: 0; transform: translateY(12px) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes morpheus-scene-exit { to { opacity: 0; transform: scale(0.99); } }
+@media (max-width: 960px) {
+  .morpheus-welcome-body { grid-template-columns: 1fr; gap: 12px; padding: 20px 8vw 40px; }
+  .morpheus-welcome .morpheus-hero-signal { width: 220px; height: 220px; }
+  .morpheus-activation-layout { grid-template-columns: minmax(180px, 0.55fr) minmax(0, 1fr); }
+  .morpheus-activation-layout .morpheus-hero-signal { width: 200px; height: 200px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .morpheus-welcome, .morpheus-welcome[data-state='closed'] { animation: none; }
+  .morpheus-fluid-button { transition: none; }
+  .morpheus-fluid-button:hover, .morpheus-fluid-button:active { transform: none; }
 }
 
 /* One-time companion activation. Every signal shown here is populated from a

@@ -668,6 +668,21 @@
         "act": { "name": "执行", "description": "把指令作为需要完成的目标。" }
       }
     },
+    "arrival": {
+      "subtitle": "给出一个目标，我们一起完成。留在工作区，或让 Morpheus 在你忙碌时陪伴左右。",
+      "witty": "有大计划？太好了。我已清空想象中的日程。",
+      "open": "打开工作区",
+      "tray": "留在系统托盘",
+      "transferring": "正在移入托盘…",
+      "trayHint": "Morpheus 会继续运行。点击 Windows 通知区域中的图标返回，或在托盘菜单中选择退出 Morpheus。",
+      "voiceHonesty": "移入托盘不会启用麦克风。监听遵循你的语音设置；使用唤醒词前请先配置语音。",
+      "voiceSettings": "配置语音与提供商",
+      "close": "关闭欢迎界面",
+      "mute": "停止问候",
+      "hear": "播放问候",
+      "trayUnavailable": "托盘暂不可用。工作区仍保持打开，请重试。",
+      "companion": "伙伴"
+    },
     "activation": {
       "eyebrow": "智能操作伙伴", "title": "认识 Morpheus", "introduction": "我把目标转化为计划、可信操作和持久任务。自然地说或输入；我会处理日常工作，只在信任边界真正变化时打断。", "spokenIntroduction": "你好，我是 Morpheus，你的智能操作伙伴。告诉我你想完成什么，我会规划并处理工作。", "begin": "激活 Morpheus", "skip": "跳过激活", "calibrating": "真实系统校准", "systemsTitle": "正在连接智能层", "checking": "正在检查此系统可用的能力…", "continue": "个性化伙伴", "personalize": "伙伴行为", "preferenceTitle": "Morpheus 应如何与你协作？", "preferenceBody": "这些偏好会影响沟通，但不会绕过能力政策或信任。", "preferredName": "我应该怎么称呼你？", "preferredNamePlaceholder": "你的名字或称呼", "autonomy": "自主性与保护", "launchAtStartup": "随 Windows 启动", "launchAtStartupDescription": "登录后让 Morpheus 在托盘中保持可用。", "ambientVoice": "聆听 Morpheus 唤醒词", "ambientVoiceDescription": "由提供商支持的聆听只在听到“{{wakePhrase}}”后响应。", "ambientVoiceUnavailable": "添加兼容转录的提供商以启用唤醒词。", "wakePhrase": "唤醒词", "proactiveCheckIns": "偶尔主动问候", "proactiveCheckInsDescription": "长时间工作时让 Morpheus 自然地询问进展。", "speak": "朗读最终响应", "speakDescription": "语音目标完成后使用 Windows 语音。", "finish": "完成激活", "readyLabel": "系统就绪", "readyTitle": "Morpheus 已就绪。", "readyBody": "在指挥中心管理任务；随时按 Ctrl+Shift+Space 打开快捷命令，或按 Ctrl+Alt+Space 说话。", "enter": "进入指挥中心", "connectProvider": "连接 AI 提供商", "providerNeeded": "Morpheus 现在可以运行已注册的本地操作。连接兼容提供商以理解更广泛的目标并启用转录。", "replay": "伙伴激活", "replayDescription": "重新播放真实系统介绍并选择伙伴行为。", "replayAction": "重播激活",
       "personalities": { "adaptive": { "name": "自适应", "description": "根据目标调整细节、语气和节奏。" }, "witty": { "name": "幽默", "description": "自信、简洁且自然风趣。" }, "concise": { "name": "简洁", "description": "偏好简短直接的状态与结果。" }, "warm": { "name": "温暖", "description": "使用自然、乐于助人且略带幽默的语气。" } },

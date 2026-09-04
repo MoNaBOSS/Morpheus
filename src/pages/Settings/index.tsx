@@ -2,7 +2,8 @@
  * Settings Page
  * Application configuration
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Sun, Moon, Monitor, RefreshCw, ExternalLink, Copy, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -42,6 +43,13 @@ type ControlUiInfo = {
 };
 
 export function Settings() {
+  const [searchParams] = useSearchParams();
+  const voiceSection = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (searchParams.get('section') !== 'voice') return;
+    voiceSection.current?.focus({ preventScroll: true });
+    voiceSection.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
+  }, [searchParams]);
   const { t, i18n } = useTranslation('settings');
   const { t: tDashboard } = useTranslation('dashboard');
   const loadPermissionCenter = useMorpheusCommandStore((state) => state.loadPermissionCenter);
@@ -657,7 +665,7 @@ export function Settings() {
             </h2>
             <div className="space-y-4">
               <MorpheusRuntimeControl />
-              <MorpheusVoiceSettings />
+              <div ref={voiceSection} tabIndex={-1} data-testid="settings-voice-destination" className="scroll-mt-6 outline-none"><MorpheusVoiceSettings /></div>
               <MorpheusProactiveSettings />
               <MorpheusOnboardingSettings />
             </div>

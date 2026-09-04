@@ -175,6 +175,25 @@ prior window presentation. It should feel present, not modal: approximately
 
 ## Writing
 
+### Fluid arrival (1.0.1)
+
+Arrival is a cinematic exception to the dense working surfaces: a large original
+filament Signal left, personal greeting and two choices right. Near-black glass,
+emerald light and serif headlines preserve the established concept. The working
+rails remain compact. Do not add fabricated diagnostics or a listening claim to
+the greeting. Personality copy is deterministic unless actually provider-generated.
+
+Use 160ms control feedback, 220–240ms stage/page opacity and small translation,
+and a 420ms arrival handoff. No animated layout dimensions or per-frame React
+state. Reduced motion removes spatial transitions. Compact/asleep presence avoids
+extra filaments or pauses them. Matrix rain starts visibly within the bounded
+boot and does not draw while the document is hidden.
+
+Returning welcome is a dismissible, focus-contained dialog shown once on normal
+startup. It can be reopened from Companion without resetting the profile. Its
+close, workspace, tray and voice setup controls must fit at 1280×800. Tray errors
+keep the window visible. Fresh activation's final choice never times out.
+
 - Say what happened, not what might have. "Created notes.txt" not "Operation completed."
 - Name the real thing: absolute paths, real capability ids.
 - Never claim unknown state. "No provider configured" beats a guessed name.

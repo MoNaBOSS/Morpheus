@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 
 import { MorpheusBoot } from '@/components/morpheus/boot/MorpheusBoot';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { MorpheusActivation } from './MorpheusActivation';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
-import { playMorpheusSpeech } from '@/lib/morpheus-speech-player';
+import { useMorpheusArrivalStore } from '@/stores/morpheus-arrival';
+import { MorpheusWelcome } from './MorpheusWelcome';
 
 type MorpheusArrivalProps = {
   bootEnabled: boolean;
@@ -17,30 +17,28 @@ type MorpheusArrivalProps = {
  * Command Center cannot race or flash as independent overlays.
  */
 export function MorpheusArrival({ bootEnabled, onboardingEnabled }: MorpheusArrivalProps) {
-  const { t } = useTranslation('dashboard');
   const onboarding = useMorpheusCompanionStore((state) => state.onboarding);
   const loadOnboarding = useMorpheusCompanionStore((state) => state.loadOnboarding);
   const [bootDone, setBootDone] = useState(!bootEnabled);
-  const voiceStatus = useMorpheusVoiceStore((state) => state.status);
   const loadVoiceStatus = useMorpheusVoiceStore((state) => state.loadStatus);
-  const returningGreetingSpoken = useRef(false);
+  const [returning, setReturning] = useState(false);
+  const welcomeShown = useRef(false);
+  const openWelcome = useMorpheusArrivalStore((s) => s.openWelcome);
 
   useEffect(() => {
-    void Promise.all([loadOnboarding(), loadVoiceStatus()]);
+    let cancelled = false;
+    void loadVoiceStatus();
+    void loadOnboarding().then(() => {
+      if (!cancelled) setReturning(Boolean(useMorpheusCompanionStore.getState().onboarding?.completed));
+    });
+    return () => { cancelled = true; };
   }, [loadOnboarding, loadVoiceStatus]);
 
   useEffect(() => {
-    if (bootDone || !onboarding?.completed || !onboarding.preferences.speakResponses
-      || returningGreetingSpoken.current) return;
-    returningGreetingSpoken.current = true;
-    const name = onboarding.preferences.preferredName.trim();
-    const message = name
-      ? t('morpheus.boot.welcomeBack', { name })
-      : t('morpheus.boot.welcomeBackGeneric');
-    void playMorpheusSpeech(message, {
-      neuralAvailable: Boolean(voiceStatus?.neuralSpeechAvailable),
-    }).catch(() => undefined);
-  }, [bootDone, onboarding, t, voiceStatus?.neuralSpeechAvailable]);
+    if (!bootEnabled || !onboardingEnabled || !bootDone || !returning || welcomeShown.current) return;
+    welcomeShown.current = true;
+    openWelcome();
+  }, [bootEnabled, onboardingEnabled, bootDone, returning, openWelcome]);
 
   const finishBoot = useCallback(() => setBootDone(true), []);
 
@@ -58,6 +56,7 @@ export function MorpheusArrival({ bootEnabled, onboardingEnabled }: MorpheusArri
       <MorpheusActivation
         enabled={onboardingEnabled && bootDone}
       />
+      <MorpheusWelcome />
     </>
   );
 }

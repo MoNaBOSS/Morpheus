@@ -43,13 +43,15 @@ export function MorpheusBoot({
   // Reaching READY naturally dwells briefly so the final real state is legible.
   // An explicit skip must feel instant, so it bypasses the dwell entirely.
   const skippedRef = useRef(false);
+  const readyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleComplete = useCallback(() => {
     if (skippedRef.current) {
       setLeaving(true);
       return;
     }
-    setTimeout(() => setLeaving(true), READY_HOLD_MS);
+    readyTimer.current = setTimeout(() => setLeaving(true), READY_HOLD_MS);
   }, []);
+  useEffect(() => () => { if (readyTimer.current) clearTimeout(readyTimer.current); }, []);
 
   const { phase, progress, skip } = useBootPhases({ enabled, onComplete: handleComplete });
 

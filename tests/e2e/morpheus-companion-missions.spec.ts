@@ -59,6 +59,10 @@ test.describe('Morpheus companion and persistent Missions', () => {
       await captureVisualEvidence(page, 'arrival-returning-1280x800.png');
       await expect(page.getByTestId('morpheus-boot')).toHaveCount(0);
       await expect(page.getByTestId('morpheus-activation')).toHaveCount(0);
+      await expect(page.getByTestId('morpheus-welcome')).toContainText('Larry');
+      await captureVisualEvidence(page, 'returning-welcome-1280x800.png');
+      await page.getByTestId('morpheus-welcome-enter').click();
+      await expect(page.getByTestId('morpheus-welcome')).toHaveCount(0);
     } finally {
       await closeElectronApp(app);
     }

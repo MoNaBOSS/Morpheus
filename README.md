@@ -164,6 +164,12 @@ with an original signal identity, cinematic activation, compact product rail,
 and a **Today / Mission / Context** Command Center. Chat remains available but
 does not define the home experience.
 
+The 1.0.1 arrival update greets returning users after boot and offers **Open
+workspace** or **Keep me in the tray**. **Companion** in the Command Center
+reopens this screen. Tray mode never enables the microphone by itself. The final
+activation screen waits for your choice; speech cancellation also cancels late
+provider playback. Motion respects the system reduced-motion preference.
+
 Morpheus opens on the **Command Center** at `/`; **Quick Command** is available
 globally with `Ctrl+Shift+Space`; **Voice Command** has its own global shortcut;
 and OpenClaw chat remains fully functional at `/chat`. **Ask / Auto / Act** is

@@ -26,6 +26,8 @@ import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { hasConfiguredCredentials } from '@/lib/provider-accounts';
 import { isMorpheusPlannerAccountCompatible } from '@shared/morpheus/provider-readiness';
 import { playMorpheusSpeech, stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
+import { MorpheusTrayChoice } from './MorpheusTrayChoice';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 type ActivationStage = 'loading' | 'intro' | 'calibrating' | 'preferences' | 'proof' | 'ready';
 type SignalLock = { id: 'core' | 'runtime' | 'provider' | 'voice'; available: boolean; detail: string };
@@ -36,6 +38,7 @@ const PROOF_OBJECTIVE = 'Show system information';
 export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const { t } = useTranslation('dashboard');
   const navigate = useNavigate();
+  const reducedMotion = useReducedMotion();
   const onboarding = useMorpheusCompanionStore((state) => state.onboarding);
   const loadOnboarding = useMorpheusCompanionStore((state) => state.loadOnboarding);
   const completeOnboarding = useMorpheusCompanionStore((state) => state.completeOnboarding);
@@ -59,7 +62,8 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const [permissionProfile, setPermissionProfile] = useState<PermissionProfile>('autonomous');
   const [proactiveCheckIns, setProactiveCheckIns] = useState(true);
   const [voiceAvailable, setVoiceAvailable] = useState(false);
-  const [neuralSpeechAvailable, setNeuralSpeechAvailable] = useState(false);
+  const voiceStatus = useMorpheusVoiceStore((state) => state.status);
+  const [speaking, setSpeaking] = useState(false);
   const [proofStarted, setProofStarted] = useState(false);
   const [exiting, setExiting] = useState(false);
   const voicePhase = useMorpheusVoiceStore((state) => state.phase);
@@ -108,11 +112,12 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
       && hasConfiguredCredentials(provider, providerStatus),
   );
   const visibleStage: ActivationStage = stage === 'proof' && proofStarted && objectiveRun && isObjectiveTerminalState(objectiveRun.state) ? 'ready' : stage;
-  const signalState = resolveMorpheusSignalState({ objectiveState: visibleStage === 'proof' ? objectiveRun?.state : visibleStage === 'ready' ? 'complete' : visibleStage === 'calibrating' ? 'understanding' : undefined });
+  const signalState = speaking ? 'speaking' : resolveMorpheusSignalState({ voicePhase: voiceSource === 'onboarding' ? voicePhase : undefined, objectiveState: visibleStage === 'proof' ? objectiveRun?.state : visibleStage === 'calibrating' && !signals.length ? 'understanding' : undefined });
 
   const speak = useCallback((text: string): void => {
-    void playMorpheusSpeech(text, { neuralAvailable: neuralSpeechAvailable }).catch(() => undefined);
-  }, [neuralSpeechAvailable]);
+    if (!speakResponses) return;
+    void playMorpheusSpeech(text, { neuralAvailable: Boolean(voiceStatus?.neuralSpeechAvailable), onSpeakingChange: setSpeaking }).catch(() => undefined);
+  }, [speakResponses, voiceStatus?.neuralSpeechAvailable]);
 
   useEffect(() => {
     if (visibleStage !== 'intro' || introductionSpoken.current) return;
@@ -128,14 +133,8 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     exitTimer.current = window.setTimeout(() => {
       setDismissed(true);
       if (destination) navigate(destination);
-    }, 680);
-  }, [navigate]);
-
-  useEffect(() => {
-    if (visibleStage !== 'ready') return undefined;
-    const timer = window.setTimeout(() => finishArrival(), providerReady ? 2600 : 8000);
-    return () => window.clearTimeout(timer);
-  }, [finishArrival, providerReady, visibleStage]);
+    }, reducedMotion ? 0 : 420);
+  }, [navigate, reducedMotion]);
 
   useEffect(() => () => {
     if (exitTimer.current !== null) window.clearTimeout(exitTimer.current);
@@ -156,7 +155,6 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     const [capabilities, voice] = await Promise.all([hostApi.morpheus.describeActions().catch(() => null), hostApi.morpheus.voiceStatus().catch(() => null)]);
     const runtimeReady = gatewayStatus.state === 'running' && gatewayStatus.gatewayReady !== false;
     setVoiceAvailable(Boolean(voice?.transcriptionAvailable));
-    setNeuralSpeechAvailable(Boolean(voice?.neuralSpeechAvailable));
     setSignals([
       { id: 'core', available: Boolean(capabilities?.actions.length), detail: capabilities ? t('morpheus.activation.signal.capabilities', { count: capabilities.actions.length }) : t('morpheus.activation.signal.unavailable') },
       { id: 'runtime', available: runtimeReady, detail: runtimeReady ? t('morpheus.activation.signal.connected') : t('morpheus.activation.signal.starting') },
@@ -219,15 +217,17 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
         <button type="button" data-testid="morpheus-activation-skip" onClick={() => void skip()} className="px-2 py-1 text-[9px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground">{t('morpheus.activation.skip')}</button>
       </header>
 
-      <main className="relative z-10 grid h-[calc(100%-4rem)] grid-cols-[minmax(300px,0.8fr)_minmax(520px,1.2fr)]">
+      <main className="morpheus-activation-layout relative z-10 grid h-[calc(100%-4rem)] grid-cols-[minmax(300px,0.9fr)_minmax(520px,1.1fr)]">
         <section className="flex items-center justify-center border-r border-white/[0.06] p-8">
           <div className="text-center">
-            <MorpheusSignal state={signalState} className="mx-auto h-64 w-64 text-[hsl(var(--morpheus-accent))]" label={t(`morpheus.signalOs.signal.${signalState}`)} />
+            <MorpheusSignal state={signalState} className="morpheus-hero-signal mx-auto text-[hsl(var(--morpheus-accent))]" label={t(`morpheus.signalOs.signal.${signalState}`)} />
             <p className="mt-5 text-[9px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t(`morpheus.signalOs.signal.${signalState}`)}</p>
           </div>
         </section>
 
-        <section className="flex min-w-0 items-center px-[8vw] py-8">
+        <section className="flex min-h-0 min-w-0 items-center px-[5vw] py-6">
+          <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={visibleStage} className="max-h-full w-full overflow-y-auto pr-2" initial={{ opacity: 0, y: reducedMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reducedMotion ? 0 : -8 }} transition={{ duration: reducedMotion ? 0 : 0.22 }}>
           {visibleStage === 'intro' ? (
             <div data-testid="morpheus-activation-intro" className="max-w-2xl">
               <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.eyebrow')}</p>
@@ -339,8 +339,14 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
                   </button>
                 ) : null}
               </div>
+              <div className="mt-6 border-t border-white/[0.08] pt-5">
+                <MorpheusTrayChoice onTransferred={() => finishArrival('/')} />
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{t('morpheus.arrival.trayHint')} {t('morpheus.arrival.voiceHonesty')}</p>
+              </div>
             </div>
           ) : null}
+          </motion.div>
+          </AnimatePresence>
         </section>
       </main>
     </div>

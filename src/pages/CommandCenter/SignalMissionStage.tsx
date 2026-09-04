@@ -9,6 +9,7 @@ import { isObjectiveTerminalState, type MorpheusSystemState } from '@shared/morp
 import type { ExecutionArtifact, ExecutionStepStatus } from '@shared/morpheus/execution-types';
 import { MorpheusSignal } from '@/components/morpheus/signal/MorpheusSignal';
 import { resolveMorpheusSignalState } from '@/components/morpheus/signal/signal-state';
+import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 
 const PHASES = ['understand', 'plan', 'act', 'verify', 'deliver'] as const;
 type MissionPhase = typeof PHASES[number];
@@ -45,6 +46,8 @@ function artifactLabel(artifact: ExecutionArtifact): string {
 
 export function SignalMissionStage() {
   const { t } = useTranslation('dashboard');
+  const voicePhase = useMorpheusVoiceStore((s) => s.phase);
+  const voicePresence = useMorpheusVoiceStore((s) => s.presence?.state);
   const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
   const plan = useMorpheusCommandStore((state) => state.plan);
   const planResult = useMorpheusCommandStore((state) => state.planResult);
@@ -59,12 +62,12 @@ export function SignalMissionStage() {
   const artifacts = objectiveRun?.artifacts ?? activeMission?.artifacts ?? [];
   const resultByStep = new Map(planResult?.steps.map((step) => [step.stepId, step]) ?? []);
   const latestTimingByStage = new Map(objectiveRun?.timings?.map((timing) => [timing.stage, timing]) ?? []);
-  const signalState = resolveMorpheusSignalState({ objectiveState: objectiveRun?.state });
+  const signalState = resolveMorpheusSignalState({ voicePhase, voicePresence, objectiveState: objectiveRun?.state });
 
   if (!objective) {
     return (
       <section data-testid="command-center-plan" className="signal-mission-stage signal-mission-stage-idle flex min-h-0 flex-1 flex-col items-center justify-center px-8 text-center">
-        <MorpheusSignal state="ready" className="h-56 w-56 text-[hsl(var(--morpheus-accent))]" label={t('morpheus.signalOs.signal.ready')} />
+        <MorpheusSignal state={signalState} className="h-64 w-64 text-[hsl(var(--morpheus-accent))]" label={t(`morpheus.signalOs.signal.${signalState}`)} />
         <p className="mt-5 text-[10px] uppercase tracking-[0.28em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.signalOs.ready')}</p>
         <h2 className="mt-3 max-w-2xl font-serif text-3xl font-normal tracking-tight text-foreground">{t('morpheus.signalOs.idleTitle')}</h2>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">{t('morpheus.signalOs.idleBody')}</p>
@@ -91,7 +94,7 @@ export function SignalMissionStage() {
             {objectiveRun?.plannerNotice ? ` · ${objectiveRun.plannerNotice}` : ''}
           </p>
         </div>
-        <MorpheusSignal state={signalState} compact className="h-20 w-20 shrink-0 text-[hsl(var(--morpheus-accent))]" label={t(`morpheus.signalOs.signal.${signalState}`)} />
+        <MorpheusSignal state={signalState} className="h-28 w-28 shrink-0 text-[hsl(var(--morpheus-accent))]" label={t(`morpheus.signalOs.signal.${signalState}`)} />
       </div>
 
       <ol className="mt-5 grid grid-cols-5" data-testid="signal-mission-phases">
