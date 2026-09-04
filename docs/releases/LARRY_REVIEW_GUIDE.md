@@ -9,10 +9,10 @@ assistant vision is complete.
 
 | Field | Value |
 | --- | --- |
-| Installer | `Morpheus-1.0.1-win-x64.exe` |
-| Runtime source | `7336fba` |
-| Size | 263,685,547 bytes |
-| SHA-256 | `90A24F92509DBE32FBFDC7AF15F44824C49482CEA3E1426A57D8467ADD7C05E1` |
+| Installer | `Morpheus-1.0.2-win-x64.exe` |
+| Runtime source | `d6b3a6b` |
+| Size | 263,692,062 bytes |
+| SHA-256 | `A574E5FE1A1BBD7A002F05CF8A0AD78BDA843B74C193368DEA517301C4FCBB62` |
 | Authenticode | `NotSigned` — production signing is not configured locally |
 | Supported host | Windows 10/11 x64 |
 
@@ -61,6 +61,13 @@ setup link takes you directly to the voice controls.
 
 ## Provider and voice setup
 
+- This build adds bounded Core planning, cancellable speech preparation and
+  improved background voice monitoring. It does not impose a currency budget on
+  the provider or on independent OpenClaw Chat traffic. No pricing UI was added.
+- On the developer's current profile, a real speech request returned HTTP 401.
+  The greeting therefore used Windows fallback. Reviewers need a valid account
+  for the speech endpoint; merely displaying configured availability is not a
+  successful voice-provider test. Never share credentials with the installer.
 - Deterministic registered capabilities work without an AI provider.
 - Broad natural-language planning requires a compatible provider configured
   locally in **Models**.

@@ -6,7 +6,7 @@ changing the runtime.
 
 ## Current project status
 
-### In verification: 1.0.2 Responsive Operator (2026-09-04)
+### Latest update: 1.0.2 Responsive Operator (2026-09-04)
 
 Adds bounded Core provider generation and usage evidence, Main-side speech
 cancellation, duplicate-speech prevention, visible speech preparation, tray-safe
@@ -14,8 +14,14 @@ audio monitoring and refined state-driven motion. No pricing UI or profile reset
 See [1.0.2 acceptance](docs/releases/1.0.2-RESPONSIVE-OPERATOR.md).
 The reported EUR80 charge is not reconciled by available local transcript usage.
 Core limits do not cover independent OpenClaw Chat traffic or guarantee a euro cap.
+Runtime `d6b3a6be3aac03ef7103d6e295fe49e0ab4c491c` is committed and pushed.
+720 Morpheus unit tests and 14 Electron journeys passed; normal packaged startup,
+tray handoff, real system report and gateway/Chat checks passed. The current
+speech credential returned HTTP 401 on a real probe, so neural speech remains
+blocked on valid endpoint credentials; Windows fallback spoke the greeting.
+The unsigned 1.0.2 installer and screenshots are in the delivery folders below.
 
-### Latest update: 1.0.1 Fluid Arrival (2026-09-04)
+### Previous update: 1.0.1 Fluid Arrival (2026-09-04)
 
 Runtime `7336fba7a705d3e7536896aed0924f2fe3c7d018` adds a visible returning
 greeting, explicit tray handoff, direct voice setup, larger filament Signal,
@@ -80,7 +86,7 @@ and compatible credentials.
 | Item | Value |
 | --- | --- |
 | Current branch | `codex/morpheus-windows-production-candidate` |
-| Current verified runtime source | `7336fba` |
+| Current verified runtime source | `d6b3a6b` |
 | Living presence and neural voice | `9222a10` |
 | Cinematic voice-first arrival | `6cf5211` |
 | Operator private-alpha core | `dcf0eaf` |
@@ -98,9 +104,9 @@ application behavior. `git rev-parse HEAD` is the authoritative latest commit.
 
 | Field | Verified value |
 | --- | --- |
-| Installer | `E:\Larry Lee\Morpheus\Releases\Windows\1.0.1\Morpheus-1.0.1-win-x64.exe` |
-| Size | 263,685,547 bytes |
-| SHA-256 | `90A24F92509DBE32FBFDC7AF15F44824C49482CEA3E1426A57D8467ADD7C05E1` |
+| Installer | `E:\Larry Lee\Morpheus\Releases\Windows\1.0.2\Morpheus-1.0.2-win-x64.exe` |
+| Size | 263,692,062 bytes |
+| SHA-256 | `A574E5FE1A1BBD7A002F05CF8A0AD78BDA843B74C193368DEA517301C4FCBB62` |
 | Authenticode | `NotSigned`; production signing remains CI/credential-owned |
 | Unpacked executable | `C:\Morpheus\morpheus-core\release\win-unpacked\Morpheus.exe` |
 | Unpacked size | 213,989,888 bytes |
