@@ -772,6 +772,13 @@
       "outputs": { "collectArtifacts": "产物", "retainHistory": "历史" }
     },
     "voice": {
+      "speechFailure": {
+        "authentication": "Windows 语音回退：语音身份验证失败 (401)。请在模型设置中检查所选提供商的密钥。",
+        "access": "Windows 语音回退：语音访问被拒绝 (403)。请检查账户的端点和模型权限。",
+        "rate-limit": "Windows 语音回退：提供商返回 429。重试前请检查用量、余额和限制。",
+        "endpoint": "Windows 语音回退：端点拒绝请求。请检查 URL、模型和声音。",
+        "unavailable": "Windows 语音回退：神经语音失败。请检查提供商或网络后重试。"
+      },
       "start": "对 Morpheus 说话",
       "stop": "结束聆听",
       "cancel": "取消语音输入",

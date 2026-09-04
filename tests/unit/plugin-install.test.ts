@@ -1,5 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Changing process.platform does not change Node's host-selected path module.
+// Emulate both together so Windows CI also exercises real POSIX semantics.
+vi.mock('node:path', async () => {
+  const actual = await vi.importActual<typeof import('node:path')>('node:path');
+  const selected = () => process.platform === 'win32' ? actual.win32 : actual.posix;
+  const paths = {
+    ...actual,
+    join: (...parts: string[]) => selected().join(...parts),
+    resolve: (...parts: string[]) => selected().resolve(...parts),
+    dirname: (value: string) => selected().dirname(value),
+    basename: (value: string, suffix?: string) => selected().basename(value, suffix),
+    normalize: (value: string) => selected().normalize(value),
+    relative: (from: string, to: string) => selected().relative(from, to),
+    get delimiter() { return selected().delimiter; },
+  };
+  return { ...paths, get delimiter() { return selected().delimiter; }, default: paths };
+});
+
+
 const {
   mockExistsSync,
   mockCpSync,
@@ -298,7 +317,7 @@ describe('plugin installer diagnostics', () => {
       '[plugin] Bundled mirror install failed for WeCom',
       expect.objectContaining({
         sourceDir,
-        targetDir: expect.stringContaining('.openclaw/extensions/wecom'),
+        targetDir: expect.stringMatching(/\.openclaw[\\/]extensions[\\/]wecom$/),
         platform: 'win32',
         attempts: [
           expect.objectContaining({ attempt: 1, code: 'EPERM' }),

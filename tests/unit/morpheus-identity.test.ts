@@ -16,9 +16,9 @@ const read = (relative: string) => readFileSync(join(REPO_ROOT, relative), 'utf8
 describe('package identity', () => {
   const pkg = JSON.parse(read('package.json')) as Record<string, string>;
 
-  it('is named and versioned as Morpheus 1.0.2', () => {
+  it('is named and versioned as Morpheus 1.0.3', () => {
     expect(pkg.name).toBe('morpheus');
-    expect(pkg.version).toBe('1.0.2');
+    expect(pkg.version).toBe('1.0.3');
     expect(pkg.description).toContain('Morpheus');
     expect(pkg.description).not.toContain('ClawX');
   });
@@ -39,7 +39,7 @@ describe('installer identity', () => {
 
   it('produces a Morpheus-named installer', () => {
     expect(builder).toContain('productName: Morpheus');
-    // artifactName interpolates productName, so this yields Morpheus-1.0.2-win-x64.exe
+    // artifactName interpolates productName, so this yields Morpheus-1.0.3-win-x64.exe
     expect(builder).toContain('artifactName: ${productName}-${version}-${os}-${arch}.${ext}');
     expect(builder).toContain('shortcutName: Morpheus');
     expect(builder).toContain('uninstallDisplayName: Morpheus');
@@ -97,6 +97,13 @@ describe('update feed', () => {
     expect(workflow).not.toContain('ClawX-*');
     expect(workflow).not.toContain('package:mac');
     expect(workflow).not.toContain('package:linux');
+    expect(workflow).toContain('run: pnpm test');
+    expect(workflow).toContain('pnpm run harness:ci');
+    expect(workflow).toContain('pnpm exec playwright test');
+    expect(workflow).toContain('draft: true');
+    expect(workflow).not.toContain('draft: false');
+    expect(workflow).toContain('vars.MORPHEUS_SIGNPATH_PROJECT_SLUG');
+    expect(workflow).not.toContain("project-slug: 'ValueCell'");
   });
 });
 

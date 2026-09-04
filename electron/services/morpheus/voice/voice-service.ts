@@ -53,6 +53,21 @@ const DEFAULT_VOICE_SETTINGS: MorpheusVoiceSettings = Object.freeze({
 
 const BASE64_PATTERN = /^[A-Za-z0-9+/]*={0,2}$/;
 
+class VoiceHttpError extends Error {
+  constructor(readonly status: number, operation: string) {
+    super(`${operation} provider returned HTTP ${status}.`);
+  }
+}
+
+function speechFailureKind(error: unknown): NonNullable<MorpheusVoicePresence['speechFailure']> {
+  if (!(error instanceof VoiceHttpError)) return 'unavailable';
+  if (error.status === 401) return 'authentication';
+  if (error.status === 403) return 'access';
+  if (error.status === 429) return 'rate-limit';
+  if ([400, 404, 405, 422].includes(error.status)) return 'endpoint';
+  return 'unavailable';
+}
+
 export interface MorpheusVoiceService {
   status(): Promise<MorpheusVoiceStatus>;
   presence(): MorpheusVoicePresence;
@@ -237,6 +252,7 @@ export function createMorpheusVoiceService(options: {
   let ambientSession: { sessionId: string; startedAt: string; providerLabel: string } | null = null;
   let speechGeneration = 0;
   let speechController: AbortController | null = null;
+  let speechFailure: MorpheusVoicePresence['speechFailure'];
   const cancelSpeech = (): void => {
     speechGeneration += 1;
     speechController?.abort(new DOMException('Speech cancelled', 'AbortError'));
@@ -250,8 +266,6 @@ export function createMorpheusVoiceService(options: {
     state: 'asleep',
     ambientEnabled: settings.ambientEnabled,
   };
-  const save = (): void => writeJsonAtomically(settingsPath, settings);
-
   const publish = (state: MorpheusVoicePresenceState, reason?: string): MorpheusVoicePresence => {
     currentPresence = {
       v: MORPHEUS_VOICE_VERSION,
@@ -262,6 +276,7 @@ export function createMorpheusVoiceService(options: {
         providerLabel: ambientSession.providerLabel,
       } : {}),
       ...(reason ? { reason } : {}),
+      ...(speechFailure ? { speechFailure } : {}),
     };
     options.emitPresence?.(structuredClone(currentPresence));
     return structuredClone(currentPresence);
@@ -471,7 +486,7 @@ export function createMorpheusVoiceService(options: {
         }
         throw error;
       }
-      if (!response.ok) throw new Error(`Speech provider returned HTTP ${response.status}.`);
+      if (!response.ok) throw new VoiceHttpError(response.status, 'Speech');
       const declaredLength = Number(response.headers.get('content-length') ?? 0);
       if (declaredLength > MORPHEUS_SPEECH_MAX_AUDIO_BYTES) {
         throw new Error('Speech provider response exceeded the permitted size.');
@@ -485,6 +500,7 @@ export function createMorpheusVoiceService(options: {
         appVersion: options.appVersion,
       });
       checkCurrent();
+      speechFailure = undefined;
       return {
         audioBase64: audio.toString('base64'), mimeType: 'audio/mpeg',
         providerAccountId: resolved.account.id, modelId, voice, providerLatencyMs,
@@ -492,8 +508,12 @@ export function createMorpheusVoiceService(options: {
     } catch (error) {
       await options.audit.recordControl({
         category: 'voice', event: generation !== speechGeneration ? 'speech-cancelled' : 'speech-failed', subjectId: resolved.account.id,
-        details: { textChars: text.length, modelId, voice }, appVersion: options.appVersion,
+        details: {
+          textChars: text.length, modelId, voice,
+          ...(generation === speechGeneration ? { failureKind: speechFailureKind(error) } : {}),
+        }, appVersion: options.appVersion,
       });
+      if (generation === speechGeneration) speechFailure = speechFailureKind(error);
       throw error;
     } finally {
       clearTimeout(timer);
@@ -535,8 +555,15 @@ export function createMorpheusVoiceService(options: {
         appVersion: options.appVersion,
       });
       const disableAmbient = settings.ambientEnabled && !next.ambientEnabled;
+      // Persist first: a failed atomic write must not change in-memory policy.
+      writeJsonAtomically(settingsPath, next);
+      if (settings.speechProviderAccountId !== next.speechProviderAccountId
+        || settings.providerAccountId !== next.providerAccountId
+        || settings.speechModelId !== next.speechModelId || settings.speechVoice !== next.speechVoice) {
+        cancelSpeech();
+        speechFailure = undefined;
+      }
       settings = structuredClone(next);
-      save();
       if (disableAmbient) await service.endAmbientSession();
       else if (settings.ambientEnabled) await service.beginAmbientSession();
       else publish('asleep');

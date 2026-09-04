@@ -7,6 +7,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    // Keep 258+ jsdom/module graphs from competing for all desktop resources.
+    // Bounded parallelism avoids import-time timeouts without relaxing assertions.
+    maxWorkers: 4,
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/unit/**/*.{test,spec}.{ts,tsx}'],
     coverage: {

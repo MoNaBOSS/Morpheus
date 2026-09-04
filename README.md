@@ -164,6 +164,11 @@ with an original signal identity, cinematic activation, compact product rail,
 and a **Today / Mission / Context** Command Center. Chat remains available but
 does not define the home experience.
 
+The 1.0.3 candidate makes neural speech failures visible, keeps voice settings
+unchanged if saving fails, and requires full tests plus focused Electron journeys
+before CI packaging. Release automation creates drafts and requires explicit
+Morpheus signing configuration. It does not establish public-release approval.
+
 The 1.0.2 update adds bounded planner requests and output, privacy-safe usage
 records, Main-side speech cancellation, and live voice feedback over completed
 Missions. Spoken results stay brief; full results remain visible. Explicit ambient

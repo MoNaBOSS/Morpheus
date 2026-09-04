@@ -40,7 +40,8 @@ describe('OpenClaw 2026.7.1 upgrade snapshot', () => {
 
     const first = await ensureOpenClaw2026_7_1UpgradeSnapshot({ stateDir, configPath });
     expect(first.status).toBe('created');
-    expect(first.files).toEqual(expect.arrayContaining([
+    const portableFiles = first.files.map((file) => file.replaceAll('\\', '/'));
+    expect(portableFiles).toEqual(expect.arrayContaining([
       'config/openclaw.json',
       'state-files/state/openclaw.sqlite',
       'state-files/state/openclaw.sqlite-wal',
@@ -49,13 +50,15 @@ describe('OpenClaw 2026.7.1 upgrade snapshot', () => {
       'agents/main/agent/openclaw-agent.sqlite-wal',
       'agents/main/agent/auth-profiles.json',
     ]));
-    expect(first.files).not.toContain('agents/main/sessions/history.jsonl');
-    expect(first.files).not.toContain('credentials/channel/token.json');
+    expect(portableFiles).not.toContain('agents/main/sessions/history.jsonl');
+    expect(portableFiles).not.toContain('credentials/channel/token.json');
 
     const configMode = (await stat(join(first.snapshotDir, 'config', 'openclaw.json'))).mode & 0o777;
     const markerMode = (await stat(join(first.snapshotDir, 'snapshot.json'))).mode & 0o777;
-    expect(configMode).toBe(0o600);
-    expect(markerMode).toBe(0o600);
+    // Windows chmod supports writable/read-only flags, not POSIX owner ACLs.
+    // Assert owner read/write there, keeping the exact POSIX mode on POSIX hosts.
+    expect(process.platform === 'win32' ? configMode & 0o600 : configMode).toBe(0o600);
+    expect(process.platform === 'win32' ? markerMode & 0o600 : markerMode).toBe(0o600);
 
     await writeFile(configPath, '{"version":"new"}\n');
     const second = await ensureOpenClaw2026_7_1UpgradeSnapshot({ stateDir, configPath });
@@ -93,6 +96,7 @@ describe('OpenClaw 2026.7.1 upgrade snapshot', () => {
     await symlink(outsideSecret, join(stateDir, 'agents', 'main', 'agent', 'auth-profiles.json'));
 
     const snapshot = await ensureOpenClaw2026_7_1UpgradeSnapshot({ stateDir, configPath });
-    expect(snapshot.files).not.toContain('agents/main/agent/auth-profiles.json');
+    expect(snapshot.files.map((file) => file.replaceAll('\\', '/')))
+      .not.toContain('agents/main/agent/auth-profiles.json');
   });
 });

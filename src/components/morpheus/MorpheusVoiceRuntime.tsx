@@ -118,6 +118,12 @@ export function MorpheusVoiceRuntime() {
 
         <div className="min-w-0 flex-1">
           <p className="text-tiny font-medium text-foreground">{label}</p>
+          {speaking && presence?.speechFailure ? (
+            <Link to="/settings?section=voice" data-testid="morpheus-speech-fallback-notice"
+              className="mt-1 block text-2xs text-[hsl(var(--morpheus-warn))] underline">
+              {t(`morpheus.voice.speechFailure.${presence.speechFailure}`)}
+            </Link>
+          ) : null}
           {transcript && phase === 'ready' ? (
             <p data-testid="morpheus-voice-transcript" className="mt-0.5 truncate text-2xs text-muted-foreground">
               {transcript}

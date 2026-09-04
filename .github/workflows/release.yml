@@ -46,14 +46,31 @@ jobs:
       - name: Validate release version
         run: node scripts/assert-tag-matches-package.mjs
 
+      - name: Verify dependency remediation and audit the complete tree
+        run: pnpm run security:check
+
       - name: Typecheck
         run: pnpm run typecheck
 
       - name: Lint
         run: pnpm run lint:check -- --quiet
 
-      - name: Run Morpheus unit tests
-        run: pnpm exec vitest run tests/unit/morpheus-
+      - name: Run full unit suite
+        run: pnpm test
+
+      - name: Validate runtime harness
+        run: pnpm run harness:ci
+
+      - name: Check communication regressions
+        run: |
+          pnpm run comms:replay
+          pnpm run comms:compare
+
+      - name: Build renderer for Electron journeys
+        run: pnpm run build:vite
+
+      - name: Run focused Electron release journeys
+        run: pnpm exec playwright test tests/e2e/morpheus-fluid-arrival.spec.ts tests/e2e/morpheus-intelligence-voice.spec.ts tests/e2e/morpheus-update-status.spec.ts tests/e2e/morpheus-signal-os.spec.ts --workers=1
 
       - name: Build Windows installer
         run: pnpm run package:win
@@ -74,6 +91,21 @@ jobs:
           $installers = @(Get-ChildItem release -Filter 'Morpheus-*-win-x64.exe' -File)
           if ($installers.Count -ne 1) { throw "Expected one Morpheus x64 installer, found $($installers.Count)." }
 
+      - name: Require explicit Morpheus signing configuration
+        if: startsWith(github.ref, 'refs/tags/v') && steps.channel.outputs.stable == 'true'
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.MORPHEUS_SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.MORPHEUS_SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_POLICY_SLUG: ${{ vars.MORPHEUS_SIGNPATH_POLICY_SLUG }}
+        run: |
+          foreach ($name in @('SIGNPATH_API_TOKEN', 'SIGNPATH_ORGANIZATION_ID', 'SIGNPATH_PROJECT_SLUG', 'SIGNPATH_POLICY_SLUG')) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+              throw "Missing Morpheus signing configuration: $name. No inherited identity is allowed."
+            }
+          }
+
       - name: Upload unsigned installer for SignPath
         if: startsWith(github.ref, 'refs/tags/v') && steps.channel.outputs.stable == 'true'
         id: unsigned
@@ -88,9 +120,9 @@ jobs:
         uses: signpath/github-action-submit-signing-request@v2
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: '78e37079-23df-4800-b41c-33312ad7c1e3'
-          project-slug: 'ValueCell'
-          signing-policy-slug: 'ValueCell-sign'
+          organization-id: ${{ vars.MORPHEUS_SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.MORPHEUS_SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.MORPHEUS_SIGNPATH_POLICY_SLUG }}
           github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: release/signed
@@ -146,7 +178,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish Morpheus GitHub release
+      - name: Create Morpheus draft for release review
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
@@ -155,9 +187,9 @@ jobs:
             release/Morpheus-*-win-x64.exe.blockmap
             release/latest.yml
             release/SHA256SUMS-windows.txt
-          draft: false
+          draft: true
           prerelease: ${{ steps.channel.outputs.stable != 'true' }}
-          make_latest: ${{ steps.channel.outputs.stable == 'true' }}
+          make_latest: false
           generate_release_notes: true
           body: |
             ## Morpheus ${{ github.ref_name }} for Windows
@@ -172,3 +204,4 @@ jobs:
 
 # A Morpheus release must never publish to the inherited ClawX OSS bucket.
 # Dedicated update hosting will be added together with signed-update verification.
+# Public publication is intentionally manual. See docs/releases/PUBLIC-RELEASE-GATES.md.

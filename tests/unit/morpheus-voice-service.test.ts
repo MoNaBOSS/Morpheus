@@ -10,6 +10,7 @@ import {
   validateMorpheusVoiceSettings,
 } from '../../electron/services/morpheus/voice/voice-service';
 import type { ProviderAccount } from '../../electron/shared/providers/types';
+import * as voiceStorage from '../../electron/services/morpheus/storage/atomic-json';
 
 const ACCOUNT: ProviderAccount = {
   id: 'voice-openai',
@@ -85,6 +86,13 @@ function createHarness(options?: {
 }
 
 describe('Morpheus voice service', () => {
+  it('preserves in-memory settings when the atomic disk write fails', async () => {
+    const harness = createHarness();
+    const before = (await harness.service.status()).settings;
+    vi.spyOn(voiceStorage, 'writeJsonAtomically').mockImplementationOnce(() => { throw new Error('disk unavailable'); });
+    await expect(harness.service.updateSettings({ speechVoice: 'coral' })).rejects.toThrow('disk unavailable');
+    expect((await harness.service.status()).settings).toEqual(before);
+  });
   it('cancels preflight before sending speech to the provider', async () => {
     const harness = createHarness();
     const request = harness.service.synthesize({ text: 'Do not send this.' });
@@ -291,6 +299,25 @@ describe('Morpheus voice service', () => {
     await expect(harness.service.synthesize({ text: 'Do not disclose me.' })).rejects.toThrow(/Audit is unavailable/);
     expect(harness.fetchImpl).not.toHaveBeenCalled();
     expect(harness.recordControl).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [401, 'authentication'], [403, 'access'], [429, 'rate-limit'],
+    [404, 'endpoint'], [500, 'unavailable'],
+  ] as const)('projects safe speech failure for HTTP %s, then clears on success', async (status, kind) => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response('secret provider body', { status }))
+      .mockResolvedValueOnce(new Response(new Uint8Array([1, 2, 3])));
+    const harness = createHarness({ fetchImpl });
+    await expect(harness.service.synthesize({ text: 'Hello' })).rejects.toThrow(`HTTP ${status}`);
+    expect(harness.service.presence().speechFailure).toBe(kind);
+    expect((await harness.service.status()).presence.speechFailure).toBe(kind);
+    expect(harness.service.setSpeaking(true).speechFailure).toBe(kind);
+    expect(harness.auditOrder.indexOf('audit:speech-failed')).toBeLessThan(harness.auditOrder.indexOf('emit:asleep'));
+    expect(JSON.stringify(harness.recordControl.mock.calls)).not.toContain('secret provider body');
+    expect(JSON.stringify(harness.service.presence())).not.toContain('sk-voice-secret');
+    await harness.service.synthesize({ text: 'Try again' });
+    expect(harness.service.presence().speechFailure).toBeUndefined();
   });
 
   it('audits ambient session and capture transitions before presence emission', async () => {

@@ -1,5 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Changing process.platform does not change Node's host-selected path module.
+// Emulate both together so Windows CI also exercises real POSIX semantics.
+vi.mock('node:path', async () => {
+  const actual = await vi.importActual<typeof import('node:path')>('node:path');
+  const selected = () => process.platform === 'win32' ? actual.win32 : actual.posix;
+  const paths = {
+    ...actual,
+    join: (...parts: string[]) => selected().join(...parts),
+    resolve: (...parts: string[]) => selected().resolve(...parts),
+    dirname: (value: string) => selected().dirname(value),
+    basename: (value: string, suffix?: string) => selected().basename(value, suffix),
+    normalize: (value: string) => selected().normalize(value),
+    relative: (from: string, to: string) => selected().relative(from, to),
+    get delimiter() { return selected().delimiter; },
+  };
+  return { ...paths, get delimiter() { return selected().delimiter; }, default: paths };
+});
+
+
 const originalPlatform = process.platform;
 const originalResourcesPath = process.resourcesPath;
 const originalExecPath = process.execPath;
@@ -102,7 +121,7 @@ describe('getOpenClawCliCommand (Windows packaged)', () => {
     mockExistsSync.mockImplementation((p: string) => /[\\/]cli[\\/]openclaw\.cmd$/i.test(p) || /[\\/]bin[\\/]node\.exe$/i.test(p));
     const { getOpenClawCliCommand } = await import('@electron/utils/openclaw-cli');
     expect(getOpenClawCliCommand()).toBe(
-      "& 'C:\\Program Files\\ClawX\\resources/cli/openclaw.cmd'",
+      "& 'C:\\Program Files\\ClawX\\resources\\cli\\openclaw.cmd'",
     );
   });
 
@@ -110,7 +129,7 @@ describe('getOpenClawCliCommand (Windows packaged)', () => {
     mockExistsSync.mockImplementation((p: string) => /[\\/]bin[\\/]node\.exe$/i.test(p));
     const { getOpenClawCliCommand } = await import('@electron/utils/openclaw-cli');
     expect(getOpenClawCliCommand()).toBe(
-      "& 'C:\\Program Files\\ClawX\\resources/bin/node.exe' 'C:\\Program Files\\ClawX\\resources\\openclaw\\openclaw.mjs'",
+      "& 'C:\\Program Files\\ClawX\\resources\\bin\\node.exe' 'C:\\Program Files\\ClawX\\resources\\openclaw\\openclaw.mjs'",
     );
   });
 
@@ -147,13 +166,13 @@ describe('getOpenClawCliSpawnSpec', () => {
     const comSpecPath = 'C:\\Windows\\System32\\cmd.exe';
     setPlatform('win32');
     process.env.ComSpec = comSpecPath;
-    mockExistsSync.mockImplementation((p: string) => p === '/tmp/.bin/openclaw.cmd');
+    mockExistsSync.mockImplementation((p: string) => p === '\\tmp\\.bin\\openclaw.cmd');
 
     const { getOpenClawCliSpawnSpec } = await import('@electron/utils/openclaw-cli');
     const spec = getOpenClawCliSpawnSpec();
 
     expect(spec.command).toBe(comSpecPath);
-    expect(spec.args).toEqual(['/d', '/s', '/c', '"/tmp/.bin/openclaw.cmd"']);
+    expect(spec.args).toEqual(['/d', '/s', '/c', '"\\tmp\\.bin\\openclaw.cmd"']);
     expect(spec.shell).not.toBe(true);
   });
 
@@ -179,7 +198,7 @@ describe('getOpenClawCliSpawnSpec', () => {
     const spec = getOpenClawCliSpawnSpec();
 
     expect(spec.command).toBe(process.env.ComSpec || 'cmd.exe');
-    expect(spec.args).toEqual(['/d', '/s', '/c', '"C:\\Program Files\\ClawX\\resources/cli/openclaw.cmd"']);
+    expect(spec.args).toEqual(['/d', '/s', '/c', '"C:\\Program Files\\ClawX\\resources\\cli\\openclaw.cmd"']);
     expect(spec.shell).not.toBe(true);
   });
 
@@ -208,7 +227,7 @@ describe('getOpenClawCliSpawnSpec', () => {
     const { getOpenClawCliSpawnSpec } = await import('@electron/utils/openclaw-cli');
     const spec = getOpenClawCliSpawnSpec();
 
-    expect(spec.command).toBe('C:\\Program Files\\ClawX\\resources/bin/node.exe');
+    expect(spec.command).toBe('C:\\Program Files\\ClawX\\resources\\bin\\node.exe');
     expect(spec.args).toEqual([mockedEntryPath]);
     expect(spec.shell).toBeUndefined();
     expect(spec.env).toBeUndefined();

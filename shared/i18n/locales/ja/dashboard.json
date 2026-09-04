@@ -772,6 +772,13 @@
       "outputs": { "collectArtifacts": "成果物", "retainHistory": "履歴" }
     },
     "voice": {
+      "speechFailure": {
+        "authentication": "Windows 音声に切替：音声認証に失敗しました (401)。モデル設定で選択したプロバイダーのキーを確認してください。",
+        "access": "Windows 音声に切替：音声アクセスが拒否されました (403)。エンドポイントとモデルの権限を確認してください。",
+        "rate-limit": "Windows 音声に切替：プロバイダーが 429 を返しました。再試行前に使用量、残高、制限を確認してください。",
+        "endpoint": "Windows 音声に切替：音声リクエストが拒否されました。URL、モデル、音声を確認してください。",
+        "unavailable": "Windows 音声に切替：ニューラル音声に失敗しました。プロバイダーまたは接続を確認し再試行してください。"
+      },
       "start": "Morpheus に話しかける",
       "stop": "聞き取りを終了",
       "cancel": "音声入力をキャンセル",

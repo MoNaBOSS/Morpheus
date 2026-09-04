@@ -6,6 +6,22 @@ changing the runtime.
 
 ## Current project status
 
+### Latest update: 1.0.3 Release Readiness (2026-09-04)
+
+Voice failures now expose safe, actionable failure categories and truthful Windows
+fallback state. Voice settings persist atomically. Windows test fixtures use the
+correct simulated path semantics and the full unit suite is worker-bounded.
+Electron and affected dependencies were updated; the remaining two image-size
+advisories have a repository-owned patch and an explicit full-tree security gate.
+See [parser remediation](docs/security/IMAGE-PARSER-REMEDIATION.md).
+
+Public release is **not approved**. [Public release gates](docs/releases/PUBLIC-RELEASE-GATES.md)
+separate locally verifiable work from live voice/usage, signing, clean-machine
+installation and owner review. CI creates drafts and no longer uses inherited
+ValueCell signing identity. No pricing UI, profile reset or public release was
+introduced. Final installer evidence is recorded in the 1.0.3 release report;
+the earlier 1.0.2 results below remain historical rather than new verification.
+
 ### Latest update: 1.0.2 Responsive Operator (2026-09-04)
 
 Adds bounded Core provider generation and usage evidence, Main-side speech

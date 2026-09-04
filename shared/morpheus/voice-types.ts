@@ -64,6 +64,8 @@ export type MorpheusVoicePresence = {
   sessionStartedAt?: string;
   providerLabel?: string;
   reason?: string;
+  /** Latest real speech failure this session; never a raw provider response. */
+  speechFailure?: 'authentication' | 'access' | 'rate-limit' | 'endpoint' | 'unavailable';
 };
 
 export type MorpheusVoiceProviderOption = {

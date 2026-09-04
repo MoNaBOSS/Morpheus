@@ -1128,6 +1128,13 @@
       "outputs": { "collectArtifacts": "Artifacts", "retainHistory": "History" }
     },
     "voice": {
+      "speechFailure": {
+        "authentication": "Windows voice fallback: speech authentication failed (401). Check the selected provider key in Models.",
+        "access": "Windows voice fallback: speech access was denied (403). Check the account's endpoint and model permissions.",
+        "rate-limit": "Windows voice fallback: the provider returned 429. Check its usage, balance and limits before retrying.",
+        "endpoint": "Windows voice fallback: the speech endpoint rejected this request. Check its URL, model and voice.",
+        "unavailable": "Windows voice fallback: neural speech failed. Check the provider or connection and try again."
+      },
       "start": "Speak to Morpheus",
       "stop": "Finish listening",
       "cancel": "Cancel voice input",

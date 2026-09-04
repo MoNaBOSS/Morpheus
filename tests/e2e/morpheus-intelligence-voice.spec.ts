@@ -1,6 +1,32 @@
-import { closeElectronApp, expect, getStableWindow, test } from './fixtures/electron';
+import { closeElectronApp, expect, getStableWindow, installIpcMocks, test } from './fixtures/electron';
+import { join } from 'node:path';
 
 test.describe('Morpheus production companion intelligence', () => {
+  test('explains a rejected neural speech credential rather than claiming readiness', async ({ launchElectronApp }) => {
+    const app = await launchElectronApp({ skipSetup: true });
+    try {
+      const page = await getStableWindow(app);
+      const status = await page.evaluate(async () => {
+        const response = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'morpheus', action: 'voiceStatus' });
+        if (!response.ok) throw new Error('Voice status unavailable');
+        return response.data as { presence: Record<string, unknown> };
+      });
+      // Presentation-only fixture for a failure already covered by real service
+      // unit tests; this is not represented as a successful live provider test.
+      await installIpcMocks(app, { hostApi: { [JSON.stringify(['morpheus', 'voiceStatus', null])]: {
+        ...status, neuralSpeechAvailable: true, speechProviderLabel: 'Review provider',
+        presence: { ...status.presence, speechFailure: 'authentication' },
+      } } });
+      await page.getByTestId('sidebar-nav-settings').click();
+      const failure = page.getByTestId('morpheus-speech-failure');
+      await failure.scrollIntoViewIfNeeded();
+      await expect(failure).toContainText('authentication failed (401)');
+      await expect(failure).toContainText('Models');
+      await expect(failure).not.toContainText('sk-');
+      const folder = process.env.MORPHEUS_VISUAL_EVIDENCE_DIR?.trim();
+      if (folder) await page.screenshot({ path: join(folder, 'voice-authentication-recovery.png') });
+    } finally { await closeElectronApp(app); }
+  });
   test('projects a durable Goal into Today and routes its next action through Objective Core', async ({ launchElectronApp }) => {
     let app = await launchElectronApp({ skipSetup: true });
     try {

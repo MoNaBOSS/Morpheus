@@ -39,3 +39,8 @@ superseding speech invalidates pending audio and fallback as well as playback.
 Planner calls must carry protocol-specific output limits and bounded input and
 request allowances. Cancellation must abort Main-owned provider speech. Neither
 usage diagnostics nor audit records may contain prompt, speech or audio payloads.
+
+Voice authentication and endpoint failures must be surfaced truthfully without
+raw provider error bodies. Release verification must distinguish configuration,
+mocked tests, real endpoint success and actual microphone quality. Public release
+publication is a separate review gate, never inferred from a successful build.

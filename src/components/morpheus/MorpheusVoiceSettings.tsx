@@ -12,6 +12,7 @@ import { MORPHEUS_SPEECH_VOICES } from '@shared/morpheus/voice-types';
 export function MorpheusVoiceSettings() {
   const { t } = useTranslation('dashboard');
   const status = useMorpheusVoiceStore((state) => state.status);
+  const speechFailure = useMorpheusVoiceStore((state) => state.presence?.speechFailure);
   const error = useMorpheusVoiceStore((state) => state.error);
   const loadStatus = useMorpheusVoiceStore((state) => state.loadStatus);
   const updateSettings = useMorpheusVoiceStore((state) => state.updateSettings);
@@ -181,8 +182,14 @@ export function MorpheusVoiceSettings() {
                     : t('morpheus.voice.settings.neuralSpeechFallback')}
                 </p>
               </div>
-              <StatusDot tone={status.neuralSpeechAvailable ? 'ok' : 'warn'} />
+              <StatusDot tone={speechFailure || !status.neuralSpeechAvailable ? 'warn' : 'idle'} />
             </div>
+            {speechFailure ? (
+              <p role="status" data-testid="morpheus-speech-failure"
+                className="mb-3 text-xs text-[hsl(var(--morpheus-warn))]">
+                {t(`morpheus.voice.speechFailure.${speechFailure}`)}
+              </p>
+            ) : null}
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="morpheus-speech-provider" className="text-xs text-foreground/80">
