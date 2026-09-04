@@ -22,6 +22,18 @@ ValueCell signing identity. No pricing UI, profile reset or public release was
 introduced. Final installer evidence is recorded in the 1.0.3 release report;
 the earlier 1.0.2 results below remain historical rather than new verification.
 
+Runtime `681e1617c80841a273f1e89f2b12ee960d4f000c` is committed and pushed.
+Full units: 2,705 passed, 2 skipped. All 59 Morpheus journeys passed after the
+targeted animation-settling rerun; eight additional gateway/Skills/Office checks
+passed. Normal packaged startup, tray, system report, gateway/Chat and cleanup
+passed. Live neural speech still failed authentication (401).
+
+Latest installer: `E:\Larry Lee\Morpheus\Releases\Windows\1.0.3\Morpheus-1.0.3-win-x64.exe`.
+Size 265,939,145 bytes; SHA-256
+`E1DD393F6C6BF1251D9AAEFC5583CC1C5008804B00C4F5D1C194A5C0737B2857`.
+Unsigned. Screenshots: `E:\Larry Lee\Morpheus\Review\1.0.3`.
+See [1.0.3 verification](docs/releases/1.0.3-RELEASE-READINESS.md) for exact scope.
+
 ### Latest update: 1.0.2 Responsive Operator (2026-09-04)
 
 Adds bounded Core provider generation and usage evidence, Main-side speech
