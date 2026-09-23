@@ -184,6 +184,9 @@ rather than permanently interrupting.
 
 - Privacy-safe read-only operations run automatically.
 - Low-risk operations run automatically.
+- Main-matched direct app/site navigation requests from interactive surfaces run
+  automatically. This exception does not cover provider-authored or scheduled
+  launches, persistent denials, elevated risk or degraded auditing.
 - Medium and high risk ask the **first time for a given scope**, then honour the grant.
 - The user may allow once, for the session, or permanently **for an exact scope**.
 - A plan whose scopes are all already granted runs with no prompt at all.
@@ -198,7 +201,8 @@ rather than permanently interrupting.
 - High risk surfaces once for a scope the user has never seen, then follows the grant.
 - `critical` still confirms, always.
 
-Fresh private-alpha profiles use Autonomous. Unknown capabilities, risk-tier
+Fresh experience-reset profiles use Balanced; previously saved profile choices
+are preserved. Unknown capabilities, risk-tier
 escalation, screen capture, clipboard reads, process inspection, deletion,
 credentials, finance, privilege, security settings, and arbitrary commands are
 absent from the first-use allow-list and therefore fail toward a prompt or a

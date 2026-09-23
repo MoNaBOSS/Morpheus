@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Activity, Loader2, Mic, Radio, Volume2, X } from 'lucide-react';
+import { Radio, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
@@ -9,11 +9,23 @@ import { playMorpheusSpeech, stopMorpheusSpeech } from '@/lib/morpheus-speech-pl
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { useMorpheusArrivalStore } from '@/stores/morpheus-arrival';
+import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
+import { MorpheusSignal } from './signal/MorpheusSignal';
+import { resolveMorpheusSignalState } from './signal/signal-state';
 
 export function MorpheusVoiceRuntime() {
   const { t } = useTranslation('dashboard');
+  const welcomeOpen = useMorpheusArrivalStore((state) => state.welcomeOpen);
+  const onboardingComplete = useMorpheusCompanionStore((state) => state.onboarding?.completed);
+  const activationPresentationEnabled = typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('morpheusOnboarding') === 'on';
   const showQuickCommand = useMorpheusQuickCommandStore((state) => state.show);
+  const quickCommandOpen = useMorpheusQuickCommandStore((state) => state.open);
   const phase = useMorpheusVoiceStore((state) => state.phase);
+  const followUpUntil = useMorpheusVoiceStore((state) => state.followUpUntil);
+  const endFollowUp = useMorpheusVoiceStore((state) => state.endFollowUp);
+  const continueAfterResponse = useMorpheusVoiceStore((state) => state.continueAfterResponse);
   const transcript = useMorpheusVoiceStore((state) => state.transcript);
   const error = useMorpheusVoiceStore((state) => state.error);
   const errorKind = useMorpheusVoiceStore((state) => state.errorKind);
@@ -45,20 +57,37 @@ export function MorpheusVoiceRuntime() {
   }, [loadStatus, showQuickCommand, startListening]);
 
   useEffect(() => {
-    if (!voiceOrigin
-      || !message || !status?.settings.speakResponses
-      || spokenStateKey.current === stateKey) return;
+    if (!voiceOrigin || !message || spokenStateKey.current === stateKey) return;
 
     spokenStateKey.current = stateKey;
+    if (!status?.settings.speakResponses) {
+      void continueAfterResponse();
+      return;
+    }
     void playMorpheusSpeech(message, {
       neuralAvailable: status.neuralSpeechAvailable,
-    }).catch(() => undefined);
+    }).then((result) => {
+      if (result !== 'cancelled') void continueAfterResponse();
+    }).catch(() => {
+      void continueAfterResponse();
+    });
     return () => {
       stopMorpheusSpeech();
     };
-  }, [voiceOrigin, message, stateKey, status?.neuralSpeechAvailable, status?.settings.speakResponses]);
+  }, [continueAfterResponse, voiceOrigin, message, stateKey, status?.neuralSpeechAvailable, status?.settings.speakResponses]);
 
   const ambientActive = Boolean(presence?.ambientEnabled && presence.state !== 'asleep');
+  // Arrival has its own live speech label, fallback disclosure and Stop control.
+  // Never conceal microphone activity, a follow-up session or an input error.
+  const greetingPresentation = !presence || presence.state === 'asleep'
+    || presence.state === 'speaking' || presence.state === 'preparing-speech';
+  // First-run activation owns its full-screen Signal and microphone controls.
+  // A second floating HUD makes the introduction look like two competing apps.
+  if (activationPresentationEnabled && onboardingComplete !== true) return null;
+  if (welcomeOpen && greetingPresentation && phase === 'idle' && !ambientActive && !error && !followUpUntil) return null;
+  // Presence owns the same state inside Quick Command. Avoid stacking a second
+  // floating voice surface over the compact Windows companion.
+  if (quickCommandOpen) return null;
   if (phase === 'idle' && !speaking && !preparingSpeech && !ambientActive) return null;
 
   const listening = phase === 'listening' || presence?.state === 'listening';
@@ -66,13 +95,13 @@ export function MorpheusVoiceRuntime() {
     || presence?.state === 'transcribing' || presence?.state === 'understanding'
     || presence?.state === 'working';
   const ambientEngaged = ambientActive && presence?.state !== 'armed';
-  const label = speaking
+  const label = followUpUntil ? t('morpheus.voice.dialogue.listening') : speaking
     ? t('morpheus.voice.speaking')
     : preparingSpeech ? t('morpheus.voice.preparingSpeech') : ambientActive
       ? t(`morpheus.voice.presence.${presence?.state ?? 'armed'}`)
       : t(`morpheus.voice.states.${phase}`);
 
-  if (ambientActive && !ambientEngaged && phase === 'idle' && !speaking && !error) {
+  if (ambientActive && !ambientEngaged && phase === 'idle' && !speaking && !error && !followUpUntil) {
     return (
       <aside
         data-morpheus
@@ -99,25 +128,20 @@ export function MorpheusVoiceRuntime() {
     <aside
       data-morpheus
       data-testid="morpheus-voice-indicator"
-      data-phase={speaking ? 'speaking' : preparingSpeech ? 'preparing-speech' : ambientEngaged ? presence?.state : phase}
+      data-phase={followUpUntil ? 'awaiting-command' : speaking ? 'speaking' : preparingSpeech ? 'preparing-speech' : ambientEngaged ? presence?.state : phase}
       role="status"
       aria-live="polite"
       className="pointer-events-auto fixed left-1/2 top-11 z-[100100] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-xl border border-[hsl(var(--morpheus-accent-dim))]/35 bg-[linear-gradient(135deg,hsl(var(--morpheus-surface-2))_0%,hsl(var(--morpheus-surface-1))_100%)]/95 shadow-2xl shadow-black/50 backdrop-blur-xl"
     >
       <div className="flex items-center gap-3 px-3 py-2.5">
-        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[hsl(var(--morpheus-accent-dim))]/60 bg-[hsl(var(--morpheus-accent))]/10 text-[hsl(var(--morpheus-accent))]">
-          {speaking ? <Volume2 className="h-4 w-4" aria-hidden /> : presence?.state === 'working' ? (
-            <Activity className="h-4 w-4" aria-hidden />
-          ) : processing ? (
-            <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden />
-          ) : <Mic className="h-4 w-4" aria-hidden />}
-          {listening ? (
-            <span className="absolute inset-[-4px] rounded-full border border-[hsl(var(--morpheus-accent))]/40 motion-safe:animate-ping" aria-hidden />
-          ) : null}
-        </div>
+        <MorpheusSignal className="h-16 w-16 shrink-0" compact
+          state={resolveMorpheusSignalState({ voicePhase: phase, voicePresence: presence?.state })} />
 
         <div className="min-w-0 flex-1">
           <p className="text-tiny font-medium text-foreground">{label}</p>
+          {followUpUntil ? <p data-testid="morpheus-voice-follow-up" className="mt-1 text-xs text-muted-foreground">
+            {t('morpheus.voice.dialogue.hint')}
+          </p> : null}
           {speaking && presence?.speechFailure ? (
             <Link to="/settings?section=voice" data-testid="morpheus-speech-fallback-notice"
               className="mt-1 block text-2xs text-[hsl(var(--morpheus-warn))] underline">
@@ -182,6 +206,7 @@ export function MorpheusVoiceRuntime() {
           data-testid="morpheus-voice-dismiss"
           aria-label={processing || listening ? t('morpheus.voice.cancel') : t('morpheus.voice.dismiss')}
           onClick={() => {
+            endFollowUp();
             if (speaking || preparingSpeech) {
               stopMorpheusSpeech();
             }

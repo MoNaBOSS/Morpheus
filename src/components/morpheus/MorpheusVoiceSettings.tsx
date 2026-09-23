@@ -1,13 +1,18 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Mic2, Radio, ShieldCheck } from 'lucide-react';
+import { Gauge, Mic2, Radio, ShieldCheck, Sparkles } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { StatusDot } from '@/components/morpheus/ui';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
-import { MORPHEUS_SPEECH_VOICES } from '@shared/morpheus/voice-types';
+import {
+  getMorpheusVoicePreset,
+  speechVoicesForModel,
+  type MorpheusVoicePresetId,
+} from '@shared/morpheus/provider-policy';
+import { MorpheusVoiceCheck } from './MorpheusVoiceCheck';
 
 export function MorpheusVoiceSettings() {
   const { t } = useTranslation('dashboard');
@@ -31,9 +36,29 @@ export function MorpheusVoiceSettings() {
 
   const settings = status.settings;
   const selectedProvider = settings.providerAccountId ?? '';
+  const openRouterProvider = status.providers.find((provider) => (
+    provider.vendorId === 'openrouter' && provider.configured
+  ));
+  const recommendedVoices = speechVoicesForModel(settings.speechModelId);
+  const speechVoices = recommendedVoices.includes(settings.speechVoice)
+    ? recommendedVoices
+    : [settings.speechVoice, ...recommendedVoices];
   const commitModel = (value: string): void => {
     const next = value.trim();
     if (next && next !== settings.modelId) void updateSettings({ modelId: next });
+  };
+  const applyOpenRouterPreset = (presetId: MorpheusVoicePresetId): void => {
+    if (!openRouterProvider) return;
+    const preset = getMorpheusVoicePreset(presetId);
+    void updateSettings({
+      enabled: true,
+      providerAccountId: openRouterProvider.accountId,
+      modelId: preset.transcriptionModelId,
+      speakResponses: true,
+      speechProviderAccountId: openRouterProvider.accountId,
+      speechModelId: preset.speechModelId,
+      speechVoice: preset.speechVoice as typeof settings.speechVoice,
+    });
   };
 
   return (
@@ -59,6 +84,50 @@ export function MorpheusVoiceSettings() {
       </div>
 
       <div className="space-y-4">
+        <MorpheusVoiceCheck status={status} key={JSON.stringify([
+          settings.providerAccountId, settings.modelId, settings.speechProviderAccountId,
+          settings.speechModelId, settings.speechVoice,
+        ])} />
+        <div
+          data-testid="morpheus-openrouter-voice-presets"
+          className="rounded-lg border border-[hsl(var(--morpheus-accent-dim))]/35 bg-[hsl(var(--morpheus-accent))]/[0.045] p-3.5"
+        >
+          <div className="flex items-start gap-3">
+            <Gauge className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--morpheus-accent))]" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground">
+                {t('morpheus.voice.settings.optimizedSetup')}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {openRouterProvider
+                  ? t('morpheus.voice.settings.optimizedSetupReady', { provider: openRouterProvider.label })
+                  : t('morpheus.voice.settings.optimizedSetupMissing')}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  data-testid="morpheus-voice-preset-efficient"
+                  disabled={!openRouterProvider}
+                  onClick={() => applyOpenRouterPreset('openrouter-efficient')}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border/70 bg-[hsl(var(--morpheus-surface-3))] px-3 text-xs font-medium text-foreground transition-colors hover:border-[hsl(var(--morpheus-accent-dim))] disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  <Gauge className="h-3.5 w-3.5" aria-hidden />
+                  {t('morpheus.voice.settings.efficientPreset')}
+                </button>
+                <button
+                  type="button"
+                  data-testid="morpheus-voice-preset-expressive"
+                  disabled={!openRouterProvider}
+                  onClick={() => applyOpenRouterPreset('openrouter-expressive')}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border/70 bg-[hsl(var(--morpheus-surface-3))] px-3 text-xs font-medium text-foreground transition-colors hover:border-[hsl(var(--morpheus-accent-dim))] disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                  {t('morpheus.voice.settings.expressivePreset')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
         <SettingToggle
           label={t('morpheus.voice.settings.enabled')}
           description={t('morpheus.voice.settings.enabledDescription')}
@@ -78,9 +147,15 @@ export function MorpheusVoiceSettings() {
                 testId="morpheus-voice-ambient"
                 onChange={(ambientEnabled) => void updateSettings({ ambientEnabled })}
               />
+              <div className="mt-3">
+                <SettingToggle label={t('morpheus.voice.localWake.title')}
+                  description={t('morpheus.voice.localWake.description')}
+                  checked={settings.localWakeEnabled === true} testId="morpheus-local-wake"
+                  onChange={(localWakeEnabled) => void updateSettings({ localWakeEnabled })} />
+              </div>
               <div className="mt-3 flex items-start gap-2 rounded border border-border/50 bg-black/10 px-2.5 py-2 text-2xs leading-relaxed text-muted-foreground">
                 <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(var(--morpheus-accent))]" aria-hidden />
-                <span>{t('morpheus.voice.settings.ambientDisclosure', { provider: status.providerLabel ?? t('morpheus.voice.settings.selectedProvider') })}</span>
+                <span>{t(settings.localWakeEnabled ? 'morpheus.voice.localWake.disclosure' : 'morpheus.voice.settings.ambientDisclosure', { provider: status.providerLabel ?? t('morpheus.voice.settings.selectedProvider') })}</span>
               </div>
               {settings.ambientEnabled ? (
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -171,6 +246,13 @@ export function MorpheusVoiceSettings() {
           testId="morpheus-voice-speak-responses"
           onChange={(speakResponses) => void updateSettings({ speakResponses })}
         />
+        <SettingToggle
+          label={t('morpheus.voice.settings.handsFreeFollowUp')}
+          description={t('morpheus.voice.settings.handsFreeFollowUpDescription')}
+          checked={settings.handsFreeFollowUp}
+          testId="morpheus-voice-hands-free-follow-up"
+          onChange={(handsFreeFollowUp) => void updateSettings({ handsFreeFollowUp })}
+        />
         {settings.speakResponses ? (
           <div data-testid="morpheus-neural-speech-settings" className="rounded-lg border border-border/60 bg-[hsl(var(--morpheus-surface-3))]/55 p-3.5">
             <div className="mb-3 flex items-center justify-between gap-4">
@@ -238,7 +320,7 @@ export function MorpheusVoiceSettings() {
                   onChange={(event) => void updateSettings({ speechVoice: event.target.value as typeof settings.speechVoice })}
                   className="h-10 w-full rounded-lg border border-border bg-surface-input px-3 text-sm text-foreground outline-none focus:border-[hsl(var(--morpheus-accent-dim))]"
                 >
-                  {MORPHEUS_SPEECH_VOICES.map((voice) => <option key={voice} value={voice}>{voice}</option>)}
+                  {speechVoices.map((voice) => <option key={voice} value={voice}>{voice}</option>)}
                 </select>
               </div>
             </div>

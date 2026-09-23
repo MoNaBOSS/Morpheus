@@ -12,7 +12,7 @@ export const MORPHEUS_INTERACTION_SURFACES = Object.freeze([
 ] as const);
 export type MorpheusInteractionSurface = typeof MORPHEUS_INTERACTION_SURFACES[number];
 
-export type MorpheusInteractionRoute = 'conversation' | 'objective' | 'clarification';
+export type MorpheusInteractionRoute = 'conversation' | 'objective' | 'clarification' | 'control';
 
 export type RouteMorpheusInteractionPayload = {
   text: string;
@@ -29,7 +29,9 @@ export type MorpheusInteractionDecision = {
     | 'actionable-intent'
     | 'conversational-intent'
     | 'ambiguous-chat'
-    | 'ambiguous-command';
+    | 'ambiguous-command'
+    | 'task-control';
+  control?: 'speech-stopped' | 'task-cancelled' | 'permission-saved' | 'choose-task' | 'choose-permission' | 'no-task' | 'no-permission';
   confidence: 'explicit' | 'high' | 'low';
   /** Normalized text accepted by the route. Never provider-authored. */
   text: string;

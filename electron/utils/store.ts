@@ -29,6 +29,8 @@ export interface AppSettings {
   startMinimized: boolean;
   launchAtStartup: boolean;
   telemetryEnabled: boolean;
+  telemetryConsentVersion: number;
+  telemetryIdentityVersion: number;
   machineId: string;
   hasReportedInstall: boolean;
 
@@ -85,7 +87,9 @@ function createDefaultSettings(): AppSettings {
     language: resolveSupportedLanguage(getSystemLocale()),
     startMinimized: false,
     launchAtStartup: false,
-    telemetryEnabled: true,
+    telemetryEnabled: false,
+    telemetryConsentVersion: 0,
+    telemetryIdentityVersion: 0,
     machineId: '',
     hasReportedInstall: false,
 

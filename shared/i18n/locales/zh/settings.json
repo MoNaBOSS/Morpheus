@@ -53,7 +53,12 @@
       "replaceApiKeyHelp": "如果想保留当前已保存的 API key，这里留空即可。",
       "baseUrl": "基础 URL",
       "modelId": "模型 ID",
-      "modelIdEditDisabled": "模型 ID 创建后不可修改。如需使用其他模型 ID，请删除此 Provider 后重新添加。",
+      "openRouterRecommendationTitle": "Morpheus 推荐默认模型",
+      "openRouterRecommendationBody": "Luna 在速度、质量和可预测成本之间取得平衡。DeepSeek Flash 是经济选项。Sol 属于高价模型，仅在任务确实需要时选择。",
+      "openAiRecommendation": "推荐默认模型：gpt-5.6-luna。仅在特别复杂的工作中使用 Sol。",
+      "useBalanced": "使用平衡模式",
+      "useEconomy": "使用经济模式",
+      "modelIdEditDisabled": "保存后，Morpheus 和 OpenClaw 将使用此提供商模型。",
       "codePlanPreset": "Code Plan 预设",
       "codePlanMode": "Code Plan",
       "useCodePlanPreset": "使用 Ark Code Plan 预设",
@@ -205,8 +210,8 @@
     "description": "高级选项",
     "devMode": "开发者模式",
     "devModeDesc": "显示开发者工具和快捷方式",
-    "telemetry": "匿名使用数据",
-    "telemetryDesc": "允许提供匿名的基础使用数据，用于改进 Morpheus"
+    "telemetry": "分享诊断使用数据",
+    "telemetryDesc": "可选。发送带随机安装标识的基本应用事件，以帮助改进 Morpheus。明确同意前保持关闭。"
   },
   "developer": {
     "title": "开发者",

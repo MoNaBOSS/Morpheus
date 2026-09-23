@@ -244,7 +244,7 @@ describe('provider-runtime-sync config delivery', () => {
     expectNoGatewayLifecycleCalls(gateway);
   });
 
-  it('uses gpt-5.6-sol as the browser OAuth default model for OpenAI', async () => {
+  it('uses gpt-5.6-luna as the browser OAuth cost-aware default model for OpenAI', async () => {
     mocks.getProvider.mockResolvedValue(
       createProvider({
         id: 'openai-personal',
@@ -267,7 +267,7 @@ describe('provider-runtime-sync config delivery', () => {
 
     expect(mocks.setOpenClawDefaultModelWithOverride).toHaveBeenCalledWith(
       'openai',
-      'openai/gpt-5.6-sol',
+      'openai/gpt-5.6-luna',
       {
         baseUrl: 'https://chatgpt.com/backend-api/codex',
         api: 'openai-chatgpt-responses',

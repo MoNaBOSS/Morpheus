@@ -26,6 +26,7 @@ const DEFAULT_SETTINGS: MorpheusProactiveSettings = Object.freeze({
   v: MORPHEUS_PROACTIVE_VERSION,
   enabled: true,
   notificationsEnabled: false,
+  doNotDisturb: false,
   quietHoursEnabled: true,
   quietHoursStart: '22:00',
   quietHoursEnd: '08:00',
@@ -81,7 +82,8 @@ function validateSettings(value: unknown): MorpheusProactiveSettings | null {
     reminder: inputCategories.reminder as boolean,
   };
   if (Object.values(categories).some((enabled) => typeof enabled !== 'boolean')) return null;
-  return { ...(structuredClone(value) as MorpheusProactiveSettings), categories };
+  if (value.doNotDisturb !== undefined && typeof value.doNotDisturb !== 'boolean') return null;
+  return { ...(structuredClone(value) as MorpheusProactiveSettings), doNotDisturb: value.doNotDisturb ?? false, categories };
 }
 
 export function validateMorpheusAttentionItem(value: unknown): MorpheusAttentionItem | null {

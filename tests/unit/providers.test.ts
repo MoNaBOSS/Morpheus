@@ -165,7 +165,7 @@ describe('provider metadata', () => {
     });
     expect(openrouter).toMatchObject({
       showModelId: true,
-      defaultModelId: 'openai/gpt-5.6-sol',
+      defaultModelId: 'openai/gpt-5.6-luna',
     });
     expect(siliconflow).toMatchObject({
       showModelId: true,
@@ -201,7 +201,7 @@ describe('provider metadata', () => {
 
     expect(openai).toMatchObject({
       showModelId: true,
-      defaultModelId: 'gpt-5.6-sol',
+      defaultModelId: 'gpt-5.6-luna',
       isOAuth: true,
       supportsApiKey: true,
     });
@@ -216,7 +216,7 @@ describe('provider metadata', () => {
       expect(shouldShowProviderModelId(provider, true)).toBe(true);
     }
 
-    expect(resolveProviderModelForSave(openai, '   ', false)).toBe('gpt-5.6-sol');
+    expect(resolveProviderModelForSave(openai, '   ', false)).toBe('gpt-5.6-luna');
     expect(resolveProviderModelForSave(google, '   ', false)).toBe('gemini-3.1-pro-preview');
     expect(resolveProviderModelForSave(minimax, '   ', false)).toBe('MiniMax-M3');
     expect(resolveProviderModelForSave(minimaxCn, '   ', false)).toBe('MiniMax-M3');
@@ -246,7 +246,7 @@ describe('provider metadata', () => {
       .toBe('Qwen/Qwen3-Coder-480B-A35B-Instruct');
     expect(resolveProviderModelForSave(anthropic, 'claude-sonnet-4-5', false)).toBe('claude-sonnet-4-5');
 
-    expect(resolveProviderModelForSave(openrouter, '   ', false)).toBe('openai/gpt-5.6-sol');
+    expect(resolveProviderModelForSave(openrouter, '   ', false)).toBe('openai/gpt-5.6-luna');
     expect(resolveProviderModelForSave(siliconflow, '   ', false)).toBe('deepseek-ai/DeepSeek-V3');
     expect(resolveProviderModelForSave(anthropic, '   ', false)).toBe('claude-opus-4-8');
     expect(resolveProviderModelForSave(ark, '  ep-custom-model  ', false)).toBe('ep-custom-model');

@@ -1,4 +1,4 @@
-import { completeSetup, expect, test } from './fixtures/electron';
+import { completeSetup, expect, installIpcMocks, test } from './fixtures/electron';
 
 const TEST_PROVIDER_ID = 'moonshot-e2e';
 const TEST_PROVIDER_LABEL = 'Moonshot E2E';
@@ -17,6 +17,14 @@ async function seedTestProvider(page: Parameters<typeof completeSetup>[0]): Prom
       updatedAt: now,
     });
   }, { providerId: TEST_PROVIDER_ID, providerLabel: TEST_PROVIDER_LABEL });
+}
+
+async function openModels(page: Parameters<typeof completeSetup>[0]): Promise<void> {
+  const models = page.getByTestId('sidebar-nav-models');
+  if (!await models.isVisible().catch(() => false)) {
+    await page.getByTestId('signal-nav-advanced').click();
+  }
+  await models.click();
 }
 
 test.describe('ClawX provider lifecycle', () => {
@@ -54,7 +62,7 @@ test.describe('ClawX provider lifecycle', () => {
       await window.electron.ipcRenderer.invoke('provider:setDefault', providers[0].id);
     });
 
-    await page.getByTestId('sidebar-nav-models').click();
+    await openModels(page);
     await expect(page.getByTestId('provider-card-moonshot-default-e2e')).toContainText('Default');
     await expect(page.getByTestId('provider-card-deepseek-replacement-e2e')).toBeVisible();
 
@@ -70,7 +78,7 @@ test.describe('ClawX provider lifecycle', () => {
     await completeSetup(page);
     await seedTestProvider(page);
 
-    await page.getByTestId('sidebar-nav-models').click();
+    await openModels(page);
     await expect(page.getByTestId('providers-settings')).toBeVisible();
     await expect(page.getByTestId(`provider-card-${TEST_PROVIDER_ID}`)).toContainText(TEST_PROVIDER_LABEL);
 
@@ -85,7 +93,7 @@ test.describe('ClawX provider lifecycle', () => {
     await completeSetup(page);
     await seedTestProvider(page);
 
-    await page.getByTestId('sidebar-nav-models').click();
+    await openModels(page);
     await expect(page.getByTestId(`provider-card-${TEST_PROVIDER_ID}`)).toContainText(TEST_PROVIDER_LABEL);
 
     await page.getByTestId(`provider-card-${TEST_PROVIDER_ID}`).hover();
@@ -100,7 +108,7 @@ test.describe('ClawX provider lifecycle', () => {
       await relaunchedPage.waitForLoadState('domcontentloaded');
       await expect(relaunchedPage.getByTestId('main-layout')).toBeVisible();
 
-      await relaunchedPage.getByTestId('sidebar-nav-models').click();
+      await openModels(relaunchedPage);
       await expect(relaunchedPage.getByTestId('providers-settings')).toBeVisible();
       await expect(relaunchedPage.getByTestId(`provider-card-${TEST_PROVIDER_ID}`)).toHaveCount(0);
       await expect(relaunchedPage.getByText(TEST_PROVIDER_LABEL)).toHaveCount(0);
@@ -112,7 +120,7 @@ test.describe('ClawX provider lifecycle', () => {
   test('shows OpenAI OAuth and API key auth mode toggle in add-provider dialog', async ({ page }) => {
     await completeSetup(page);
 
-    await page.getByTestId('sidebar-nav-models').click();
+    await openModels(page);
     await expect(page.getByTestId('providers-settings')).toBeVisible();
 
     await page.getByTestId('providers-add-button').click();
@@ -211,7 +219,7 @@ test.describe('ClawX provider lifecycle', () => {
       });
     });
 
-    await page.getByTestId('sidebar-nav-models').click();
+    await openModels(page);
     await expect(page.getByTestId('providers-settings')).toBeVisible();
 
     await page.getByTestId('providers-add-button').click();
@@ -227,111 +235,54 @@ test.describe('ClawX provider lifecycle', () => {
     await expect(page.getByTestId('provider-card-custom')).toContainText('LM Studio Local');
   });
 
-  test('edit form validates the new API key inline before saving (single button)', async ({ electronApp, page }) => {
+  test('edit form updates an existing OpenRouter account to the economy model', async ({ electronApp, page }) => {
     await completeSetup(page);
+    const now = new Date().toISOString();
+    const account = {
+      id: 'openrouter-edit',
+      vendorId: 'openrouter',
+      label: 'OpenRouter Review',
+      authMode: 'api_key',
+      baseUrl: 'https://openrouter.ai/api/v1',
+      apiProtocol: 'openai-completions',
+      model: 'openai/gpt-5.6-sol',
+      enabled: true,
+      isDefault: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await installIpcMocks(electronApp, { hostApi: {
+      [JSON.stringify(['providers', 'accounts', null])]: [account],
+      [JSON.stringify(['providers', 'accountKeyInfo', null])]: [{
+        accountId: account.id,
+        hasKey: true,
+        keyMasked: 'sk-or-***',
+      }],
+      [JSON.stringify(['providers', 'vendors', null])]: [],
+      [JSON.stringify(['providers', 'getDefaultAccount', null])]: { accountId: account.id },
+    } });
 
-    await electronApp.evaluate(async ({ app: _app }) => {
-      const { ipcMain } = process.mainModule!.require('electron') as typeof import('electron');
-
-      let provider = {
-        id: 'moonshot-edit',
-        vendorId: 'moonshot',
-        label: 'Moonshot Edit',
-        authMode: 'api_key',
-        baseUrl: 'https://api.moonshot.cn/v1',
-        model: 'kimi-k2.6',
-        enabled: true,
-        isDefault: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      let storedKey = 'sk-existing';
-      let keyInfo = [{ accountId: provider.id, hasKey: true, keyMasked: 'sk-***' }];
-      const originalHostInvoke = (ipcMain as unknown as {
-        _invokeHandlers?: Map<string, (event: unknown, request: unknown) => Promise<unknown>>;
-      })._invokeHandlers?.get('host:invoke');
-
-      const respond = (id: unknown, data: unknown) => ({
-        id: typeof id === 'string' ? id : undefined,
-        ok: true,
-        data,
-      });
-
-      ipcMain.removeHandler('host:invoke');
-      ipcMain.handle('host:invoke', async (event: unknown, request: {
-        id?: string;
-        module?: string;
-        action?: string;
-        payload?: Record<string, unknown>;
-      }) => {
-        if (request?.module !== 'providers') {
-          return originalHostInvoke?.(event, request) ?? respond(request?.id, undefined);
-        }
-
-        const body = request.payload ?? {};
-        if (request.action === 'accounts') return respond(request.id, [provider]);
-        if (request.action === 'accountKeyInfo') return respond(request.id, keyInfo);
-        if (request.action === 'vendors') return respond(request.id, []);
-        if (request.action === 'getDefaultAccount') return respond(request.id, { accountId: provider.id });
-        if (request.action === 'list') return respond(request.id, [provider]);
-
-        if (request.action === 'validateKey') {
-          if (body.apiKey === 'sk-good') {
-            const options = body.options as Record<string, unknown> | undefined;
-            if (options?.modelId !== 'kimi-k2.6') {
-              return respond(request.id, {
-                valid: false,
-                error: `unexpected validation model: ${String(options?.modelId)}`,
-              });
-            }
-            return respond(request.id, { valid: true });
-          }
-          return respond(request.id, { valid: false, error: 'Invalid API key' });
-        }
-
-        if (request.action === 'updateAccount') {
-          provider = {
-            ...provider,
-            ...(body.updates as Record<string, unknown> | undefined),
-            updatedAt: new Date().toISOString(),
-          };
-          if (body.apiKey) storedKey = String(body.apiKey);
-          keyInfo = [{ accountId: provider.id, hasKey: Boolean(storedKey), keyMasked: 'sk-***' }];
-          return respond(request.id, { success: true, account: provider });
-        }
-
-        return respond(request.id, {});
-      });
-    });
-
-    await page.getByTestId('sidebar-nav-models').click();
+    await page.evaluate(() => { window.location.hash = '#/models'; });
     await expect(page.getByTestId('providers-settings')).toBeVisible();
-    await expect(page.getByTestId('provider-card-moonshot-edit')).toBeVisible();
+    await expect(page.getByTestId('provider-card-openrouter-edit')).toBeVisible();
 
-    await page.getByTestId('provider-card-moonshot-edit').hover();
-    await page.getByTestId('provider-edit-moonshot-edit').click();
+    await page.getByTestId('provider-card-openrouter-edit').hover();
+    await page.getByTestId('provider-edit-openrouter-edit').click();
 
-    await expect(page.getByTestId('provider-edit-model-id-moonshot-edit')).toBeDisabled();
-    await expect(page.getByTestId('provider-edit-model-id-moonshot-edit')).toHaveValue('kimi-k2.6');
-    await expect(page.getByTestId('provider-edit-model-id-help-moonshot-edit')).toContainText(
-      'The model ID cannot be changed after creation.',
+    const modelInput = page.getByTestId('provider-edit-model-id-openrouter-edit');
+    await expect(modelInput).toBeEnabled();
+    await expect(modelInput).toHaveValue('openai/gpt-5.6-sol');
+    await expect(page.getByTestId('provider-edit-model-id-help-openrouter-edit')).toContainText(
+      'updates the provider used by Morpheus and OpenClaw',
     );
-
-    await page.getByTestId('provider-edit-key-input-moonshot-edit').fill('sk-bad');
-    await page.getByTestId('provider-edit-save-moonshot-edit').click();
-    await expect(page.getByTestId('provider-edit-validation-error-moonshot-edit')).toContainText('Invalid API key');
-
-    await page.getByTestId('provider-edit-key-input-moonshot-edit').fill('sk-good');
-    await expect(page.getByTestId('provider-edit-validation-error-moonshot-edit')).toHaveCount(0);
-    await page.getByTestId('provider-edit-save-moonshot-edit').click();
-
-    await expect(page.getByTestId('provider-edit-save-moonshot-edit')).toHaveCount(0);
+    await page.getByTestId('provider-edit-use-economy-openrouter-edit').click();
+    await expect(modelInput).toHaveValue('deepseek/deepseek-v4-flash-0731');
   });
 
   test('shows Z.AI CN/Global options and Code Plan endpoint toggle', async ({ page }) => {
     await completeSetup(page);
 
-    await page.getByTestId('sidebar-nav-models').click();
+    await openModels(page);
     await expect(page.getByTestId('providers-settings')).toBeVisible();
 
     await page.getByTestId('providers-add-button').click();

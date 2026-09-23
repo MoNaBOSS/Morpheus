@@ -30,7 +30,6 @@ import { collectDroppedFiles } from '@/lib/collect-dropped-files';
 import { fetchQuickAccessSkills } from '@/lib/quick-access-skills';
 import { DEFAULT_WORKSPACE_CWD, isDefaultWorkspacePath, normalizeWorkspacePath } from '@/lib/workspace-context';
 import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
-import { MorpheusInteractionModeControl } from '@/components/morpheus/operator/MorpheusInteractionModeControl';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -247,10 +246,10 @@ export function ChatInput({
   const refreshProviderSnapshot = useProviderStore((s) => s.refreshProviderSnapshot);
   const currentAgentId = useChatStore((s) => s.currentAgentId);
   const runMorpheusObjective = useMorpheusCommandStore((state) => state.runObjective);
+  const cancelMorpheusObjective = useMorpheusCommandStore((state) => state.cancelObjective);
   const morpheusInterpreting = useMorpheusCommandStore((state) => state.interpreting);
   const morpheusExecuting = useMorpheusCommandStore((state) => state.executing);
-  const morpheusMode = useMorpheusOperatorStore((state) => state.mode);
-  const setMorpheusMode = useMorpheusOperatorStore((state) => state.setMode);
+  const morpheusSubmitting = useMorpheusCommandStore((state) => state.submitting);
   const routeMorpheusInput = useMorpheusOperatorStore((state) => state.route);
   const pendingConversation = useMorpheusOperatorStore((state) => state.pendingConversation);
   const consumeConversation = useMorpheusOperatorStore((state) => state.consumeConversation);
@@ -702,14 +701,15 @@ export function ChatInput({
     && !inputDisabled
     && !sending
     && !imageGenerating;
-  const canStop = sending && !inputDisabled && !!onStop;
   const morpheusBusy = morpheusInterpreting || morpheusExecuting;
+  const operatorBusy = sending || (morpheusBusy && !input.trim());
+  const canStop = !inputDisabled && (morpheusBusy || (sending && !!onStop));
   const canExecuteWithMorpheus = Boolean(input.trim())
     && attachments.length === 0
     && !inputDisabled
     && !sending
     && !imageGenerating
-    && !morpheusBusy;
+    && !morpheusSubmitting;
 
   const handleSend = useCallback(async () => {
     if (!canSend) return;
@@ -762,19 +762,25 @@ export function ChatInput({
 
   const handleStop = useCallback(() => {
     if (!canStop) return;
+    if (morpheusBusy) {
+      void cancelMorpheusObjective();
+      return;
+    }
     onStop?.();
-  }, [canStop, onStop]);
+  }, [canStop, cancelMorpheusObjective, morpheusBusy, onStop]);
 
   const handleOperatorSubmit = useCallback(async () => {
     const text = input.trim();
-    if (!text && attachments.length > 0) {
+    // Explicit agent/skill selection is already a route choice by the user.
+    if ((!text && attachments.length > 0) || targetAgentId || skillTokenRanges.length > 0) {
       await handleSend();
       return;
     }
-    if (!text || morpheusBusy) return;
+    if (!text || morpheusSubmitting) return;
 
     try {
       const decision = await routeMorpheusInput(text, 'chat');
+      if (decision.route === 'control') { setInput(''); return; }
       if (decision.route === 'conversation') {
         await handleSend();
         return;
@@ -800,7 +806,7 @@ export function ChatInput({
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('composer.morpheusRejected'));
     }
-  }, [attachments.length, canExecuteWithMorpheus, handleSend, input, morpheusBusy, routeMorpheusInput, runMorpheusObjective, t]);
+  }, [attachments.length, canExecuteWithMorpheus, handleSend, input, morpheusSubmitting, routeMorpheusInput, runMorpheusObjective, skillTokenRanges.length, t, targetAgentId]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -1258,27 +1264,21 @@ export function ChatInput({
               </div>
             )}
 
-            <MorpheusInteractionModeControl
-              value={morpheusMode}
-              onChange={setMorpheusMode}
-              className="ml-auto w-[210px] shrink-0"
-            />
-
             {/* One submit control; Main decides conversation versus objective. */}
             <Button
-              onClick={sending ? handleStop : () => void handleOperatorSubmit()}
-              disabled={sending ? !canStop : (!canSend || morpheusBusy)}
+              onClick={operatorBusy ? handleStop : () => void handleOperatorSubmit()}
+              disabled={operatorBusy ? !canStop : !canSend}
               size="icon"
               data-testid="chat-composer-send"
               className={`shrink-0 h-8 w-8 rounded-lg transition-colors ${
-                (sending || canSend)
+                (operatorBusy || canSend)
                   ? 'bg-black/5 dark:bg-white/10 text-foreground hover:bg-black/10 dark:hover:bg-white/20'
                   : 'text-muted-foreground/50 hover:bg-transparent bg-transparent'
               }`}
               variant="ghost"
-              title={sending ? t('composer.stop') : t('composer.send')}
+              title={operatorBusy ? t('composer.stop') : t('composer.send')}
             >
-              {sending ? (
+              {operatorBusy ? (
                 <Square className="h-3.5 w-3.5" fill="currentColor" />
               ) : (
                 <SendHorizontal className="h-4 w-4" strokeWidth={2} />

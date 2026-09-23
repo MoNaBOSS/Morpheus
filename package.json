@@ -1,6 +1,6 @@
 {
   "name": "morpheus",
-  "version": "1.0.3",
+  "version": "1.1.2",
   "pnpm": {
     "onlyBuiltDependencies": [
       "@discordjs/opus",

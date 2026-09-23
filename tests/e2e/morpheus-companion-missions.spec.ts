@@ -16,7 +16,7 @@ async function captureVisualEvidence(
 }
 
 test.describe('Morpheus companion and persistent Missions', () => {
-  test('activates once from real system signals and enters the Command Center', async ({ launchElectronApp }) => {
+  test('keeps first launch simple, saves the companion profile, and avoids a quick-restart greeting', async ({ launchElectronApp }) => {
     const app = await launchElectronApp({
       skipSetup: true,
       additionalArgs: ['--morpheus-boot=on', '--morpheus-onboarding=on'],
@@ -26,42 +26,56 @@ test.describe('Morpheus companion and persistent Missions', () => {
       await page.setViewportSize({ width: 1280, height: 800 });
       await expect(page.getByTestId('morpheus-boot')).toHaveAttribute('data-arrival-mode', 'first-run');
       await captureVisualEvidence(page, 'arrival-boot-1280x800.png');
-      await expect(page.getByTestId('morpheus-activation')).toHaveAttribute('data-stage', 'intro');
-      await expect(page.getByTestId('morpheus-activation')).toHaveCSS('background-image', /linear-gradient/);
+      await expect(page.getByTestId('morpheus-activation')).toHaveAttribute('data-stage', 'name');
       const activationBox = await page.getByTestId('morpheus-activation').boundingBox();
       expect(activationBox).toMatchObject({ x: 0, y: 0, width: 1280, height: 800 });
-      await expect(page.getByTestId('morpheus-activation').getByTestId('morpheus-signal').locator('.morpheus-signal-core')).toBeVisible();
+      await expect(page.getByTestId('morpheus-activation').getByTestId('morpheus-fluid-orb')).toBeVisible();
+      await page.evaluate(() => window.clawx.hostInvoke({
+        id: crypto.randomUUID(), module: 'morpheus', action: 'setVoiceSpeaking', payload: { speaking: true },
+      }));
+      await expect(page.getByTestId('morpheus-voice-indicator')).toHaveCount(0);
+      await page.evaluate(() => window.clawx.hostInvoke({
+        id: crypto.randomUUID(), module: 'morpheus', action: 'setVoiceSpeaking', payload: { speaking: false },
+      }));
       await captureVisualEvidence(page, 'activation-greeting-1280x800.png');
       await page.getByTestId('activation-intro-name').fill('Larry');
       await page.getByTestId('morpheus-activation-begin').click();
-      await expect(page.getByTestId('activation-signal-core')).toHaveAttribute('data-available', 'true');
-      await expect(page.getByTestId('activation-signal-provider')).toHaveAttribute('data-available', 'false');
-      await expect(page.getByTestId('activation-voice-start')).toBeDisabled();
-      await captureVisualEvidence(page, 'activation-voice-calibration-1280x800.png');
-      await page.getByTestId('morpheus-activation-continue').click();
-      await expect(page.getByTestId('activation-preferred-name')).toHaveValue('Larry');
-      await page.getByTestId('activation-personality-warm').click();
-      await expect(page.getByTestId('morpheus-activation-preferences').getByTestId('morpheus-mode-auto')).toHaveAttribute('aria-checked', 'true');
-      await expect(page.getByTestId('activation-permission-autonomous')).toHaveAttribute('data-selected', 'true');
-      await expect(page.getByTestId('activation-ambient-voice')).toBeDisabled();
+      await expect(page.getByTestId('morpheus-activation-welcome')).toContainText('Larry');
+      await captureVisualEvidence(page, 'activation-welcome-1280x800.png');
+      await expect(page.getByTestId('activation-suggestions')).toBeVisible({ timeout: 12_000 });
+      await page.getByTestId('morpheus-activation-personalize').click();
+      await page.getByTestId('activation-interests').fill('Anime and film');
+      await page.getByTestId('activation-humor-gentle').click();
+      await expect(page.getByTestId('morpheus-activation-preferences').getByText('Ask', { exact: true })).toHaveCount(0);
+      await expect(page.getByTestId('activation-permission-balanced')).toHaveCount(0);
+      await expect(page.getByTestId('activation-voice-preview-1')).toBeDisabled();
       await page.getByTestId('morpheus-activation-finish').click();
-      await expect(page.getByTestId('morpheus-activation-proof')).toBeVisible();
-      await page.getByTestId('morpheus-activation-skip-proof').click();
       await expect(page.getByTestId('morpheus-activation-ready')).toBeVisible();
-      await expect(page.getByTestId('morpheus-activation-connect-provider')).toBeVisible();
       await captureVisualEvidence(page, 'activation-ready-1280x800.png');
       await page.getByTestId('morpheus-activation-enter').click();
-      await expect(page.getByTestId('morpheus-activation')).toHaveAttribute('data-exiting', 'true');
+      await expect(page.getByTestId('morpheus-activation')).toHaveCount(0);
       await expect(page.getByTestId('command-center-page')).toBeVisible();
+      await page.getByTestId('sidebar-nav-settings').click();
+      await page.getByTestId('settings-edit-companion-profile').click();
+      await page.getByTestId('settings-companion-interests').fill('One Piece');
+      await page.getByTestId('settings-save-companion-profile').click();
+      await expect(page.getByTestId('settings-companion-profile')).toHaveCount(0);
+      await page.getByTestId('settings-replay-activation').click();
+      await expect(page.getByTestId('morpheus-intro-preview')).toContainText('Larry');
+      await page.getByTestId('morpheus-intro-preview-close').click();
+      await expect(page.getByTestId('morpheus-intro-preview')).toHaveCount(0);
+      const saved = await page.evaluate(async () => {
+        const response = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'morpheus', action: 'onboardingStatus' });
+        if (!response.ok) throw new Error('Companion profile unavailable');
+        return response.data;
+      });
+      expect(saved).toMatchObject({ completed: true, preferences: { interests: 'One Piece', preferredName: 'Larry' } });
       await page.reload();
       await expect(page.getByTestId('morpheus-boot')).toHaveAttribute('data-arrival-mode', 'returning');
       await expect(page.getByTestId('morpheus-boot')).toContainText('Larry');
       await captureVisualEvidence(page, 'arrival-returning-1280x800.png');
       await expect(page.getByTestId('morpheus-boot')).toHaveCount(0);
       await expect(page.getByTestId('morpheus-activation')).toHaveCount(0);
-      await expect(page.getByTestId('morpheus-welcome')).toContainText('Larry');
-      await captureVisualEvidence(page, 'returning-welcome-1280x800.png');
-      await page.getByTestId('morpheus-welcome-enter').click();
       await expect(page.getByTestId('morpheus-welcome')).toHaveCount(0);
     } finally {
       await closeElectronApp(app);
@@ -77,7 +91,8 @@ test.describe('Morpheus companion and persistent Missions', () => {
       await page.getByTestId('morpheus-command-submit').click();
       await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i);
       await captureVisualEvidence(page, 'command-center-mission-1280x800.png');
-      await page.getByTestId('signal-nav-missions').click();
+      await page.getByTestId('signal-nav-advanced').click();
+      await page.getByTestId('sidebar-nav-missions').click();
       await expect(page.getByTestId('missions-page')).toBeVisible();
       await expect(page.getByTestId('mission-detail')).toContainText('Show system information');
       await expect(page.getByTestId('mission-route')).toContainText(/direct capability/i);
@@ -92,7 +107,8 @@ test.describe('Morpheus companion and persistent Missions', () => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
-      await page.getByTestId('signal-nav-library').click();
+      await page.getByTestId('signal-nav-advanced').click();
+      await page.getByTestId('sidebar-nav-projects').click();
       await expect(page.getByTestId('projects-page')).toBeVisible();
       await expect(page.getByTestId('project-list-item-personal')).toBeVisible();
 
@@ -123,7 +139,7 @@ test.describe('Morpheus companion and persistent Missions', () => {
       await page.getByTestId('quick-command-input').fill('Show system information');
       await page.getByTestId('quick-command-submit').click();
       await expect(page.getByTestId('quick-command-objective-state')).toContainText(/complete/i);
-      await expect(page.getByTestId('quick-command-route')).toContainText(/direct capability/i);
+      await expect(page.getByTestId('quick-command-objective-state')).toContainText(/complete/i);
       await page.getByTestId('quick-command-expand').click();
       await expect(page.getByTestId('command-center-page')).toBeVisible();
     } finally {

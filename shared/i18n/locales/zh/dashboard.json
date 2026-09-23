@@ -112,6 +112,87 @@
     }
   },
   "morpheus": {
+    "socialCheckIn": { "question": "今天过得怎么样？", "answer": { "good": "不错", "rough": "不太好" }, "reply": { "good": "真好。有需要随时叫我。", "rough": "抱歉听到这个。想聊聊或需要帮忙时，我都在。" }, "dismiss": "关闭问候" },
+    "activationV2": {
+      "profileTitle": "你的 Morpheus",
+      "profileDescription": "更改说话方式和主动关心频率，或预览介绍。现有任务和权限保持不变。",
+      "preview": "预览介绍",
+      "saved": "伙伴偏好已保存。",
+      "hello": "你好，我是 Morpheus。",
+      "nameQuestion": "我该怎么称呼你？",
+      "close": "关闭",
+      "speak": "和 Morpheus 说话",
+      "continue": "继续",
+      "inputPlaceholder": "说出或输入你的回答...",
+      "skipName": "暂时跳过",
+      "welcome": "欢迎来到矩阵世界，{{name}}。",
+      "friend": "朋友",
+      "firstQuestion": "你希望我帮你做什么？",
+      "send": "发送",
+      "personalize": "定制 Morpheus",
+      "makeItYours": "请随意。",
+      "optional": "只需做几个选择，以后随时可以修改。",
+      "interests": "你对什么感兴趣？",
+      "interestsPlaceholder": "电影、动漫、工作，或任何想让我记住的事",
+      "humor": "幽默风格",
+      "checkIns": "我该多久主动关心一次？",
+      "voice": "选择声音（点击试听）",
+      "voiceSample": "你好，我是 Morpheus。我们开始吧。",
+      "voiceUnavailable": "自然语音试听需要连接语音服务。现在可以输入，稍后在设置中连接。",
+      "speakResponses": "有自然语音时朗读回复",
+      "wakeConsent": "在后台聆听“Morpheus”（语音配置前保持关闭）",
+      "telemetry": "可选：使用随机安装标识分享诊断事件。默认关闭。",
+      "ready": "需要我时，我就在这里。",
+      "readyBody": "自然地提出需求。我会完成工作，并告诉你重要结果。",
+      "enter": "进入 Morpheus",
+      "error": "暂时无法保存，请重试。",
+      "footer": "请随意。",
+      "typeAlways": "也可以随时输入。",
+      "suggestions": {
+        "openYouTube": "打开 YouTube",
+        "research": "研究一个项目想法",
+        "helpMe": "你能帮我做什么？"
+      },
+      "humorStyles": {
+        "gentle": "温和",
+        "cheeky": "俏皮",
+        "unfiltered": "直率"
+      },
+      "proactivity": {
+        "quiet": "安静",
+        "balanced": "适中",
+        "talkative": "健谈"
+      }
+    },
+    "workspace": {
+      "navigation": "Morpheus 导航",
+      "tasks": "进行中的任务",
+      "openChat": "打开对话",
+      "openCompact": "打开紧凑模式",
+      "close": "关闭",
+      "greeting": "接下来做什么？",
+      "greetingNamed": "接下来做什么，{{name}}？",
+      "subtitle": "我在这里，随时听你说。",
+      "conversation": "对话和任务",
+      "you": "你",
+      "working": "我正在处理，完成后会告诉你重点。",
+      "result": "结果",
+      "typing": "也可以随时打字。",
+      "placeholder": "说出或输入你的请求..."
+    },
+    "tasks": {
+      "active": "{{count}} 个进行中",
+      "select": "选择任务",
+      "control": {
+        "speech-stopped": "已停止说话，任务继续运行。",
+        "task-cancelled": "任务已取消。正在执行的操作可能需要片刻才能结束。",
+        "permission-saved": "已提交许可。Morpheus 会记住显示的权限范围。",
+        "choose-task": "多个任务符合条件，请选择要停止的任务。",
+        "choose-permission": "请在屏幕上选择要允许的权限请求。",
+        "no-task": "没有找到该名称的活动任务。",
+        "no-permission": "目前没有待确认的权限。"
+      }
+    },
     "title": "Morpheus",
     "commandCenter": "指挥中心",
     "subtitle": "AI 执行平台 —— 规划、授权、执行、审计。",
@@ -155,6 +236,7 @@
       "applicationLabel": "应用程序"
     },
     "applications": {
+      "spotify": "Spotify",
       "notepad": "记事本",
       "calculator": "计算器",
       "paint": "画图"
@@ -719,6 +801,8 @@
         "enabledDescription": "从持久的 Morpheus 状态中显示真实事项，不虚构任务或紧迫性。",
         "notifications": "主动 Windows 通知",
         "notificationsDescription": "在安静时段之外，每次扫描最多发送一条相关通知。",
+        "doNotDisturb": "勿扰模式",
+        "doNotDisturbDescription": "关闭前暂停非必要通知。",
         "factualDisclosure": "通知仅来自可检查的 Morpheus 状态。模型输出不能静默创建通知。",
         "quietHours": "安静时段",
         "quietStart": "开始",
@@ -772,6 +856,9 @@
       "outputs": { "collectArtifacts": "产物", "retainHistory": "历史" }
     },
     "voice": {
+      "localWake": {"title":"在此电脑上检测唤醒词","description":"使用 Windows 英语语音识别。叫名字，等待回应，再说指令。唤醒前不向服务商发送后台语音。需要已安装识别器和麦克风。","disclosure":"唤醒词检测在此电脑上完成。唤醒后，指令音频发送给 {{provider}} 转录。不会保存音频。"},
+      "dialogue": {"listening":"我在。你想让我做什么？","hint":"现在说出指令，无需再次叫我的名字。本轮将在 15 秒后关闭。"},
+      "check": {"title":"听听 Morpheus，也让 Morpheus 听见你。","description":"试听会使用所选声音，可能产生少量服务商费用。麦克风测试只转录简短语音，不执行任务。声音由 AI 生成。","preview":"试听所选声音","stop":"停止试听","microphone":"测试麦克风","finish":"结束麦克风测试","sample":"我是 Morpheus。告诉我你的想法，我们一步一步来。复杂的部分？交给我。","idle":"尚未测试。已配置账户并不代表语音测试成功。","playing":"正在准备或播放所选声音…","neural":"神经语音播放完毕。这个声音合适吗？","windows":"已使用 Windows 备用声音，而非所选神经语音。请检查语音访问权限。","failed":"语音播放失败。请检查输出设备和服务商设置。","heard":"我听到的是：{{text}}"},
       "speechFailure": {
         "authentication": "Windows 语音回退：语音身份验证失败 (401)。请在模型设置中检查所选提供商的密钥。",
         "access": "Windows 语音回退：语音访问被拒绝 (403)。请检查账户的端点和模型权限。",
@@ -826,12 +913,19 @@
         "autoSubmitDescription": "转录成功后无需再次点击，直接进入同一目标核心。",
         "speakResponses": "朗读最终响应",
         "speakResponsesDescription": "通过已配置的神经语音朗读简洁结果，并以 Windows 语音作为备用。",
+        "handsFreeFollowUp": "继续对话",
+        "handsFreeFollowUpDescription": "语音结果结束后，在有限时间内继续聆听一轮，无需再次说出唤醒词。",
         "neuralSpeech": "Morpheus 神经语音",
         "neuralSpeechReady": "已通过 {{provider}} 配置神经语音。若提供商不支持语音，Morpheus 将回退到 Windows 语音。",
         "neuralSpeechFallback": "没有可用的兼容语音提供商，将使用 Windows 语音。",
         "speechProvider": "语音提供商",
         "speechProviderAutomatic": "自动 · 转录提供商",
         "speechModel": "语音模型",
+        "optimizedSetup": "一键优化语音",
+        "optimizedSetupReady": "使用 {{provider}} 进行快速转录，并选择高效或更具表现力的 Morpheus 语音。",
+        "optimizedSetupMissing": "请先在 Models 中添加 OpenRouter 账户。一个密钥即可支持规划、转录和语音。",
+        "efficientPreset": "高效 · Kokoro",
+        "expressivePreset": "表现力 · Orpheus",
         "speechVoice": "声音"
       },
       "states": {

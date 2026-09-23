@@ -180,14 +180,14 @@ describe('screen capture', () => {
 });
 
 describe('approved applications', () => {
-  it('every entry is a fixed System32 executable with NO arguments', () => {
+  it('every entry is a fixed registered executable with NO arguments', () => {
     // An argument vector is the difference between "launch an approved
     // application" and "run an arbitrary command".
     for (const key of listMorpheusApplicationKeys()) {
       const entry = MORPHEUS_APPLICATIONS[key];
       expect(entry.args, key).toEqual([]);
-      expect(entry.base, key).toBe('systemRoot');
-      expect(entry.relativeDir, key).toBe('System32');
+      expect(entry.base, key).toBe(key === 'spotify' ? 'appData' : 'systemRoot');
+      expect(entry.relativeDir, key).toBe(key === 'spotify' ? 'Spotify' : 'System32');
       expect(entry.fileName, key).toMatch(/^[A-Za-z0-9_-]+\.exe$/);
       expect(entry.fileName, key).not.toMatch(/[/\\]/);
     }

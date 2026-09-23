@@ -53,7 +53,7 @@ describe('morpheus action registry', () => {
       // Arguments are fixed registry data; nothing renderer-influenced belongs here.
       expect(entry.args).toEqual([]);
       // `base` names a trusted environment value; the path is derived in Main.
-      expect(entry.base).toBe('systemRoot');
+      expect(entry.base).toBe(entry.key === 'spotify' ? 'appData' : 'systemRoot');
     }
   });
 

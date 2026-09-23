@@ -3,6 +3,7 @@ import type { GatewayManager } from '../gateway/manager';
 import { syncLaunchAtStartupSettingFromStore } from '../main/launch-at-startup';
 import { createMenu } from '../main/menu';
 import { applyProxySettings } from '../main/proxy';
+import { initTelemetry, shutdownTelemetry } from '../utils/telemetry';
 import { syncProxyConfigToOpenClaw } from '../utils/openclaw-proxy';
 import {
   type AppSettings,
@@ -95,6 +96,10 @@ async function runSettingsSideEffects(
   }
   if (patchTouchesLanguage(patch)) {
     await createMenu(typeof patch.language === 'string' ? patch.language : undefined);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'telemetryEnabled')) {
+    if (patch.telemetryEnabled) await initTelemetry();
+    else await shutdownTelemetry();
   }
 }
 

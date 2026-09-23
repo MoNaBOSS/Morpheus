@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   cancelObjective: vi.fn(),
   correctObjective: vi.fn(),
   onObjective: vi.fn(),
+  onConsent: vi.fn(() => vi.fn()),
+  respondPlanPermission: vi.fn(async () => ({ accepted: true })),
 }));
 
 vi.mock('@/lib/host-api', () => ({
@@ -15,6 +17,8 @@ vi.mock('@/lib/host-api', () => ({
       objectiveSnapshot: mocks.objectiveSnapshot,
       cancelObjective: mocks.cancelObjective,
       correctObjective: mocks.correctObjective,
+      respondPlanPermission: mocks.respondPlanPermission,
+      permissionCenter: vi.fn(async () => null),
     },
   },
 }));
@@ -22,7 +26,7 @@ vi.mock('@/lib/host-api', () => ({
 vi.mock('@/lib/host-events', () => ({
   hostEvents: {
     onMorpheusObjectiveEvent: mocks.onObjective,
-    onMorpheusPlanConsent: vi.fn(() => vi.fn()),
+    onMorpheusPlanConsent: mocks.onConsent,
   },
 }));
 
@@ -91,7 +95,7 @@ beforeEach(() => {
   useMorpheusCommandStore.setState({
     input: '', plan: null, unsupported: null, interpreting: false, executing: false,
     planResult: null, consent: null, artifacts: [], objectiveRun: null,
-    objectiveHistory: null,
+    objectiveHistory: null, submitting: false, selectedObjectiveRunId: null, consentQueue: [],
   });
   useMorpheusExecutionContextStore.setState({
     selectedAgentProfileId: null,
@@ -103,6 +107,46 @@ beforeEach(() => {
 });
 
 describe('unified Morpheus objective store', () => {
+  it('keeps task selection stable while background tasks finish and cancels only the selection', async () => {
+    let handler!: (value: MorpheusObjectiveEvent) => void;
+    mocks.onObjective.mockImplementation((next) => { handler = next; return vi.fn(); });
+    useMorpheusCommandStore.getState().subscribeObjectives();
+    handler(event(run()));
+    handler(event(run({ objectiveRunId: 'objective-2', state: 'executing' })));
+    expect(useMorpheusCommandStore.getState().objectiveRun?.objectiveRunId).toBe('objective-1');
+    useMorpheusCommandStore.getState().selectObjective('objective-2');
+    handler(event(run({ state: 'complete' })));
+    expect(useMorpheusCommandStore.getState().objectiveRun?.state).toBe('executing');
+    await useMorpheusCommandStore.getState().cancelObjective();
+    expect(mocks.cancelObjective).toHaveBeenCalledWith({ objectiveRunId: 'objective-2' });
+  });
+
+  it('does not overwrite a completion event with a stale in-flight snapshot', async () => {
+    let handler!: (value: MorpheusObjectiveEvent) => void;
+    let resolveSnapshot!: (value: unknown) => void;
+    mocks.onObjective.mockImplementation((next) => { handler = next; return vi.fn(); });
+    mocks.objectiveSnapshot.mockImplementationOnce(() => new Promise((resolve) => { resolveSnapshot = resolve; }));
+    useMorpheusCommandStore.getState().subscribeObjectives();
+    handler(event(run()));
+    const loading = useMorpheusCommandStore.getState().loadObjectives();
+    handler(event(run({ state: 'complete' })));
+    resolveSnapshot({ activeObjectiveRunId: 'objective-1', runOrder: ['objective-1'], runsById: { 'objective-1': run() }, plansByObjectiveRunId: {} });
+    await loading;
+    expect(useMorpheusCommandStore.getState().objectiveRun?.state).toBe('complete');
+    expect(useMorpheusCommandStore.getState().objectiveHistory?.activeObjectiveRunId).toBeNull();
+  });
+
+  it('queues independent consent requests and answers only the displayed plan', async () => {
+    let handler!: (value: unknown) => void;
+    mocks.onConsent.mockImplementation((next) => { handler = next; return vi.fn(); });
+    useMorpheusCommandStore.getState().subscribeConsent();
+    handler({ planId: 'one', objective: 'One', boundaries: [{ boundaryId: 'boundary-one' }] });
+    handler({ planId: 'two', objective: 'Two', boundaries: [{ boundaryId: 'boundary-two' }] });
+    expect(useMorpheusCommandStore.getState().consent?.planId).toBe('one');
+    await useMorpheusCommandStore.getState().answerConsent('allow-always');
+    expect(mocks.respondPlanPermission).toHaveBeenCalledWith('one', { 'boundary-one': 'allow-always' });
+    expect(useMorpheusCommandStore.getState().consent?.planId).toBe('two');
+  });
   it('routes typed, Quick Command and voice objectives through Main submitObjective', async () => {
     await expect(useMorpheusCommandStore.getState().runObjective('  Show system information  ', 'voice'))
       .resolves.toBe(true);

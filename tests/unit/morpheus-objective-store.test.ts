@@ -22,6 +22,16 @@ function run(id: string, state: MorpheusObjectiveRun['state']): MorpheusObjectiv
 }
 
 describe('objective history store', () => {
+  it('never evicts active recovery candidates to satisfy the terminal history limit', () => {
+    const root = mkdtempSync(join(tmpdir(), 'morpheus-objectives-'));
+    roots.push(root);
+    const store = createMorpheusObjectiveStore({ userDataDir: root, maxHistory: 1 });
+    store.put(run('one', 'planning'));
+    store.put(run('two', 'executing'));
+    store.put(run('old', 'complete'));
+    const restored = createMorpheusObjectiveStore({ userDataDir: root, canRecover: () => true });
+    expect(restored.snapshot().runOrder).toEqual(['two', 'one']);
+  });
   it('persists bounded history but keeps active plans ephemeral', () => {
     const root = mkdtempSync(join(tmpdir(), 'morpheus-objectives-'));
     roots.push(root);

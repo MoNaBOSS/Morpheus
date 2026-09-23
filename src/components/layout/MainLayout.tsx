@@ -17,6 +17,7 @@ export function MainLayout() {
   const platform = window.electron?.platform;
   const isMac = platform === 'darwin';
   const isWin = platform === 'win32';
+  const isWorkspace = location.pathname === '/';
   const isMorpheusProductSurface = [
     '/', '/missions', '/systems', '/projects', '/goals', '/agent-profiles',
     '/workflows', '/schedules', '/activity',
@@ -26,6 +27,7 @@ export function MainLayout() {
     <div
       data-testid="main-layout"
       data-platform={platform}
+      data-morpheus-workspace={isWorkspace ? 'true' : undefined}
       className={cn(
         'flex h-screen overflow-hidden',
         isWin ? 'bg-surface-sidebar' : 'bg-background',
@@ -35,7 +37,7 @@ export function MainLayout() {
       <TitleBar />
 
       <div className="flex min-h-0 flex-1 overflow-hidden bg-surface-sidebar">
-        {isMorpheusProductSurface ? <MorpheusProductNav /> : <Sidebar />}
+        {isWorkspace ? null : isMorpheusProductSurface ? <MorpheusProductNav /> : <Sidebar />}
         <main
           data-testid="main-content"
           className={cn(

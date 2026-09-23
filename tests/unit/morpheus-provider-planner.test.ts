@@ -42,7 +42,7 @@ describe('real provider planner adapter', () => {
   ] as const)('bounds %s generation without an uncapped compatibility retry', async (protocol, key) => {
     const fetchImpl = vi.fn(async (_url: unknown, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body));
-      expect((body.generationConfig ?? body)[key]).toBe(4_096);
+      expect((body.generationConfig ?? body)[key]).toBe(2_048);
       return new Response('unsupported parameter', { status: 400 });
     });
     const planner = createMorpheusProviderPlanner({ account: { ...ACCOUNT, apiProtocol: protocol }, apiKey: 'key', fetchImpl });
@@ -53,9 +53,9 @@ describe('real provider planner adapter', () => {
   it('reserves allowance even for failed website requests and stops before more paid work', async () => {
     const fetchImpl = vi.fn(async () => new Response('', { status: 503 }));
     const planner = createMorpheusProviderPlanner({ account: ACCOUNT, apiKey: 'key', fetchImpl });
-    for (let i = 0; i < 4; i++) await expect(planner.plan({ ...REQUEST, objective: 'Build a website' })).rejects.toThrow(/503/);
+    for (let i = 0; i < 3; i++) await expect(planner.plan({ ...REQUEST, objective: 'Build a website' })).rejects.toThrow(/503/);
     await expect(planner.plan({ ...REQUEST, objective: 'Build a website' })).rejects.toThrow(/allowance reached/);
-    expect(fetchImpl).toHaveBeenCalledTimes(4);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
   });
 
   it('rejects oversized input and already cancelled requests without calling the provider', async () => {
@@ -81,7 +81,7 @@ describe('real provider planner adapter', () => {
     });
     await planner.plan(REQUEST);
     expect(recordUsage).toHaveBeenCalledTimes(2);
-    expect(recordUsage).toHaveBeenLastCalledWith({ requestId: expect.any(String), phase: 'completed', requestNumber: 1, inputChars: expect.any(Number), outputTokenLimit: 4096, inputTokens: 120, outputTokens: 50, totalTokens: 170 });
+    expect(recordUsage).toHaveBeenLastCalledWith({ requestId: expect.any(String), phase: 'completed', requestNumber: 1, inputChars: expect.any(Number), outputTokenLimit: 2048, inputTokens: 120, outputTokens: 50, totalTokens: 170 });
     expect(JSON.stringify(recordUsage.mock.calls)).not.toContain('never-record');
   });
 

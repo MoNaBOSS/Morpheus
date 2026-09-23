@@ -45,6 +45,7 @@ export function MorpheusProactiveSettings() {
       </div>
 
       <div className="space-y-4">
+        <SettingToggle label={t('morpheus.proactive.settings.doNotDisturb')} description={t('morpheus.proactive.settings.doNotDisturbDescription')} checked={settings.doNotDisturb === true} testId="morpheus-proactive-dnd" onChange={(doNotDisturb) => void update({ doNotDisturb })} />
         <SettingToggle
           label={t('morpheus.proactive.settings.enabled')}
           description={t('morpheus.proactive.settings.enabledDescription')}

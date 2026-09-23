@@ -236,6 +236,7 @@ vi.mock('react-i18next', () => ({
         'composer.workspaceUnavailablePlaceholder': 'This conversation workspace is unavailable.',
         'toolbar.currentAgent': `Talking to ${String(options?.agent ?? '')}`,
         'welcome.subtitle': 'What can I do for you?',
+        'presence.emptyTitle': 'What should we handle?',
       };
       return labels[key] ?? key;
     },
@@ -1089,7 +1090,7 @@ describe('ACP Chat page', () => {
 
     render(<Chat />);
 
-    expect(screen.getByTestId('acp-chat-empty-state')).toHaveTextContent('What can I do for you?');
+    expect(screen.getByTestId('acp-chat-empty-state')).toHaveTextContent('What should we handle?');
     expect(screen.queryByTestId('acp-chat-timeline')).not.toBeInTheDocument();
   });
 

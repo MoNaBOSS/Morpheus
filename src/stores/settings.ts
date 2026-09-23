@@ -84,7 +84,7 @@ const defaultSettings = {
   language: resolveSupportedLanguage(typeof navigator !== 'undefined' ? navigator.language : undefined),
   startMinimized: false,
   launchAtStartup: false,
-  telemetryEnabled: true,
+  telemetryEnabled: false,
   gatewayAutoStart: true,
   gatewayPort: 18789,
   proxyEnabled: false,
@@ -120,6 +120,7 @@ export const useSettingsStore = create<SettingsState>()(
           set((state) => ({
             ...state,
             ...settings,
+            telemetryEnabled: settings.telemetryEnabled === true && settings.telemetryConsentVersion === 1,
             ...(resolvedLanguage ? { language: resolvedLanguage } : {}),
             ...(typeof settings.sidebarWidth === 'number'
               ? { sidebarWidth: clampSidebarWidth(settings.sidebarWidth) }
@@ -151,7 +152,7 @@ export const useSettingsStore = create<SettingsState>()(
       },
       setTelemetryEnabled: (telemetryEnabled) => {
         set({ telemetryEnabled });
-        void hostApi.settings.set('telemetryEnabled', telemetryEnabled).catch(() => { });
+        void hostApi.settings.setMany({ telemetryEnabled, telemetryConsentVersion: 1 }).catch(() => { });
       },
       setGatewayAutoStart: (gatewayAutoStart) => {
         set({ gatewayAutoStart });

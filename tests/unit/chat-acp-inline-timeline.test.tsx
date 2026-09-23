@@ -100,6 +100,7 @@ vi.mock('react-i18next', () => ({
         'acp.dismiss': 'Dismiss',
         'scrollToLatest': 'Scroll to latest',
         'welcome.subtitle': 'What can I do for you?',
+        'presence.emptyTitle': 'What should we handle?',
       };
       return labels[key] ?? key;
     },
@@ -341,7 +342,7 @@ describe('ACP Chat page inline timeline lifecycle', () => {
 
     render(<Chat />);
 
-    expect(screen.getByTestId('acp-chat-empty-state')).toHaveTextContent('What can I do for you?');
+    expect(screen.getByTestId('acp-chat-empty-state')).toHaveTextContent('What should we handle?');
     expect(screen.queryByTestId('acp-chat-timeline')).not.toBeInTheDocument();
   });
 });

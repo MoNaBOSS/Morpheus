@@ -36,6 +36,8 @@ export type MorpheusProactiveSettings = {
   v: typeof MORPHEUS_PROACTIVE_VERSION;
   enabled: boolean;
   notificationsEnabled: boolean;
+  /** User-controlled hard pause for nonessential interruptions. */
+  doNotDisturb?: boolean;
   quietHoursEnabled: boolean;
   quietHoursStart: string;
   quietHoursEnd: string;

@@ -5,6 +5,8 @@ import type { PermissionProfile } from './permission-types';
 export const MORPHEUS_ONBOARDING_VERSION = 2 as const;
 
 export type MorpheusCompanionPersonality = 'adaptive' | 'concise' | 'warm' | 'witty';
+export type MorpheusHumorStyle = 'gentle' | 'cheeky' | 'unfiltered';
+export type MorpheusProactivityLevel = 'quiet' | 'balanced' | 'talkative';
 
 export type MorpheusOnboardingPreferences = {
   /** What Morpheus should call the user. Local profile data, never Audit text. */
@@ -17,6 +19,10 @@ export type MorpheusOnboardingPreferences = {
   wakePhrase: string;
   permissionProfile: PermissionProfile;
   proactiveCheckIns: boolean;
+  /** Optional for existing v2 profiles; new completions always fill these. */
+  interests?: string;
+  humorStyle?: MorpheusHumorStyle;
+  proactivityLevel?: MorpheusProactivityLevel;
 };
 
 export const DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES: Readonly<MorpheusOnboardingPreferences> = Object.freeze({
@@ -27,8 +33,11 @@ export const DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES: Readonly<MorpheusOnboardin
   launchAtStartup: false,
   ambientVoiceEnabled: false,
   wakePhrase: 'Morpheus',
-  permissionProfile: 'autonomous',
+  permissionProfile: 'balanced',
   proactiveCheckIns: true,
+  interests: '',
+  humorStyle: 'cheeky',
+  proactivityLevel: 'balanced',
 });
 
 export type MorpheusOnboardingStatus = {
@@ -39,3 +48,6 @@ export type MorpheusOnboardingStatus = {
 };
 
 export type CompleteMorpheusOnboardingPayload = MorpheusOnboardingPreferences;
+export type MorpheusCompanionProfilePatch = Partial<Pick<MorpheusOnboardingPreferences,
+  'preferredName' | 'interests' | 'humorStyle' | 'proactivityLevel'
+>>;

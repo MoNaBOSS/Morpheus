@@ -79,9 +79,17 @@ const APP_LAUNCH_ALIASES: ReadonlyArray<[RegExp, MorpheusApplicationKey]> = [
   [/\bnotepad\b/i, 'notepad'],
   [/\b(calculator|calc)\b/i, 'calculator'],
   [/\b(paint|mspaint)\b/i, 'paint'],
+  [/\bspotify\b/i, 'spotify'],
 ];
 
-const APP_LAUNCH_VERBS = /\b(open|launch|start|run)\b/i;
+/** Familiar sites use explicit navigation, not a paid planning round trip. */
+const NAMED_SITES: Readonly<Record<string, string>> = Object.freeze({
+  youtube: 'https://www.youtube.com/', instagram: 'https://www.instagram.com/',
+  pornhub: 'https://www.pornhub.com/', github: 'https://github.com/',
+  gmail: 'https://mail.google.com/', google: 'https://www.google.com/',
+});
+
+const SIMPLE_APP_REQUEST = /^(?:(?:can|could|would) you\s+)?(?:please\s+)?(?:(?:open|launch|start|run)\s+)?(?:notepad|calculator|calc|paint|mspaint|spotify)(?:\s+please)?[.!?]?$/i;
 
 const CLIPBOARD_READ_PATTERNS = [
   /\b(read|get|show|what(?:'s|\s+is))\b[^.]*\bclipboard\b/i,
@@ -440,7 +448,12 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
     };
   }
 
-  const url = URL_PATTERN.test(text) ? extractHttpUrl(text) : null;
+  const namedSite = /^(?:please\s+)?(?:open|launch|visit|go\s+to)\s+(youtube|instagram|pornhub|github|gmail|google)(?:\s+(?:website|site))?[.!?]?$/i.exec(text.trim());
+  const bareDomain = /^(?:please\s+)?(?:open|visit|go\s+to)\s+((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24})(?:[.!?])?$/i.exec(text.trim());
+  const url = namedSite ? NAMED_SITES[namedSite[1].toLowerCase()]
+    : bareDomain ? `https://${bareDomain[1].toLowerCase()}/`
+      : /^(?:(?:please\s+)?(?:open|visit|browse|go\s+to)\s+)?https?:\/\/[^\s<>"']+(?:\s+please)?$/i.test(text)
+        ? extractHttpUrl(text) : null;
   if (url) {
     let origin: string;
     try {
@@ -658,7 +671,7 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
     };
   }
 
-  const application = APP_LAUNCH_VERBS.test(text) || APP_LAUNCH_ALIASES.some(([p]) => p.test(text))
+  const application = SIMPLE_APP_REQUEST.test(text)
     ? APP_LAUNCH_ALIASES.find(([pattern]) => pattern.test(text))?.[1]
     : undefined;
   if (application) {

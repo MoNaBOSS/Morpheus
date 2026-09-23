@@ -44,3 +44,27 @@ Voice authentication and endpoint failures must be surfaced truthfully without
 raw provider error bodies. Release verification must distinguish configuration,
 mocked tests, real endpoint success and actual microphone quality. Public release
 publication is a separate review gate, never inferred from a successful build.
+
+Local wake detection is an explicit mode. Its helper receives validated data,
+never caller-authored code or argv, and must stop with the owning session. Main
+audits wake acceptance and admits at most one bounded command capture per
+conversation turn. A terminal voice Objective may open one time-bounded follow-up
+turn, but Renderer follow-up state is not a grant and cannot widen execution
+authority. Local detector failure must never enable
+cloud monitoring implicitly. Configuration changes invalidate pending transcripts.
+
+Streaming speech must be correlated, sequenced, byte-bounded and transient.
+Record speech-start before the first audio chunk. Playback failure must cancel
+pending generation; a preview must report the engine that actually completed.
+Audio-level animation is presentation only and must release its analyser and
+listeners without high-frequency React updates.
+
+The default workspace uses the approved orb and a restrained Matrix field. Its
+conversation and result panes must project actual Objective records. Do not
+show internal mode selectors, plan stages or provider diagnostics as everyday
+controls; keep necessary settings reachable without changing Main authority.
+
+Automatic end-of-speech detection is Renderer microphone lifecycle only. It must
+retain a visible manual stop, discard no-speech timeouts without provider calls,
+and cannot manufacture transcript, Objective or completion state. Compact
+Presence must restore the exact saved full-window state on close or expansion.

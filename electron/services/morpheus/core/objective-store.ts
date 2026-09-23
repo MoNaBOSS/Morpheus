@@ -52,6 +52,7 @@ export function createMorpheusObjectiveStore(options: {
   userDataDir: string;
   now?: () => Date;
   maxHistory?: number;
+  canRecover?: (run: MorpheusObjectiveRun) => boolean;
 }): MorpheusObjectiveStore {
   const now = options.now ?? (() => new Date());
   const maxHistory = options.maxHistory ?? MAX_OBJECTIVE_HISTORY;
@@ -69,6 +70,7 @@ export function createMorpheusObjectiveStore(options: {
   let repaired = false;
   for (const [id, run] of runsById) {
     if (isObjectiveTerminalState(run.state)) continue;
+    if (options.canRecover?.(run)) continue;
     const timestamp = now().toISOString();
     runsById.set(id, {
       ...run,
@@ -81,7 +83,8 @@ export function createMorpheusObjectiveStore(options: {
   }
 
   const flush = (): void => {
-    const ordered = runOrder.slice(0, maxHistory);
+    // Retention must never discard active work, even with a small history limit.
+    const ordered = [...runOrder];
     const stored: StoredObjectives = {
       v: 1,
       runOrder: ordered,
@@ -96,19 +99,32 @@ export function createMorpheusObjectiveStore(options: {
 
   return {
     put(run) {
+      const previousRuns = new Map(runsById);
+      const previousOrder = [...runOrder];
+      const previousPlans = new Map(activePlans);
       const copy = structuredClone(run);
       runsById.set(run.objectiveRunId, copy);
       const existing = runOrder.indexOf(run.objectiveRunId);
       if (existing >= 0) runOrder.splice(existing, 1);
       runOrder.unshift(run.objectiveRunId);
       while (runOrder.length > maxHistory) {
-        const removed = runOrder.pop();
+        let index = runOrder.length - 1;
+        while (index >= 0 && !isObjectiveTerminalState(runsById.get(runOrder[index])!.state)) index -= 1;
+        if (index < 0) break;
+        const [removed] = runOrder.splice(index, 1);
         if (removed) {
           runsById.delete(removed);
           activePlans.delete(removed);
         }
       }
-      flush();
+      try { flush(); } catch (error) {
+        runsById.clear();
+        for (const [id, value] of previousRuns) runsById.set(id, value);
+        runOrder.splice(0, runOrder.length, ...previousOrder);
+        activePlans.clear();
+        for (const [id, value] of previousPlans) activePlans.set(id, value);
+        throw error;
+      }
       return structuredClone(copy);
     },
 

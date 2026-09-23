@@ -4,6 +4,7 @@ import {
   DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES,
   MORPHEUS_ONBOARDING_VERSION,
   type CompleteMorpheusOnboardingPayload,
+  type MorpheusCompanionProfilePatch,
   type MorpheusOnboardingStatus,
 } from '@shared/morpheus/onboarding-types';
 import { MORPHEUS_AMBIENT_WAKE_PHRASE_PATTERN } from '@shared/morpheus/voice-types';
@@ -19,6 +20,7 @@ const DEFAULT_STATUS: Readonly<MorpheusOnboardingStatus> = Object.freeze({
 export interface MorpheusOnboardingStore {
   status(): MorpheusOnboardingStatus;
   complete(payload: CompleteMorpheusOnboardingPayload): MorpheusOnboardingStatus;
+  updateProfile(patch: MorpheusCompanionProfilePatch): MorpheusOnboardingStatus;
   reset(): MorpheusOnboardingStatus;
 }
 
@@ -57,8 +59,14 @@ function validateStatus(value: unknown): MorpheusOnboardingStatus | null {
     || typeof preferences.wakePhrase !== 'string'
     || !MORPHEUS_AMBIENT_WAKE_PHRASE_PATTERN.test(preferences.wakePhrase.trim())
     || !['strict', 'balanced', 'autonomous'].includes(String(preferences.permissionProfile))
-    || typeof preferences.proactiveCheckIns !== 'boolean') return null;
-  return structuredClone(value) as MorpheusOnboardingStatus;
+    || typeof preferences.proactiveCheckIns !== 'boolean'
+    || (preferences.interests !== undefined && (typeof preferences.interests !== 'string' || preferences.interests.length > 240))
+    || (preferences.humorStyle !== undefined && !['gentle', 'cheeky', 'unfiltered'].includes(String(preferences.humorStyle)))
+    || (preferences.proactivityLevel !== undefined && !['quiet', 'balanced', 'talkative'].includes(String(preferences.proactivityLevel)))) return null;
+  return {
+    ...structuredClone(value) as MorpheusOnboardingStatus,
+    preferences: { ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES, ...preferences } as MorpheusOnboardingStatus['preferences'],
+  };
 }
 
 export function createMorpheusOnboardingStore(options: {
@@ -87,6 +95,18 @@ export function createMorpheusOnboardingStore(options: {
         preferences: structuredClone(payload),
       };
       save();
+      return structuredClone(current);
+    },
+    updateProfile(patch) {
+      if (!current.completed) throw new Error('Complete first-run setup before editing the companion profile');
+      const updated = validateStatus({
+        ...current,
+        preferences: { ...current.preferences, ...patch },
+      });
+      if (!updated) throw new Error('Invalid Morpheus companion profile');
+      const previous = current;
+      current = updated;
+      try { save(); } catch (error) { current = previous; throw error; }
       return structuredClone(current);
     },
     reset() {

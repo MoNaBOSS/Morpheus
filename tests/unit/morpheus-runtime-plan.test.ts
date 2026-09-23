@@ -149,7 +149,7 @@ beforeEach(() => {
 });
 
 describe('runtime plan execution', () => {
-  it('keeps plans sequential across independent entry points', async () => {
+  it('queues plans that share a workspace instead of rejecting the second task', async () => {
     const runtime = makeRuntime();
     runtime.registerPlan(plan([step('first')], 'plan-first'));
     runtime.registerPlan(plan([step('second')], 'plan-second'));
@@ -157,15 +157,18 @@ describe('runtime plan execution', () => {
     const firstExecution = runtime.executePlan({ planId: 'plan-first' });
     await vi.waitFor(() => expect(consentRequests).toHaveLength(1));
 
-    const second = await runtime.executePlan({ planId: 'plan-second' });
-    expect(second.status).toBe('rejected');
-    expect(second.rejection?.code).toBe('rate-limited');
+    const secondExecution = runtime.executePlan({ planId: 'plan-second' });
+    expect(consentRequests).toHaveLength(1);
 
     await runtime.respondPlanPermission({
       planId: 'plan-first',
       decisions: Object.fromEntries(consentRequests[0].boundaries.map((boundary) => [boundary.boundaryId, 'deny'])),
     });
     await firstExecution;
+    const second = await secondExecution;
+    expect(second.status).toBe('rejected');
+    expect(second.rejection?.code).toBe('permission-denied');
+    expect(consentRequests).toHaveLength(2);
     expect(executed).toEqual([]);
     runtime.dispose();
   });

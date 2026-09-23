@@ -79,7 +79,7 @@ import type {
   CreateMorpheusReminderPayload,
   MorpheusProactiveSettingsPatch,
 } from '@shared/morpheus/proactive-types';
-import type { CompleteMorpheusOnboardingPayload } from '@shared/morpheus/onboarding-types';
+import type { CompleteMorpheusOnboardingPayload, MorpheusCompanionProfilePatch } from '@shared/morpheus/onboarding-types';
 import type { RouteMorpheusInteractionPayload } from '@shared/morpheus/operator-types';
 import type {
   CreateMorpheusSystemFromMissionPayload,
@@ -489,6 +489,9 @@ export const hostApi = {
     onboardingStatus: () => invokeHost('morpheus', 'onboardingStatus'),
     completeOnboarding: (payload: CompleteMorpheusOnboardingPayload) => (
       invokeHost('morpheus', 'completeOnboarding', payload)
+    ),
+    updateCompanionProfile: (payload: MorpheusCompanionProfilePatch) => (
+      invokeHost('morpheus', 'updateCompanionProfile', payload)
     ),
     resetOnboarding: () => invokeHost('morpheus', 'resetOnboarding'),
     goals: () => invokeHost('morpheus', 'goals'),

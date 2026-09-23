@@ -18,6 +18,27 @@ function root(): string {
 }
 
 describe('Morpheus scheduling', () => {
+  it('reconciles the interrupted occurrence without submitting a duplicate scheduled objective', async () => {
+    const store = createMorpheusScheduleStore({ userDataDir: root() });
+    store.save({ v: 1, scheduleId: 'interrupted', name: 'Brief', workflowId: 'system-brief', enabled: true,
+      trigger: { type: 'once', runAt: '2026-08-10T10:00:00.000Z' }, lastStatus: 'running',
+      createdAt: '2026-08-10T09:00:00.000Z', updatedAt: '2026-08-10T10:00:00.000Z', lastObjectiveRunId: 'saved-task' });
+    const submitInternal = vi.fn();
+    const recover = vi.fn(async () => {});
+    const scheduler = createMorpheusScheduler({ store, workflows: {} as never,
+      objectives: { submitInternal, recover,
+        snapshot: () => ({ runOrder: ['saved-task'], runsById: { 'saved-task': {
+          objectiveRunId: 'saved-task', origin: { type: 'schedule', scheduleId: 'interrupted' },
+          createdAt: '2026-08-10T10:00:01.000Z',
+        } } }),
+        waitForTerminal: async () => ({ objectiveRunId: 'saved-task', state: 'complete', planIds: ['saved-plan'] }),
+      } as never,
+    });
+    expect(await scheduler.runNow('interrupted')).toMatchObject({ status: 'completed', objectiveRunId: 'saved-task' });
+    expect(submitInternal).not.toHaveBeenCalled();
+    expect(recover).toHaveBeenCalledOnce();
+    expect(store.get('interrupted')?.enabled).toBe(false);
+  });
   it('computes bounded once, interval and local-daily next runs', () => {
     const now = new Date('2026-08-10T10:00:00.000Z');
     expect(nextRunFor({ type: 'once', runAt: '2026-08-11T10:00:00.000Z' }, now))

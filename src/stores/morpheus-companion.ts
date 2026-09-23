@@ -11,6 +11,7 @@ import type {
 import type { MorpheusMemory, MorpheusMemoryDraft } from '@shared/morpheus/memory-types';
 import type {
   CompleteMorpheusOnboardingPayload,
+  MorpheusCompanionProfilePatch,
   MorpheusOnboardingStatus,
 } from '@shared/morpheus/onboarding-types';
 
@@ -44,6 +45,7 @@ type MorpheusCompanionState = {
   saveMemory: (draft: MorpheusMemoryDraft) => Promise<MorpheusMemory | null>;
   removeMemory: (memoryId: string) => Promise<boolean>;
   completeOnboarding: (payload: CompleteMorpheusOnboardingPayload) => Promise<boolean>;
+  updateProfile: (patch: MorpheusCompanionProfilePatch) => Promise<boolean>;
   resetOnboarding: () => Promise<void>;
   clearError: () => void;
 };
@@ -176,6 +178,17 @@ export const useMorpheusCompanionStore = create<MorpheusCompanionState>((set, ge
   completeOnboarding: async (payload) => {
     try {
       set({ onboarding: await hostApi.morpheus.completeOnboarding(payload), error: null });
+      return true;
+    } catch (error) {
+      set({ error: message(error) });
+      return false;
+    }
+  },
+
+  updateProfile: async (patch) => {
+    try {
+      set({ onboarding: await hostApi.morpheus.updateCompanionProfile(patch), error: null });
+      await get().loadContext();
       return true;
     } catch (error) {
       set({ error: message(error) });

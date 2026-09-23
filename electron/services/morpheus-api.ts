@@ -65,6 +65,7 @@ import type {
 import type { MorpheusScheduleDraft, MorpheusScheduleTrigger } from '@shared/morpheus/schedule-types';
 import type { MorpheusAuditSink } from './morpheus/audit';
 import type { MorpheusObjectiveOrchestrator } from './morpheus/core/objective-orchestrator';
+import { handleMorpheusTaskControl } from './morpheus/core/task-controls';
 import type {
   CancelMorpheusObjectivePayload,
   CorrectMorpheusObjectivePayload,
@@ -119,7 +120,8 @@ import {
   type MorpheusMemoryDraft,
   type MorpheusMemoryIdPayload,
 } from '@shared/morpheus/memory-types';
-import type { CompleteMorpheusOnboardingPayload } from '@shared/morpheus/onboarding-types';
+import type { CompleteMorpheusOnboardingPayload, MorpheusCompanionProfilePatch } from '@shared/morpheus/onboarding-types';
+import { extractMorpheusMemoryCandidate } from '@shared/morpheus/memory-candidates';
 import {
   MORPHEUS_INTERACTION_MODES,
   MORPHEUS_INTERACTION_SURFACES,
@@ -448,9 +450,9 @@ export function validateGoalDraft(payload: unknown): MorpheusGoalDraft {
 export function validateProactiveSettingsPatch(payload: unknown): MorpheusProactiveSettingsPatch {
   const record = requireRecord(payload, 'updateProactiveSettings payload');
   assertNoUnknownKeys(record, [
-    'enabled', 'notificationsEnabled', 'quietHoursEnabled', 'quietHoursStart', 'quietHoursEnd', 'categories',
+    'enabled', 'notificationsEnabled', 'doNotDisturb', 'quietHoursEnabled', 'quietHoursStart', 'quietHoursEnd', 'categories',
   ], 'updateProactiveSettings payload');
-  for (const key of ['enabled', 'notificationsEnabled', 'quietHoursEnabled'] as const) {
+  for (const key of ['enabled', 'notificationsEnabled', 'doNotDisturb', 'quietHoursEnabled'] as const) {
     if (record[key] !== undefined && typeof record[key] !== 'boolean') {
       throw new MorpheusValidationError(`${key} must be boolean`);
     }
@@ -473,6 +475,7 @@ export function validateProactiveSettingsPatch(payload: unknown): MorpheusProact
   return {
     ...(record.enabled !== undefined ? { enabled: record.enabled } : {}),
     ...(record.notificationsEnabled !== undefined ? { notificationsEnabled: record.notificationsEnabled } : {}),
+    ...(record.doNotDisturb !== undefined ? { doNotDisturb: record.doNotDisturb } : {}),
     ...(record.quietHoursEnabled !== undefined ? { quietHoursEnabled: record.quietHoursEnabled } : {}),
     ...(record.quietHoursStart ? { quietHoursStart: record.quietHoursStart } : {}),
     ...(record.quietHoursEnd ? { quietHoursEnd: record.quietHoursEnd } : {}),
@@ -616,7 +619,7 @@ export function validateCompleteOnboardingPayload(payload: unknown): CompleteMor
   assertNoUnknownKeys(record, [
     'preferredName', 'speakResponses', 'personality', 'interactionMode',
     'launchAtStartup', 'ambientVoiceEnabled', 'wakePhrase', 'permissionProfile',
-    'proactiveCheckIns',
+    'proactiveCheckIns', 'interests', 'humorStyle', 'proactivityLevel',
   ], 'completeOnboarding payload');
   if (typeof record.preferredName !== 'string' || record.preferredName.trim().length > 80) {
     throw new MorpheusValidationError('preferredName must be at most 80 characters');
@@ -638,6 +641,9 @@ export function validateCompleteOnboardingPayload(payload: unknown): CompleteMor
     throw new MorpheusValidationError('invalid permission profile');
   }
   if (typeof record.proactiveCheckIns !== 'boolean') throw new MorpheusValidationError('proactiveCheckIns must be boolean');
+  if (record.interests !== undefined && (typeof record.interests !== 'string' || record.interests.trim().length > 240)) throw new MorpheusValidationError('interests must be at most 240 characters');
+  if (record.humorStyle !== undefined && !['gentle', 'cheeky', 'unfiltered'].includes(String(record.humorStyle))) throw new MorpheusValidationError('invalid humor style');
+  if (record.proactivityLevel !== undefined && !['quiet', 'balanced', 'talkative'].includes(String(record.proactivityLevel))) throw new MorpheusValidationError('invalid proactivity level');
   return {
     preferredName: record.preferredName.trim(),
     speakResponses: record.speakResponses,
@@ -648,6 +654,24 @@ export function validateCompleteOnboardingPayload(payload: unknown): CompleteMor
     wakePhrase: record.wakePhrase.trim(),
     permissionProfile: record.permissionProfile as PermissionProfile,
     proactiveCheckIns: record.proactiveCheckIns,
+    interests: typeof record.interests === 'string' ? record.interests.trim() : '',
+    humorStyle: (record.humorStyle ?? 'cheeky') as CompleteMorpheusOnboardingPayload['humorStyle'],
+    proactivityLevel: (record.proactivityLevel ?? 'balanced') as CompleteMorpheusOnboardingPayload['proactivityLevel'],
+  };
+}
+
+export function validateCompanionProfilePatch(payload: unknown): MorpheusCompanionProfilePatch {
+  const record = requireRecord(payload, 'updateCompanionProfile payload');
+  assertNoUnknownKeys(record, ['preferredName', 'interests', 'humorStyle', 'proactivityLevel'], 'updateCompanionProfile payload');
+  if (record.preferredName !== undefined && (typeof record.preferredName !== 'string' || record.preferredName.trim().length > 80)) throw new MorpheusValidationError('preferredName must be at most 80 characters');
+  if (record.interests !== undefined && (typeof record.interests !== 'string' || record.interests.trim().length > 240)) throw new MorpheusValidationError('interests must be at most 240 characters');
+  if (record.humorStyle !== undefined && !['gentle', 'cheeky', 'unfiltered'].includes(String(record.humorStyle))) throw new MorpheusValidationError('invalid humor style');
+  if (record.proactivityLevel !== undefined && !['quiet', 'balanced', 'talkative'].includes(String(record.proactivityLevel))) throw new MorpheusValidationError('invalid proactivity level');
+  return {
+    ...(record.preferredName !== undefined ? { preferredName: (record.preferredName as string).trim() } : {}),
+    ...(record.interests !== undefined ? { interests: (record.interests as string).trim() } : {}),
+    ...(record.humorStyle !== undefined ? { humorStyle: record.humorStyle as MorpheusCompanionProfilePatch['humorStyle'] } : {}),
+    ...(record.proactivityLevel !== undefined ? { proactivityLevel: record.proactivityLevel as MorpheusCompanionProfilePatch['proactivityLevel'] } : {}),
   };
 }
 
@@ -909,9 +933,10 @@ export function validateVoiceSettingsPatch(payload: unknown): MorpheusVoiceSetti
   assertNoUnknownKeys(record, [
     'enabled', 'providerAccountId', 'modelId', 'speakResponses', 'autoSubmitTranscript',
     'speechProviderAccountId', 'speechModelId', 'speechVoice',
-    'ambientEnabled', 'wakePhrase', 'ambientSilenceMs', 'ambientMaxUtteranceMs', 'bargeIn',
+    'ambientEnabled', 'localWakeEnabled', 'wakePhrase', 'ambientSilenceMs', 'ambientMaxUtteranceMs', 'bargeIn',
+    'handsFreeFollowUp',
   ], 'updateVoiceSettings payload');
-  for (const key of ['enabled', 'speakResponses', 'autoSubmitTranscript', 'ambientEnabled', 'bargeIn'] as const) {
+  for (const key of ['enabled', 'speakResponses', 'autoSubmitTranscript', 'ambientEnabled', 'localWakeEnabled', 'bargeIn', 'handsFreeFollowUp'] as const) {
     if (record[key] !== undefined && typeof record[key] !== 'boolean') {
       throw new MorpheusValidationError(`${key} must be a boolean`);
     }
@@ -994,12 +1019,14 @@ export function validateTranscribeAudioPayload(payload: unknown): MorpheusTransc
 
 export function validateSynthesizeSpeechPayload(payload: unknown): MorpheusSynthesizeSpeechPayload {
   const record = requireRecord(payload, 'synthesizeSpeech payload');
-  assertNoUnknownKeys(record, ['text'], 'synthesizeSpeech payload');
+  assertNoUnknownKeys(record, ['text', 'streamId'], 'synthesizeSpeech payload');
   if (typeof record.text !== 'string' || !record.text.trim()
     || record.text.length > MORPHEUS_SPEECH_MAX_TEXT_CHARS) {
     throw new MorpheusValidationError('speech text is empty or too large');
   }
-  return { text: record.text.trim() };
+  if (record.streamId !== undefined && (typeof record.streamId !== 'string'
+    || !/^[a-f0-9-]{36}$/i.test(record.streamId))) throw new MorpheusValidationError('invalid speech streamId');
+  return { text: record.text.trim(), ...(record.streamId ? { streamId: record.streamId as string } : {}) };
 }
 
 function validateIdPayload(payload: unknown, label: string): { id: string } {
@@ -1195,7 +1222,13 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
   const now = options.now ?? (() => new Date());
   const planner = options.planner ?? createDeterministicMorpheusPlanner();
   return {
-    routeInteraction: (payload) => routeMorpheusInteraction(validateRouteInteractionPayload(payload)),
+    routeInteraction: async (payload) => {
+      const input = validateRouteInteractionPayload(payload);
+      const control = await handleMorpheusTaskControl(input.text, {
+        objectives, runtime, stopSpeech: () => voice.cancelSpeech(),
+      });
+      return control ?? routeMorpheusInteraction(input);
+    },
     interpretCommand: async (payload) => {
       const { objective, originType } = validateInterpretPayload(payload);
       const result = await planner.plan({
@@ -1223,7 +1256,20 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     ),
 
     submitObjective: (payload) => objectives.submit(validateSubmitObjectivePayload(payload)),
-    objectiveSnapshot: () => objectives.snapshot(),
+    objectiveSnapshot: () => {
+      return {
+        ...objectives.snapshot(),
+        pendingPlanConsents: runtime.pendingPlanConsents?.().map((request) => ({
+          planId: request.planId, objective: request.objective,
+          boundaries: request.boundaries.map((boundary) => ({
+            boundaryId: boundary.boundaryId, capabilityId: boundary.scope.capabilityId,
+            capabilityGroup: boundary.scope.capabilityGroup, resourceScope: boundary.scope.resourceScope,
+            riskTier: boundary.scope.riskTier, stepIds: boundary.stepIds, targets: boundary.targets,
+            mandatoryConfirmation: boundary.mandatoryConfirmation,
+          })),
+        })) ?? [],
+      };
+    },
     correctObjective: (payload) => objectives.correct(validateCorrectObjectivePayload(payload)),
     cancelObjective: (payload) => objectives.cancel(validateCancelObjectivePayload(payload)),
     missions: () => missions.snapshot(),
@@ -1359,16 +1405,56 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
         warm: 'Communicate naturally and warmly, with light humor when appropriate.',
         witty: 'Communicate confidently and concisely, with subtle human wit when appropriate.',
       }[preferences.personality];
+      const humorText = {
+        gentle: 'Use gentle humor sparingly. Avoid teasing.',
+        cheeky: 'Use playful humor and occasional cultural references when appropriate, adapting to the user. Keep serious tasks direct.',
+        unfiltered: 'The user enjoys bold, candid humor and roasts when invited. Adapt to their reactions; never let humor obscure an important task result.',
+      }[preferences.humorStyle ?? 'cheeky'];
       memory.save({
         memoryId: personalityMemoryId,
         title: 'Companion communication style',
-        text: personalityText,
+        text: `${personalityText} ${humorText}`,
         kind: 'preference',
         sensitivity: 'normal',
         providerUse: 'allowed',
         enabled: true,
       }, { source: 'user', sourceId: 'onboarding-personality' });
+      const safeInterests = preferences.interests ? extractMorpheusMemoryCandidate(`remember ${preferences.interests}`) : null;
+      if (safeInterests?.kind === 'candidate') {
+        const interestMemory = memory.list().memories.find((entry) => entry.sourceId === 'onboarding-interests');
+        const interestMemoryId = interestMemory?.memoryId ?? `memory-${randomUUID()}`;
+        await audit.recordControl({ category: 'memory', event: interestMemory ? 'updated-from-onboarding' : 'captured-from-onboarding', subjectId: interestMemoryId, details: { kind: 'preference', source: 'user' }, appVersion });
+        memory.save({ memoryId: interestMemoryId, title: 'Interests', text: `The user is interested in ${preferences.interests}.`, kind: 'preference', sensitivity: 'normal', providerUse: 'allowed', enabled: true }, { source: 'user', sourceId: 'onboarding-interests' });
+      }
       return onboarding.complete(preferences);
+    },
+    updateCompanionProfile: async (payload) => {
+      const patch = validateCompanionProfilePatch(payload);
+      if (!onboarding.status().completed) throw new MorpheusValidationError('Complete first-run setup before editing the companion profile');
+      await audit.recordControl({ category: 'onboarding', event: 'profile-updated', details: { keys: Object.keys(patch).join(',') }, appVersion });
+      const syncMemory = async (sourceId: string, title: string, text: string) => {
+        const existing = memory.list().memories.find((entry) => entry.sourceId === sourceId);
+        if (!text && !existing) return;
+        const memoryId = existing?.memoryId ?? `memory-${randomUUID()}`;
+        await audit.recordControl({ category: 'memory', event: text ? 'profile-updated' : 'profile-removed', subjectId: memoryId, details: { kind: 'preference', source: 'user' }, appVersion });
+        if (!text) { memory.remove(memoryId); return; }
+        memory.save({ memoryId, title, text, kind: 'preference', sensitivity: 'normal', providerUse: 'allowed', enabled: true }, { source: 'user', sourceId });
+      };
+      if (patch.preferredName !== undefined) await syncMemory('onboarding-preferred-name', 'Preferred name', patch.preferredName ? `Call the user ${patch.preferredName}.` : '');
+      if (patch.interests !== undefined) {
+        const candidate = patch.interests ? extractMorpheusMemoryCandidate(`remember ${patch.interests}`) : null;
+        await syncMemory('onboarding-interests', 'Interests', candidate?.kind === 'candidate' ? `The user is interested in ${patch.interests}.` : '');
+      }
+      if (patch.humorStyle !== undefined) {
+        const style = {
+          gentle: 'Communicate warmly. Use gentle humor sparingly and avoid teasing.',
+          cheeky: 'Communicate naturally with playful humor and occasional cultural references when appropriate. Keep serious tasks direct.',
+          unfiltered: 'The user enjoys bold, candid humor and roasts when invited. Adapt to their reactions; never obscure important task results.',
+        }[patch.humorStyle];
+        await syncMemory('onboarding-personality', 'Companion communication style', style);
+      }
+      if (patch.proactivityLevel !== undefined) await proactive.updateSettings({ enabled: patch.proactivityLevel !== 'quiet' });
+      return onboarding.updateProfile(patch);
     },
     resetOnboarding: async () => {
       await audit.recordControl({
@@ -1420,9 +1506,12 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     transcribeAmbientAudio: (payload) => voice.transcribeAmbient(validateTranscribeAudioPayload(payload)),
     setVoiceSpeaking: (payload) => voice.setSpeaking(validateVoiceSpeakingPayload(payload).speaking),
     runtimeControl: () => runtimeControl.snapshot(),
-    setRuntimePaused: (payload) => (
-      runtimeControl.setPaused(validateRuntimePausedPayload(payload).paused, 'settings')
-    ),
+    setRuntimePaused: async (payload) => {
+      const paused = validateRuntimePausedPayload(payload).paused;
+      const result = await runtimeControl.setPaused(paused, 'settings');
+      if (!paused) await objectives.recover?.();
+      return result;
+    },
 
     permissionCenter: (): PermissionCenterSnapshot => ({
       profile: grants.getProfile(),

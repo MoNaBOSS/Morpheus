@@ -44,6 +44,14 @@ export function resolveSystemRoot(env: NodeJS.ProcessEnv): string {
   return candidate;
 }
 
+export function resolveAppData(env: NodeJS.ProcessEnv): string {
+  const candidate = env.APPDATA;
+  if (!candidate || !isAbsolute(candidate) || !/^[A-Za-z]:[\\/]/.test(candidate)) {
+    throw new MorpheusCapabilityError('resolution-failed', 'APPDATA is not an absolute drive-rooted path');
+  }
+  return candidate;
+}
+
 function launch(executablePath: string, args: readonly string[]): Promise<number | null> {
   return new Promise((resolvePromise, rejectPromise) => {
     let settled = false;
@@ -120,8 +128,8 @@ export const win32AppLaunchCapability: MorpheusCapability<'app.launch'> = {
       throw new MorpheusCapabilityError('unsupported-platform', 'Application is not registered for this platform');
     }
 
-    const systemRoot = resolveSystemRoot(context.env);
-    const expectedDir = join(systemRoot, entry.relativeDir);
+    const base = entry.base === 'appData' ? resolveAppData(context.env) : resolveSystemRoot(context.env);
+    const expectedDir = join(base, entry.relativeDir);
     const candidate = join(expectedDir, entry.fileName);
 
     let executablePath: string;

@@ -1,7 +1,11 @@
 import { hostApi } from './host-api';
+import { createMorpheusSpeechStream } from './morpheus-speech-stream';
+import { resolveMorpheusWindowsVoice } from './morpheus-windows-voice';
 
 type SpeechOptions = {
   neuralAvailable: boolean;
+  /** Setup previews should not surprise the user with a robotic fallback. */
+  allowWindowsFallback?: boolean;
   onSpeakingChange?: (speaking: boolean) => void;
 };
 type SpeechResult = 'neural' | 'windows' | 'cancelled';
@@ -11,6 +15,7 @@ let activeObjectUrl: string | null = null;
 let cancelPlayback: (() => void) | null = null;
 let cancelRequest: (() => void) | null = null;
 let activeCallback: SpeechOptions['onSpeakingChange'];
+let disposeStream: (() => void) | null = null;
 
 function setSpeaking(speaking: boolean, callback = activeCallback): void {
   callback?.(speaking);
@@ -18,8 +23,11 @@ function setSpeaking(speaking: boolean, callback = activeCallback): void {
 }
 
 function releaseAudio(): void {
+  disposeStream?.();
+  disposeStream = null;
   if (activeAudio) {
     activeAudio.onplay = null;
+    activeAudio.onplaying = null;
     activeAudio.onended = null;
     activeAudio.onerror = null;
     activeAudio.pause();
@@ -52,6 +60,34 @@ function decodeBase64(value: string): ArrayBuffer {
 }
 
 async function playNeuralSpeech(text: string, id: number): Promise<void> {
+  if (typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported('audio/mpeg')) {
+    const streamId = crypto.randomUUID();
+    let fail!: (error: Error) => void;
+    let done!: () => void;
+    const playback = new Promise<void>((resolve, reject) => { done = resolve; fail = reject; });
+    // Attach rejection handling before provider preflight can yield.
+    void playback.catch(() => undefined);
+    const stream = createMorpheusSpeechStream(streamId, fail);
+    disposeStream = stream.dispose;
+    const audio = new Audio(stream.url);
+    activeAudio = audio;
+    cancelPlayback = done;
+    audio.onplaying = () => { if (id === generation) setSpeaking(true); };
+    audio.onended = done;
+    audio.onerror = () => fail(new Error('Streaming speech playback failed.'));
+    const timeout = window.setTimeout(() => fail(new Error('Speech playback timed out.')), 90_000);
+    try {
+      void audio.play().catch(fail);
+      const request = hostApi.morpheus.synthesizeSpeech({ text, streamId }).then((result) => {
+        if (id === generation) stream.finish(result.audioBase64);
+      });
+      await Promise.all([request, playback]);
+    } finally {
+      window.clearTimeout(timeout);
+      if (id === generation) { setSpeaking(false); releaseAudio(); cancelPlayback = null; }
+    }
+    return;
+  }
   const result = await hostApi.morpheus.synthesizeSpeech({ text });
   if (id !== generation) return;
   activeObjectUrl = URL.createObjectURL(new Blob([decodeBase64(result.audioBase64)], { type: result.mimeType }));
@@ -78,8 +114,14 @@ async function playWindowsSpeech(text: string, id: number): Promise<void> {
   if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') {
     throw new Error('Speech output is unavailable.');
   }
+  const voice = await resolveMorpheusWindowsVoice(window.speechSynthesis);
+  if (id !== generation) return;
   await new Promise<void>((resolve, reject) => {
     const utterance = new SpeechSynthesisUtterance(text);
+    if (voice) utterance.voice = voice;
+    utterance.rate = 0.98;
+    utterance.pitch = 0.96;
+    utterance.volume = 1;
     cancelPlayback = () => {
       utterance.onstart = null;
       utterance.onend = null;
@@ -112,12 +154,17 @@ export async function playMorpheusSpeech(text: string, options: SpeechOptions): 
         return id === generation ? 'neural' : 'cancelled';
       } catch {
         if (id !== generation) return 'cancelled';
+        // Playback can fail before streaming generation completes. Do not leave
+        // a paid provider request running behind the local fallback.
+        void Promise.resolve(hostApi.morpheus.cancelSpeech()).catch(() => undefined);
         releaseAudio();
         cancelPlayback = null;
         setSpeaking(false);
+        if (options.allowWindowsFallback === false) throw new Error('Natural speech is unavailable.');
       }
     }
     if (id !== generation) return 'cancelled';
+    if (options.allowWindowsFallback === false) throw new Error('Natural speech is unavailable.');
     await playWindowsSpeech(text, id);
     return id === generation ? 'windows' : 'cancelled';
   };

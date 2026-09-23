@@ -23,7 +23,7 @@ describe('Morpheus companion activation store', () => {
     expect(store.status()).toMatchObject({
       v: 2,
       completed: false,
-      preferences: { personality: 'witty', interactionMode: 'auto', permissionProfile: 'autonomous' },
+      preferences: { personality: 'witty', interactionMode: 'auto', permissionProfile: 'balanced' },
     });
     const preferences = {
       ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES,
@@ -81,6 +81,19 @@ describe('Morpheus companion activation store', () => {
     expect(createMorpheusOnboardingStore({ userDataDir }).status()).toMatchObject({
       completed: false,
       preferences: { wakePhrase: 'Morpheus' },
+    });
+  });
+
+  it('edits personality without resetting a completed profile or its permissions', () => {
+    const userDataDir = mkdtempSync(join(tmpdir(), 'morpheus-profile-edit-'));
+    roots.push(userDataDir);
+    const store = createMorpheusOnboardingStore({ userDataDir, now: () => new Date('2026-08-13T12:00:00.000Z') });
+    expect(() => store.updateProfile({ humorStyle: 'gentle' })).toThrow(/Complete first-run/);
+    store.complete({ ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES, preferredName: 'Larry', permissionProfile: 'strict' });
+    store.updateProfile({ preferredName: 'Monir', humorStyle: 'unfiltered', proactivityLevel: 'quiet' });
+    expect(createMorpheusOnboardingStore({ userDataDir }).status()).toMatchObject({
+      completed: true, completedAt: '2026-08-13T12:00:00.000Z',
+      preferences: { preferredName: 'Monir', humorStyle: 'unfiltered', proactivityLevel: 'quiet', permissionProfile: 'strict' },
     });
   });
 });

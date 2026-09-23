@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from 'react';
 
 import { cn } from '@/lib/utils';
+import { subscribeMorpheusAudioLevel } from '@/lib/morpheus-audio-level';
 import type { MorpheusSignalState } from './signal-state';
 
 type MorpheusSignalProps = {
@@ -13,8 +14,8 @@ type MorpheusSignalProps = {
 const TRACE_X = [13, 22, 31, 40, 50, 60, 69, 78, 87] as const;
 // Deterministic vector filaments: generated once, not per render or animation frame.
 // These are identity artwork, never a waveform or a measure of model activity.
-const FILAMENTS = Array.from({ length: 18 }, (_, strand) => {
-  const phase = strand * Math.PI / 9;
+const FILAMENTS = Array.from({ length: 10 }, (_, strand) => {
+  const phase = strand * Math.PI / 5;
   return Array.from({ length: 129 }, (_, point) => {
     const angle = point / 128 * Math.PI * 2;
     const radius = 30 + 5 * Math.sin(angle * 3 + phase);
@@ -32,6 +33,15 @@ const PARTICLES = Array.from({ length: 42 }, (_, index) => {
 export function MorpheusSignal({ state, className, label, compact = false }: MorpheusSignalProps) {
   const gradientId = useId().replaceAll(':', '');
   const element = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (state !== 'listening') {
+      element.current?.style.setProperty('--morpheus-audio-level', '0');
+      return;
+    }
+    return subscribeMorpheusAudioLevel((level) => {
+      if (!document.hidden) element.current?.style.setProperty('--morpheus-audio-level', level.toFixed(3));
+    });
+  }, [state]);
   useEffect(() => {
     const update = (): void => {
       element.current?.toggleAttribute('data-paused', document.hidden);
@@ -51,7 +61,7 @@ export function MorpheusSignal({ state, className, label, compact = false }: Mor
       aria-label={label}
       aria-hidden={label ? undefined : true}
     >
-      <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible" focusable="false">
+      <svg viewBox="0 0 100 100" className="morpheus-signal-artwork h-full w-full overflow-visible" focusable="false">
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="currentColor" stopOpacity="0.04" />
@@ -112,6 +122,8 @@ export function MorpheusSignal({ state, className, label, compact = false }: Mor
       </svg>
       <span className="morpheus-signal-aperture" aria-hidden />
       <span className="morpheus-signal-halo" aria-hidden />
+      <span className="morpheus-signal-sphere" aria-hidden />
+      <span className="morpheus-signal-audio-glow" aria-hidden />
       {!compact ? <span className="morpheus-signal-corona" aria-hidden /> : null}
     </div>
   );

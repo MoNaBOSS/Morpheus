@@ -55,6 +55,7 @@ import { useSettingsStore } from '@/stores/settings';
 import { hostApi } from '@/lib/host-api';
 import { hostEvents } from '@/lib/host-events';
 import type { OAuthCodeEvent, OAuthErrorEvent, OAuthSuccessEvent } from '@shared/host-events/contract';
+import { MORPHEUS_PLANNER_MODELS } from '@shared/morpheus/provider-policy';
 
 const inputClasses = 'h-[44px] rounded-xl font-mono text-meta bg-transparent border-black/10 dark:border-white/10 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:border-blue-500 shadow-sm transition-all text-foreground placeholder:text-foreground/40';
 const labelClasses = 'text-sm text-foreground/80 font-bold';
@@ -471,6 +472,10 @@ function ProviderCard({
         if (nextUserAgent !== existingUserAgent) {
           updates.headers = mergeHeadersWithUserAgent(account.headers, nextUserAgent);
         }
+        const nextModel = resolveProviderModelForSave(typeInfo, modelId, devModeUnlocked);
+        if (showModelIdField && nextModel !== account.model) {
+          updates.model = nextModel;
+        }
         if (!fallbackModelsEqual(normalizedFallbackModels, account.fallbackModels)) {
           updates.fallbackModels = normalizedFallbackModels;
         }
@@ -649,9 +654,12 @@ function ProviderCard({
                   <Input
                     data-testid={`provider-edit-model-id-${account.id}`}
                     value={modelId}
-                    disabled
+                    onChange={(event) => {
+                      setModelId(event.target.value);
+                      setValidationError(null);
+                    }}
                     placeholder={typeInfo?.modelIdPlaceholder || 'provider/model-id'}
-                    className={cn(currentInputClasses, 'cursor-not-allowed opacity-70')}
+                    className={currentInputClasses}
                   />
                   <p
                     data-testid={`provider-edit-model-id-help-${account.id}`}
@@ -659,6 +667,20 @@ function ProviderCard({
                   >
                     {t('aiProviders.dialog.modelIdEditDisabled')}
                   </p>
+                  {account.vendorId === 'openrouter' ? (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <button type="button" data-testid={`provider-edit-use-balanced-${account.id}`}
+                        onClick={() => setModelId(MORPHEUS_PLANNER_MODELS.openRouterBalanced)}
+                        className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-emerald-500/40">
+                        {t('aiProviders.dialog.useBalanced')}
+                      </button>
+                      <button type="button" data-testid={`provider-edit-use-economy-${account.id}`}
+                        onClick={() => setModelId(MORPHEUS_PLANNER_MODELS.openRouterEconomy)}
+                        className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-emerald-500/40">
+                        {t('aiProviders.dialog.useEconomy')}
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               )}
               {codePlanPreset && (
@@ -1503,6 +1525,26 @@ function AddProviderDialog({
                       }}
                       className={inputClasses}
                     />
+                    {selectedType === 'openrouter' ? (
+                      <div data-testid="openrouter-model-guidance" className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-3 text-xs text-muted-foreground">
+                        <p className="font-medium text-foreground">{t('aiProviders.dialog.openRouterRecommendationTitle')}</p>
+                        <p className="mt-1 leading-relaxed">{t('aiProviders.dialog.openRouterRecommendationBody')}</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <button type="button" onClick={() => setModelId(MORPHEUS_PLANNER_MODELS.openRouterBalanced)}
+                            className="rounded-lg border border-border px-2.5 py-1.5 font-medium text-foreground hover:border-emerald-500/40">
+                            {t('aiProviders.dialog.useBalanced')}
+                          </button>
+                          <button type="button" onClick={() => setModelId(MORPHEUS_PLANNER_MODELS.openRouterEconomy)}
+                            className="rounded-lg border border-border px-2.5 py-1.5 font-medium text-foreground hover:border-emerald-500/40">
+                            {t('aiProviders.dialog.useEconomy')}
+                          </button>
+                        </div>
+                      </div>
+                    ) : selectedType === 'openai' ? (
+                      <p data-testid="openai-model-guidance" className="text-xs leading-relaxed text-muted-foreground">
+                        {t('aiProviders.dialog.openAiRecommendation')}
+                      </p>
+                    ) : null}
                   </div>
                 )}
                 {codePlanPreset && (

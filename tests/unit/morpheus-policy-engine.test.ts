@@ -69,8 +69,24 @@ describe('permission profiles', () => {
     expect(evaluate(MEDIUM_FILE).outcome).toBe('prompt');
   });
 
-  it('Autonomous is the fresh private-alpha default profile', () => {
-    expect(store.getProfile()).toBe('autonomous');
+  it('Balanced is the fresh profile default', () => {
+    expect(store.getProfile()).toBe('balanced');
+  });
+
+  it('direct navigation is narrow and never overrides denials, Strict, risk escalation or audit failure', () => {
+    const engine = createMorpheusPolicyEngine(store);
+    const direct = (scope: PermissionScope, auditHealth: 'healthy' | 'degraded' = 'healthy') =>
+      engine.evaluate({ scope, explicitRoutine: true, auditHealth }).outcome;
+    expect(direct(MEDIUM_APP)).toBe('allow');
+    expect(direct(MEDIUM_FILE)).toBe('prompt');
+    expect(direct({ ...MEDIUM_APP, originType: 'schedule' })).toBe('prompt');
+    expect(direct({ ...MEDIUM_APP, riskTier: 'critical' })).toBe('prompt');
+    expect(direct(MEDIUM_APP, 'degraded')).toBe('deny');
+    store.setProfile('strict');
+    expect(direct(MEDIUM_APP)).toBe('prompt');
+    store.setProfile('balanced');
+    store.createGrant(MEDIUM_APP, 'denied-persistent');
+    expect(direct(MEDIUM_APP)).toBe('deny');
   });
 
   it('Balanced: privacy-safe reads auto, medium asks the first time', () => {

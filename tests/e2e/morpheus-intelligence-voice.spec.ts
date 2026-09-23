@@ -2,6 +2,26 @@ import { closeElectronApp, expect, getStableWindow, installIpcMocks, test } from
 import { join } from 'node:path';
 
 test.describe('Morpheus production companion intelligence', () => {
+  test('offers a cost-aware OpenRouter default and an explicit economy alternative', async ({ launchElectronApp }) => {
+    const app = await launchElectronApp({ skipSetup: true });
+    try {
+      const page = await getStableWindow(app);
+      await page.evaluate(() => { window.location.hash = '#/models'; });
+      await expect(page.getByTestId('providers-settings')).toBeVisible({ timeout: 60_000 });
+      await page.getByTestId('providers-add-button').click();
+      await page.getByTestId('add-provider-type-openrouter').click();
+
+      const model = page.getByTestId('add-provider-model-id-input');
+      await expect(model).toHaveValue('openai/gpt-5.6-luna');
+      await expect(page.getByTestId('openrouter-model-guidance')).toContainText('DeepSeek Flash');
+      await page.getByTestId('openrouter-model-guidance').getByRole('button', { name: 'Use economy' }).click();
+      await expect(model).toHaveValue('deepseek/deepseek-v4-flash-0731');
+
+      const folder = process.env.MORPHEUS_VISUAL_EVIDENCE_DIR?.trim();
+      if (folder) await page.screenshot({ path: join(folder, 'provider-cost-guidance.png') });
+    } finally { await closeElectronApp(app); }
+  });
+
   test('explains a rejected neural speech credential rather than claiming readiness', async ({ launchElectronApp }) => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
@@ -27,6 +47,24 @@ test.describe('Morpheus production companion intelligence', () => {
       if (folder) await page.screenshot({ path: join(folder, 'voice-authentication-recovery.png') });
     } finally { await closeElectronApp(app); }
   });
+
+  test('makes the optimized voice setup discoverable before credentials are configured', async ({ launchElectronApp }) => {
+    const app = await launchElectronApp({ skipSetup: true });
+    try {
+      const page = await getStableWindow(app);
+      await page.getByTestId('sidebar-nav-settings').click();
+      const presets = page.getByTestId('morpheus-openrouter-voice-presets');
+      await presets.scrollIntoViewIfNeeded();
+      await expect(presets).toContainText('One-key optimized voice');
+      await expect(presets).toContainText('One key can then power planning, transcription and speech');
+      await expect(page.getByTestId('morpheus-voice-preset-efficient')).toBeDisabled();
+      await expect(page.getByTestId('morpheus-voice-preset-expressive')).toBeDisabled();
+
+      const folder = process.env.MORPHEUS_VISUAL_EVIDENCE_DIR?.trim();
+      if (folder) await page.screenshot({ path: join(folder, 'voice-optimized-setup.png') });
+    } finally { await closeElectronApp(app); }
+  });
+
   test('projects a durable Goal into Today and routes its next action through Objective Core', async ({ launchElectronApp }) => {
     let app = await launchElectronApp({ skipSetup: true });
     try {
@@ -53,7 +91,7 @@ test.describe('Morpheus production companion intelligence', () => {
       await page.getByTestId('sidebar-nav-command-center').click();
       await expect(page.getByTestId('command-center-goal-focus')).toContainText('Ship the production companion');
       await expect(page.getByTestId('command-center-goal-progress')).toHaveAttribute('style', /0%/);
-      await expect(page.getByTestId('command-center-today')).toContainText('Show system information');
+      await expect(page.getByTestId('command-center-page')).toContainText('Show system information');
 
       await page.locator('[data-testid^="today-act-"]').first().click();
       await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i, { timeout: 20_000 });
@@ -73,7 +111,7 @@ test.describe('Morpheus production companion intelligence', () => {
       await expect(settings).toBeVisible();
       await expect(page.getByTestId('morpheus-voice-ambient')).toHaveAttribute('data-state', 'unchecked');
       await expect(page.getByTestId('morpheus-speech-model')).toHaveValue('gpt-4o-mini-tts');
-      await expect(page.getByTestId('morpheus-speech-voice')).toHaveValue('onyx');
+      await expect(page.getByTestId('morpheus-speech-voice')).toHaveValue('cedar');
       await expect(settings).toContainText(/Windows speech|Windows voice/i);
 
       await page.getByTestId('morpheus-voice-ambient').click();

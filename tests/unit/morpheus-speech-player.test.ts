@@ -126,4 +126,22 @@ describe('Morpheus speech player', () => {
     stopMorpheusSpeech();
     expect(mocks.setVoiceSpeaking).toHaveBeenLastCalledWith({ speaking: false });
   });
+
+  it('cancels provider generation when audio playback fails before falling back', async () => {
+    vi.spyOn(FakeAudio.prototype, 'play').mockRejectedValueOnce(new Error('Decoder failed'));
+    const speak = vi.fn((utterance: FakeUtterance) => utterance.onend?.(new Event('end')));
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { cancel: vi.fn(), speak } });
+    await expect(playMorpheusSpeech('Short response.', { neuralAvailable: true })).resolves.toBe('windows');
+    // One cancellation clears previous playback, the second aborts the failed request.
+    expect(mocks.cancelSpeech).toHaveBeenCalledTimes(2);
+    expect(speak).toHaveBeenCalledOnce();
+  });
+
+  it('keeps first-run natural voice previews silent instead of switching to robotic speech', async () => {
+    mocks.synthesizeSpeech.mockRejectedValueOnce(new Error('Provider offline'));
+    const speak = vi.fn();
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { cancel: vi.fn(), speak } });
+    await expect(playMorpheusSpeech('Welcome.', { neuralAvailable: true, allowWindowsFallback: false })).rejects.toThrow(/Natural speech/);
+    expect(speak).not.toHaveBeenCalled();
+  });
 });

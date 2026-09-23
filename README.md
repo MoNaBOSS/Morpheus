@@ -5,6 +5,26 @@
 
 <h1 align="center">Morpheus</h1>
 
+Phase 3 task continuity: independent commands can run while other objectives are
+working; conflicting desktop/filesystem actions queue safely. Full and compact
+surfaces include task selection, separate speech/task stop controls, remembered
+exact approvals and conservative restart recovery. New profiles use Balanced;
+existing preferences are preserved. See [task continuity and acceptance limits](docs/architecture/MORPHEUS_TASK_CONTINUITY.md).
+
+Windows presence refinement: local wake shows the orb without taking focus. Clicking it opens compact chat above the same bottom-left corner, within the display work area; expanding restores the previous full window. Hiding the orb during loading keeps it hidden.
+
+> **1.1.2 unified presence candidate:** cinematic first-run and returning greetings,
+> a state-driven luminous Signal, compact background Presence, speech auto-end,
+> bounded hands-free follow-up, selected voice preview, streamed neural playback,
+> natural installed-voice fallback and opt-in Windows local name detection. Command recognition
+> still requires a transcription provider. Live microphone/voice acceptance is not
+> complete; this is not a public-release certification. See the
+> New OpenAI/OpenRouter accounts now default to the cost-aware Luna tier, and one
+> configured OpenRouter account can power planning, transcription and neural
+> speech through explicit efficient or expressive presets. See the
+> Chat now shares the live Morpheus Signal and Objective Core state instead of hiding execution behind
+> a conversational shell. See the [1.1.2 acceptance boundary](docs/releases/1.1.2-UNIFIED-PRESENCE.md).
+
 <p align="center">
   <strong>AI execution platform and system builder for the desktop</strong>
 </p>
@@ -159,10 +179,11 @@ Morpheus currently reports updates as **not configured**. It does not contact or
 
 ### 🟢 Morpheus Windows 1.0 Production Companion
 
-Morpheus now opens as **Signal OS**: a calm, execution-first operating presence
-with an original signal identity, cinematic activation, compact product rail,
-and a **Today / Mission / Context** Command Center. Chat remains available but
-does not define the home experience.
+The current source opens on a calm conversation workspace with the approved
+Morpheus orb, restrained Matrix rain, real task history and an optional result
+pane. Active tasks and advanced surfaces remain reachable without occupying
+the everyday screen. The previously packaged installer does not contain this
+workspace update.
 
 The 1.0.3 candidate makes neural speech failures visible, keeps voice settings
 unchanged if saving fails, and requires full tests plus focused Electron journeys
@@ -182,14 +203,12 @@ reopens this screen. Tray mode never enables the microphone by itself. The final
 activation screen waits for your choice; speech cancellation also cancels late
 provider playback. Motion respects the system reduced-motion preference.
 
-Morpheus opens on the **Command Center** at `/`; **Quick Command** is available
+Morpheus opens on the **workspace** at `/`; **Quick Command** is available
 globally with `Ctrl+Shift+Space`; **Voice Command** has its own global shortcut;
-and OpenClaw chat remains fully functional at `/chat`. **Ask / Auto / Act** is
-the same control on Voice, Quick Command, Command Center, and Chat. Auto is the
-default: Main routes questions to OpenClaw and actionable outcomes to the same
-Objective Core; unclear commands ask for one focused clarification. Command
-Center and Quick Command share logical workspace and Agent Profile context while
-Main retains target resolution and execution authority.
+and OpenClaw chat remains functional at `/chat`. Main automatically routes
+questions to OpenClaw and actionable outcomes to the same Objective Core;
+unclear commands ask for one focused clarification. The Ask/Auto/Act selector
+is no longer shown. Main retains target resolution and execution authority.
 
 The companion and Mission foundation extends that runtime into a persistent
 operating experience:

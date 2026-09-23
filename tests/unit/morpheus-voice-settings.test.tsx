@@ -4,27 +4,36 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   voiceStatus: vi.fn(),
   updateVoiceSettings: vi.fn(),
+  cancelSpeech: vi.fn(),
+  setVoiceSpeaking: vi.fn(),
+  play: vi.fn(),
+  stop: vi.fn(),
 }));
 
 vi.mock('@/lib/host-api', () => ({
   hostApi: { morpheus: mocks },
 }));
+vi.mock('@/lib/morpheus-speech-player', () => ({ playMorpheusSpeech: mocks.play, stopMorpheusSpeech: mocks.stop }));
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 
 import { MorpheusVoiceSettings } from '@/components/morpheus/MorpheusVoiceSettings';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 
 const STATUS = {
   settings: {
-    v: 3 as const,
+    v: 4 as const,
     enabled: true,
     providerAccountId: null,
     modelId: 'whisper-1',
     speakResponses: true,
     autoSubmitTranscript: true,
     ambientEnabled: false,
+    localWakeEnabled: false,
     wakePhrase: 'Morpheus',
-    sensitivity: 0.58,
-    silenceMs: 900,
+    ambientSilenceMs: 900,
+    ambientMaxUtteranceMs: 20_000,
+    bargeIn: true,
+    handsFreeFollowUp: true,
     speechProviderAccountId: null,
     speechModelId: 'gpt-4o-mini-tts',
     speechVoice: 'onyx' as const,
@@ -34,8 +43,9 @@ const STATUS = {
   providerLabel: 'OpenAI Voice',
   speechProviderLabel: 'OpenAI Voice',
   providers: [
-    { accountId: 'openai', label: 'OpenAI Voice', isDefault: true, configured: true },
-    { accountId: 'custom', label: 'Local Transcriber', isDefault: false, configured: false },
+    { accountId: 'openai', vendorId: 'openai', label: 'OpenAI Voice', isDefault: true, configured: true },
+    { accountId: 'openrouter', vendorId: 'openrouter', label: 'OpenRouter', isDefault: false, configured: true },
+    { accountId: 'custom', vendorId: 'custom', label: 'Local Transcriber', isDefault: false, configured: false },
   ],
 };
 
@@ -52,6 +62,21 @@ beforeEach(() => {
 });
 
 describe('Morpheus voice settings', () => {
+  it('reports actual preview fallback and resets the result after a voice change', async () => {
+    mocks.play.mockResolvedValue('windows');
+    render(<MorpheusVoiceSettings />);
+    fireEvent.click(await screen.findByTestId('morpheus-voice-preview'));
+    await waitFor(() => expect(screen.getByTestId('morpheus-voice-preview-result')).toHaveTextContent('morpheus.voice.check.windows'));
+    expect(mocks.play).toHaveBeenCalledWith('morpheus.voice.check.sample', { neuralAvailable: true });
+    fireEvent.change(screen.getByTestId('morpheus-speech-voice'), { target: { value: 'marin' } });
+    await waitFor(() => expect(screen.getByTestId('morpheus-voice-preview-result')).toHaveTextContent('morpheus.voice.check.idle'));
+  });
+  it('reports failed preview without certifying a configured provider', async () => {
+    mocks.play.mockRejectedValue(new Error('Audio failed'));
+    render(<MorpheusVoiceSettings />);
+    fireEvent.click(await screen.findByTestId('morpheus-voice-preview'));
+    await waitFor(() => expect(screen.getByTestId('morpheus-voice-preview-result')).toHaveTextContent('morpheus.voice.check.failed'));
+  });
   it('shows safe provider metadata and persists logical settings through Main', async () => {
     render(<MorpheusVoiceSettings />);
     await screen.findByTestId('morpheus-voice-provider');
@@ -65,6 +90,35 @@ describe('Morpheus voice settings', () => {
     await waitFor(() => expect(mocks.updateVoiceSettings).toHaveBeenCalledWith({
       providerAccountId: 'openai',
     }));
+  });
+
+  it('applies one OpenRouter account to efficient transcription and speech without exposing its key', async () => {
+    render(<MorpheusVoiceSettings />);
+    fireEvent.click(await screen.findByTestId('morpheus-voice-preset-efficient'));
+
+    await waitFor(() => expect(mocks.updateVoiceSettings).toHaveBeenCalledWith({
+      enabled: true,
+      providerAccountId: 'openrouter',
+      modelId: 'openai/whisper-large-v3-turbo',
+      speakResponses: true,
+      speechProviderAccountId: 'openrouter',
+      speechModelId: 'hexgrad/kokoro-82m',
+      speechVoice: 'am_onyx',
+    }));
+    expect(document.body.textContent).not.toContain('sk-');
+  });
+
+  it('applies the expressive OpenRouter voice as a separate deliberate preset', async () => {
+    render(<MorpheusVoiceSettings />);
+    fireEvent.click(await screen.findByTestId('morpheus-voice-preset-expressive'));
+
+    await waitFor(() => expect(mocks.updateVoiceSettings).toHaveBeenCalledWith(expect.objectContaining({
+      providerAccountId: 'openrouter',
+      modelId: 'openai/whisper-large-v3-turbo',
+      speechProviderAccountId: 'openrouter',
+      speechModelId: 'canopylabs/orpheus-3b-0.1-ft',
+      speechVoice: 'leo',
+    })));
   });
 
   it('updates the bounded model and operator preferences without accepting credentials', async () => {

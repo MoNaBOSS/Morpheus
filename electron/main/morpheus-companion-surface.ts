@@ -1,4 +1,5 @@
 import type { Rectangle } from 'electron';
+import { wakeCompactBounds } from './morpheus-presence-layout';
 
 import type {
   MorpheusCompanionSurfaceStatus,
@@ -51,11 +52,26 @@ export function createMorpheusCompanionSurfaceController(options: {
   compactWidth?: number;
   compactHeight?: number;
 }): MorpheusCompanionSurfaceController {
-  const compactWidth = options.compactWidth ?? 760;
-  const compactHeight = options.compactHeight ?? 340;
+  const compactWidth = options.compactWidth ?? 440;
+  const compactHeight = options.compactHeight ?? 520;
   let activeWindow: CompanionWindow | null = null;
   let saved: SavedWindowState | null = null;
   let current: MorpheusCompanionSurfaceStatus = { mode: 'full' };
+
+  const positionCompact = (window: CompanionWindow, trigger: MorpheusCompanionTrigger, bounds: Rectangle): void => {
+    const workArea = options.getWorkArea(bounds);
+    const width = Math.max(1, Math.min(compactWidth, workArea.width - 24));
+    const height = Math.max(1, Math.min(compactHeight, workArea.height - 24));
+    const target = trigger === 'wake-word'
+      ? wakeCompactBounds(workArea, compactWidth, compactHeight)
+      : {
+        x: Math.round(workArea.x + (workArea.width - width) / 2),
+        y: Math.round(workArea.y + Math.max(12, (workArea.height - height) * 0.18)),
+        width, height,
+      };
+    window.setMinimumSize(Math.min(400, target.width), Math.min(360, target.height));
+    window.setBounds(target, false);
+  };
 
   const restoreWindow = (window: CompanionWindow, keepVisible: boolean): void => {
     if (!saved || activeWindow !== window || window.isDestroyed()) {
@@ -87,6 +103,7 @@ export function createMorpheusCompanionSurfaceController(options: {
     show(window, trigger) {
       if (window.isDestroyed()) return { mode: 'full' };
       if (saved && activeWindow === window) {
+        if (trigger === 'wake-word') positionCompact(window, trigger, saved.bounds);
         current = { mode: 'compact', trigger };
         window.show();
         window.focus();
@@ -106,18 +123,9 @@ export function createMorpheusCompanionSurfaceController(options: {
       activeWindow = window;
       if (saved.wasFullScreen) window.setFullScreen(false);
       if (saved.wasMaximized) window.unmaximize();
-      window.setMinimumSize(640, 280);
       window.setResizable(false);
       window.setAlwaysOnTop(true, 'floating');
-      const workArea = options.getWorkArea(saved.bounds);
-      const width = Math.max(640, Math.min(compactWidth, workArea.width - 24));
-      const height = Math.max(280, Math.min(compactHeight, workArea.height - 24));
-      window.setBounds({
-        x: Math.round(workArea.x + (workArea.width - width) / 2),
-        y: Math.round(workArea.y + Math.max(12, (workArea.height - height) * 0.18)),
-        width,
-        height,
-      }, false);
+      positionCompact(window, trigger, saved.bounds);
       window.show();
       window.focus();
       current = { mode: 'compact', trigger };

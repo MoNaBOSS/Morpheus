@@ -121,8 +121,9 @@ export function createMorpheusGrantStore(options: GrantStoreOptions): MorpheusGr
 
     setProfile(profile: PermissionProfile): void {
       if (!PERMISSION_PROFILES.includes(profile)) throw new Error(`Unknown permission profile: ${profile}`);
+      const previous = structuredClone(persisted);
       persisted.profile = profile;
-      flush();
+      try { flush(); } catch (error) { persisted = previous; throw error; }
     },
 
     findGrant(scope: PermissionScope): PermissionGrant | undefined {
@@ -163,10 +164,11 @@ export function createMorpheusGrantStore(options: GrantStoreOptions): MorpheusGr
       }
 
       // Replace any prior grant for the identical scope rather than stacking.
+      const previous = structuredClone(persisted);
       const key = permissionScopeKey(scope);
       persisted.grants = persisted.grants.filter((existing) => permissionScopeKey(existing) !== key);
       persisted.grants.push(grant);
-      flush();
+      try { flush(); } catch (error) { persisted = previous; throw error; }
       return grant;
     },
 

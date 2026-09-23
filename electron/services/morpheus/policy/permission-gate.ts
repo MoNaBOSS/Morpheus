@@ -20,6 +20,7 @@ import type { AuditHealth, MorpheusPolicyEngine } from './policy-engine';
 export type MorpheusGateRequest = {
   scope: PermissionScope;
   auditHealth: AuditHealth;
+  explicitRoutine?: boolean;
 };
 
 export interface MorpheusPermissionGate {

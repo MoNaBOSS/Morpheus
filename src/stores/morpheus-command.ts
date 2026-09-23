@@ -50,17 +50,18 @@ export type MorpheusCommandState = {
   /** Truthful refusal for the last unsupported command. */
   unsupported: UnsupportedCommand | null;
   interpreting: boolean;
+  submitting: boolean;
+  selectedObjectiveRunId: string | null;
   /** True while Main is executing the plan. */
   executing: boolean;
   /** Per-step outcome of the last execution. Empty until one finishes. */
   planResult: MorpheusPlanExecutionResult | null;
   /**
-   * The single outstanding consent request, or null.
-   *
-   * At most one: Main allows one plan in flight, and a second dialog would let
-   * a user approve boundaries for a plan they are no longer looking at.
+   * The displayed request. Other tasks' requests stay queued and retain their
+   * plan identity; answering one cannot approve another.
    */
   consent: MorpheusPlanConsentEvent | null;
+  consentQueue: MorpheusPlanConsentEvent[];
   artifacts: ExecutionArtifact[];
   filesRoot: string | null;
   permission: PermissionCenterSnapshot | null;
@@ -77,6 +78,7 @@ export type MorpheusCommandState = {
   clearPlan: () => void;
   subscribeObjectives: () => () => void;
   loadObjectives: () => Promise<void>;
+  selectObjective: (objectiveRunId: string) => void;
   cancelObjective: () => Promise<void>;
   correctObjective: (correction: string) => Promise<void>;
   /** Subscribes to plan consent requests. Returns the unsubscribe function. */
@@ -134,17 +136,32 @@ function objectiveStatePatch(
   previous: MorpheusCommandState,
 ): Partial<MorpheusCommandState> {
   const terminal = isObjectiveTerminalState(event.run.state);
+  const consentQueue = previous.consentQueue.filter((request) => !terminal || !event.run.planIds.includes(request.planId));
+  const history = previous.objectiveHistory;
+  const objectiveHistory: MorpheusObjectiveSnapshot = {
+    activeObjectiveRunId: history?.activeObjectiveRunId ?? null,
+    runOrder: [event.objectiveRunId, ...(history?.runOrder ?? []).filter((id) => id !== event.objectiveRunId)],
+    runsById: { ...history?.runsById, [event.objectiveRunId]: event.run },
+    plansByObjectiveRunId: { ...history?.plansByObjectiveRunId, ...(event.plan ? { [event.objectiveRunId]: event.plan } : {}) },
+  };
+  objectiveHistory.activeObjectiveRunId = objectiveHistory.runOrder.find((id) => !isObjectiveTerminalState(objectiveHistory.runsById[id].state)) ?? null;
+  const shared = {
+    objectiveHistory, consentQueue, consent: consentQueue[0] ?? null,
+    artifacts: mergeObjectiveArtifacts(previous.artifacts, event.run.artifacts),
+  };
+  if (previous.selectedObjectiveRunId && previous.selectedObjectiveRunId !== event.objectiveRunId) return shared;
   const interpreting = ['understanding', 'planning', 'replanning'].includes(event.run.state);
   const priorPlan = previous.objectiveRun?.objectiveRunId === event.objectiveRunId
     ? previous.plan
     : null;
   return {
+    ...shared,
+    selectedObjectiveRunId: event.objectiveRunId,
     objectiveRun: event.run,
     plan: event.plan ?? priorPlan,
     planResult: executionResultFromObjective(event.run),
     interpreting,
     executing: !terminal && !interpreting,
-    consent: terminal ? null : previous.consent,
     unsupported: event.run.state === 'needs-clarification'
       ? {
           objective: event.run.objective,
@@ -379,9 +396,12 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
   plan: null,
   unsupported: null,
   interpreting: false,
+  submitting: false,
+  selectedObjectiveRunId: null,
   executing: false,
   planResult: null,
   consent: null,
+  consentQueue: [],
   artifacts: [],
   filesRoot: null,
   permission: null,
@@ -398,9 +418,9 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
 
   runObjective: async (objectiveInput, originType = 'command-bar') => {
     const objective = objectiveInput.trim();
-    if (!objective) return false;
+    if (!objective || get().submitting) return false;
 
-    set({ interpreting: true, plan: null, unsupported: null, planResult: null });
+    set({ submitting: true, unsupported: null });
     try {
       // Every interactive surface enters the same Main-owned objective state
       // machine. Renderer never receives authority to execute plan steps.
@@ -426,7 +446,8 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
         });
         return false;
       }
-      set({ input: '' });
+      set({ input: '', selectedObjectiveRunId: result.objectiveRunId });
+      await get().loadObjectives();
       return true;
     } catch (error) {
       set({
@@ -436,6 +457,8 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
       });
       console.error('[morpheus] command failed', error);
       return false;
+    } finally {
+      set({ submitting: false });
     }
   },
 
@@ -444,21 +467,38 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
     unsupported: null,
     planResult: null,
     objectiveRun: null,
+    selectedObjectiveRunId: null,
   }),
 
   subscribeObjectives: () => hostEvents.onMorpheusObjectiveEvent((event) => {
     set((state) => objectiveStatePatch(event, state));
-    void get().loadObjectives();
   }),
 
   loadObjectives: async () => {
     try {
-      const snapshot = await hostApi.morpheus.objectiveSnapshot();
-      const selectedId = snapshot.activeObjectiveRunId ?? snapshot.runOrder[0];
+      const before = get();
+      const incoming = await hostApi.morpheus.objectiveSnapshot();
+      const snapshot = { ...incoming, runsById: { ...incoming.runsById }, runOrder: [...incoming.runOrder],
+        plansByObjectiveRunId: { ...incoming.plansByObjectiveRunId } };
+      // Events delivered during this round trip are fresher than the snapshot.
+      // Preserve them so a completed/cancelled task cannot turn active again.
+      const current = get();
+      for (const [id, value] of Object.entries(current.objectiveHistory?.runsById ?? {})) {
+        if (value !== before.objectiveHistory?.runsById[id]) {
+          snapshot.runsById[id] = value;
+          if (!snapshot.runOrder.includes(id)) snapshot.runOrder.unshift(id);
+          const plan = current.objectiveHistory?.plansByObjectiveRunId[id];
+          if (plan) snapshot.plansByObjectiveRunId[id] = plan;
+        }
+      }
+      snapshot.activeObjectiveRunId = snapshot.runOrder.find((id) => !isObjectiveTerminalState(snapshot.runsById[id].state)) ?? null;
+      const preferred = current.selectedObjectiveRunId;
+      const selectedId = preferred && snapshot.runsById[preferred] ? preferred : snapshot.activeObjectiveRunId ?? snapshot.runOrder[0];
       const run = selectedId ? snapshot.runsById[selectedId] ?? null : null;
       const plan = selectedId ? snapshot.plansByObjectiveRunId[selectedId] ?? null : null;
       set((state) => ({
         objectiveHistory: snapshot,
+        selectedObjectiveRunId: selectedId ?? null,
         objectiveRun: run,
         plan: plan ?? (state.objectiveRun?.objectiveRunId === selectedId ? state.plan : null),
         planResult: run ? executionResultFromObjective(run) : null,
@@ -469,10 +509,24 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
           ? { objective: run.objective, reason: 'not-understood', supportedCapabilities: supportedCapabilityIds() }
           : null,
         artifacts: run ? mergeObjectiveArtifacts(state.artifacts, run.artifacts) : state.artifacts,
+        ...(snapshot.pendingPlanConsents && current.consentQueue === before.consentQueue ? {
+          consentQueue: [...snapshot.pendingPlanConsents], consent: snapshot.pendingPlanConsents[0] ?? null,
+        } : {}),
       }));
     } catch {
       // A transient snapshot failure must not erase the last real event.
     }
+  },
+
+  selectObjective: (objectiveRunId) => {
+    const state = get();
+    const run = state.objectiveHistory?.runsById[objectiveRunId];
+    if (!run) return;
+    set({ selectedObjectiveRunId: objectiveRunId });
+    set((previous) => objectiveStatePatch({
+      v: 1, seq: 0, ts: run.updatedAt, objectiveRunId, state: run.state, run,
+      plan: state.objectiveHistory?.plansByObjectiveRunId[objectiveRunId],
+    }, previous));
   },
 
   cancelObjective: async () => {
@@ -489,7 +543,10 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
   },
 
   subscribeConsent: () => hostEvents.onMorpheusPlanConsent((event) => {
-    set({ consent: event });
+    set((state) => {
+      const queue = [...state.consentQueue.filter((entry) => entry.planId !== event.planId), event];
+      return { consentQueue: queue, consent: queue[0] ?? null };
+    });
   }),
 
   answerConsent: async (decision) => {
@@ -505,11 +562,15 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
     if (!request) return;
     // Cleared before the round-trip so a second click cannot answer twice; Main
     // also treats a repeated response as a no-op.
-    set({ consent: null });
+    set((state) => {
+      const queue = state.consentQueue.filter((entry) => entry.planId !== request.planId);
+      return { consentQueue: queue, consent: queue[0] ?? null };
+    });
     try {
       await hostApi.morpheus.respondPlanPermission(request.planId, decisions);
     } catch (error) {
       console.error('[morpheus] consent response failed', error);
+      await get().loadObjectives();
     }
     await get().loadPermissionCenter();
   },

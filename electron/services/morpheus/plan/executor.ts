@@ -100,6 +100,9 @@ export type ExecutePlanInput = {
   persistDecision?: (scope: PermissionScope, decision: PermissionDecisionKind) => Promise<void> | void;
   recordGrantUse?: (grantId: string, scope: PermissionScope) => Promise<void> | void;
   signal?: { aborted: boolean };
+  /** Main-verified restart outcomes; never supplied by Renderer. */
+  completedSteps?: readonly ExecutionStepResult[];
+  checkpoint?: (result: ExecutionStepResult) => void | Promise<void>;
   now?: () => Date;
 };
 
@@ -133,6 +136,21 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
   const results = new Map<string, ExecutionStepResult>(
     graph.order.map((stepId) => [stepId, { stepId, status: 'pending' as const }]),
   );
+  for (const result of input.completedSteps ?? []) {
+    if (!byId.has(result.stepId) || result.status === 'pending' || result.status === 'running') {
+      throw new Error('Invalid recovered step outcome.');
+    }
+    results.set(result.stepId, result);
+  }
+  // Dependencies of a previously failed/skipped step must stay skipped after a restart.
+  for (const result of input.completedSteps ?? []) {
+    if (result.status === 'succeeded') continue;
+    for (const dependent of transitiveDependents(steps, result.stepId)) {
+      if (results.get(dependent)?.status === 'pending') results.set(dependent, {
+        stepId: dependent, status: 'skipped', skippedBecauseOf: result.stepId,
+      });
+    }
+  }
 
   const cancelPending = async (): Promise<ExecutePlanResult> => {
     for (const stepId of graph.order) {
@@ -150,6 +168,7 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
   const targetsByStep = new Map<string, string>();
   for (const stepId of graph.order) {
     if (signal?.aborted) return cancelPending();
+    if (results.get(stepId)?.status !== 'pending') continue;
     const step = byId.get(stepId) as ExecutionStep;
     const outcome = await runner.prepare(step);
     if (signal?.aborted) return cancelPending();
@@ -168,7 +187,7 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
 
   // 3. One assessment for the whole plan.
   const trust = evaluatePlanTrust({
-    scopesByStep, targetsByStep, order: graph.order, policy, auditHealth, now: now(),
+    scopesByStep, targetsByStep, order: graph.order.filter((id) => results.get(id)?.status === 'pending'), policy, auditHealth, now: now(),
   });
 
   if (trust.outcome === 'rejected') {
@@ -259,18 +278,23 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
     const step = byId.get(stepId) as ExecutionStep;
     const prepared = preparedByStep.get(stepId) as PreparedStep;
     const startedAt = now().toISOString();
+    // A crash between this durable intent and the result is explicitly uncertain.
+    await input.checkpoint?.({ stepId, status: 'running', startedAt });
+    if (signal?.aborted) return cancelPending();
     const outcome = await runner.run(step, prepared, reasonByStep.get(stepId) ?? 'pre-authorized');
 
     if (outcome.status === 'succeeded') {
       results.set(stepId, {
         stepId, status: 'succeeded', startedAt, durationMs: outcome.durationMs, artifact: outcome.artifact,
       });
+      await input.checkpoint?.(results.get(stepId)!);
       continue;
     }
 
     results.set(stepId, {
       stepId, status: 'failed', startedAt, durationMs: outcome.durationMs, error: outcome.error,
     });
+    await input.checkpoint?.(results.get(stepId)!);
 
     // A failure stops only its own branch. Independent work still runs, because
     // refusing to continue would be a different kind of dishonesty about what
@@ -278,6 +302,7 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
     for (const dependent of transitiveDependents(steps, stepId)) {
       if (results.get(dependent)?.status !== 'pending') continue;
       results.set(dependent, { stepId: dependent, status: 'skipped', skippedBecauseOf: stepId });
+      await input.checkpoint?.(results.get(dependent)!);
       await runner.skip?.(byId.get(dependent) as ExecutionStep, stepId);
     }
   }

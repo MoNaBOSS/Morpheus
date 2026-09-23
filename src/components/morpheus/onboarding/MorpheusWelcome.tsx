@@ -18,9 +18,11 @@ export function MorpheusWelcome() {
   const close = useMorpheusArrivalStore((s) => s.closeWelcome);
   const onboarding = useMorpheusCompanionStore((s) => s.onboarding);
   const voice = useMorpheusVoiceStore((s) => s.status);
+  const presence = useMorpheusVoiceStore((s) => s.presence);
   const preparingSpeech = useMorpheusVoiceStore((s) => s.presence?.state === 'preparing-speech');
   const loadVoice = useMorpheusVoiceStore((s) => s.loadStatus);
   const [speaking, setSpeaking] = useState(false);
+  const audible = speaking || presence?.state === 'speaking';
   const greeted = useRef(false);
   const name = onboarding?.preferences.preferredName.trim();
   const greeting = name ? t('morpheus.boot.welcomeBack', { name }) : t('morpheus.boot.welcomeBackGeneric');
@@ -49,7 +51,7 @@ export function MorpheusWelcome() {
 
   return <Dialog.Root open={open} onOpenChange={(next) => { if (!next) finish(); }}>
     <Dialog.Portal>
-      <Dialog.Overlay className="morpheus-welcome-backdrop" />
+      <Dialog.Overlay data-morpheus className="morpheus-welcome-backdrop" />
       <Dialog.Content data-morpheus data-testid="morpheus-welcome" className="morpheus-welcome morpheus-signal-activation">
         <div aria-hidden className="morpheus-activation-depth absolute inset-0" />
         <header className="relative flex h-16 items-center justify-between border-b border-white/[0.06] px-8">
@@ -58,10 +60,10 @@ export function MorpheusWelcome() {
         </header>
         <div className="morpheus-welcome-body">
           <div className="morpheus-welcome-presence">
-            <MorpheusSignal state={speaking ? 'speaking' : preparingSpeech ? 'understanding' : 'ready'} className="morpheus-hero-signal" label={t('morpheus.title')} />
+            <MorpheusSignal state={audible ? 'speaking' : preparingSpeech ? 'understanding' : 'ready'} className="morpheus-hero-signal" label={t('morpheus.title')} />
           </div>
           <div className="morpheus-welcome-copy">
-            <Dialog.Title className="font-serif text-5xl font-normal leading-[1.07] tracking-tight">{greeting}</Dialog.Title>
+            <Dialog.Title className="morpheus-welcome-title font-serif font-normal tracking-tight">{greeting}</Dialog.Title>
             <Dialog.Description className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">{t('morpheus.arrival.subtitle')}</Dialog.Description>
             {onboarding?.preferences.personality === 'witty' ? <p className="mt-4 text-sm text-foreground/65">{t('morpheus.arrival.witty')}</p> : null}
             <div className="mt-9 flex flex-wrap gap-3">
@@ -74,11 +76,18 @@ export function MorpheusWelcome() {
               <div className="mt-4 flex flex-wrap items-center gap-5">
                 <button type="button" data-testid="morpheus-welcome-voice-settings" onClick={() => finish('/settings?section=voice')} className="morpheus-fluid-link">{t('morpheus.arrival.voiceSettings')}</button>
                 <button type="button" data-testid="morpheus-welcome-speech" onClick={() => {
-                  if (speaking || preparingSpeech) stopMorpheusSpeech();
+                  if (audible || preparingSpeech) stopMorpheusSpeech();
                   else void playMorpheusSpeech(greeting, { neuralAvailable: Boolean(voice?.neuralSpeechAvailable), onSpeakingChange: setSpeaking }).catch(() => undefined);
                 }} className="morpheus-fluid-link inline-flex items-center gap-2" disabled={!voice?.settings.speakResponses}>
-                  {speaking || preparingSpeech ? <VolumeX size={14} /> : <Volume2 size={14} />}{t(speaking || preparingSpeech ? 'morpheus.arrival.mute' : 'morpheus.arrival.hear')}
+                  {audible || preparingSpeech ? <VolumeX size={14} /> : <Volume2 size={14} />}{t(audible || preparingSpeech ? 'morpheus.arrival.mute' : 'morpheus.arrival.hear')}
                 </button>
+              </div>
+              <div className="morpheus-welcome-voice-status" data-testid="morpheus-welcome-voice-status" role="status" aria-live="polite">
+                {audible || preparingSpeech ? <p>{t(audible ? 'morpheus.voice.speaking' : 'morpheus.voice.preparingSpeech')}</p> : null}
+                {audible && presence?.speechFailure ? <button type="button" onClick={() => finish('/settings?section=voice')}
+                  data-testid="morpheus-welcome-speech-fallback" className="morpheus-fluid-link text-[hsl(var(--morpheus-warn))] underline">
+                  {t(`morpheus.voice.speechFailure.${presence.speechFailure}`)}
+                </button> : null}
               </div>
             </div>
           </div>

@@ -377,14 +377,14 @@ describe('morpheus runtime — validation and limits', () => {
     expect(h.events.at(-1)?.error).toMatchObject({ code: 'execution-failed' });
   });
 
-  it('allows only one run in flight', async () => {
+  it('admits independent requests without overwriting the first permission', async () => {
     const h = makeHarness();
     await h.runtime.requestAction({ actionId: 'system.report' });
     await h.runtime.requestAction({ actionId: 'system.report' });
 
     const phases = h.events.map((e) => e.phase);
-    expect(phases).toEqual(['requested', 'awaiting-permission', 'requested', 'failed']);
-    expect(h.events.at(-1)?.error?.code).toBe('rate-limited');
+    expect(phases).toEqual(['requested', 'awaiting-permission', 'requested', 'awaiting-permission']);
+    expect(h.events[0].runId).not.toBe(h.events[2].runId);
     expect(h.executeSpy).not.toHaveBeenCalled();
   });
 

@@ -63,6 +63,7 @@ import { createMorpheusVoiceCommandRegistration } from './morpheus-voice-command
 import { installMorpheusMediaPermissionPolicy } from './morpheus-media-permissions';
 import { classifyMainNavigation } from './navigation-policy';
 import { createMorpheusCompanionSurfaceController } from './morpheus-companion-surface';
+import { MorpheusWakeOrb } from './morpheus-wake-orb';
 
 const WINDOWS_APP_USER_MODEL_ID = 'app.morpheus.desktop';
 const isE2EMode = process.env.CLAWX_E2E === '1';
@@ -137,6 +138,17 @@ const quitLifecycleState = createQuitLifecycleState();
 const companionSurfaceController = createMorpheusCompanionSurfaceController({
   getWorkArea: (bounds) => screen.getDisplayMatching(bounds).workArea,
 });
+const wakeOrb = new MorpheusWakeOrb(
+  () => {
+    const window = mainWindow;
+    if (!window || window.isDestroyed()) return;
+    companionSurfaceController.show(window, 'wake-word');
+    window.webContents.send(HOST_EVENT_CHANNELS.morpheus.quickCommand, { trigger: 'wake-word' });
+  },
+  () => mainWindow && !mainWindow.isDestroyed()
+    ? screen.getDisplayMatching(mainWindow.getBounds()).workArea
+    : screen.getPrimaryDisplay().workArea,
+);
 const quickCommandRegistration = createMorpheusQuickCommandRegistration({
   shortcuts: globalShortcut,
   getMainWindow: () => mainWindow,
@@ -375,11 +387,14 @@ function createMainWindow(): BrowserWindow {
   });
 
   win.on('closed', () => {
+    wakeOrb.dispose();
     companionSurfaceController.reset(win);
     if (mainWindow === win) {
       mainWindow = null;
     }
   });
+
+  win.on('show', () => wakeOrb.hide());
 
   mainWindow = win;
   return win;
@@ -477,10 +492,25 @@ async function initialize(): Promise<void> {
       status: () => companionSurfaceController.status(),
       dismiss: () => companionSurfaceController.dismiss(window),
       expand: () => companionSurfaceController.expand(window),
+      presence: (presence) => wakeOrb.updatePresence(presence),
+      wake: () => {
+        if (!window.isVisible() || window.isMinimized()) {
+          wakeOrb.show();
+        }
+      },
     },
   );
 
   loadMainWindow(window);
+
+  // An isolated Electron journey exercises the real native orb without a paid
+  // transcription provider or a physical microphone in CI.
+  if (isE2EMode && process.argv.includes('--morpheus-test-wake-orb')) {
+    window.once('ready-to-show', () => {
+      window.hide();
+      wakeOrb.show();
+    });
+  }
 
   if (!isE2EMode) {
     const registered = quickCommandRegistration.start();

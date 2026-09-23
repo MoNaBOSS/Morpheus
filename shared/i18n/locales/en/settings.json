@@ -53,7 +53,12 @@
       "replaceApiKeyHelp": "Leave this field empty if you want to keep the currently stored API key.",
       "baseUrl": "Base URL",
       "modelId": "Model ID",
-      "modelIdEditDisabled": "The model ID cannot be changed after creation. Delete this provider and add it again to use a different model ID.",
+      "openRouterRecommendationTitle": "Morpheus recommended default",
+      "openRouterRecommendationBody": "Luna balances speed, quality and predictable cost. DeepSeek Flash is the economy option. Sol is a premium model and should be selected only when the task justifies it.",
+      "openAiRecommendation": "Recommended default: gpt-5.6-luna. Use Sol only for unusually demanding work; it is not Morpheus's cost-efficient default.",
+      "useBalanced": "Use balanced",
+      "useEconomy": "Use economy",
+      "modelIdEditDisabled": "Changing this model updates the provider used by Morpheus and OpenClaw after you save.",
       "codePlanPreset": "Code Plan Preset",
       "codePlanMode": "Code Plan",
       "useCodePlanPreset": "Use Ark Code Plan Preset",
@@ -205,8 +210,8 @@
     "description": "Power-user options",
     "devMode": "Developer Mode",
     "devModeDesc": "Show developer tools and shortcuts",
-    "telemetry": "Anonymous Usage Data",
-    "telemetryDesc": "Allow providing anonymous basic usage data to improve Morpheus"
+    "telemetry": "Share diagnostic usage data",
+    "telemetryDesc": "Optional. Sends basic app events with a random installation ID to help improve Morpheus. Off until you opt in."
   },
   "developer": {
     "title": "Developer",

@@ -8,6 +8,7 @@ import type {
   ExecutionStepStatus,
 } from '../execution-types';
 import type { MorpheusObjectiveRoute } from '../mission-types';
+import type { MorpheusPlanConsentEvent } from '../../host-events/contract';
 
 export const MORPHEUS_OBJECTIVE_VERSION = 1 as const;
 
@@ -148,14 +149,17 @@ export type MorpheusObjectiveRun = {
     | { status: 'rejected'; reason: 'sensitive-content' };
   clarification?: string;
   error?: { code: string; message: string };
+  recovery?: { status: 'resuming' | 'needs-review'; attempt: number };
 };
 
 export type MorpheusObjectiveSnapshot = {
   activeObjectiveRunId: string | null;
   runOrder: readonly string[];
   runsById: Readonly<Record<string, MorpheusObjectiveRun>>;
-  /** Ephemeral Main-authored plans for active runs; never restored from disk. */
+  /** Main-authored active plans; recovery revalidates private checkpoints first. */
   plansByObjectiveRunId: Readonly<Record<string, ExecutionPlan>>;
+  /** Rehydrates unanswered requests after a renderer reload. */
+  pendingPlanConsents?: readonly MorpheusPlanConsentEvent[];
 };
 
 export type SubmitMorpheusObjectivePayload = {

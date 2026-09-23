@@ -33,6 +33,7 @@ import { ChatInput, type ChatWorkspaceOption, type FileAttachment } from './Chat
 import { ChatToolbar } from './ChatToolbar';
 import { AcpTimeline } from './AcpTimeline';
 import { AcpErrorBanner } from './AcpErrorBanner';
+import { MorpheusChatPresence } from './MorpheusChatPresence';
 
 const ArtifactPanelLazy = lazy(() =>
   import('@/components/file-preview/ArtifactPanel').then((m) => ({ default: m.ArtifactPanel })),
@@ -127,10 +128,16 @@ function QuestionDirectory({ items }: { items: QuestionDirectoryItem[] }) {
 function AcpEmptyState() {
   const { t } = useTranslation('chat');
   return (
-    <div data-testid="acp-chat-empty-state" className="flex h-[60vh] flex-col items-center justify-center text-center">
-      <h1 className="text-4xl font-serif font-normal tracking-tight text-foreground/80 md:text-5xl">
-        {t('welcome.subtitle')}
-      </h1>
+    <div data-testid="acp-chat-empty-state" className="flex min-h-[42vh] flex-col items-center justify-center px-6 text-center">
+      <p className="text-[9px] uppercase tracking-[0.24em] text-[hsl(var(--morpheus-accent))]">
+        {t('presence.emptyEyebrow')}
+      </p>
+      <h2 className="mt-3 font-serif text-3xl font-normal tracking-tight text-foreground/90 md:text-4xl">
+        {t('presence.emptyTitle')}
+      </h2>
+      <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+        {t('presence.emptyBody')}
+      </p>
     </div>
   );
 }
@@ -473,21 +480,21 @@ export function Chat() {
     >
       <div className="flex min-w-0 flex-1 flex-col">
         <div className={cn(
-          'relative flex shrink-0 items-center px-4 py-2',
-          isWindows ? 'gap-4' : 'justify-end',
+          'relative flex shrink-0 items-center gap-3 overflow-hidden border-b border-white/[0.07] px-4 py-1.5',
+          'bg-[linear-gradient(90deg,hsl(var(--morpheus-surface-1))_0%,hsl(var(--morpheus-surface-2)/0.88)_54%,hsl(var(--morpheus-surface-1))_100%)]',
         )}>
           <div data-testid="chat-toolbar-drag-region" className="drag-region absolute inset-0 z-0" aria-hidden="true" />
-          {isWindows && (
-            <div className="drag-region relative z-10 min-w-0 flex-1">
-              <h1
-                data-testid="chat-session-title"
-                title={currentSessionTitle}
-                className="truncate text-sm font-medium text-foreground"
-              >
-                {currentSessionTitle}
-              </h1>
-            </div>
-          )}
+          <div className="no-drag relative z-10 min-w-0 flex-1">
+            <MorpheusChatPresence
+              sessionTitle={currentSessionTitle}
+              timeline={visibleAcpTimeline}
+              acpLoading={acpLoading}
+              acpSending={acpSending}
+              acpCancelling={acpCancelling}
+              acpError={visibleAcpError}
+              imageGenerationPending={imageGenerationPending}
+            />
+          </div>
           <div data-testid="chat-toolbar-actions" className="no-drag relative z-10">
             <ChatToolbar
               questionDirectoryOpen={questionDirectoryVisible}

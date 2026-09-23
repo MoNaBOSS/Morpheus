@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import type { MorpheusActionEvent } from '@shared/morpheus/action-types';
 import type { MorpheusPlanConsentEvent } from '@shared/host-events/contract';
 import type { MorpheusObjectiveEvent } from '@shared/morpheus/core/objective-types';
-import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
+import type { MorpheusVoicePresence, MorpheusSpeechChunk } from '@shared/morpheus/voice-types';
 
 import { createMorpheusAuditSink, type MorpheusAuditSink } from './audit';
 import { createMorpheusCapabilityRegistry } from './capability-registry';
@@ -41,6 +41,7 @@ import { createMorpheusWorkflowService, type MorpheusWorkflowService } from './w
 import { createMorpheusScheduleStore, type MorpheusScheduleStore } from './schedules/schedule-store';
 import { createMorpheusScheduler, type MorpheusScheduler } from './schedules/scheduler';
 import { createMorpheusObjectiveStore, type MorpheusObjectiveStore } from './core/objective-store';
+import { createMorpheusTaskCheckpoints } from './core/task-checkpoints';
 import {
   createMorpheusObjectiveOrchestrator,
   type MorpheusObjectiveOrchestrator,
@@ -75,6 +76,7 @@ export type CreateMorpheusServiceOptions = {
   emitPlanConsent?: (event: MorpheusPlanConsentEvent) => void;
   emitObjective?: (event: MorpheusObjectiveEvent) => void;
   emitVoicePresence?: (presence: MorpheusVoicePresence) => void;
+  emitSpeechChunk?: (chunk: MorpheusSpeechChunk) => void;
   providerService?: ProviderService;
 };
 
@@ -146,6 +148,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   const auditHealth = (): AuditHealth => (audit.isHealthy() ? 'healthy' : 'degraded');
 
   let objectives: MorpheusObjectiveOrchestrator | undefined;
+  const checkpoints = createMorpheusTaskCheckpoints(options.userDataDir);
   const runtime = createMorpheusRuntime({
     registry,
     roots,
@@ -157,6 +160,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     appVersion: options.appVersion,
     emit: options.emit,
     onPlanLifecycle: (event) => objectives?.onPlanLifecycle(event),
+    checkpointStep: (planId, result) => checkpoints.recordStep(planId, result),
 
     /**
      * Flattens the plan's trust boundaries into wire shape.
@@ -189,7 +193,10 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   const missions = createMorpheusMissionStore({ userDataDir: options.userDataDir });
   const onboarding = createMorpheusOnboardingStore({ userDataDir: options.userDataDir });
   const goalStore = createMorpheusGoalStore({ userDataDir: options.userDataDir });
-  const objectiveStore = createMorpheusObjectiveStore({ userDataDir: options.userDataDir });
+  const objectiveStore = createMorpheusObjectiveStore({
+    userDataDir: options.userDataDir,
+    canRecover: (run) => Boolean(checkpoints.get(run.objectiveRunId)),
+  });
   missions.reconcile(objectiveStore.snapshot());
   const providerService = options.providerService ?? getProviderService();
   const plannerSelector = createMorpheusPlannerSelector({
@@ -208,9 +215,11 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     appVersion: options.appVersion,
     getPersonality: () => onboarding.status().preferences.personality,
     emitPresence: options.emitVoicePresence,
+    emitSpeechChunk: options.emitSpeechChunk,
   });
   objectives = createMorpheusObjectiveOrchestrator({
     store: objectiveStore,
+    checkpoints,
     runtime,
     agents: agentProfiles,
     planners: plannerSelector,

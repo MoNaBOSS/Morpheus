@@ -103,6 +103,7 @@ beforeEach(() => {
   });
   useMorpheusVoiceStore.setState({
     phase: 'idle', status: null, transcript: null, error: null, errorKind: null, source: null, startedAt: null,
+    followUpUntil: null,
   });
   useMorpheusCommandStore.setState({
     input: '', plan: null, unsupported: null, interpreting: false, executing: false,
@@ -111,6 +112,20 @@ beforeEach(() => {
 });
 
 describe('Morpheus renderer voice controller', () => {
+  it('ignores a completed transcription after the user cancels the interaction', async () => {
+    let deliver!: (value: unknown) => void;
+    mocks.transcribeAudio.mockReturnValueOnce(new Promise((resolve) => { deliver = resolve; }));
+    await useMorpheusVoiceStore.getState().startListening('quick-command');
+    useMorpheusVoiceStore.getState().stopListening();
+    await vi.waitFor(() => expect(mocks.transcribeAudio).toHaveBeenCalledOnce());
+    useMorpheusVoiceStore.getState().cancel();
+    deliver({ transcript: 'Open Notepad', providerAccountId: 'openai', modelId: 'whisper-1', durationMs: 1000 });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mocks.routeInteraction).not.toHaveBeenCalled();
+    expect(mocks.submitObjective).not.toHaveBeenCalled();
+    expect(useMorpheusVoiceStore.getState().transcript).toBeNull();
+  });
   it('does not start or retry ambient capture when transcription is unavailable', async () => {
     const unavailableStatus = {
       settings: {
@@ -261,5 +276,42 @@ describe('Morpheus renderer voice controller', () => {
     expect(mocks.submitObjective).not.toHaveBeenCalled();
     expect(useMorpheusCommandStore.getState().input).toBe('');
     expect(track.stop).toHaveBeenCalled();
+  });
+
+  it('opens one bounded follow-up listen after an explicit spoken result', async () => {
+    vi.useFakeTimers();
+    try {
+      useMorpheusVoiceStore.setState({
+        phase: 'ready',
+        source: 'quick-command',
+        status: {
+          settings: {
+            v: 4, enabled: true, providerAccountId: null, modelId: 'whisper-1',
+            speakResponses: true, speechProviderAccountId: null,
+            speechModelId: 'gpt-4o-mini-tts', speechVoice: 'cedar',
+            autoSubmitTranscript: true, ambientEnabled: false,
+            wakePhrase: 'Morpheus', ambientSilenceMs: 1_000,
+            ambientMaxUtteranceMs: 20_000, bargeIn: true,
+            handsFreeFollowUp: true,
+          },
+          transcriptionAvailable: true,
+          neuralSpeechAvailable: false,
+          providers: [],
+        },
+      });
+
+      const pending = useMorpheusVoiceStore.getState().continueAfterResponse();
+      expect(useMorpheusVoiceStore.getState().followUpUntil).toBeGreaterThan(Date.now());
+      await vi.advanceTimersByTimeAsync(320);
+      await pending;
+
+      expect(useMorpheusVoiceStore.getState()).toMatchObject({
+        phase: 'listening', source: 'quick-command', followUpUntil: null,
+      });
+      expect(getUserMedia).toHaveBeenCalledOnce();
+      useMorpheusVoiceStore.getState().cancel();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

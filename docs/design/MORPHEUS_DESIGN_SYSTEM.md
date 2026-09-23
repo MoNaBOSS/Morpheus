@@ -18,9 +18,12 @@ terminal.
 | Monospace for machine truth (paths, ids) | Monospace as decoration |
 | Motion that reports state | Motion as flourish |
 
-**Matrix influence is an accent, not a theme.** The rain belongs to the boot
-sequence only. Elsewhere, the Matrix inheritance shows as: precise monospace
-detail, green reserved for *live/verified* states, and layered depth.
+**Current accepted direction (2026-09-23):** The user selected the Phase 1
+conversation workspace and approved orb. Restrained Matrix rain continues
+behind the workspace, dimmed under reading content and paused when hidden.
+Green motion on the orb reports real voice/task state; reduced motion removes
+nonessential animation. Earlier boot-only rain and Command Center cockpit
+prescriptions below are historical, not authority for the default screen.
 
 Fresh profiles default to the dark Morpheus surface. A saved user choice of
 light or system theme is still respected; product styling must remain legible in
@@ -173,6 +176,20 @@ The compact voice surface uses the existing overlay elevation and restores the
 prior window presentation. It should feel present, not modal: approximately
 560–680px wide, one or two information rows, no chat transcript history.
 
+### Motion polish (1.0.5 candidate)
+
+Arrival is an opaque, restrained stage: a large luminous sphere, ten quiet vector
+filaments, and copy entering in a short stagger (maximum 140ms). All controls are
+available immediately; no introduction must finish before a user can act. Use
+transform/opacity for scene handoffs, not full-window blur or animated geometry.
+Static outer registration marks give the rotating core a stable reference.
+
+Quick Command enters in 240ms and fades out in 160ms. Closing never delays Main's
+tray/window ownership. Reduced motion removes spatial entrance and decorative
+animation; visibility and keyboard controls remain. No animation starts API work.
+Greeting speech has an inline status and fallback disclosure, not two competing
+HUDs. Microphone activity, follow-up and input-error indicators remain visible.
+
 ## Writing
 
 ### Fluid arrival (1.0.1)
@@ -204,6 +221,18 @@ independently of explicitly enabled background audio monitoring. Reduced motion
 removes the transition and corona rotation. Actual speech/capture takes precedence
 over an old completed Mission. Provider speech preparation is labelled and
 cancellable, never portrayed as already audible speech.
+
+### Companion presence (1.0.4 candidate)
+
+Use the same luminous spherical core and restrained filaments for arrival and
+active voice. Listening brightness and scale follow transient microphone RMS;
+do not invent waveform activity or rerender React on every sample. Hidden views
+pause artwork and reduced motion keeps level feedback non-spatial. A waiting
+follow-up displays a bounded invitation, distinct from transcription and execution.
+
+Arrival dialogs must have an opaque token-backed surface. Never let workspace
+labels bleed through greeting copy. Voice setup exposes preview and microphone
+checks before technical fields, and names the engine that actually played.
 
 - Say what happened, not what might have. "Created notes.txt" not "Operation completed."
 - Name the real thing: absolute paths, real capability ids.

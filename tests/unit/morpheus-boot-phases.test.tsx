@@ -176,6 +176,8 @@ describe('MorpheusBoot', () => {
   });
 
   it('renders a single static frame under reduced motion', () => {
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(300);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(300);
     const context2d = {
       setTransform: vi.fn(),
       fillRect: vi.fn(),

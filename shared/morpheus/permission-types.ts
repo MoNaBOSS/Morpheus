@@ -23,8 +23,8 @@ export type PermissionProfile = 'strict' | 'balanced' | 'autonomous';
 export const PERMISSION_PROFILES: readonly PermissionProfile[] =
   Object.freeze(['strict', 'balanced', 'autonomous']);
 
-/** Fresh private-alpha profiles begin in operator-first Autonomous mode. */
-export const DEFAULT_PERMISSION_PROFILE: PermissionProfile = 'autonomous';
+/** Existing saved profiles are preserved; fresh profiles use Balanced. */
+export const DEFAULT_PERMISSION_PROFILE: PermissionProfile = 'balanced';
 
 /** What the user chose at a prompt. */
 export type PermissionDecisionKind =

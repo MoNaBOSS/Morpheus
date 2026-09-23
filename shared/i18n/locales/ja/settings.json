@@ -53,7 +53,12 @@
       "replaceApiKeyHelp": "現在保存されている API キーをそのまま使う場合は、この欄を空のままにしてください。",
       "baseUrl": "ベース URL",
       "modelId": "モデル ID",
-      "modelIdEditDisabled": "モデル ID は作成後に変更できません。別のモデル ID を使用するには、このプロバイダーを削除して再度追加してください。",
+      "openRouterRecommendationTitle": "Morpheus 推奨デフォルト",
+      "openRouterRecommendationBody": "Luna は速度、品質、予測可能なコストのバランスに優れています。DeepSeek Flash は低コスト向けです。Sol はプレミアムモデルのため、必要なタスクだけに使用してください。",
+      "openAiRecommendation": "推奨デフォルト: gpt-5.6-luna。Sol は特に難しい作業だけに使用してください。",
+      "useBalanced": "バランス重視",
+      "useEconomy": "低コスト重視",
+      "modelIdEditDisabled": "保存すると、Morpheus と OpenClaw が使用するプロバイダーモデルが更新されます。",
       "codePlanPreset": "Code Plan プリセット",
       "codePlanMode": "Code Plan",
       "useCodePlanPreset": "Ark Code Plan プリセットを使用",
@@ -205,8 +210,8 @@
     "description": "上級ユーザー向けオプション",
     "devMode": "開発者モード",
     "devModeDesc": "開発者ツールとショートカットを表示",
-    "telemetry": "匿名利用データ",
-    "telemetryDesc": "Morpheus 改善のため、匿名の基本的な利用データの提供を許可します"
+    "telemetry": "診断用の利用データを共有",
+    "telemetryDesc": "任意。ランダムなインストールID付きの基本的なアプリイベントを送信します。明示的に許可するまでオフです。"
   },
   "developer": {
     "title": "開発者",

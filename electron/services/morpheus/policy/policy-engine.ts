@@ -37,6 +37,8 @@ export type PolicyEvaluationInput = {
   scope: PermissionScope;
   auditHealth: AuditHealth;
   now?: Date;
+  /** Main's direct interpreter matched the user's exact launch/navigation request. */
+  explicitRoutine?: boolean;
 };
 
 export interface MorpheusPolicyEngine {
@@ -45,7 +47,7 @@ export interface MorpheusPolicyEngine {
 
 export function createMorpheusPolicyEngine(store: MorpheusGrantStore): MorpheusPolicyEngine {
   return {
-    evaluate({ scope, auditHealth, now = new Date() }: PolicyEvaluationInput): PermissionResolution {
+    evaluate({ scope, auditHealth, now = new Date(), explicitRoutine = false }: PolicyEvaluationInput): PermissionResolution {
       const descriptor = getMorpheusActionDescriptor(scope.capabilityId);
       const profile: PermissionProfile = store.getProfile();
 
@@ -91,6 +93,11 @@ export function createMorpheusPolicyEngine(store: MorpheusGrantStore): MorpheusP
       }
 
       // 6. Profile defaults.
+      if (explicitRoutine && profile === 'balanced' && effectiveTier === descriptor.riskTier
+        && ['app.launch', 'web.openUrl'].includes(scope.capabilityId)
+        && ['command-bar', 'quick-command', 'voice', 'chat', 'action-launcher'].includes(scope.originType)) {
+        return { outcome: 'allow', reason: 'profile-auto' };
+      }
       //    `low` means no disclosure, no durable state and nothing to undo — a
       //    notification is the archetype. Interrupting for it would train users
       //    to dismiss dialogs without reading, which is the failure mode this

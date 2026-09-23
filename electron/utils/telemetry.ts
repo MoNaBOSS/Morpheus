@@ -1,5 +1,5 @@
 import { PostHog } from 'posthog-node';
-import { machineIdSync } from 'node-machine-id';
+import { randomUUID } from 'node:crypto';
 import { app } from 'electron';
 import { getSetting, setSetting } from './store';
 import { logger } from './logger';
@@ -47,21 +47,21 @@ function isIgnorablePostHogShutdownError(error: unknown): boolean {
 export async function initTelemetry(): Promise<void> {
     try {
         const telemetryEnabled = await getSetting('telemetryEnabled');
-        if (!telemetryEnabled) {
+        const consentVersion = await getSetting('telemetryConsentVersion');
+        if (!telemetryEnabled || consentVersion !== 1) {
             logger.info('Telemetry is disabled in settings');
             return;
         }
+        if (posthogClient) return;
 
-        // Initialize PostHog client
-        posthogClient = new PostHog(POSTHOG_API_KEY, { host: POSTHOG_HOST });
-
-        // Get or generate machine ID
+        // Rotate inherited hardware identifiers to a random install-scoped ID.
         distinctId = await getSetting('machineId');
-        if (!distinctId) {
-            distinctId = machineIdSync();
+        if (await getSetting('telemetryIdentityVersion') !== 1 || !distinctId) {
+            distinctId = randomUUID();
             await setSetting('machineId', distinctId);
-            logger.debug(`Generated new machine ID for telemetry: ${distinctId}`);
+            await setSetting('telemetryIdentityVersion', 1);
         }
+        posthogClient = new PostHog(POSTHOG_API_KEY, { host: POSTHOG_HOST });
 
         const properties = getCommonProperties();
 

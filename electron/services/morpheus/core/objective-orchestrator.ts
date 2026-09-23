@@ -27,6 +27,7 @@ import {
 import type {
   ExecutionOrigin,
   ExecutionPlan,
+  ExecutionStepResult,
   InterpretationResult,
 } from '@shared/morpheus/execution-types';
 import { createDeterministicMorpheusPlanner } from '@shared/morpheus/interpreter/deterministic-planner';
@@ -63,6 +64,8 @@ import type {
 import { MorpheusProviderRequestError } from '../planning/provider-planner';
 import type { MorpheusWorkspaceStore } from '../workspaces/workspace-store';
 import type { MorpheusMissionStore } from '../missions/mission-store';
+import { createMorpheusTaskCoordinator, taskPriority } from './task-coordinator';
+import { actionFingerprint, isReplaySafeRead, reconcileTaskCheckpoint, type MorpheusTaskCheckpoints } from './task-checkpoints';
 
 const CAPABILITY_DESCRIPTIONS: Record<MorpheusActionId, string> = {
   'app.launch': 'Launch one compiled-in approved Windows application by logical key.',
@@ -106,9 +109,13 @@ type ActiveObjective = {
   controller: AbortController;
   currentPlanId?: string;
   preparedPlan?: ExecutionPlan;
+  completion?: Promise<void>;
+  recoveredSteps?: readonly ExecutionStepResult[];
+  recoveredIteration?: number;
 };
 
 export interface MorpheusObjectiveOrchestrator {
+  recover(): Promise<void>;
   submit(payload: SubmitMorpheusObjectivePayload): Promise<SubmitMorpheusObjectiveResult>;
   submitInternal(payload: ObjectiveSubmission): Promise<SubmitMorpheusObjectiveResult>;
   waitForTerminal(objectiveRunId: string, timeoutMs?: number): Promise<MorpheusObjectiveRun>;
@@ -223,6 +230,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
   createId?: () => string;
   createMissionId?: () => string;
   limits?: MorpheusObjectiveLimits;
+  checkpoints?: MorpheusTaskCheckpoints;
 }): MorpheusObjectiveOrchestrator {
   const platform = options.platform ?? process.platform;
   const now = options.now ?? (() => new Date());
@@ -230,6 +238,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
   const createMissionId = options.createMissionId ?? (() => `mission-${randomUUID()}`);
   const limits = options.limits ?? DEFAULT_OBJECTIVE_LIMITS;
   const active = new Map<string, ActiveObjective>();
+  const taskSlots = createMorpheusTaskCoordinator();
   const planOwners = new Map<string, { objectiveRunId: string; generation: number }>();
   const transitionChains = new Map<string, Promise<void>>();
   const terminalWaiters = new Map<string, Set<{
@@ -244,6 +253,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
   }>();
   let seq = 0;
   let disposed = false;
+  let recovering = false;
 
   const finishActive = (objectiveRunId: string): void => {
     active.delete(objectiveRunId);
@@ -266,7 +276,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
   ): Promise<MorpheusObjectiveRun | undefined> => {
     let output: MorpheusObjectiveRun | undefined;
     const previous = transitionChains.get(objectiveRunId) ?? Promise.resolve();
-    const next = previous.then(async () => {
+    const next = previous.catch(() => {}).then(async () => {
       const existing = options.store.get(objectiveRunId);
       if (!existing) return;
       const timestamp = now().toISOString();
@@ -351,6 +361,9 @@ export function createMorpheusObjectiveOrchestrator(options: {
         // unsafe execution. The UI still receives truthful degraded state.
       }
       output = options.store.put(run);
+      // History is already durable. A stale checkpoint is harmless: recovery
+      // skips terminal history. Cleanup failure must not hide the final result.
+      if (terminal) { try { options.checkpoints?.remove(objectiveRunId); } catch { /* Retry on a later healthy load. */ } }
       try {
         options.missions.projectObjective(run);
       } catch {
@@ -387,8 +400,9 @@ export function createMorpheusObjectiveOrchestrator(options: {
       }
     });
     transitionChains.set(objectiveRunId, next);
-    await next;
-    if (transitionChains.get(objectiveRunId) === next) transitionChains.delete(objectiveRunId);
+    try { await next; } finally {
+      if (transitionChains.get(objectiveRunId) === next) transitionChains.delete(objectiveRunId);
+    }
     return output;
   };
 
@@ -445,7 +459,16 @@ export function createMorpheusObjectiveOrchestrator(options: {
     }, limits.providerTimeoutMs);
     timer.unref?.();
     try {
-      return await operation(controller.signal);
+      if (owner.controller.signal.aborted) relay();
+      // Some adapters ignore AbortSignal. The bounded race still closes this
+      // generation; a late result never reaches native execution.
+      return await new Promise<T>((resolve, reject) => {
+        const abort = () => reject(controller.signal.reason ?? new DOMException('Objective cancelled', 'AbortError'));
+        if (controller.signal.aborted) { abort(); return; }
+        controller.signal.addEventListener('abort', abort, { once: true });
+        Promise.resolve().then(() => operation(controller.signal)).then(resolve, reject)
+          .finally(() => controller.signal.removeEventListener('abort', abort));
+      });
     } catch (error) {
       if (timedOut && !owner.controller.signal.aborted) {
         throw new MorpheusProviderTimeoutError(limits.providerTimeoutMs);
@@ -568,6 +591,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
     const owner = active.get(objectiveRunId);
     if (!owner) return;
     const startedAt = now().getTime();
+    let releaseSlot: (() => void) | undefined;
     const initialRun = options.store.get(objectiveRunId);
     const workspaceId = initialRun?.workspaceId ?? MORPHEUS_DEFAULT_WORKSPACE_ID;
     const workspace = options.workspaces.get(workspaceId);
@@ -593,11 +617,15 @@ export function createMorpheusObjectiveOrchestrator(options: {
     }
     const capabilities = selectionCapabilities(agent, workspace.access);
     const fingerprints = new Set<string>();
-    let totalSteps = 0;
+    let totalSteps = initialRun?.observations.filter((item) => item.planId !== owner.preparedPlan?.planId)
+      .reduce((sum, observation) => sum + observation.steps.length, 0) ?? 0;
     let planner: MorpheusPlanner;
     let proposed: InterpretationResult | null = null;
+    const deadline = setTimeout(() => owner.controller.abort(new Error('Objective reached its maximum duration.')), limits.maxDurationMs);
+    deadline.unref?.();
 
     try {
+      if (!isCurrent(objectiveRunId, generation)) return;
       let run = options.store.get(objectiveRunId) as MorpheusObjectiveRun;
       const historySnapshot = options.store.snapshot();
       const history = historySnapshot.runOrder.flatMap((id) => {
@@ -620,12 +648,12 @@ export function createMorpheusObjectiveOrchestrator(options: {
           objective: run.objective,
         };
         planner = {
-          plannerId: 'workflow-compiler-v1',
-          plannedBy: 'deterministic',
+          plannerId: run.plannerId ?? 'workflow-compiler-v1',
+          plannedBy: preparedPlan.plannedBy,
           plan: async () => ({ ok: true, plan: preparedPlan }),
         };
         proposed = { ok: true, plan: preparedPlan };
-        const route: MorpheusObjectiveRoute = {
+        const route: MorpheusObjectiveRoute = run.route ?? {
           kind: 'prepared-workflow',
           plannerId: planner.plannerId,
           selectedAt: now().toISOString(),
@@ -664,6 +692,10 @@ export function createMorpheusObjectiveOrchestrator(options: {
           };
           await transition(objectiveRunId, 'planning', { plannerId: planner.plannerId, route });
         } else {
+          // Provider work is bounded separately from direct commands. Four slow
+          // planners must not stop an explicit app/site command from starting.
+          releaseSlot = await taskSlots.acquire([], taskPriority(run.origin.type), owner.controller.signal);
+          if (!isCurrent(objectiveRunId, generation)) return;
           const plannerSelection: MorpheusPlannerSelection = await options.planners.select(agent);
           if (!isCurrent(objectiveRunId, generation)) return;
           if (!plannerSelection.ok) {
@@ -690,7 +722,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
         }
       }
 
-      for (let iteration = 1; iteration <= limits.maxIterations; iteration += 1) {
+      for (let iteration = owner.recoveredIteration ?? 1; iteration <= limits.maxIterations; iteration += 1) {
         if (!isCurrent(objectiveRunId, generation) || owner.controller.signal.aborted) return;
         if (now().getTime() - startedAt > limits.maxDurationMs) throw new Error('Objective exceeded its maximum duration.');
         run = options.store.get(objectiveRunId) as MorpheusObjectiveRun;
@@ -757,10 +789,20 @@ export function createMorpheusObjectiveOrchestrator(options: {
         // widen a root even if they include an extra field in raw output.
         const plan: ExecutionPlan = {
           ...proposed.plan,
+          origin: run.origin,
           workspaceId,
         };
         ensurePlanAllowed(plan, capabilities, totalSteps, fingerprints);
+        const checkpoint = options.checkpoints?.get(objectiveRunId);
+        if (checkpoint && checkpoint.plan?.planId !== plan.planId) {
+          for (const step of plan.steps) {
+            if (!isReplaySafeRead(step.capabilityId) && checkpoint.completedEffects.includes(actionFingerprint(step))) {
+              throw new Error('The proposed continuation repeats a completed action. Review the existing result before starting it again.');
+            }
+          }
+        }
         totalSteps += plan.steps.length;
+        options.checkpoints?.setPlan(objectiveRunId, plan, iteration);
         options.runtime.registerPlan(plan);
         options.store.setActivePlan(objectiveRunId, plan);
         planOwners.set(plan.planId, { objectiveRunId, generation });
@@ -768,24 +810,28 @@ export function createMorpheusObjectiveOrchestrator(options: {
         run = options.store.get(objectiveRunId) as MorpheusObjectiveRun;
         await transition(objectiveRunId, 'executing', {
           iteration,
-          planIds: [...run.planIds, plan.planId],
+          planIds: [...new Set([...run.planIds, plan.planId])],
         });
 
         const execution = await measureStage(
           objectiveRunId,
           'execution',
           iteration,
-          () => options.runtime.executePlan({ planId: plan.planId }),
+          () => options.runtime.executePlan({ planId: plan.planId }, {
+            signal: owner.controller.signal, completedSteps: owner.recoveredSteps,
+            explicitRoutine: run.route?.kind === 'direct-capability',
+          }),
           { plannerId: planner.plannerId, planId: plan.planId },
         );
         owner.currentPlanId = undefined;
+        owner.recoveredSteps = undefined;
         if (!isCurrent(objectiveRunId, generation)) return;
         const observedAt = now().toISOString();
         const observation = observationFrom(iteration, plan, execution, observedAt);
         const artifacts = execution.steps.flatMap((step) => step.artifact ? [step.artifact] : []);
         run = options.store.get(objectiveRunId) as MorpheusObjectiveRun;
         await transition(objectiveRunId, 'observing', {
-          observations: [...run.observations, observation],
+          observations: [...run.observations.filter((item) => item.planId !== plan.planId), observation],
           artifacts: [...run.artifacts, ...artifacts.filter((artifact) => (
             !run.artifacts.some((existing) => existing.artifactId === artifact.artifactId)
           ))],
@@ -899,11 +945,36 @@ export function createMorpheusObjectiveOrchestrator(options: {
       }
       finishActive(objectiveRunId);
     } finally {
+      clearTimeout(deadline);
+      releaseSlot?.();
+      if (active.get(objectiveRunId) === owner && owner.controller.signal.aborted && isCurrent(objectiveRunId, generation)) {
+        const run = options.store.get(objectiveRunId);
+        if (run && !isObjectiveTerminalState(run.state) && !disposed) await transition(objectiveRunId, 'cancelled');
+        finishActive(objectiveRunId);
+      }
       for (const [planId, planOwner] of planOwners) {
         if (planOwner.objectiveRunId === objectiveRunId && planOwner.generation === generation) planOwners.delete(planId);
       }
     }
   };
+
+  const launchObjective = (id: string, owner: ActiveObjective, agent: MorpheusAgentProfile): Promise<void> => (
+    processObjective(id, owner.generation, agent).catch(() => {
+      // Even error-state persistence can fail (disk full/read-only profile).
+      // Stop work, retain the last durable checkpoint and avoid an unhandled
+      // promise. This is a degraded display, never a fabricated success record.
+      finishActive(id);
+      const run = options.store.get(id);
+      if (!run || disposed) return;
+      const timestamp = now().toISOString();
+      try {
+        options.emit({ v: MORPHEUS_OBJECTIVE_VERSION, seq: ++seq, ts: timestamp,
+          objectiveRunId: id, state: 'error', run: { ...run, state: 'error', updatedAt: timestamp,
+            error: { code: 'task-storage-unavailable', message: 'Task storage is unavailable. Work stopped; check disk access before restarting Morpheus.' } },
+        });
+      } catch { /* A disconnected renderer cannot restore execution authority. */ }
+    })
+  );
 
   const submitInternal = async (payload: ObjectiveSubmission): Promise<SubmitMorpheusObjectiveResult> => {
     if (disposed) return { objectiveRunId: '', accepted: false, message: 'Morpheus is shutting down.' };
@@ -914,12 +985,11 @@ export function createMorpheusObjectiveOrchestrator(options: {
         message: 'Morpheus is paused. Resume new work from the Command Center, Settings, or tray.',
       };
     }
-    const snapshot = options.store.snapshot();
-    if (snapshot.activeObjectiveRunId) {
+    if (active.size >= 32) {
       return {
-        objectiveRunId: snapshot.activeObjectiveRunId,
+        objectiveRunId: '',
         accepted: false,
-        message: 'Another objective is already active. Stop or finish it before starting a new one.',
+        message: 'The task queue is full. Finish or cancel a task before adding more work.',
       };
     }
     const objective = payload.objective.trim();
@@ -967,6 +1037,10 @@ export function createMorpheusObjectiveOrchestrator(options: {
       timings: [],
       artifacts: [],
     };
+    options.checkpoints?.begin(objectiveRunId, options.workspaces.resolveRoot(workspaceId));
+    if (payload.preparedPlan) options.checkpoints?.setPlan(objectiveRunId, {
+      ...payload.preparedPlan, origin: run.origin, workspaceId,
+    }, 1);
     options.store.put(run);
     const owner: ActiveObjective = {
       generation: 1,
@@ -975,11 +1049,49 @@ export function createMorpheusObjectiveOrchestrator(options: {
     };
     active.set(objectiveRunId, owner);
     await transition(objectiveRunId, 'understanding');
-    void processObjective(objectiveRunId, owner.generation, agent);
+    owner.completion = launchObjective(objectiveRunId, owner, agent);
     return { objectiveRunId, missionId, accepted: true };
   };
 
   return {
+    async recover() {
+      if (disposed || recovering || options.isRuntimePaused?.() || !options.checkpoints) return;
+      recovering = true;
+      try {
+      const snapshot = options.store.snapshot();
+      for (const id of [...snapshot.runOrder].reverse()) {
+        const run = snapshot.runsById[id];
+        if (isObjectiveTerminalState(run.state) || active.has(id)) continue;
+        const checkpoint = options.checkpoints.get(id);
+        const agent = options.agents.get(run.agentProfileId ?? 'general');
+        try {
+          if (!checkpoint || !agent?.enabled) throw new Error('The saved task or Agent Profile is unavailable.');
+          options.checkpoints.claim(id);
+          const root = options.workspaces.resolveRoot(run.workspaceId ?? MORPHEUS_DEFAULT_WORKSPACE_ID);
+          const completedSteps = await reconcileTaskCheckpoint(checkpoint, root);
+          const owner: ActiveObjective = {
+            generation: 1, controller: new AbortController(),
+            preparedPlan: checkpoint.plan,
+            recoveredSteps: completedSteps,
+            recoveredIteration: checkpoint.iteration || 1,
+          };
+          active.set(id, owner);
+          await transition(id, 'understanding', {
+            completedAt: undefined, error: undefined,
+            recovery: { status: 'resuming', attempt: checkpoint.attempts + 1 },
+          });
+          owner.completion = launchObjective(id, owner, agent);
+        } catch (error) {
+          await transition(id, 'needs-clarification', {
+            clarification: error instanceof Error ? error.message : 'This task needs review before it can continue.',
+            recovery: { status: 'needs-review', attempt: (checkpoint?.attempts ?? 0) + 1 },
+            error: { code: 'recovery-needs-review', message: 'No uncertain action was repeated.' },
+          });
+          finishActive(id);
+        }
+      }
+      } finally { recovering = false; }
+    },
     submit(payload) {
       return submitInternal({
         objective: payload.objective,
@@ -1032,8 +1144,10 @@ export function createMorpheusObjectiveOrchestrator(options: {
       const run = options.store.get(payload.objectiveRunId);
       const owner = active.get(payload.objectiveRunId);
       if (!run || !owner || isObjectiveTerminalState(run.state)) return { accepted: false };
+      owner.generation += 1;
       owner.controller.abort(new DOMException('Objective corrected', 'AbortError'));
       if (owner.currentPlanId) await options.runtime.cancelPlan({ planId: owner.currentPlanId });
+      await owner.completion;
       options.store.setActivePlan(payload.objectiveRunId, null);
       const correction = payload.correction.trim();
       const timestamp = now().toISOString();
@@ -1050,7 +1164,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
         controller: new AbortController(),
       };
       active.set(payload.objectiveRunId, nextOwner);
-      void processObjective(payload.objectiveRunId, nextOwner.generation, agent);
+      nextOwner.completion = launchObjective(payload.objectiveRunId, nextOwner, agent);
       return { accepted: true };
     },
 
@@ -1058,11 +1172,14 @@ export function createMorpheusObjectiveOrchestrator(options: {
       const run = options.store.get(payload.objectiveRunId);
       const owner = active.get(payload.objectiveRunId);
       if (!run || !owner || isObjectiveTerminalState(run.state)) return { accepted: false };
+      owner.generation += 1;
       owner.controller.abort(new DOMException('Objective cancelled', 'AbortError'));
       if (owner.currentPlanId) await options.runtime.cancelPlan({ planId: owner.currentPlanId });
       options.store.setActivePlan(payload.objectiveRunId, null);
       await transition(payload.objectiveRunId, 'cancelled');
-      finishActive(payload.objectiveRunId);
+      // Native work may be non-interruptible. Its resource lease and task slot
+      // remain held until the operation settles, even though Stop is visible now.
+      void owner.completion?.finally(() => finishActive(payload.objectiveRunId));
       return { accepted: true };
     },
 
@@ -1083,6 +1200,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
 
     dispose() {
       disposed = true;
+      taskSlots.dispose();
       for (const owner of active.values()) owner.controller.abort(new DOMException('Morpheus shutting down', 'AbortError'));
       active.clear();
       planOwners.clear();

@@ -10,7 +10,7 @@ import { useEffect, useRef } from 'react';
 
 const GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎ0123456789';
 const FONT_SIZE = 15;
-const TARGET_FPS = 30;
+const TARGET_FPS = 24;
 const FRAME_MS = 1000 / TARGET_FPS;
 
 function prefersReducedMotion(): boolean {
@@ -25,31 +25,35 @@ export function MatrixRain() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
+    const viewport = canvas.parentElement;
+    if (!viewport) return undefined;
     const context = canvas.getContext('2d');
     if (!context) return undefined;
 
     let frameId = 0;
     let lastFrame = 0;
     let columns: number[] = [];
+    let width = 0;
+    let height = 0;
 
     const resize = () => {
-      const { innerWidth, innerHeight } = window;
+      width = viewport.clientWidth;
+      height = viewport.clientHeight;
       const ratio = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.floor(innerWidth * ratio);
-      canvas.height = Math.floor(innerHeight * ratio);
-      canvas.style.width = `${innerWidth}px`;
-      canvas.style.height = `${innerHeight}px`;
+      canvas.width = Math.floor(width * ratio);
+      canvas.height = Math.floor(height * ratio);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      columns = new Array(Math.ceil(innerWidth / FONT_SIZE))
+      columns = new Array(Math.ceil(width / FONT_SIZE))
         .fill(0)
-        .map(() => Math.random() * innerHeight / FONT_SIZE);
+        .map(() => Math.random() * height / FONT_SIZE);
     };
 
     const drawFrame = () => {
-      const { innerWidth, innerHeight } = window;
       // Low-alpha wash produces the trailing tail without keeping history.
       context.fillStyle = 'rgba(0, 0, 0, 0.08)';
-      context.fillRect(0, 0, innerWidth, innerHeight);
+      context.fillRect(0, 0, width, height);
       context.font = `${FONT_SIZE}px ui-monospace, SFMono-Regular, Menlo, monospace`;
 
       for (let index = 0; index < columns.length; index += 1) {
@@ -62,34 +66,52 @@ export function MatrixRain() {
         context.fillStyle = 'rgba(52, 211, 153, 0.55)';
         context.fillText(glyph, x, y - FONT_SIZE);
 
-        if (y > innerHeight && Math.random() > 0.975) columns[index] = 0;
+        if (y > height && Math.random() > 0.975) columns[index] = 0;
         else columns[index] += 1;
       }
     };
 
     resize();
-    window.addEventListener('resize', resize);
+    // ResizeObserver is unavailable in some embedded and test renderers.
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(resize);
+    if (observer) observer.observe(viewport);
+    else window.addEventListener('resize', resize);
+    const stopObserving = () => {
+      observer?.disconnect();
+      if (!observer) window.removeEventListener('resize', resize);
+    };
 
     if (prefersReducedMotion()) {
       // One static frame, no loop.
       context.fillStyle = 'rgba(0, 0, 0, 1)';
-      context.fillRect(0, 0, window.innerWidth, window.innerHeight);
+      context.fillRect(0, 0, width, height);
       drawFrame();
-      return () => window.removeEventListener('resize', resize);
+      return stopObserving;
     }
 
     const loop = (timestamp: number) => {
+      if (document.hidden) { frameId = 0; return; }
       frameId = window.requestAnimationFrame(loop);
-      if (document.hidden) return;
       if (timestamp - lastFrame < FRAME_MS) return;
       lastFrame = timestamp;
       drawFrame();
     };
-    frameId = window.requestAnimationFrame(loop);
+    const onVisibility = () => {
+      if (document.hidden) {
+        window.cancelAnimationFrame(frameId);
+        frameId = 0;
+      } else if (!frameId) {
+        lastFrame = 0;
+        frameId = window.requestAnimationFrame(loop);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    onVisibility();
 
     return () => {
       window.cancelAnimationFrame(frameId);
-      window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', onVisibility);
+      stopObserving();
     };
   }, []);
 

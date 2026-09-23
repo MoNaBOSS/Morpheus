@@ -37,6 +37,9 @@ export function MorpheusArrival({ bootEnabled, onboardingEnabled }: MorpheusArri
   useEffect(() => {
     if (!bootEnabled || !onboardingEnabled || !bootDone || !returning || welcomeShown.current) return;
     welcomeShown.current = true;
+    const last = Number(window.localStorage.getItem('morpheus-last-welcome-at') ?? 0);
+    if (Number.isFinite(last) && Date.now() - last < 2 * 60 * 60_000) return;
+    window.localStorage.setItem('morpheus-last-welcome-at', String(Date.now()));
     openWelcome();
   }, [bootEnabled, onboardingEnabled, bootDone, returning, openWelcome]);
 

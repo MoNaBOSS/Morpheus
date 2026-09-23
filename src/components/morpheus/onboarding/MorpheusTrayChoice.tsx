@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { hostApi } from '@/lib/host-api';
 import { stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
 
-export function MorpheusTrayChoice({ onTransferred }: { onTransferred: () => void }) {
+export function MorpheusTrayChoice({ onTransferred, beforeTransfer }: { onTransferred: () => void; beforeTransfer?: () => Promise<boolean> }) {
   const { t } = useTranslation('dashboard');
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -15,6 +15,7 @@ export function MorpheusTrayChoice({ onTransferred }: { onTransferred: () => voi
     setFailed(false);
     stopMorpheusSpeech();
     try {
+      if (beforeTransfer && !(await beforeTransfer())) return;
       await hostApi.window.hideToTray();
       onTransferred();
     } catch {

@@ -78,15 +78,15 @@ describe('Quick Command objective control', () => {
   it('shows the real objective state and provides an explicit Main cancellation', async () => {
     render(<MemoryRouter><MorpheusQuickCommand /></MemoryRouter>);
     expect(screen.getByTestId('quick-command-objective-state')).toHaveTextContent('Prepare the workspace brief');
-    expect(screen.getByTestId('quick-command-close')).toBeDisabled();
-
-    fireEvent.keyDown(window, { key: 'Escape' });
-    expect(useMorpheusQuickCommandStore.getState().open).toBe(true);
+    expect(screen.getByTestId('quick-command-close')).toBeEnabled();
+    expect(screen.getByTestId('quick-command-input')).toBeEnabled();
 
     fireEvent.click(screen.getByTestId('quick-command-cancel-objective'));
     await waitFor(() => expect(mocks.cancelObjective).toHaveBeenCalledWith({
       objectiveRunId: 'objective-quick',
     }));
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(useMorpheusQuickCommandStore.getState().open).toBe(false);
   });
 
   it('allows Escape to close after the objective reaches a terminal state', () => {

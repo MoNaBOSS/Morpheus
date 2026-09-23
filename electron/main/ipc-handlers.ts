@@ -84,6 +84,8 @@ import type { MorpheusCompanionSurfaceStatus } from '@shared/morpheus/companion-
 import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
 
 type MorpheusCompanionSurfaceControls = {
+  wake?(): void;
+  presence?(presence: MorpheusVoicePresence): void;
   status(): MorpheusCompanionSurfaceStatus;
   dismiss(): MorpheusCompanionSurfaceStatus;
   expand(): MorpheusCompanionSurfaceStatus;
@@ -183,6 +185,7 @@ function registerTypedHostHandlers(
   // Morpheus native actions. Every phase transition is emitted on a single
   // channel; the window guard mirrors `sendMainWindowEvent` in main/index.ts so
   // a closed window cannot throw out of the runtime.
+  let presentedWake = 0;
   const morpheusService = createMorpheusService({
     userDataDir: app.getPath('userData'),
     appVersion: app.getVersion(),
@@ -200,8 +203,16 @@ function registerTypedHostHandlers(
     },
     emitVoicePresence: (presence) => {
       if (mainWindow.isDestroyed()) return;
+      companionSurface.presence?.(presence);
+      if (presence.ambientEnabled && presence.state === 'armed' && (presence.wakeSequence ?? 0) > presentedWake) {
+        presentedWake = presence.wakeSequence!;
+        companionSurface.wake?.();
+      }
       updateMorpheusVoiceBackground(mainWindow.webContents, presence);
       mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.voicePresence, presence);
+    },
+    emitSpeechChunk: (chunk) => {
+      if (!mainWindow.isDestroyed()) mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.speechChunk, chunk);
     },
   });
   const morpheusApi = createMorpheusApi({
@@ -290,8 +301,10 @@ function registerTypedHostHandlers(
   // app-startup schedule must never begin before the UI exists and then time
   // out invisibly.
   mainWindow.webContents.once('did-finish-load', () => {
-    morpheusService.scheduler.start();
-    morpheusService.proactive.start();
+    void morpheusService.objectives.recover().then(() => {
+      morpheusService.scheduler.start();
+      morpheusService.proactive.start();
+    }).catch((error) => logger.error('Morpheus task recovery failed; background schedulers remain stopped.', error));
   });
   app.once('before-quit', () => {
     morpheusService.scheduler.stop();
@@ -309,7 +322,11 @@ function registerTypedHostHandlers(
       await morpheusApi.setPermissionProfile({ profile });
     },
     runtimeControl: () => morpheusService.runtimeControl.snapshot(),
-    setRuntimePaused: (paused) => morpheusService.runtimeControl.setPaused(paused, 'tray'),
+    async setRuntimePaused(paused) {
+      const result = await morpheusService.runtimeControl.setPaused(paused, 'tray');
+      if (!paused) await morpheusService.objectives.recover();
+      return result;
+    },
     voicePresence: () => morpheusService.voice.presence(),
     async setAmbientVoiceEnabled(enabled) {
       await morpheusService.voice.updateSettings({ ambientEnabled: enabled });

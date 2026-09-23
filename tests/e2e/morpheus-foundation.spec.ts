@@ -20,6 +20,22 @@ async function navigate(page: Page, testId: string): Promise<void> {
   await page.getByTestId(testId).click();
 }
 
+async function latestObjective(page: Page): Promise<{
+  state: string;
+  agentProfileId?: string;
+  observations: { steps: { status: string }[] }[];
+}> {
+  return page.evaluate(async () => {
+    const response = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'morpheus', action: 'objectiveSnapshot' });
+    if (!response.ok) throw new Error('Objective snapshot unavailable');
+    const snapshot = response.data as {
+      runOrder: string[];
+      runsById: Record<string, { state: string; agentProfileId?: string; observations: { steps: { status: string }[] }[] }>;
+    };
+    return snapshot.runsById[snapshot.runOrder[0]];
+  });
+}
+
 test.describe('Morpheus 0.5 foundation', () => {
   test('keeps Command Center, builder, activity and OpenClaw chat as distinct reachable surfaces', async ({
     launchElectronApp,
@@ -52,29 +68,27 @@ test.describe('Morpheus 0.5 foundation', () => {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
 
-      await page.getByTestId('sidebar-quick-command').click();
+      await page.getByTestId('signal-nav-presence').click();
       const quickCommand = page.getByTestId('morpheus-quick-command');
       await expect(quickCommand).toBeVisible();
-      await expect(quickCommand.getByTestId('morpheus-objective-context')).toBeVisible();
-      await expect(quickCommand.getByTestId('morpheus-workspace-select')).toBeVisible();
-      await expect(quickCommand.getByTestId('morpheus-agent-profile-select')).toHaveValue('');
+      await expect(quickCommand.getByTestId('morpheus-fluid-orb')).toBeVisible();
+      await expect(quickCommand.getByTestId('morpheus-objective-context')).toHaveCount(0);
       await expect(page.getByTestId('quick-command-input')).toBeFocused();
       await page.getByTestId('quick-command-input').fill('Show system information');
       await page.getByTestId('quick-command-submit').click();
 
-      await expect(page.getByTestId('quick-command-status')).toContainText(/complete/i, {
+      await expect(page.getByTestId('quick-command-objective-state')).toContainText(/complete/i, {
         timeout: 20_000,
       });
       await expect(page.getByTestId('morpheus-plan-consent-dialog')).toHaveCount(0);
       await page.getByTestId('quick-command-close').click();
-      await expect(page.getByTestId('morpheus-run-card').first())
-        .toHaveAttribute('data-phase', 'succeeded');
+      await expect(page.getByTestId('workspace-result')).toBeVisible();
     } finally {
       await closeElectronApp(app);
     }
   });
 
-  test('routes one Chat composer through Ask, Auto, and Act without splitting the product core', async ({
+  test('routes the single Chat composer into Objective Core without mode controls', async ({
     launchElectronApp,
   }) => {
     const app = await launchElectronApp({ skipSetup: true });
@@ -87,17 +101,25 @@ test.describe('Morpheus 0.5 foundation', () => {
       await openCommandCenter(page);
       await page.getByTestId('sidebar-nav-chat').click();
       await expect(page.getByTestId('chat-page')).toBeVisible({ timeout: 20_000 });
+      await expect(page.getByTestId('morpheus-chat-presence')).toBeVisible();
+      await expect(page.getByTestId('morpheus-chat-presence')).toHaveAttribute('data-signal-state', 'ready');
       const input = page.getByTestId('chat-composer-input');
       await expect(input).toBeEnabled({ timeout: 30_000 });
       await input.fill('Show system information');
       await expect(page.getByTestId('chat-composer-send')).toBeEnabled();
-      await expect(page.getByTestId('morpheus-mode-auto')).toHaveAttribute('aria-checked', 'true');
+      await expect(page.getByTestId('morpheus-mode-auto')).toHaveCount(0);
       await page.getByTestId('chat-composer-send').click();
       await expect(input).toHaveValue('');
 
+      await expect(page.getByTestId('morpheus-chat-presence')).toHaveAttribute('data-source', 'objective');
+      await expect(page.getByTestId('morpheus-chat-presence')).toHaveAttribute('data-signal-state', 'complete', {
+        timeout: 20_000,
+      });
+      await expect(page.getByTestId('morpheus-chat-presence-detail')).toContainText(/system/i);
+
       await page.getByTestId('sidebar-nav-command-center').click();
-      await expect(page.getByTestId('plan-status')).toContainText(/completed/i, { timeout: 20_000 });
-      await expect(page.getByTestId('morpheus-run-card').first()).toHaveAttribute('data-phase', 'succeeded');
+      await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i, { timeout: 20_000 });
+      await expect(page.getByTestId('workspace-result')).toBeVisible();
     } finally {
       await closeElectronApp(app);
     }
@@ -116,11 +138,11 @@ test.describe('Morpheus 0.5 foundation', () => {
       await expect(workflowRun).toBeEnabled({ timeout: 20_000 });
 
       await page.getByTestId('sidebar-nav-command-center').click();
-      await expect(page.getByTestId('plan-status')).toContainText(/completed/i);
-      const workflowSteps = page.getByTestId('plan-timeline').locator('li');
-      await expect(workflowSteps).toHaveCount(2);
-      await expect(workflowSteps.nth(0)).toHaveAttribute('data-status', 'succeeded');
-      await expect(workflowSteps.nth(1)).toHaveAttribute('data-status', 'succeeded');
+      await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i);
+      const workflowRunResult = await latestObjective(page);
+      expect(workflowRunResult.state).toBe('complete');
+      expect(workflowRunResult.observations.flatMap((observation) => observation.steps.map((step) => step.status)))
+        .toEqual(['succeeded', 'succeeded']);
 
       await navigate(page, 'sidebar-nav-schedules');
       await page.getByTestId('schedule-name').fill('Foundation system brief');
@@ -174,8 +196,8 @@ test.describe('Morpheus 0.5 foundation', () => {
       await expect(workflowCard).toBeVisible();
       await workflowCard.getByRole('button', { name: /run workflow/i }).click();
       await page.getByTestId('sidebar-nav-command-center').click();
-      await expect(page.getByTestId('plan-status')).toContainText(/completed/i, { timeout: 20_000 });
-      await expect(page.getByTestId('morpheus-workspace-control')).toBeVisible();
+      await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i, { timeout: 20_000 });
+      expect((await latestObjective(page)).agentProfileId).toBeTruthy();
 
       await navigate(page, 'sidebar-nav-schedules');
       await page.getByTestId('schedule-name').fill('Verification every hour');
@@ -204,8 +226,7 @@ test.describe('Morpheus 0.5 foundation', () => {
       const page = await getStableWindow(first);
       await openCommandCenter(page);
       await runCommand(page, 'Show system information');
-      await expect(page.getByTestId('morpheus-run-card').first())
-        .toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
+      await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i, { timeout: 20_000 });
       await expect(page.getByTestId('morpheus-artifact').first()).toHaveAttribute('data-kind', 'report');
     } finally {
       await closeElectronApp(first);

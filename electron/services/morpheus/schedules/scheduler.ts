@@ -95,8 +95,10 @@ export function createMorpheusScheduler(options: {
 
   const persistOutcome = (schedule: MorpheusSchedule, result: MorpheusScheduleRunResult): void => {
     const stamp = now();
+    const current = options.store.get(schedule.scheduleId);
+    if (!current) return;
     options.store.save({
-      ...schedule,
+      ...current,
       updatedAt: stamp.toISOString(),
       lastRunAt: stamp.toISOString(),
       lastStatus: result.status,
@@ -104,7 +106,7 @@ export function createMorpheusScheduler(options: {
       lastObjectiveRunId: result.objectiveRunId,
       lastPlanId: result.planId,
       nextRunAt: nextRunFor(schedule.trigger, stamp, true),
-      enabled: schedule.trigger.type === 'once' ? false : schedule.enabled,
+      enabled: current.trigger.type === 'once' ? false : current.enabled,
     });
   };
 
@@ -115,9 +117,30 @@ export function createMorpheusScheduler(options: {
     if (options.isRuntimePaused?.()) return { scheduleId, status: 'rejected', error: 'Morpheus is paused' };
     if (running.has(scheduleId)) return { scheduleId, status: 'rejected', error: 'Schedule is already running' };
     running.add(scheduleId);
-    await options.recordActivity?.('run-started', scheduleId, { workflowId: schedule.workflowId });
-    options.store.save({ ...schedule, lastStatus: 'running', updatedAt: now().toISOString() });
     try {
+      await options.recordActivity?.('run-started', scheduleId, { workflowId: schedule.workflowId });
+      options.store.save({ ...schedule, lastStatus: 'running', updatedAt: now().toISOString(),
+        ...(schedule.lastStatus !== 'running' ? { lastObjectiveRunId: undefined, lastPlanId: undefined } : {}),
+      });
+      if (schedule.lastStatus === 'running') {
+        // Link the interrupted occurrence to its existing objective even if the
+        // process died between objective admission and persisting that id here.
+        const snapshot = options.objectives.snapshot();
+        const previous = snapshot.runOrder.map((id) => snapshot.runsById[id]).find((entry) => (
+          entry.origin.type === 'schedule' && entry.origin.scheduleId === scheduleId
+          && (entry.objectiveRunId === schedule.lastObjectiveRunId || entry.createdAt >= schedule.updatedAt)
+        ));
+        if (!previous) throw new Error('The previous scheduled run needs review; it was not repeated.');
+        await options.objectives.recover?.();
+        const objective = await options.objectives.waitForTerminal(previous.objectiveRunId);
+        const result: MorpheusScheduleRunResult = {
+          scheduleId, objectiveRunId: objective.objectiveRunId, planId: objective.planIds.at(-1),
+          status: objective.state === 'complete' ? 'completed' : 'failed',
+          ...(objective.state !== 'complete' ? { error: objective.clarification ?? objective.error?.message ?? 'Interrupted task needs review.' } : {}),
+        };
+        persistOutcome(schedule, result);
+        return result;
+      }
       const workflow = options.workflows.get(schedule.workflowId);
       if (!workflow) throw new Error('Scheduled workflow is unavailable');
       const trigger = schedule.trigger.type === 'app-startup' ? 'app-startup' as const : 'schedule' as const;
@@ -138,8 +161,8 @@ export function createMorpheusScheduler(options: {
         preparedPlan: plan,
       });
       while (!submitted.accepted && submitted.objectiveRunId) {
-        // Scheduled work queues behind the one active sequential objective. It
-        // does not race another plan or get silently discarded as "busy".
+        // Preserve admission backpressure for older orchestrator adapters.
+        // Current Objective Core accepts independent work and coordinates leases.
         await options.objectives.waitForIdle();
         submitted = await options.objectives.submitInternal({
           objective: schedule.name,
@@ -150,6 +173,9 @@ export function createMorpheusScheduler(options: {
         });
       }
       if (!submitted.accepted) throw new Error(submitted.message ?? 'Scheduled objective was rejected');
+      options.store.save({
+        ...options.store.get(scheduleId)!, lastObjectiveRunId: submitted.objectiveRunId, lastPlanId: plan.planId,
+      });
       const objective = await options.objectives.waitForTerminal(submitted.objectiveRunId);
       const observationStatus = objective.observations.at(-1)?.status;
       const status = objective.state === 'complete'

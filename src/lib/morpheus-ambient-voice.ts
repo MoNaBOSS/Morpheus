@@ -3,35 +3,16 @@ import {
   MORPHEUS_VOICE_MIME_TYPES,
   type MorpheusVoiceMimeType,
 } from '@shared/morpheus/voice-types';
-
-type Token = { value: string; start: number; end: number };
-
-function tokens(text: string): Token[] {
-  const output: Token[] = [];
-  const normalized = text.normalize('NFKC');
-  for (const match of normalized.matchAll(/[\p{L}\p{N}]+/gu)) {
-    const start = match.index ?? 0;
-    output.push({ value: match[0].toLocaleLowerCase(), start, end: start + match[0].length });
-  }
-  return output;
-}
+import { createMorpheusAudioLevelSource } from './morpheus-audio-level';
+import { matchMorpheusAddress } from './morpheus-voice-dialogue';
 
 /**
  * Returns only the words after an exact normalized wake-phrase token sequence.
  * A transcript without the phrase—or with no objective after it—creates no work.
  */
 export function extractMorpheusWakeObjective(transcript: string, wakePhrase: string): string | null {
-  const heard = tokens(transcript);
-  const wake = tokens(wakePhrase);
-  if (wake.length === 0 || heard.length < wake.length) return null;
-  for (let start = 0; start <= heard.length - wake.length; start += 1) {
-    if (!wake.every((token, offset) => token.value === heard[start + offset].value)) continue;
-    const objective = transcript.slice(heard[start + wake.length - 1].end)
-      .replace(/^[\s,.:;!?\-–—]+/u, '')
-      .trim();
-    return objective || null;
-  }
-  return null;
+  const address = matchMorpheusAddress(transcript, wakePhrase);
+  return address.kind === 'command' ? address.text : null;
 }
 
 export async function morpheusBlobToBase64(blob: Blob): Promise<string> {
@@ -47,6 +28,8 @@ export async function morpheusBlobToBase64(blob: Blob): Promise<string> {
 export type MorpheusAmbientVoiceCaptureOptions = {
   silenceMs: number;
   maxUtteranceMs: number;
+  /** Local wake mode must not record background speech before an addressed window. */
+  shouldCapture?(): boolean;
   /** Main must audit and publish the visible capture state before bytes are recorded. */
   onCaptureStarted(): Promise<void>;
   /** Balances every audited start, including discarded and failed captures. */
@@ -58,6 +41,7 @@ export type MorpheusAmbientVoiceCaptureOptions = {
 
 /** Chromium-owned microphone and bounded voice-activity capture. */
 export class MorpheusAmbientVoiceCapture {
+  private readonly level = createMorpheusAudioLevelSource();
   private stream: MediaStream | null = null;
   private context: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
@@ -111,6 +95,7 @@ export class MorpheusAmbientVoiceCapture {
 
   stop(): void {
     this.stopped = true;
+    this.level.dispose();
     if (this.monitorTimer !== null) window.clearTimeout(this.monitorTimer);
     this.monitorTimer = null;
     if (this.recorder?.state === 'recording') this.finishUtterance(true);
@@ -140,9 +125,10 @@ export class MorpheusAmbientVoiceCapture {
         energy += amplitude * amplitude;
       }
       const rms = Math.sqrt(energy / sample.length);
+      this.level.update(this.recorder?.state === 'recording' && !this.suppressed ? rms : 0);
       const threshold = Math.max(0.025, this.noiseFloor * 3.2);
       const now = performance.now();
-      if (!this.recorder && !this.processing && !this.suppressed) {
+      if (!this.recorder && !this.processing && !this.suppressed && (this.options.shouldCapture?.() ?? true)) {
         if (rms > threshold) this.voiceFrames += 1;
         else {
           this.voiceFrames = 0;
@@ -156,7 +142,7 @@ export class MorpheusAmbientVoiceCapture {
       } else if (this.recorder?.state === 'recording') {
         if (rms > threshold) this.lastVoiceAt = now;
         if (now - this.lastVoiceAt >= this.options.silenceMs) this.finishUtterance(false);
-      }
+      } else this.voiceFrames = 0;
       // Audio activity is not visual animation. rAF stops when the window hides.
       this.monitorTimer = window.setTimeout(frame, 50);
     };

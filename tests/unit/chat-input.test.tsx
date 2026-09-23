@@ -180,6 +180,7 @@ function renderChatInput(onSend = vi.fn()) {
 }
 
 const originalRunObjective = useMorpheusCommandStore.getState().runObjective;
+const originalCancelObjective = useMorpheusCommandStore.getState().cancelObjective;
 
 function configureAgentAndModelPickers() {
   const now = '2025-01-01T00:00:00.000Z';
@@ -272,6 +273,7 @@ describe('ChatInput agent targeting', () => {
     artifactPanelMocks.openPreview.mockReset();
     useMorpheusCommandStore.setState({
       runObjective: originalRunObjective,
+      cancelObjective: originalCancelObjective,
       interpreting: false,
       executing: false,
     });
@@ -296,18 +298,37 @@ describe('ChatInput agent targeting', () => {
     expect(toastSuccessMock).toHaveBeenCalledWith('Objective sent to Morpheus');
   });
 
-  it('uses Ask mode to send the same composer text through OpenClaw Chat', async () => {
+  it('routes conversational text through OpenClaw Chat without a mode switch', async () => {
     const runObjective = vi.fn(async () => true);
     useMorpheusCommandStore.setState({ runObjective, interpreting: false, executing: false });
     const onSend = vi.fn();
     renderChatInput(onSend);
 
-    fireEvent.click(screen.getByTestId('morpheus-mode-ask'));
+    routeInteractionMock.mockImplementationOnce(async ({ text }: { text: string }) => ({
+      route: 'conversation', reason: 'conversational-intent', confidence: 'high', text,
+    }));
     fireEvent.change(screen.getByTestId('chat-composer-input'), { target: { value: 'Explain the plan' } });
     fireEvent.click(screen.getByTestId('chat-composer-send'));
 
     await waitFor(() => expect(onSend).toHaveBeenCalledWith('Explain the plan', undefined, null));
     expect(runObjective).not.toHaveBeenCalled();
+  });
+
+  it('turns the shared submit control into a real Objective Core stop control', async () => {
+    const cancelObjective = vi.fn(async () => undefined);
+    useMorpheusCommandStore.setState({
+      cancelObjective,
+      interpreting: false,
+      executing: true,
+    });
+    renderChatInput();
+
+    const stop = screen.getByTestId('chat-composer-send');
+    expect(stop).toHaveAttribute('title', 'Stop');
+    expect(stop).toBeEnabled();
+    fireEvent.click(stop);
+
+    await waitFor(() => expect(cancelObjective).toHaveBeenCalledTimes(1));
   });
 
   it('renders a dot pulse and visible thinking label while a message is sending', () => {
@@ -1055,6 +1076,9 @@ describe('ChatInput agent targeting', () => {
     expect(screen.getByTestId('chat-composer-skill')).not.toBeDisabled();
     expect(screen.getByTestId('chat-model-picker-button')).not.toBeDisabled();
 
+    routeInteractionMock.mockImplementationOnce(async ({ text }: { text: string }) => ({
+      route: 'conversation', reason: 'conversational-intent', confidence: 'high', text,
+    }));
     fireEvent.change(input, { target: { value: 'Send through ACP' } });
     fireEvent.click(screen.getByTitle('Send'));
 

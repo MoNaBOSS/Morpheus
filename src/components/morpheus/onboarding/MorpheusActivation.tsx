@@ -1,380 +1,187 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, BellRing, Check, Cpu, Mic, Power, ShieldCheck, UserRound, Volume2 } from 'lucide-react';
+import { ArrowRight, Mic, Volume2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
-import { cn } from '@/lib/utils';
-import { hostApi } from '@/lib/host-api';
-import { Switch } from '@/components/ui/switch';
-import { useGatewayStore } from '@/stores/gateway';
-import { useProviderStore } from '@/stores/providers';
+import { MatrixRain } from '@/components/morpheus/boot/MatrixRain';
+import { MorpheusFluidOrb } from '@/components/morpheus/MorpheusFluidOrb';
+import { MorpheusTrayChoice } from './MorpheusTrayChoice';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
-import {
-  DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES,
-  type MorpheusCompanionPersonality,
-  type MorpheusOnboardingPreferences,
-} from '@shared/morpheus/onboarding-types';
-import type { MorpheusInteractionMode } from '@shared/morpheus/operator-types';
-import type { PermissionProfile } from '@shared/morpheus/permission-types';
-import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
-import { MorpheusSignal } from '@/components/morpheus/signal/MorpheusSignal';
-import { resolveMorpheusSignalState } from '@/components/morpheus/signal/signal-state';
-import { MorpheusInteractionModeControl } from '@/components/morpheus/operator/MorpheusInteractionModeControl';
 import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
-import { hasConfiguredCredentials } from '@/lib/provider-accounts';
-import { isMorpheusPlannerAccountCompatible } from '@shared/morpheus/provider-readiness';
+import { useSettingsStore } from '@/stores/settings';
+import { speechVoicesForModel } from '@shared/morpheus/provider-policy';
+import { DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES, type MorpheusHumorStyle, type MorpheusProactivityLevel, type MorpheusOnboardingPreferences } from '@shared/morpheus/onboarding-types';
+import type { MorpheusSpeechVoice } from '@shared/morpheus/voice-types';
 import { playMorpheusSpeech, stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
-import { MorpheusTrayChoice } from './MorpheusTrayChoice';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
-type ActivationStage = 'loading' | 'intro' | 'calibrating' | 'preferences' | 'proof' | 'ready';
-type SignalLock = { id: 'core' | 'runtime' | 'provider' | 'voice'; available: boolean; detail: string };
-const PERSONALITIES: readonly MorpheusCompanionPersonality[] = ['adaptive', 'witty', 'warm', 'concise'];
-const PERMISSION_PROFILES: readonly PermissionProfile[] = ['strict', 'balanced', 'autonomous'];
-const PROOF_OBJECTIVE = 'Show system information';
+type Stage = 'loading' | 'name' | 'welcome' | 'personalize' | 'ready';
+const SILENCE_MS = 8_000;
 
+/** The approved single-scene prototype, connected to the real local profile. */
 export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const { t } = useTranslation('dashboard');
   const navigate = useNavigate();
-  const reducedMotion = useReducedMotion();
-  const onboarding = useMorpheusCompanionStore((state) => state.onboarding);
-  const loadOnboarding = useMorpheusCompanionStore((state) => state.loadOnboarding);
-  const completeOnboarding = useMorpheusCompanionStore((state) => state.completeOnboarding);
-  const setOperatorMode = useMorpheusOperatorStore((state) => state.setMode);
-  const gatewayStatus = useGatewayStore((state) => state.status);
-  const accounts = useProviderStore((state) => state.accounts);
-  const providerStatuses = useProviderStore((state) => state.statuses);
-  const defaultAccountId = useProviderStore((state) => state.defaultAccountId);
-  const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
-  const runObjective = useMorpheusCommandStore((state) => state.runObjective);
-  const [stage, setStage] = useState<ActivationStage>('loading');
-  const [dismissed, setDismissed] = useState(false);
-  const [signals, setSignals] = useState<SignalLock[]>([]);
-  const [speakResponses, setSpeakResponses] = useState(true);
-  const [preferredName, setPreferredName] = useState('');
-  const [personality, setPersonality] = useState<MorpheusCompanionPersonality>('witty');
-  const [interactionMode, setInteractionMode] = useState<MorpheusInteractionMode>('auto');
-  const [launchAtStartup, setLaunchAtStartup] = useState(false);
+  const onboarding = useMorpheusCompanionStore((s) => s.onboarding);
+  const loadOnboarding = useMorpheusCompanionStore((s) => s.loadOnboarding);
+  const completeOnboarding = useMorpheusCompanionStore((s) => s.completeOnboarding);
+  const setObjective = useMorpheusCommandStore((s) => s.setInput);
+  const runObjective = useMorpheusCommandStore((s) => s.runObjective);
+  const route = useMorpheusOperatorStore((s) => s.route);
+  const queueConversation = useMorpheusOperatorStore((s) => s.queueConversation);
+  const voice = useMorpheusVoiceStore((s) => s.status);
+  const voicePhase = useMorpheusVoiceStore((s) => s.phase);
+  const voiceSource = useMorpheusVoiceStore((s) => s.source);
+  const voiceTranscript = useMorpheusVoiceStore((s) => s.transcript);
+  const startListening = useMorpheusVoiceStore((s) => s.startListening);
+  const stopListening = useMorpheusVoiceStore((s) => s.stopListening);
+  const updateVoice = useMorpheusVoiceStore((s) => s.updateSettings);
+  const telemetryEnabled = useSettingsStore((s) => s.telemetryEnabled);
+  const setTelemetryEnabled = useSettingsStore((s) => s.setTelemetryEnabled);
+  const [stage, setStage] = useState<Stage>('loading');
+  const [name, setName] = useState('');
+  const [request, setRequest] = useState('');
+  const [interests, setInterests] = useState('');
+  const [humorStyle, setHumorStyle] = useState<MorpheusHumorStyle>('cheeky');
+  const [proactivityLevel, setProactivityLevel] = useState<MorpheusProactivityLevel>('balanced');
   const [ambientVoiceEnabled, setAmbientVoiceEnabled] = useState(false);
-  const [wakePhrase, setWakePhrase] = useState('Morpheus');
-  const [permissionProfile, setPermissionProfile] = useState<PermissionProfile>('autonomous');
-  const [proactiveCheckIns, setProactiveCheckIns] = useState(true);
-  const [voiceAvailable, setVoiceAvailable] = useState(false);
-  const voiceStatus = useMorpheusVoiceStore((state) => state.status);
+  const [speakResponses, setSpeakResponses] = useState(true);
+  const [suggestions, setSuggestions] = useState(false);
   const [speaking, setSpeaking] = useState(false);
-  const [proofStarted, setProofStarted] = useState(false);
-  const [exiting, setExiting] = useState(false);
-  const voicePhase = useMorpheusVoiceStore((state) => state.phase);
-  const voiceSource = useMorpheusVoiceStore((state) => state.source);
-  const voiceTranscript = useMorpheusVoiceStore((state) => state.transcript);
-  const voiceError = useMorpheusVoiceStore((state) => state.error);
-  const startVoiceCalibration = useMorpheusVoiceStore((state) => state.startListening);
-  const stopVoiceCalibration = useMorpheusVoiceStore((state) => state.stopListening);
-  const dismissVoiceCalibration = useMorpheusVoiceStore((state) => state.dismiss);
-  const introductionSpoken = useRef(false);
-  const exitStarted = useRef(false);
-  const exitTimer = useRef<number | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const silenceTimer = useRef<number | null>(null);
+  const speechGeneration = useRef(0);
+  const wasListening = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
-    let cancelled = false;
+    let active = true;
     void loadOnboarding().then(() => {
-      if (cancelled) return;
+      if (!active) return;
       const status = useMorpheusCompanionStore.getState().onboarding;
       if (!status || status.completed) return;
-      setSpeakResponses(status.preferences.speakResponses);
-      setPreferredName(status.preferences.preferredName);
-      setPersonality(status.preferences.personality);
-      setInteractionMode(status.preferences.interactionMode);
-      setLaunchAtStartup(status.preferences.launchAtStartup);
+      setName(status.preferences.preferredName);
+      setInterests(status.preferences.interests ?? '');
+      setHumorStyle(status.preferences.humorStyle ?? 'cheeky');
+      setProactivityLevel(status.preferences.proactivityLevel ?? 'balanced');
       setAmbientVoiceEnabled(status.preferences.ambientVoiceEnabled);
-      setWakePhrase(status.preferences.wakePhrase);
-      setPermissionProfile(status.preferences.permissionProfile);
-      setProactiveCheckIns(status.preferences.proactiveCheckIns);
-      setStage('intro');
+      setSpeakResponses(status.preferences.speakResponses);
+      setStage('name');
     });
-    return () => { cancelled = true; };
+    return () => { active = false; };
   }, [enabled, loadOnboarding]);
 
-  const provider = useMemo(
-    () => accounts.find((account) => account.id === defaultAccountId && account.enabled),
-    [accounts, defaultAccountId],
-  );
-  const providerStatus = useMemo(
-    () => providerStatuses.find((status) => status.id === provider?.id),
-    [provider?.id, providerStatuses],
-  );
-  const providerReady = Boolean(
-    provider
-      && isMorpheusPlannerAccountCompatible(provider)
-      && hasConfiguredCredentials(provider, providerStatus),
-  );
-  const visibleStage: ActivationStage = stage === 'proof' && proofStarted && objectiveRun && isObjectiveTerminalState(objectiveRun.state) ? 'ready' : stage;
-  const signalState = speaking ? 'speaking' : resolveMorpheusSignalState({ voicePhase: voiceSource === 'onboarding' ? voicePhase : undefined, objectiveState: visibleStage === 'proof' ? objectiveRun?.state : visibleStage === 'calibrating' && !signals.length ? 'understanding' : undefined });
-
-  const speak = useCallback((text: string): void => {
-    if (!speakResponses) return;
-    void playMorpheusSpeech(text, { neuralAvailable: Boolean(voiceStatus?.neuralSpeechAvailable), onSpeakingChange: setSpeaking }).catch(() => undefined);
-  }, [speakResponses, voiceStatus?.neuralSpeechAvailable]);
-
   useEffect(() => {
-    if (visibleStage !== 'intro' || introductionSpoken.current) return;
-    introductionSpoken.current = true;
-    speak(t('morpheus.activation.firstGreeting'));
-  }, [speak, t, visibleStage]);
+    if (voiceSource !== 'onboarding' || voicePhase !== 'ready' || !voiceTranscript?.trim()) return;
+    if (stage === 'name') setName(voiceTranscript.trim().replace(/^(?:my name is|call me|i am|i'm)\s+/i, '').replace(/[.!?]+$/, '').slice(0, 80));
+    if (stage === 'welcome') setRequest(voiceTranscript.trim());
+  }, [stage, voicePhase, voiceSource, voiceTranscript]);
 
-  const finishArrival = useCallback((destination?: string): void => {
-    if (exitStarted.current) return;
-    exitStarted.current = true;
-    setExiting(true);
-    stopMorpheusSpeech();
-    exitTimer.current = window.setTimeout(() => {
-      setDismissed(true);
-      if (destination) navigate(destination);
-    }, reducedMotion ? 0 : 420);
-  }, [navigate, reducedMotion]);
-
-  useEffect(() => () => {
-    if (exitTimer.current !== null) window.clearTimeout(exitTimer.current);
-    stopMorpheusSpeech();
-    if (useMorpheusVoiceStore.getState().source === 'onboarding') {
-      useMorpheusVoiceStore.getState().cancel();
-    }
+  const cancelSilence = useCallback(() => {
+    if (silenceTimer.current !== null) window.clearTimeout(silenceTimer.current);
+    silenceTimer.current = null;
   }, []);
-
-  if (!enabled || dismissed || (onboarding?.completed && visibleStage !== 'proof' && visibleStage !== 'ready') || visibleStage === 'loading') return null;
-
-  const calibrate = async (): Promise<void> => {
-    setStage('calibrating');
-    const name = preferredName.trim();
-    speak(name
-      ? t('morpheus.activation.personalGreeting', { name })
-      : t('morpheus.signalOs.activation.spokenIntroduction'));
-    const [capabilities, voice] = await Promise.all([hostApi.morpheus.describeActions().catch(() => null), hostApi.morpheus.voiceStatus().catch(() => null)]);
-    const runtimeReady = gatewayStatus.state === 'running' && gatewayStatus.gatewayReady !== false;
-    setVoiceAvailable(Boolean(voice?.transcriptionAvailable));
-    setSignals([
-      { id: 'core', available: Boolean(capabilities?.actions.length), detail: capabilities ? t('morpheus.activation.signal.capabilities', { count: capabilities.actions.length }) : t('morpheus.activation.signal.unavailable') },
-      { id: 'runtime', available: runtimeReady, detail: runtimeReady ? t('morpheus.activation.signal.connected') : t('morpheus.activation.signal.starting') },
-      { id: 'provider', available: providerReady, detail: providerReady && provider ? `${provider.label}${provider.model ? ` · ${provider.model}` : ''}` : t('morpheus.activation.signal.optionalProvider') },
-      { id: 'voice', available: Boolean(voice?.transcriptionAvailable), detail: voice?.transcriptionAvailable ? (voice.providerLabel ?? t('morpheus.activation.signal.available')) : t('morpheus.activation.signal.voiceSetup') },
-    ]);
-  };
+  useEffect(() => {
+    if (stage !== 'welcome') return;
+    const generation = ++speechGeneration.current;
+    const armSuggestions = () => {
+      if (generation !== speechGeneration.current) return;
+      cancelSilence();
+      silenceTimer.current = window.setTimeout(() => setSuggestions(true), SILENCE_MS);
+    };
+    // Never mislabel the Windows fallback as a natural voice. The text-only
+    // first run remains usable until a real speech provider is configured.
+    if (voice?.neuralSpeechAvailable && speakResponses) {
+      void playMorpheusSpeech(t('morpheus.activationV2.welcome', { name: name.trim() || t('morpheus.activationV2.friend') }), { neuralAvailable: true, allowWindowsFallback: false, onSpeakingChange: setSpeaking })
+        .then(armSuggestions).catch(armSuggestions);
+    } else armSuggestions();
+    return () => { speechGeneration.current += 1; cancelSilence(); stopMorpheusSpeech(); };
+  }, [stage, voice?.neuralSpeechAvailable, speakResponses, name, t, cancelSilence]);
+  useEffect(() => { if (request.trim() || voicePhase === 'listening') cancelSilence(); }, [request, voicePhase, cancelSilence]);
+  useEffect(() => {
+    if (stage === 'welcome' && wasListening.current && voicePhase !== 'listening' && !request.trim()) {
+      cancelSilence();
+      silenceTimer.current = window.setTimeout(() => setSuggestions(true), SILENCE_MS);
+    }
+    wasListening.current = voicePhase === 'listening';
+  }, [stage, voicePhase, request, cancelSilence]);
+  useEffect(() => () => { cancelSilence(); stopMorpheusSpeech(); }, [cancelSilence]);
 
   const preferences = (): MorpheusOnboardingPreferences => ({
     ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES,
-    preferredName: preferredName.trim(),
-    speakResponses,
-    personality,
-    interactionMode,
-    launchAtStartup,
-    ambientVoiceEnabled: ambientVoiceEnabled && voiceAvailable,
-    wakePhrase: wakePhrase.trim() || 'Morpheus',
-    permissionProfile,
-    proactiveCheckIns,
+    preferredName: name.trim().slice(0, 80), interests: interests.trim().slice(0, 240),
+    humorStyle, proactivityLevel, personality: humorStyle === 'gentle' ? 'warm' : 'witty',
+    proactiveCheckIns: proactivityLevel !== 'quiet', speakResponses,
+    ambientVoiceEnabled: ambientVoiceEnabled && Boolean(voice?.transcriptionAvailable), wakePhrase: 'Morpheus',
   });
-
-  const savePreferences = async (): Promise<void> => {
-    if (await completeOnboarding(preferences())) {
-      setOperatorMode(interactionMode);
-      setStage('proof');
-    }
+  const finish = async (firstRequest = ''): Promise<boolean> => {
+    if (saving) return false;
+    setSaving(true);
+    let completed = false;
+    try { completed = await completeOnboarding(preferences()); }
+    catch { completed = false; }
+    setSaving(false);
+    if (!completed) { setError(true); return false; }
+    cancelSilence(); stopMorpheusSpeech();
+    window.localStorage.setItem('morpheus-last-welcome-at', String(Date.now()));
+    setDismissed(true); navigate('/');
+    if (!firstRequest.trim()) return true;
+    const text = firstRequest.trim();
+    setObjective(text);
+    try {
+      const decision = await route(text, 'command-center');
+      if (decision.route === 'objective') void runObjective(decision.text, 'command-bar');
+      else if (decision.route === 'conversation') queueConversation(decision.text);
+    } catch { /* The saved draft remains in Command Center for retry. */ }
+    return true;
   };
-
-  const skip = async (): Promise<void> => {
-    if (await completeOnboarding(preferences())) {
-      setOperatorMode(interactionMode);
-      finishArrival();
-    }
+  const availableVoices = speechVoicesForModel(voice?.settings.speechModelId ?? '');
+  const previewVoices = availableVoices.length > 2 ? [availableVoices[0], availableVoices[Math.floor(availableVoices.length / 2)], availableVoices[availableVoices.length - 1]] : availableVoices;
+  const previewVoice = async (selected: string) => {
+    if (!voice?.neuralSpeechAvailable) return;
+    stopMorpheusSpeech();
+    try {
+      await updateVoice({ speechVoice: selected as MorpheusSpeechVoice });
+      await playMorpheusSpeech(t('morpheus.activationV2.voiceSample'), { neuralAvailable: true, allowWindowsFallback: false, onSpeakingChange: setSpeaking });
+    } catch { setError(true); }
   };
+  if (!enabled || dismissed || onboarding?.completed || stage === 'loading') return null;
+  const listening = voiceSource === 'onboarding' && voicePhase === 'listening';
+  const signalState = listening ? 'listening' : speaking ? 'speaking' : 'ready';
 
-  const useVoiceName = (): void => {
-    if (!voiceTranscript?.trim()) return;
-    const name = voiceTranscript
-      .trim()
-      .replace(/^(?:my name is|call me|i am|i'm)\s+/i, '')
-      .replace(/[.!?]+$/u, '')
-      .slice(0, 80);
-    setPreferredName(name);
-    dismissVoiceCalibration();
-  };
-
-  const startProof = async (): Promise<void> => {
-    setProofStarted(true);
-    const accepted = await runObjective(PROOF_OBJECTIVE, 'command-bar');
-    if (!accepted) setProofStarted(false);
-  };
-
-  return (
-    <div data-morpheus data-testid="morpheus-activation" data-stage={visibleStage} data-exiting={exiting ? 'true' : 'false'} className={cn('morpheus-signal-activation fixed inset-0 z-[9997] overflow-hidden bg-[hsl(var(--morpheus-surface-1))] text-foreground', exiting && 'morpheus-activation-leaving pointer-events-none')} role="dialog" aria-modal="true" aria-label={t('morpheus.activation.title')}>
-      <div aria-hidden className="morpheus-activation-depth absolute inset-0" />
-      <div aria-hidden className="morpheus-activation-streams absolute inset-0" />
-
-      <header className="relative z-10 flex h-16 items-center justify-between border-b border-white/[0.05] px-7">
-        <span className="font-serif text-sm tracking-[0.24em]">{t('morpheus.title')}</span>
-        <button type="button" data-testid="morpheus-activation-skip" onClick={() => void skip()} className="px-2 py-1 text-[9px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground">{t('morpheus.activation.skip')}</button>
-      </header>
-
-      <main className="morpheus-activation-layout relative z-10 grid h-[calc(100%-4rem)] grid-cols-[minmax(300px,0.9fr)_minmax(520px,1.1fr)]">
-        <section className="flex items-center justify-center border-r border-white/[0.06] p-8">
-          <div className="text-center">
-            <MorpheusSignal state={signalState} className="morpheus-hero-signal mx-auto text-[hsl(var(--morpheus-accent))]" label={t(`morpheus.signalOs.signal.${signalState}`)} />
-            <p className="mt-5 text-[9px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t(`morpheus.signalOs.signal.${signalState}`)}</p>
-          </div>
-        </section>
-
-        <section className="flex min-h-0 min-w-0 items-center px-[5vw] py-6">
-          <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={visibleStage} className="max-h-full w-full overflow-y-auto pr-2" initial={{ opacity: 0, y: reducedMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reducedMotion ? 0 : -8 }} transition={{ duration: reducedMotion ? 0 : 0.22 }}>
-          {visibleStage === 'intro' ? (
-            <div data-testid="morpheus-activation-intro" className="max-w-2xl">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.eyebrow')}</p>
-              <h1 className="mt-5 font-serif text-6xl font-normal leading-[0.96] tracking-tight">{t('morpheus.activation.firstGreeting')}</h1>
-              <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">{t('morpheus.signalOs.activation.introduction')}</p>
-              <label className="mt-8 block max-w-xl">
-                <span className="sr-only">{t('morpheus.activation.preferredName')}</span>
-                <input data-testid="activation-intro-name" value={preferredName} maxLength={80} autoComplete="name" autoFocus onChange={(event) => setPreferredName(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void calibrate(); }} placeholder={t('morpheus.activation.preferredNamePlaceholder')} className="h-14 w-full border-x-0 border-b border-t-0 border-white/[0.14] bg-transparent px-0 font-serif text-2xl outline-none transition-colors placeholder:text-muted-foreground/35 focus:border-[hsl(var(--morpheus-accent)/0.7)]" />
-              </label>
-              <button type="button" data-testid="morpheus-activation-begin" onClick={() => void calibrate()} className="mt-9 inline-flex items-center gap-3 border-b border-[hsl(var(--morpheus-accent))] pb-2 text-xs uppercase tracking-[0.18em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.signalOs.activation.begin')}<ArrowRight className="h-4 w-4" /></button>
-            </div>
-          ) : null}
-
-          {visibleStage === 'calibrating' ? (
-            <div data-testid="morpheus-activation-calibration" className="w-full max-w-2xl">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.calibrating')}</p>
-              <h2 className="mt-4 font-serif text-4xl font-normal">{t('morpheus.signalOs.activation.readiness')}</h2>
-              {signals.length === 0 ? <p className="mt-8 text-sm text-muted-foreground">{t('morpheus.activation.checking')}</p> : (
-                <>
-                  <ol className="mt-8 divide-y divide-white/[0.07] border-y border-white/[0.07]">
-                    {signals.map((signal) => {
-                      const Icon = signal.id === 'runtime' ? ShieldCheck : signal.id === 'provider' ? Cpu : signal.id === 'voice' ? Mic : Check;
-                      return <li key={signal.id} data-testid={`activation-signal-${signal.id}`} data-available={signal.available} className="flex items-center gap-4 py-4"><Icon className="h-4 w-4 text-muted-foreground" /><div className="min-w-0 flex-1"><p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground">{t(`morpheus.activation.signal.${signal.id}`)}</p><p className="mt-1 truncate text-sm text-foreground/85">{signal.detail}</p></div><span className={cn('h-2 w-2 rounded-full', signal.available ? 'bg-[hsl(var(--morpheus-accent))]' : 'bg-[hsl(var(--morpheus-warn))]')} /></li>;
-                    })}
-                  </ol>
-                  <div data-testid="morpheus-voice-calibration" className="mt-5 border border-white/[0.08] bg-black/15 p-4">
-                    <div className="flex items-start justify-between gap-5">
-                      <div>
-                        <p className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground">{t('morpheus.activation.voiceCalibration.title')}</p>
-                        <p className="mt-1 text-xs leading-relaxed text-foreground/80">{voiceAvailable ? t('morpheus.activation.voiceCalibration.ready') : t('morpheus.activation.voiceCalibration.unavailable')}</p>
-                        {voiceSource === 'onboarding' && voiceTranscript ? <p data-testid="activation-voice-transcript" className="mt-3 font-serif text-lg text-[hsl(var(--morpheus-accent))]">“{voiceTranscript}”</p> : null}
-                        {voiceSource === 'onboarding' && voiceError ? <p className="mt-2 text-xs text-[hsl(var(--morpheus-danger))]">{t('morpheus.activation.voiceCalibration.failed')}</p> : null}
-                      </div>
-                      {voiceSource === 'onboarding' && voicePhase === 'listening' ? <button type="button" data-testid="activation-voice-stop" onClick={stopVoiceCalibration} className="shrink-0 border-b border-[hsl(var(--morpheus-accent))] pb-1 text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.voice.stop')}</button> : <button type="button" data-testid="activation-voice-start" disabled={!voiceAvailable || ['requesting', 'transcribing'].includes(voicePhase)} onClick={() => void startVoiceCalibration('onboarding')} className="shrink-0 border-b border-[hsl(var(--morpheus-accent))] pb-1 text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--morpheus-accent))] disabled:opacity-35">{t('morpheus.activation.voiceCalibration.try')}</button>}
-                    </div>
-                    {voiceSource === 'onboarding' && voicePhase === 'ready' && voiceTranscript ? <button type="button" data-testid="activation-use-voice-name" onClick={useVoiceName} className="mt-3 text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.voiceCalibration.useName')}</button> : null}
-                  </div>
-                  <button type="button" data-testid="morpheus-activation-continue" onClick={() => setStage('preferences')} className="mt-7 inline-flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.continue')}<ArrowRight className="h-4 w-4" /></button>
-                </>
-              )}
-            </div>
-          ) : null}
-
-          {visibleStage === 'preferences' ? (
-            <div data-testid="morpheus-activation-preferences" className="max-h-full w-full max-w-3xl overflow-y-auto py-2 pr-2 scrollbar-thin">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.personalize')}</p>
-              <h2 className="mt-3 font-serif text-4xl font-normal">{t('morpheus.activation.preferenceTitle')}</h2>
-
-              <label className="mt-6 block">
-                <span className="flex items-center gap-2 text-[9px] uppercase tracking-[0.16em] text-muted-foreground"><UserRound className="h-3.5 w-3.5" />{t('morpheus.activation.preferredName')}</span>
-                <input
-                  data-testid="activation-preferred-name"
-                  value={preferredName}
-                  maxLength={80}
-                  autoComplete="name"
-                  onChange={(event) => setPreferredName(event.target.value)}
-                  placeholder={t('morpheus.activation.preferredNamePlaceholder')}
-                  className="mt-2 h-11 w-full border border-white/[0.1] bg-black/15 px-4 text-sm outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-[hsl(var(--morpheus-accent)/0.55)]"
-                />
-              </label>
-
-              <div className="mt-5 grid grid-cols-4 border-y border-white/[0.07]">
-                {PERSONALITIES.map((choice) => <button key={choice} type="button" data-testid={`activation-personality-${choice}`} data-selected={personality === choice} onClick={() => setPersonality(choice)} className="border-r border-white/[0.07] px-3 py-3 text-left last:border-r-0 data-[selected=true]:bg-white/[0.04]"><span className={cn('block h-0.5 w-6', personality === choice ? 'bg-[hsl(var(--morpheus-accent))]' : 'bg-white/10')} /><p className="mt-2.5 text-xs">{t(`morpheus.activation.personalities.${choice}.name`)}</p><p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">{t(`morpheus.activation.personalities.${choice}.description`)}</p></button>)}
-              </div>
-
-              <p className="mt-5 text-[9px] uppercase tracking-[0.16em] text-muted-foreground">{t('morpheus.operator.modeLabel')}</p>
-              <MorpheusInteractionModeControl className="mt-2" value={interactionMode} onChange={setInteractionMode} showDescription />
-
-              <p className="mt-5 text-[9px] uppercase tracking-[0.16em] text-muted-foreground">{t('morpheus.activation.autonomy')}</p>
-              <div className="mt-2 grid grid-cols-3 border border-white/[0.09] bg-black/15">
-                {PERMISSION_PROFILES.map((profile) => <button key={profile} type="button" data-testid={`activation-permission-${profile}`} data-selected={permissionProfile === profile} onClick={() => setPermissionProfile(profile)} className="border-r border-white/[0.08] px-4 py-3 text-left last:border-r-0 data-[selected=true]:bg-[hsl(var(--morpheus-accent)/0.08)]"><span className={cn('text-[10px] uppercase tracking-[0.14em]', permissionProfile === profile ? 'text-[hsl(var(--morpheus-accent))]' : 'text-foreground/65')}>{t(`morpheus.activation.permissionProfiles.${profile}.name`)}</span><span className="mt-1 block text-[9px] leading-relaxed text-muted-foreground">{t(`morpheus.activation.permissionProfiles.${profile}.description`)}</span></button>)}
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 border-y border-white/[0.07]">
-                <ActivationToggle icon={Power} testId="activation-launch-at-startup" title={t('morpheus.activation.launchAtStartup')} description={t('morpheus.activation.launchAtStartupDescription')} checked={launchAtStartup} onChange={setLaunchAtStartup} />
-                <ActivationToggle icon={Mic} testId="activation-ambient-voice" title={t('morpheus.activation.ambientVoice')} description={voiceAvailable ? t('morpheus.activation.ambientVoiceDescription', { wakePhrase }) : t('morpheus.activation.ambientVoiceUnavailable')} checked={ambientVoiceEnabled && voiceAvailable} disabled={!voiceAvailable} onChange={setAmbientVoiceEnabled} />
-                <ActivationToggle icon={Volume2} testId="activation-speak-responses" title={t('morpheus.activation.speak')} description={t('morpheus.activation.speakDescription')} checked={speakResponses} onChange={setSpeakResponses} />
-                <ActivationToggle icon={BellRing} testId="activation-proactive-check-ins" title={t('morpheus.activation.proactiveCheckIns')} description={t('morpheus.activation.proactiveCheckInsDescription')} checked={proactiveCheckIns} onChange={setProactiveCheckIns} />
-              </div>
-              {ambientVoiceEnabled && voiceAvailable ? <label className="mt-3 flex items-center gap-3"><span className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground">{t('morpheus.activation.wakePhrase')}</span><input data-testid="activation-wake-phrase" value={wakePhrase} maxLength={48} onChange={(event) => setWakePhrase(event.target.value)} className="h-9 min-w-0 flex-1 border border-white/[0.1] bg-black/15 px-3 text-xs outline-none focus:border-[hsl(var(--morpheus-accent)/0.55)]" /></label> : null}
-              <button type="button" data-testid="morpheus-activation-finish" onClick={() => void savePreferences()} className="mt-7 inline-flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.signalOs.activation.prove')}<ArrowRight className="h-4 w-4" /></button>
-            </div>
-          ) : null}
-
-          {visibleStage === 'proof' ? (
-            <div data-testid="morpheus-activation-proof" className="w-full max-w-2xl">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.signalOs.activation.firstMission')}</p>
-              <h2 className="mt-4 font-serif text-4xl font-normal">{t('morpheus.signalOs.activation.proofTitle')}</h2>
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{t('morpheus.signalOs.activation.proofBody')}</p>
-              <div className="mt-7 border-y border-white/[0.07] py-5"><p className="font-serif text-xl">{t('morpheus.signalOs.activation.proofObjective')}</p>{objectiveRun ? <p className="mt-2 text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--morpheus-accent))]">{t(`morpheus.objective.states.${objectiveRun.state}`)}</p> : null}</div>
-              <div className="mt-7 flex items-center gap-5">
-                <button type="button" data-testid="morpheus-activation-run-proof" disabled={proofStarted} onClick={() => void startProof()} className="inline-flex items-center gap-2 border-b border-[hsl(var(--morpheus-accent))] pb-2 text-xs uppercase tracking-[0.15em] text-[hsl(var(--morpheus-accent))] disabled:opacity-50">{t('morpheus.signalOs.activation.runMission')}<ArrowRight className="h-4 w-4" /></button>
-                <button type="button" data-testid="morpheus-activation-skip-proof" onClick={() => setStage('ready')} className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground">{t('morpheus.signalOs.activation.continueWithout')}</button>
-              </div>
-            </div>
-          ) : null}
-
-          {visibleStage === 'ready' ? (
-            <div data-testid="morpheus-activation-ready" className="max-w-2xl">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.readyLabel')}</p>
-              <h2 className="mt-4 font-serif text-5xl font-normal">{t('morpheus.signalOs.activation.readyTitle')}</h2>
-              <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{objectiveRun?.summary ?? t('morpheus.signalOs.activation.readyBody')}</p>
-              {!providerReady ? <p className="mt-3 max-w-xl text-xs leading-relaxed text-[hsl(var(--morpheus-warn))]">{t('morpheus.activation.providerNeeded')}</p> : null}
-              <div className="mt-8 flex flex-wrap items-center gap-6">
-                <button type="button" autoFocus data-testid="morpheus-activation-enter" onClick={() => finishArrival()} className="inline-flex items-center gap-3 border-b border-[hsl(var(--morpheus-accent))] pb-2 text-xs uppercase tracking-[0.18em] text-[hsl(var(--morpheus-accent))]">{t('morpheus.activation.enter')}<ArrowRight className="h-4 w-4" /></button>
-                {!providerReady ? (
-                  <button type="button" data-testid="morpheus-activation-connect-provider" onClick={() => finishArrival('/models?addProvider=1')} className="inline-flex items-center gap-2 border-b border-white/15 pb-2 text-[10px] uppercase tracking-[0.14em] text-foreground/70 hover:border-[hsl(var(--morpheus-accent)/0.55)] hover:text-foreground">
-                    {t('morpheus.activation.connectProvider')}<ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                ) : null}
-              </div>
-              <div className="mt-6 border-t border-white/[0.08] pt-5">
-                <MorpheusTrayChoice onTransferred={() => finishArrival('/')} />
-                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{t('morpheus.arrival.trayHint')} {t('morpheus.arrival.voiceHonesty')}</p>
-              </div>
-            </div>
-          ) : null}
-          </motion.div>
-          </AnimatePresence>
-        </section>
-      </main>
-    </div>
-  );
-}
-
-function ActivationToggle({
-  icon: Icon,
-  testId,
-  title,
-  description,
-  checked,
-  disabled = false,
-  onChange,
-}: {
-  icon: typeof Mic;
-  testId: string;
-  title: string;
-  description: string;
-  checked: boolean;
-  disabled?: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <label className={cn('flex min-h-20 items-center gap-3 border-r border-b border-white/[0.07] p-3 last:border-r-0', disabled && 'opacity-50')}>
-      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <span className="min-w-0 flex-1"><span className="block text-xs">{title}</span><span className="mt-1 block text-[9px] leading-relaxed text-muted-foreground">{description}</span></span>
-      <Switch data-testid={testId} checked={checked} disabled={disabled} onCheckedChange={onChange} />
-    </label>
-  );
+  return <div data-morpheus data-testid="morpheus-activation" data-stage={stage} className="morpheus-first-launch fixed inset-0 z-[9997] flex flex-col overflow-hidden bg-[#040907] text-[#edf5ef]" role="dialog" aria-modal="true" aria-label={t('morpheus.title')}>
+    <div aria-hidden className="morpheus-first-launch-rain"><MatrixRain /></div>
+    <header className="relative z-10 flex h-12 shrink-0 items-center justify-between border-b border-white/10 px-5"><span className="text-sm font-semibold text-[#53edb4]">M <span className="ml-2 text-xs font-normal text-[#edf5ef]">{t('morpheus.title')}</span></span><button type="button" aria-label={t('morpheus.activationV2.close')} onClick={() => void finish()} className="rounded p-2 text-[#a0b6aa] hover:text-white"><X size={16} /></button></header>
+    <main className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-6 text-center">
+      <MorpheusFluidOrb state={signalState} className="h-32 w-32 max-[600px]:h-24 max-[600px]:w-24" label={t('morpheus.title')} />
+      {stage === 'name' ? <div data-testid="morpheus-activation-intro" className="mt-4 w-full max-w-[580px]">
+        <p className="text-sm text-[#a0b6aa]">{t('morpheus.activationV2.hello')}</p><h1 className="mt-3 text-[clamp(28px,4vw,38px)] font-semibold tracking-tight">{t('morpheus.activationV2.nameQuestion')}</h1>
+        <form className="morpheus-setup-composer mt-6 flex items-center gap-2" onSubmit={(event) => { event.preventDefault(); setStage('welcome'); }}><button type="button" data-testid="activation-voice-start" disabled={!voice?.transcriptionAvailable} onClick={() => listening ? stopListening() : void startListening('onboarding')} aria-label={t('morpheus.activationV2.speak')} className="p-2 text-[#a0b6aa] disabled:opacity-40"><Mic size={17} /></button><input data-testid="activation-intro-name" autoFocus autoComplete="name" maxLength={80} value={name} onChange={(event) => setName(event.target.value)} placeholder={t('morpheus.activationV2.inputPlaceholder')} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#809b8b]" /><button data-testid="morpheus-activation-begin" type="submit" aria-label={t('morpheus.activationV2.continue')} className="p-2 text-[#53edb4]"><ArrowRight size={18} /></button></form>
+        <button type="button" data-testid="morpheus-activation-skip" onClick={() => setStage('welcome')} className="mt-8 text-xs text-[#a0b6aa] hover:text-white">{t('morpheus.activationV2.skipName')}</button>
+      </div> : null}
+      {stage === 'welcome' ? <div data-testid="morpheus-activation-welcome" className="mt-5 w-full max-w-[640px]">
+        <p className="text-sm text-[#a0b6aa]">{t('morpheus.activationV2.welcome', { name: name.trim() || t('morpheus.activationV2.friend') })}</p><h1 className="mt-3 text-[clamp(27px,4vw,38px)] font-semibold tracking-tight">{t('morpheus.activationV2.firstQuestion')}</h1>
+        <form className="morpheus-setup-composer mt-6 flex items-center gap-2" onSubmit={(event) => { event.preventDefault(); if (request.trim()) void finish(request); }}><button type="button" disabled={!voice?.transcriptionAvailable} onClick={() => listening ? stopListening() : void startListening('onboarding')} aria-label={t('morpheus.activationV2.speak')} className="p-2 text-[#a0b6aa] disabled:opacity-40"><Mic size={17} /></button><input data-testid="activation-first-request" value={request} onChange={(event) => setRequest(event.target.value)} placeholder={t('morpheus.activationV2.inputPlaceholder')} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#809b8b]" /><button type="submit" disabled={!request.trim()} className="p-2 text-[#53edb4] disabled:opacity-40" aria-label={t('morpheus.activationV2.send')}><ArrowRight size={18} /></button></form>
+        {suggestions && !request.trim() ? <div data-testid="activation-suggestions" className="mt-4 flex flex-wrap justify-center gap-2">{(['openYouTube', 'research', 'helpMe'] as const).map((key) => <button key={key} type="button" onClick={() => { setRequest(t(`morpheus.activationV2.suggestions.${key}`)); setSuggestions(false); }} className="rounded-full border border-[#34684d] bg-[#102018] px-3 py-1.5 text-xs text-[#c8e7d2] hover:border-[#53edb4]">{t(`morpheus.activationV2.suggestions.${key}`)}</button>)}</div> : null}
+        <button type="button" data-testid="morpheus-activation-personalize" onClick={() => { cancelSilence(); setStage('personalize'); }} className="mt-7 text-xs text-[#a0b6aa] underline-offset-4 hover:text-white hover:underline">{t('morpheus.activationV2.personalize')}</button>
+      </div> : null}
+      {stage === 'personalize' ? <div data-testid="morpheus-activation-preferences" className="mt-4 w-full max-w-[590px] text-left">
+        <h1 className="text-center text-[clamp(26px,4vw,34px)] font-semibold tracking-tight">{t('morpheus.activationV2.makeItYours')}</h1><p className="mt-2 text-center text-xs text-[#a0b6aa]">{t('morpheus.activationV2.optional')}</p>
+        <label className="mt-6 block text-xs text-[#a0b6aa]">{t('morpheus.activationV2.interests')}<input data-testid="activation-interests" maxLength={240} value={interests} onChange={(event) => setInterests(event.target.value)} placeholder={t('morpheus.activationV2.interestsPlaceholder')} className="mt-2 h-11 w-full rounded-lg border border-[#34684d] bg-[#0e1b15] px-3 text-sm text-white outline-none focus:border-[#53edb4]" /></label>
+        <p className="mt-5 text-xs text-[#a0b6aa]">{t('morpheus.activationV2.humor')}</p><div className="mt-2 flex gap-2">{(['gentle', 'cheeky', 'unfiltered'] as const).map((style) => <button key={style} type="button" data-testid={`activation-humor-${style}`} data-selected={humorStyle === style} onClick={() => setHumorStyle(style)} className="morpheus-setup-choice">{t(`morpheus.activationV2.humorStyles.${style}`)}</button>)}</div>
+        <p className="mt-5 text-xs text-[#a0b6aa]">{t('morpheus.activationV2.checkIns')}</p><div className="mt-2 flex gap-2">{(['quiet', 'balanced', 'talkative'] as const).map((level) => <button key={level} type="button" data-testid={`activation-proactivity-${level}`} data-selected={proactivityLevel === level} onClick={() => setProactivityLevel(level)} className="morpheus-setup-choice">{t(`morpheus.activationV2.proactivity.${level}`)}</button>)}</div>
+        <p className="mt-5 text-xs text-[#a0b6aa]">{t('morpheus.activationV2.voice')}</p><div className="mt-2 flex gap-2">{previewVoices.map((candidate, index) => <button key={candidate} type="button" data-testid={`activation-voice-preview-${index + 1}`} data-selected={voice?.settings.speechVoice === candidate} disabled={!voice?.neuralSpeechAvailable} onClick={() => void previewVoice(candidate)} className="morpheus-setup-choice inline-flex items-center gap-2"><Volume2 size={13} />{candidate}</button>)}</div>
+        {!voice?.neuralSpeechAvailable ? <p data-testid="activation-voice-honesty" className="mt-2 text-xs text-[#a0b6aa]">{t('morpheus.activationV2.voiceUnavailable')}</p> : null}
+        <label className="mt-5 flex items-start gap-2 text-xs text-[#c8e7d2]"><input type="checkbox" checked={speakResponses} onChange={(event) => setSpeakResponses(event.target.checked)} />{t('morpheus.activationV2.speakResponses')}</label>
+        <label className="mt-3 flex items-start gap-2 text-xs text-[#c8e7d2]"><input type="checkbox" checked={ambientVoiceEnabled && Boolean(voice?.transcriptionAvailable)} disabled={!voice?.transcriptionAvailable} onChange={(event) => setAmbientVoiceEnabled(event.target.checked)} />{t('morpheus.activationV2.wakeConsent')}</label>
+        <label className="mt-3 flex items-start gap-2 text-xs text-[#c8e7d2]"><input data-testid="activation-telemetry-choice" type="checkbox" checked={telemetryEnabled} onChange={(event) => setTelemetryEnabled(event.target.checked)} />{t('morpheus.activationV2.telemetry')}</label>
+        <button type="button" data-testid="morpheus-activation-finish" onClick={() => setStage('ready')} className="mt-6 flex items-center gap-2 rounded-full bg-[#53edb4] px-5 py-2.5 text-sm font-semibold text-[#04110a]">{t('morpheus.activationV2.continue')}<ArrowRight size={16} /></button>
+      </div> : null}
+      {stage === 'ready' ? <div data-testid="morpheus-activation-ready" className="mt-5 w-full max-w-[580px]"><h1 className="text-[clamp(28px,4vw,38px)] font-semibold tracking-tight">{t('morpheus.activationV2.ready')}</h1><p className="mt-3 text-sm text-[#a0b6aa]">{t('morpheus.activationV2.readyBody')}</p><button type="button" data-testid="morpheus-activation-enter" disabled={saving} onClick={() => void finish()} className="mt-7 rounded-full bg-[#53edb4] px-6 py-3 text-sm font-semibold text-[#04110a] disabled:opacity-50">{t('morpheus.activationV2.enter')}</button><div className="mt-6"><MorpheusTrayChoice beforeTransfer={() => finish()} onTransferred={() => undefined} /></div></div> : null}
+      {error ? <p role="alert" className="mt-4 text-xs text-red-300">{t('morpheus.activationV2.error')}</p> : null}
+    </main>
+    <footer className="relative z-10 flex h-10 shrink-0 items-center justify-between border-t border-white/10 px-5 text-[11px] text-[#a0b6aa]"><span>{t('morpheus.activationV2.footer')}</span><span>{t('morpheus.activationV2.typeAlways')}</span></footer>
+  </div>;
 }

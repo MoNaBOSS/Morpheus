@@ -21,8 +21,10 @@ import type {
 
 const MAX_PROVIDER_RESPONSE_BYTES = 64 * 1024;
 const MAX_PROMPT_CHARS = 48_000;
-const MAX_REQUESTS = 6;
-const MAX_RESERVED_OUTPUT_TOKENS = 32_768;
+// A typed plan is compact JSON, not a prose answer. Keep provider work bounded
+// so one objective cannot silently expand into a costly open-ended agent loop.
+const MAX_REQUESTS = 4;
+const MAX_RESERVED_OUTPUT_TOKENS = 12_288;
 
 export type MorpheusPlannerUsage = {
   requestId: string;
@@ -360,7 +362,7 @@ export function createMorpheusProviderPlanner(options: MorpheusProviderPlannerOp
   const invoke = async (system: string, user: string, objective: string, signal?: AbortSignal, objectiveRunId?: string): Promise<string> => {
     signal?.throwIfAborted();
     // Reserve before awaiting: failed requests and retries still consume allowance.
-    const outputTokenLimit = /\b(website|web site|landing page)\b/i.test(objective) ? 8_192 : 4_096;
+    const outputTokenLimit = /\b(website|web site|landing page)\b/i.test(objective) ? 4_096 : 2_048;
     const inputChars = system.length + user.length;
     if (inputChars > MAX_PROMPT_CHARS) throw new Error('Planning input exceeds the bounded context allowance. Narrow this objective.');
     if (requestCount >= MAX_REQUESTS || reservedOutput + outputTokenLimit > MAX_RESERVED_OUTPUT_TOKENS) {

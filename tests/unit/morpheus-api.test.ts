@@ -24,6 +24,7 @@ import {
   validateMemoryDraft,
   validateMemoryIdPayload,
   validateCompleteOnboardingPayload,
+  validateCompanionProfilePatch,
   validateGoalDraft,
   validateProactiveSettingsPatch,
   validateCreateReminderPayload,
@@ -112,6 +113,7 @@ function stubOptions(runtime = stubRuntime()) {
         v: 2, completed: false, preferences: { ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES },
       })),
       complete: vi.fn(),
+      updateProfile: vi.fn(),
       reset: vi.fn(),
     } as never,
     systems: {
@@ -412,6 +414,12 @@ describe('Mission and explicit context validation', () => {
       .toThrow(/invalid wake phrase/);
   });
 
+  it('bounds profile edits and never accepts authority fields', () => {
+    expect(validateCompanionProfilePatch({ preferredName: 'Larry', humorStyle: 'cheeky' })).toEqual({ preferredName: 'Larry', humorStyle: 'cheeky' });
+    expect(() => validateCompanionProfilePatch({ permissionProfile: 'autonomous' })).toThrow(/unsupported key/);
+    expect(() => validateCompanionProfilePatch({ interests: 'x'.repeat(241) })).toThrow(/interests/);
+  });
+
   it('audits memory metadata without persisting memory text', async () => {
     const options = stubOptions();
     const api = createMorpheusApi(options);
@@ -452,12 +460,24 @@ describe('Mission and explicit context validation', () => {
     });
     expect(options.proactive.updateSettings).toHaveBeenCalledWith({ enabled: true });
     expect(applyDesktopSetup).toHaveBeenCalledWith({ launchAtStartup: true });
-    expect(options.grants.setProfile).toHaveBeenCalledWith('autonomous');
+    expect(options.grants.setProfile).toHaveBeenCalledWith('balanced');
     expect(options.memory.save).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Preferred name',
       text: 'Call the user Larry.',
     }), { source: 'user', sourceId: 'onboarding-preferred-name' });
     expect(JSON.stringify(options.audit.recordControl.mock.calls)).not.toContain('Larry');
+  });
+
+  it('edits profile tone and check-ins without reapplying provider, voice or permission setup', async () => {
+    const options = stubOptions();
+    options.onboarding.status = vi.fn(() => ({ v: 2, completed: true, preferences: { ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES } }));
+    options.onboarding.updateProfile = vi.fn((patch) => ({ v: 2, completed: true, preferences: { ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES, ...patch } }));
+    const api = createMorpheusApi(options);
+    await expect(api.updateCompanionProfile({ interests: 'One Piece', humorStyle: 'cheeky', proactivityLevel: 'quiet' })).resolves.toMatchObject({ completed: true, preferences: { interests: 'One Piece', proactivityLevel: 'quiet' } });
+    expect(options.memory.save).toHaveBeenCalledWith(expect.objectContaining({ title: 'Interests', text: 'The user is interested in One Piece.' }), expect.objectContaining({ sourceId: 'onboarding-interests' }));
+    expect(options.proactive.updateSettings).toHaveBeenCalledWith({ enabled: false });
+    expect(options.voice.updateSettings).not.toHaveBeenCalled();
+    expect(options.grants.setProfile).not.toHaveBeenCalled();
   });
 });
 
@@ -680,6 +700,7 @@ describe('createMorpheusApi', () => {
       'testSystem',
       'transcribeAmbientAudio',
       'transcribeAudio',
+      'updateCompanionProfile',
       'updateProactiveSettings',
       'updateVoiceSettings',
       'updateWorkspace',

@@ -285,7 +285,7 @@ export function createMorpheusProactiveService(options: {
       try {
         await refreshFacts();
         const settings = options.store.settings();
-        if (!settings.enabled || !settings.notificationsEnabled || insideQuietHours(settings, now())) return;
+        if (!settings.enabled || !settings.notificationsEnabled || settings.doNotDisturb || insideQuietHours(settings, now())) return;
         const stamp = now().getTime();
         const item = options.store.list().find((candidate) => candidate.status === 'open'
           && !candidate.lastNotifiedAt

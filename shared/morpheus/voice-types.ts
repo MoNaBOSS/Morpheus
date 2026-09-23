@@ -1,19 +1,21 @@
-export const MORPHEUS_VOICE_VERSION = 3 as const;
+import { MORPHEUS_CURATED_SPEECH_VOICES } from './provider-policy';
+
+export const MORPHEUS_VOICE_VERSION = 4 as const;
 export const MORPHEUS_VOICE_MAX_AUDIO_BYTES = 10 * 1024 * 1024;
 export const MORPHEUS_VOICE_MAX_DURATION_MS = 120_000;
 export const MORPHEUS_VOICE_MAX_TRANSCRIPT_CHARS = 8_000;
 export const MORPHEUS_VOICE_PROVIDER_TIMEOUT_MS = 30_000;
 export const MORPHEUS_SPEECH_MAX_TEXT_CHARS = 4_000;
 export const MORPHEUS_SPEECH_MAX_AUDIO_BYTES = 8 * 1024 * 1024;
-export const MORPHEUS_SPEECH_VOICES = Object.freeze([
-  'alloy', 'ash', 'ballad', 'coral', 'echo', 'fable',
-  'nova', 'onyx', 'sage', 'shimmer', 'verse',
-] as const);
+export const MORPHEUS_SPEECH_VOICES = MORPHEUS_CURATED_SPEECH_VOICES;
 export type MorpheusSpeechVoice = typeof MORPHEUS_SPEECH_VOICES[number];
 export const MORPHEUS_AMBIENT_MIN_SILENCE_MS = 500;
 export const MORPHEUS_AMBIENT_MAX_SILENCE_MS = 3_000;
 export const MORPHEUS_AMBIENT_MIN_UTTERANCE_MS = 2_000;
 export const MORPHEUS_AMBIENT_MAX_UTTERANCE_MS = 30_000;
+export const MORPHEUS_VOICE_FOLLOW_UP_MS = 15_000;
+export const MORPHEUS_VOICE_CONVERSATION_MAX_MS = 5 * 60_000;
+export const MORPHEUS_VOICE_CONVERSATION_MAX_TURNS = 8;
 export const MORPHEUS_AMBIENT_WAKE_PHRASE_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} '-]{0,47}$/u;
 
 export const MORPHEUS_VOICE_MIME_TYPES = Object.freeze([
@@ -39,10 +41,14 @@ export type MorpheusVoiceSettings = {
   autoSubmitTranscript: boolean;
   /** Explicitly opt-in. When true, bounded speech segments may reach the configured provider. */
   ambientEnabled: boolean;
+  /** Opt-in Windows offline name detection; omitted retains legacy cloud mode. */
+  localWakeEnabled?: boolean;
   wakePhrase: string;
   ambientSilenceMs: number;
   ambientMaxUtteranceMs: number;
   bargeIn: boolean;
+  /** Re-open one bounded voice turn after a spoken result. */
+  handsFreeFollowUp: boolean;
 };
 
 export type MorpheusVoicePresenceState =
@@ -64,12 +70,19 @@ export type MorpheusVoicePresence = {
   sessionStartedAt?: string;
   providerLabel?: string;
   reason?: string;
+  /** Monotonic Main-audited local wake event, not a renderer-supplied transcript. */
+  wakeSequence?: number;
+  /** Main-authored admission window for one additional ambient turn. */
+  followUpUntil?: string;
+  /** Bounded turn number; presentation only and never permission authority. */
+  conversationTurn?: number;
   /** Latest real speech failure this session; never a raw provider response. */
   speechFailure?: 'authentication' | 'access' | 'rate-limit' | 'endpoint' | 'unavailable';
 };
 
 export type MorpheusVoiceProviderOption = {
   accountId: string;
+  vendorId: string;
   label: string;
   isDefault: boolean;
   configured: boolean;
@@ -98,10 +111,12 @@ export type MorpheusVoiceSettingsPatch = Partial<Pick<
   | 'speechVoice'
   | 'autoSubmitTranscript'
   | 'ambientEnabled'
+  | 'localWakeEnabled'
   | 'wakePhrase'
   | 'ambientSilenceMs'
   | 'ambientMaxUtteranceMs'
   | 'bargeIn'
+  | 'handsFreeFollowUp'
 >>;
 
 export type MorpheusAmbientListeningPayload = { listening: boolean };
@@ -125,7 +140,11 @@ export type MorpheusTranscriptionResult = {
 export type MorpheusSynthesizeSpeechPayload = {
   /** Ephemeral final-result presentation. Main validates and never persists it. */
   text: string;
+  /** Correlates ephemeral playback chunks. Not a path, endpoint or authority. */
+  streamId?: string;
 };
+
+export type MorpheusSpeechChunk = { streamId: string; sequence: number; audioBase64: string };
 
 export type MorpheusSynthesizeSpeechResult = {
   audioBase64: string;

@@ -56,8 +56,8 @@ async function setupTarget(id) {
 
   echo(chalk.blue`\n📦 Setting up uv for ${id}...`);
 
-  // Cleanup & Prep
-  await fs.remove(targetDir);
+  // This directory is shared with Node and agent-browser. Keep working binaries
+  // intact until a replacement has actually downloaded and extracted.
   await fs.remove(tempDir);
   await fs.ensureDir(targetDir);
   await fs.ensureDir(tempDir);

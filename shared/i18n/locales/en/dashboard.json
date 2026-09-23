@@ -112,6 +112,87 @@
     }
   },
   "morpheus": {
+    "socialCheckIn": { "question": "How's your day going?", "answer": { "good": "Good", "rough": "Could be better" }, "reply": { "good": "Glad to hear it. I'm here when you need me.", "rough": "Sorry to hear that. I'm here if you want to talk or need a hand." }, "dismiss": "Dismiss check-in" },
+    "activationV2": {
+      "profileTitle": "Your Morpheus",
+      "profileDescription": "Change how I sound and check in, or preview the introduction. Your providers, tasks and permissions stay put.",
+      "preview": "Preview introduction",
+      "saved": "Companion preferences saved.",
+      "hello": "Hi. I'm Morpheus.",
+      "nameQuestion": "What should I call you?",
+      "close": "Close",
+      "speak": "Speak to Morpheus",
+      "continue": "Continue",
+      "inputPlaceholder": "Speak or type your answer...",
+      "skipName": "Skip for now",
+      "welcome": "Welcome to the Matrix world, {{name}}.",
+      "friend": "friend",
+      "firstQuestion": "What would you like me to help you with?",
+      "send": "Send",
+      "personalize": "Make Morpheus yours",
+      "makeItYours": "Make yourself at home.",
+      "optional": "A few choices. You can change them later.",
+      "interests": "What are you into?",
+      "interestsPlaceholder": "Movies, anime, work, anything you want remembered",
+      "humor": "Humour",
+      "checkIns": "How often should I check in?",
+      "voice": "Choose a voice (tap to hear)",
+      "voiceSample": "Hello. I'm Morpheus. Let's get to work.",
+      "voiceUnavailable": "Natural voice previews need a connected speech provider. Typing works now; connect one later in Settings.",
+      "speakResponses": "Speak replies when natural voice is available.",
+      "wakeConsent": "Listen for “Morpheus” in the background (off until voice is configured).",
+      "telemetry": "Share optional diagnostic usage events with a random installation ID. Off by default.",
+      "ready": "I'm here when you need me.",
+      "readyBody": "Ask naturally. I'll handle the work and show you what matters.",
+      "enter": "Enter Morpheus",
+      "error": "I couldn't save that yet. Please try again.",
+      "footer": "Make yourself at home.",
+      "typeAlways": "Typing works too. Always.",
+      "suggestions": {
+        "openYouTube": "Open YouTube",
+        "research": "Research a project idea",
+        "helpMe": "What can you help me with?"
+      },
+      "humorStyles": {
+        "gentle": "Gentle",
+        "cheeky": "Cheeky",
+        "unfiltered": "Unfiltered"
+      },
+      "proactivity": {
+        "quiet": "Quiet",
+        "balanced": "Balanced",
+        "talkative": "Talkative"
+      }
+    },
+    "workspace": {
+      "navigation": "Morpheus navigation",
+      "tasks": "Active tasks",
+      "openChat": "Open conversation",
+      "openCompact": "Open compact Morpheus",
+      "close": "Close",
+      "greeting": "What's next?",
+      "greetingNamed": "What's next, {{name}}?",
+      "subtitle": "I'm here. You've got the floor.",
+      "conversation": "Conversation and work",
+      "you": "You",
+      "working": "I'm on it. I'll bring back the useful bits.",
+      "result": "Result",
+      "typing": "Typing works too. Always.",
+      "placeholder": "Speak or type your request..."
+    },
+    "tasks": {
+      "active": "{{count}} active",
+      "select": "Choose a task",
+      "control": {
+        "speech-stopped": "Speech stopped. Your tasks can keep running.",
+        "task-cancelled": "Task cancelled. An action already in progress may need a moment to finish.",
+        "permission-saved": "Approval sent. Morpheus will remember the displayed scopes.",
+        "choose-task": "More than one task matches. Choose the task you want to stop.",
+        "choose-permission": "Choose the permission request on screen so I know exactly what you want to allow.",
+        "no-task": "No active task matches that name.",
+        "no-permission": "There is no pending permission to remember."
+      }
+    },
     "title": "Morpheus",
     "commandCenter": "Command Center",
     "subtitle": "AI execution platform — plan, permission, execute, audit.",
@@ -247,6 +328,7 @@
       "applicationLabel": "Application"
     },
     "applications": {
+      "spotify": "Spotify",
       "notepad": "Notepad",
       "calculator": "Calculator",
       "paint": "Paint"
@@ -427,7 +509,7 @@
           "deny": "Deny",
           "allow-once": "Allow once",
           "allow-session": "Allow for this session",
-          "allow-always": "Always allow"
+          "allow-always": "Always do this without asking"
         },
         "scopeLabel": "Remembering this applies to"
       },
@@ -1046,6 +1128,8 @@
         "enabledDescription": "Surface real attention from durable Morpheus state without inventing tasks or urgency.",
         "notifications": "Proactive Windows notifications",
         "notificationsDescription": "Deliver at most one relevant notification per scan outside quiet hours.",
+        "doNotDisturb": "Do not disturb",
+        "doNotDisturbDescription": "Pause nonessential Morpheus notifications until you switch this off.",
         "factualDisclosure": "Notifications are generated only from inspectable Morpheus state. Provider output cannot silently create them.",
         "quietHours": "Quiet hours",
         "quietStart": "Starts",
@@ -1128,6 +1212,9 @@
       "outputs": { "collectArtifacts": "Artifacts", "retainHistory": "History" }
     },
     "voice": {
+      "localWake": {"title":"Detect my name on this PC","description":"Windows English speech recognition. Say the name, pause for acknowledgement, then speak. No background transcription requests before activation. Requires an installed recognizer and microphone.","disclosure":"Name detection stays on this PC. After activation, your command audio is sent to {{provider}} for transcription. No audio is saved."},
+      "dialogue": {"listening":"I'm here. What would you like me to do?","hint":"Say your command now. No need to repeat my name. This turn closes after 15 seconds."},
+      "check": {"title":"Hear Morpheus. Let Morpheus hear you.","description":"Preview uses your selected voice and may incur a small provider charge. The microphone check transcribes a short sample without executing it. The voice is AI-generated.","preview":"Preview selected voice","stop":"Stop preview","microphone":"Check microphone","finish":"Finish microphone check","sample":"I'm Morpheus. Tell me what you have in mind. We'll take it one step at a time. The complicated part? That's my job.","idle":"Not tested yet. A configured account is not a successful voice test.","playing":"Preparing or playing your selected voice…","neural":"Neural playback completed. Does this voice feel right to you?","windows":"Played with Windows fallback, not the selected neural voice. Check voice access before relying on it.","failed":"Voice playback failed. Check your output device and provider settings.","heard":"I heard: {{text}}"},
       "speechFailure": {
         "authentication": "Windows voice fallback: speech authentication failed (401). Check the selected provider key in Models.",
         "access": "Windows voice fallback: speech access was denied (403). Check the account's endpoint and model permissions.",
@@ -1182,12 +1269,19 @@
         "autoSubmitDescription": "Send a successful transcript into the same Objective Core without another click.",
         "speakResponses": "Speak final responses",
         "speakResponsesDescription": "Speak concise results through a configured neural voice, with Windows speech as fallback.",
+        "handsFreeFollowUp": "Continue the conversation",
+        "handsFreeFollowUpDescription": "After a voice result, listen for one bounded follow-up turn without requiring the wake phrase again.",
         "neuralSpeech": "Morpheus neural voice",
         "neuralSpeechReady": "Neural speech is configured through {{provider}}. If that provider does not support speech, Morpheus falls back to Windows voice.",
         "neuralSpeechFallback": "No compatible speech provider is ready. Windows speech will be used.",
         "speechProvider": "Speech provider",
         "speechProviderAutomatic": "Automatic · transcription provider",
         "speechModel": "Speech model",
+        "optimizedSetup": "One-key optimized voice",
+        "optimizedSetupReady": "Use {{provider}} for fast transcription and choose an efficient or more expressive Morpheus voice.",
+        "optimizedSetupMissing": "Add an OpenRouter account in Models first. One key can then power planning, transcription and speech.",
+        "efficientPreset": "Efficient · Kokoro",
+        "expressivePreset": "Expressive · Orpheus",
         "speechVoice": "Voice"
       },
       "states": {

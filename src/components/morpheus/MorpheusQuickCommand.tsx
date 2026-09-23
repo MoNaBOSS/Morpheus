@@ -1,68 +1,56 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Expand, ShieldCheck, Square, X } from 'lucide-react';
-
+import { ArrowRight, Expand, List, Square, X } from 'lucide-react';
+import morpheusLogo from '@/assets/morpheus-logo.svg';
+import { MatrixRain } from './boot/MatrixRain';
+import { MorpheusFluidOrb } from './MorpheusFluidOrb';
+import { MorpheusTaskSwitcher } from './MorpheusTaskSwitcher';
+import { MorpheusVoiceButton } from './MorpheusVoiceButton';
 import { hostEvents } from '@/lib/host-events';
 import { hostApi } from '@/lib/host-api';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
-import { cn } from '@/lib/utils';
 import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
-import { MorpheusVoiceButton } from './MorpheusVoiceButton';
-import { MorpheusObjectiveContextPicker } from './MorpheusObjectiveContextPicker';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
-import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
-import { MorpheusSignal } from './signal/MorpheusSignal';
-import { resolveMorpheusSignalState } from './signal/signal-state';
 import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
-import { MorpheusInteractionModeControl } from './operator/MorpheusInteractionModeControl';
+import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
+import { resolveMorpheusSignalState } from './signal/signal-state';
 
-const PRESENCE_PHASES = ['plan', 'trust', 'execute', 'result'] as const;
-
+/** A compact conversation attached to the orb; expanding keeps the same task and draft. */
 export function MorpheusQuickCommand() {
   const { t } = useTranslation('dashboard');
   const navigate = useNavigate();
-  const open = useMorpheusQuickCommandStore((state) => state.open);
-  const trigger = useMorpheusQuickCommandStore((state) => state.trigger);
-  const show = useMorpheusQuickCommandStore((state) => state.show);
-  const hide = useMorpheusQuickCommandStore((state) => state.hide);
+  const reducedMotion = useReducedMotion();
+  const open = useMorpheusQuickCommandStore((s) => s.open);
+  const trigger = useMorpheusQuickCommandStore((s) => s.trigger);
+  const show = useMorpheusQuickCommandStore((s) => s.show);
+  const hide = useMorpheusQuickCommandStore((s) => s.hide);
   const inputRef = useRef<HTMLInputElement>(null);
-  const objective = useMorpheusCommandStore((state) => state.input);
-  const setObjective = useMorpheusCommandStore((state) => state.setInput);
-  const runObjective = useMorpheusCommandStore((state) => state.runObjective);
-  const interpreting = useMorpheusCommandStore((state) => state.interpreting);
-  const executing = useMorpheusCommandStore((state) => state.executing);
-  const plan = useMorpheusCommandStore((state) => state.plan);
-  const planResult = useMorpheusCommandStore((state) => state.planResult);
-  const unsupported = useMorpheusCommandStore((state) => state.unsupported);
-  const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
-  const permission = useMorpheusCommandStore((state) => state.permission);
-  const cancelObjective = useMorpheusCommandStore((state) => state.cancelObjective);
-  const voicePhase = useMorpheusVoiceStore((state) => state.phase);
-  const voicePresence = useMorpheusVoiceStore((state) => state.presence?.state);
-  const transcript = useMorpheusVoiceStore((state) => state.transcript);
-  const cancelVoice = useMorpheusVoiceStore((state) => state.cancel);
-  const mode = useMorpheusOperatorStore((state) => state.mode);
-  const setMode = useMorpheusOperatorStore((state) => state.setMode);
-  const route = useMorpheusOperatorStore((state) => state.route);
-  const queueConversation = useMorpheusOperatorStore((state) => state.queueConversation);
-  const clarification = useMorpheusOperatorStore((state) => state.clarification);
-  const clearClarification = useMorpheusOperatorStore((state) => state.clearClarification);
-
-  const voiceBusy = voicePhase === 'requesting' || voicePhase === 'listening' || voicePhase === 'transcribing';
+  const objective = useMorpheusCommandStore((s) => s.input);
+  const setObjective = useMorpheusCommandStore((s) => s.setInput);
+  const runObjective = useMorpheusCommandStore((s) => s.runObjective);
+  const submitting = useMorpheusCommandStore((s) => s.submitting);
+  const unsupported = useMorpheusCommandStore((s) => s.unsupported);
+  const objectiveRun = useMorpheusCommandStore((s) => s.objectiveRun);
+  const history = useMorpheusCommandStore((s) => s.objectiveHistory);
+  const cancelObjective = useMorpheusCommandStore((s) => s.cancelObjective);
+  const voicePhase = useMorpheusVoiceStore((s) => s.phase);
+  const voicePresence = useMorpheusVoiceStore((s) => s.presence?.state);
+  const cancelVoice = useMorpheusVoiceStore((s) => s.cancel);
+  const route = useMorpheusOperatorStore((s) => s.route);
+  const queueConversation = useMorpheusOperatorStore((s) => s.queueConversation);
+  const clarification = useMorpheusOperatorStore((s) => s.clarification);
+  const clearClarification = useMorpheusOperatorStore((s) => s.clearClarification);
+  const [showTasks, setShowTasks] = useState(false);
+  const voiceBusy = ['requesting', 'listening', 'transcribing'].includes(voicePhase);
   const objectiveActive = Boolean(objectiveRun && !isObjectiveTerminalState(objectiveRun.state));
-  const busy = interpreting || executing || voiceBusy || objectiveActive;
+  const busy = submitting || voiceBusy;
   const compact = trigger !== null;
-  const signalState = resolveMorpheusSignalState({
-    voicePhase,
-    // Opening Presence is itself an active invocation. Project the dormant
-    // ambient service as ready without mutating its Main-owned state.
-    voicePresence: voicePresence === 'asleep' ? 'armed' : voicePresence,
-    objectiveState: objectiveRun?.state,
-  });
+  const signalState = resolveMorpheusSignalState({ voicePhase, voicePresence: voicePresence === 'asleep' ? 'armed' : voicePresence, objectiveState: objectiveRun?.state });
+  const recentRuns = (history?.runOrder ?? []).slice(0, 2).map((id) => history?.runsById[id]).filter((run) => run != null).reverse();
 
   useEffect(() => hostEvents.onMorpheusQuickCommand((payload) => show(payload.trigger)), [show]);
-
   useEffect(() => {
     let active = true;
     void hostApi.morpheus.companionSurfaceStatus().then((status) => {
@@ -70,121 +58,65 @@ export function MorpheusQuickCommand() {
     }).catch(() => undefined);
     return () => { active = false; };
   }, [show]);
-
   useEffect(() => {
-    if (open) window.setTimeout(() => inputRef.current?.focus(), 0);
-  }, [open]);
-
+    if (!open || trigger === 'wake-word') return;
+    const timer = window.setTimeout(() => inputRef.current?.focus(), 0);
+    return () => window.clearTimeout(timer);
+  }, [open, trigger]);
   const close = useCallback(async (): Promise<void> => {
     hide();
     if (compact) await hostApi.morpheus.dismissCompanionSurface().catch(() => undefined);
   }, [compact, hide]);
-
   const expand = async (): Promise<void> => {
     if (compact) await hostApi.morpheus.expandCompanionSurface().catch(() => undefined);
-    hide();
-    navigate('/');
+    hide(); navigate('/');
   };
-
   useEffect(() => {
     if (!open) return;
-    const handleKey = (event: KeyboardEvent) => {
+    const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (voiceBusy) { cancelVoice(); return; }
-      if (!objectiveActive) void close();
+      if (voiceBusy) cancelVoice(); else void close();
     };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [cancelVoice, close, objectiveActive, open, voiceBusy]);
-
-  if (!open) return null;
-
-  const stateLabel = voiceBusy
-    ? t(`morpheus.voice.states.${voicePhase}`)
-    : objectiveRun
-      ? t(`morpheus.objective.states.${objectiveRun.state}`)
-      : t(`morpheus.signalOs.signal.${signalState}`);
-  const interpretation = objectiveRun?.objective
-    ?? transcript
-    ?? (objective.trim() ? objective : t('morpheus.signalOs.presenceReady'));
-
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [cancelVoice, close, open, voiceBusy]);
   const submit = async (): Promise<void> => {
     const text = objective.trim();
     if (!text || busy) return;
     const decision = await route(text, 'quick-command');
-    if (decision.route === 'objective') {
-      await runObjective(decision.text, 'quick-command');
-      return;
-    }
-    if (decision.route === 'conversation') {
+    if (decision.route === 'objective') await runObjective(decision.text, 'quick-command');
+    else if (decision.route === 'conversation') {
       if (compact) await hostApi.morpheus.expandCompanionSurface().catch(() => undefined);
-      hide();
-      queueConversation(decision.text);
-    }
+      hide(); queueConversation(decision.text);
+    } else if (decision.route === 'control') setObjective('');
   };
 
-  return (
-    <div
-      data-morpheus
-      data-testid="morpheus-quick-command"
-      data-presentation={compact ? 'compact-window' : 'overlay'}
-      className={cn('fixed inset-0 z-[90000] flex justify-center', compact ? 'items-stretch bg-[hsl(var(--morpheus-surface-1))]' : 'items-start bg-black/65 px-4 pt-[12vh] backdrop-blur-lg')}
-      role="dialog"
-      aria-modal="true"
-      aria-label={t('morpheus.quickCommand.title')}
-      onMouseDown={(event) => { if (!compact && event.currentTarget === event.target && !busy) void close(); }}
-    >
-      <section className={cn('morpheus-presence-surface relative w-full overflow-hidden border border-white/10 bg-[hsl(var(--morpheus-surface-1))] shadow-2xl shadow-black/80', compact ? 'h-full border-0' : 'max-w-[720px] rounded-2xl')}>
-        <div aria-hidden className="morpheus-presence-field absolute inset-0" />
-        <header className="relative z-10 flex h-12 items-center justify-between border-b border-white/[0.07] px-4">
-          <div className="flex items-center gap-2.5"><span className="font-serif text-xs tracking-[0.2em]">{t('morpheus.title')}</span><span className="h-1 w-1 rounded-full bg-[hsl(var(--morpheus-accent))]" /><span data-testid="quick-command-live-state" className="text-[9px] uppercase tracking-[0.17em] text-muted-foreground">{stateLabel}</span></div>
-          <div className="flex items-center gap-1">
-            <button type="button" data-testid="quick-command-expand" aria-label={t('morpheus.quickCommand.openCommandCenter')} onClick={() => void expand()} className="rounded p-2 text-muted-foreground hover:bg-white/5 hover:text-foreground"><Expand className="h-3.5 w-3.5" /></button>
-            <button type="button" data-testid="quick-command-close" aria-label={t('morpheus.quickCommand.close')} disabled={busy} onClick={() => void close()} className="rounded p-2 text-muted-foreground hover:bg-white/5 hover:text-foreground disabled:opacity-30"><X className="h-3.5 w-3.5" /></button>
-          </div>
-        </header>
-
-        <div className="relative z-10 grid grid-cols-[150px_minmax(0,1fr)]">
-          <div className="flex flex-col items-center justify-center border-r border-white/[0.07] px-4 py-5">
-            <MorpheusSignal state={signalState} className="h-24 w-24 text-[hsl(var(--morpheus-accent))]" label={t(`morpheus.signalOs.signal.${signalState}`)} />
-            <span className="mt-2 text-[9px] uppercase tracking-[0.2em] text-[hsl(var(--morpheus-accent))]">{stateLabel}</span>
-            {voicePhase === 'listening' || voicePresence === 'listening' ? <span className="mt-3 flex items-center gap-1.5 text-[8px] uppercase tracking-[0.12em] text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--morpheus-danger))]" />{t('morpheus.signalOs.microphoneVisible')}</span> : null}
-          </div>
-
-          <div className="min-w-0 px-5 py-4">
-            <div className="flex items-center justify-between gap-4"><p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">{t('morpheus.signalOs.interpretation')}</p><MorpheusObjectiveContextPicker className="max-w-[260px]" /></div>
-            <p data-testid="quick-command-objective-state" className="mt-3 line-clamp-2 font-serif text-xl leading-snug text-foreground">
-              {objectiveRun ? <span className="sr-only">{t('morpheus.quickCommand.objectiveState', { objective: objectiveRun.objective, state: t(`morpheus.objective.states.${objectiveRun.state}`) })}</span> : null}
-              <span data-testid="quick-command-transcript">{interpretation}</span>
-            </p>
-            <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
-              {clarification ? t('morpheus.operator.clarification') : objectiveRun?.summary ?? objectiveRun?.plannerNotice ?? (objectiveRun ? t('morpheus.signalOs.handlingObjective') : t('morpheus.signalOs.presenceHint'))}
-            </p>
-
-            <div className="mt-4 grid grid-cols-4 border-t border-white/[0.07] pt-3" data-testid="quick-command-status">
-              <span className="sr-only">{stateLabel}</span>
-              {PRESENCE_PHASES.map((phase, index) => (
-                <div key={phase} className="flex items-center gap-2 text-[8px] uppercase tracking-[0.12em] text-muted-foreground"><span className={cn('h-1.5 w-1.5 rounded-full border', index === 0 && busy ? 'border-[hsl(var(--morpheus-accent))] bg-[hsl(var(--morpheus-accent))]' : 'border-white/20')} />{t(`morpheus.signalOs.presencePhases.${phase}`)}</div>
-              ))}
-            </div>
-          </div>
+  return <AnimatePresence>{open ? <motion.div
+    key="presence" initial={{ opacity: reducedMotion ? 1 : 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
+    transition={{ duration: reducedMotion ? 0 : 0.16 }} data-morpheus data-testid="morpheus-quick-command"
+    data-presentation={compact ? 'compact-window' : 'overlay'}
+    className={`fixed inset-0 z-[90000] flex justify-center ${compact ? 'items-stretch bg-[#040907]' : 'items-start bg-black/65 px-4 pt-[10vh] backdrop-blur-lg'}`}
+    role="dialog" aria-modal="true" aria-label={t('morpheus.quickCommand.title')}
+    onMouseDown={(event) => { if (!compact && event.currentTarget === event.target && !busy) void close(); }}>
+    <section className={`relative flex w-full flex-col overflow-hidden border border-[#345341] bg-[#040907] shadow-2xl shadow-black/80 ${compact ? 'h-full border-0' : 'max-h-[80vh] min-h-[450px] max-w-[500px] rounded-2xl'}`}>
+      <div aria-hidden className="morpheus-first-launch-rain"><MatrixRain /></div>
+      <header className="relative z-10 flex h-12 shrink-0 items-center justify-between border-b border-white/10 px-4">
+        <div className="flex items-center gap-2"><img src={morpheusLogo} alt="" className="h-5 w-5" /><span className="text-xs font-semibold text-[#edf5ef]">{t('morpheus.title')}</span></div>
+        <div className="flex items-center gap-1"><button type="button" aria-label={t('morpheus.workspace.tasks')} aria-expanded={showTasks} onClick={() => setShowTasks((value) => !value)} className="rounded p-2 text-[#a0b6aa] hover:text-white"><List size={16} /></button><button type="button" data-testid="quick-command-expand" aria-label={t('morpheus.quickCommand.openCommandCenter')} onClick={() => void expand()} className="rounded p-2 text-[#a0b6aa] hover:text-white"><Expand size={16} /></button><button type="button" data-testid="quick-command-close" aria-label={t('morpheus.quickCommand.close')} onClick={() => void close()} className="rounded p-2 text-[#a0b6aa] hover:text-white"><X size={16} /></button></div>
+      </header>
+      {showTasks ? <div className="relative z-20 border-b border-white/10 bg-[#0e1b15] p-3"><MorpheusTaskSwitcher /></div> : null}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col px-5 py-5">
+        <div className="flex items-center gap-3"><MorpheusFluidOrb state={signalState} className="h-16 w-16" label={t(`morpheus.signalOs.signal.${signalState}`)} /><div><p className="text-lg font-semibold text-[#edf5ef]">{t('morpheus.workspace.greeting')}</p><p data-testid="quick-command-live-state" className="text-xs text-[#a0b6aa]">{voiceBusy ? t(`morpheus.voice.states.${voicePhase}`) : t('morpheus.workspace.subtitle')}</p></div></div>
+        <div className="mt-5 min-h-0 flex-1 space-y-4 overflow-y-auto pr-2" role="log" aria-label={t('morpheus.workspace.conversation')}>
+          {recentRuns.map((run) => <div key={run.objectiveRunId} className="space-y-3"><div className="ml-6 rounded-xl bg-[#14231a] p-3 text-sm text-[#edf5ef]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.workspace.you')}</span>{run.objective}</div><div className="text-sm leading-relaxed text-[#d8e7dd]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.title')}</span>{run.clarification ?? run.error?.message ?? run.summary ?? t('morpheus.workspace.working')}</div></div>)}
+          {clarification ? <p className="rounded-xl border border-[#345341] bg-[#0e1b15] p-3 text-sm text-[#edf5ef]">{clarification}</p> : null}
+          {unsupported ? <p className="text-xs text-amber-200">{t('morpheus.quickCommand.unsupported')}</p> : null}
         </div>
-
-        <div className="relative z-10 flex items-center justify-center border-t border-white/[0.07] px-4 py-2">
-          <MorpheusInteractionModeControl value={mode} onChange={setMode} className="w-full max-w-[330px]" />
-        </div>
-
-        <form className="relative z-10 flex items-center gap-2 border-t border-white/[0.07] px-4 py-3" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
-          <input ref={inputRef} data-testid="quick-command-input" value={objective} disabled={busy} onChange={(event) => { setObjective(event.target.value); clearClarification(); }} placeholder={t('morpheus.signalOs.commandPlaceholder')} className="h-11 min-w-0 flex-1 border-b border-white/15 bg-transparent px-1 font-serif text-base text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-[hsl(var(--morpheus-accent-dim))]" />
-          <MorpheusVoiceButton source="quick-command" className="h-10 w-10 rounded-full" />
-          {objectiveActive ? <button type="button" data-testid="quick-command-cancel-objective" aria-label={t('morpheus.signalOs.stop')} onClick={() => void cancelObjective()} className="flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(var(--morpheus-danger))]/35 text-[hsl(var(--morpheus-danger))]"><Square className="h-3.5 w-3.5 fill-current" /></button> : <button type="submit" data-testid="quick-command-submit" aria-label={t('morpheus.command.run')} disabled={!objective.trim() || busy} className="flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(var(--morpheus-accent-dim))] text-[hsl(var(--morpheus-accent))] disabled:border-white/10 disabled:text-muted-foreground/30"><ArrowRight className="h-4 w-4" /></button>}
-        </form>
-
-        <footer className="relative z-10 flex h-8 items-center justify-between border-t border-white/[0.05] px-4 text-[8px] uppercase tracking-[0.12em] text-muted-foreground">
-          <span className="flex items-center gap-1.5"><ShieldCheck className="h-3 w-3" />{permission ? t('morpheus.signalOs.trustProfile', { profile: t(`morpheus.permission.profiles.${permission.profile}.name`) }) : t('morpheus.permission.loading')}</span>
-          <span>{objectiveRun?.route ? <span data-testid="quick-command-route" className="mr-3">{t(`morpheus.missions.routes.${objectiveRun.route.kind}`)}</span> : null}{unsupported ? t('morpheus.quickCommand.unsupported') : planResult ? t('morpheus.quickCommand.finished', { status: planResult.status }) : plan ? t('morpheus.quickCommand.executing', { objective: plan.objective }) : t('morpheus.quickCommand.sameCore')}</span>
-        </footer>
-      </section>
-    </div>
-  );
+        <p data-testid="quick-command-objective-state" className="sr-only">{objectiveRun ? `${objectiveRun.objective} ${t(`morpheus.objective.states.${objectiveRun.state}`)}` : ''}</p>
+        <span data-testid="quick-command-transcript" className="sr-only">{objectiveRun?.objective ?? objective}</span>
+        <form className="morpheus-setup-composer mt-4 flex shrink-0 items-center gap-1" onSubmit={(event) => { event.preventDefault(); void submit(); }}><MorpheusVoiceButton source="quick-command" className="!h-8 !w-8 !rounded-full !border-0 !bg-transparent !text-[#a0b6aa]" /><input ref={inputRef} data-testid="quick-command-input" value={objective} disabled={busy} onChange={(event) => { setObjective(event.target.value); clearClarification(); }} placeholder={t('morpheus.workspace.placeholder')} className="min-w-0 flex-1 bg-transparent text-sm text-[#edf5ef] outline-none placeholder:text-[#a0b6aa]" />{objectiveActive ? <button type="button" data-testid="quick-command-cancel-objective" aria-label={t('morpheus.signalOs.stop')} onClick={() => void cancelObjective()} className="p-2 text-red-300"><Square size={14} /></button> : null}<button type="submit" data-testid="quick-command-submit" aria-label={t('morpheus.command.run')} disabled={!objective.trim() || busy} className="p-2 text-[#53edb4] disabled:opacity-40"><ArrowRight size={18} /></button></form>
+      </div>
+      <footer className="relative z-10 flex h-10 shrink-0 items-center justify-end border-t border-white/10 px-4 text-[11px] text-[#a0b6aa]">{t('morpheus.workspace.typing')}</footer>
+    </section>
+  </motion.div> : null}</AnimatePresence>;
 }

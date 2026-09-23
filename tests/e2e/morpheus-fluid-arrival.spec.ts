@@ -13,6 +13,9 @@ test.describe('Fluid Morpheus arrival', () => {
       await page.getByTestId('morpheus-open-welcome').click();
       const welcome = page.getByTestId('morpheus-welcome');
       await expect(welcome).toBeVisible();
+      await expect(welcome.locator('.morpheus-welcome-title')).toHaveCSS('opacity', '1');
+      await expect(welcome.locator('.morpheus-welcome-presence')).toHaveCSS('opacity', '1');
+      expect(await welcome.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
       await expect(welcome).toContainText('Moving to the tray does not enable your microphone');
       await expect(page.getByTestId('morpheus-ambient-voice-indicator')).toHaveCount(0);
       await expect(welcome.getByTestId('morpheus-signal').locator('.morpheus-signal-core')).toBeVisible();
@@ -32,15 +35,24 @@ test.describe('Fluid Morpheus arrival', () => {
       await expect(welcome).toHaveCount(0);
       await page.getByTestId('morpheus-open-welcome').click();
       await expect(welcome).toBeVisible();
+      // Real Main speech-presentation event. Greeting owns this label; it must
+      // not also put the global speech HUD over its own introduction.
+      await page.evaluate(() => window.clawx.hostInvoke({
+        id: crypto.randomUUID(), module: 'morpheus', action: 'setVoiceSpeaking', payload: { speaking: true },
+      }));
+      await expect(page.getByTestId('morpheus-welcome-voice-status')).toContainText(/speaking/i);
+      await expect(page.getByTestId('morpheus-voice-indicator')).toHaveCount(0);
+      await page.evaluate(() => window.clawx.hostInvoke({
+        id: crypto.randomUUID(), module: 'morpheus', action: 'setVoiceSpeaking', payload: { speaking: false },
+      }));
       if (folder) await page.screenshot({ path: join(folder, 'fluid-welcome-1280x800.png'), animations: 'disabled' });
       await enter.click();
       await expect(welcome).toHaveCount(0);
       await page.getByTestId('morpheus-command-input').fill('Show system information');
       await page.getByTestId('morpheus-command-submit').click();
       await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i);
-      const signal = page.getByTestId('command-center-plan').getByTestId('morpheus-signal');
+      const signal = page.getByTestId('morpheus-fluid-orb');
       await expect(signal).toHaveAttribute('data-signal-state', 'complete');
-      await expect(signal.locator('.morpheus-signal-corona')).toHaveCSS('animation-play-state', 'paused');
       // Real Main presentation event after a completed objective: speech wins,
       // and completion resumes when playback ends. No synthetic execution data.
       await page.evaluate(() => window.clawx.hostInvoke({
@@ -66,6 +78,8 @@ test.describe('Fluid Morpheus arrival', () => {
       await page.getByTestId('morpheus-open-welcome').click();
       const welcome = page.getByTestId('morpheus-welcome');
       await expect(welcome).toHaveCSS('animation-name', 'none');
+      await expect(welcome.locator('.morpheus-welcome-title')).toHaveCSS('animation-name', 'none');
+      await expect(welcome.locator('.morpheus-welcome-presence')).toHaveCSS('animation-name', 'none');
       const folder = process.env.MORPHEUS_VISUAL_EVIDENCE_DIR?.trim();
       if (folder) await page.screenshot({ path: join(folder, 'fluid-welcome-1920x1080.png') });
       await page.setViewportSize({ width: 800, height: 800 });

@@ -26,7 +26,7 @@ ambient voice / push-to-talk / Today / Goal / System / existing entry surfaces
   transcription, audit and companion-window presentation.
 - Ambient mode is disabled by default. Starting it requires an explicit user
   setting and a real OS media permission.
-- Each detected bounded utterance is transcribed through the existing Voice
+- In legacy cloud monitoring, each detected bounded utterance is transcribed through the existing Voice
   service. Main returns the transcript; the UI matches the exact normalized
   wake phrase and submits only the remaining objective through Objective Core.
 - No audio or transcript is persisted. Audit records only session id, provider
@@ -36,8 +36,43 @@ ambient voice / push-to-talk / Today / Goal / System / existing entry surfaces
 - Barge-in cancels local speech synthesis immediately. Cancelling active work
   still uses Objective Core cancellation; voice cannot bypass runtime state.
 
-This release does not claim offline wake-word detection. A loopback transcription
-provider is the supported local/private option behind the same contract.
+### Opt-in local wake (1.0.4 candidate)
+
+`voice/windows-wake.ts` owns a Windows System.Speech helper with a fixed exact-name
+grammar. It runs application-owned static code with `shell: false`, accepts only
+validated phrase/configuration on stdin, and is terminated with its owner. The
+first installed English recognizer is used; other recognition languages are not
+certified. No ambient audio is sent to a provider by the native name detector.
+
+Main audits each accepted wake before emitting a sequence. A wake admits one
+bounded capture inside a 12-second addressing window, followed by one transcription
+request. Capture permission is also enforced in Main, not just by the visual
+indicator. The command uses the configured transcription provider. Local mode
+never silently falls back to continuous cloud monitoring. Existing profiles keep
+their saved mode; users explicitly choose local detection in Voice settings.
+
+The Renderer acknowledges the wake with a local tone/caption and a follow-up
+window. The hidden app's existing compact companion opens on the audited wake.
+Cancellation, configuration changes and generation checks reject stale input.
+This is one-command follow-up, not an always-open full-duplex conversation.
+
+The current machine loaded its recognizer but failed to open its default audio
+input. Native helper tests are not evidence of successful real microphone capture.
+
+### Speech output and readiness
+
+Main streams bounded MP3 chunks over `morpheus:speech-chunk` after the speech-start
+audit. Correlation id, sequence and total byte limits bind one ephemeral Renderer
+MediaSource to its request. No audio is stored. Buffered playback remains available
+when MediaSource MP3 is unsupported. Failed playback cancels pending generation
+before Windows fallback; cancellation prevents stale output. Speaking state begins
+on actual playback, not request dispatch. Provider latency is not fabricated.
+
+Voice settings offer a real selected-voice preview, explicit neural versus Windows
+fallback result, and a separate microphone transcription check that never submits
+work. A configured provider is not a successful test. The audio-reactive Signal is
+a transient level visualization, not proof of comprehension. Live latency, voice
+quality and wake reliability remain separate release gates.
 
 ## Proactive service
 

@@ -1,5 +1,9 @@
 # Morpheus Windows 1.0 Foundation — Architecture
 
+September 2026 update: [Phase 3 task continuity](MORPHEUS_TASK_CONTINUITY.md)
+supersedes this document's single-objective concurrency and restart assumptions.
+Per-plan dependency order and Main-owned authority remain unchanged.
+
 This document evolves the implemented 0.5 architecture. It does not replace the
 security guarantees in `MORPHEUS_ARCHITECTURE.md` or
 `docs/security/PERMISSION_MODEL.md`.

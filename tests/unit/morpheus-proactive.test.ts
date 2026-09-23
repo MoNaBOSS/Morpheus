@@ -63,7 +63,7 @@ describe('Morpheus proactive attention', () => {
     const store = createMorpheusProactiveStore({
       userDataDir: directory(), now, createId: () => 'attention-failed-mission',
     });
-    store.updateSettings({ notificationsEnabled: true });
+    store.updateSettings({ notificationsEnabled: true, doNotDisturb: true });
     const submitInternal = vi.fn(async () => ({ objectiveRunId: 'objective-notify', accepted: true }));
     const waitForTerminal = vi.fn(async () => ({ state: 'complete' }));
     const service = createMorpheusProactiveService({
@@ -87,6 +87,10 @@ describe('Morpheus proactive attention', () => {
       appVersion: '1.0.0', now, createId: () => 'attention-failed-mission',
     });
 
+    await service.tick();
+    expect(submitInternal).not.toHaveBeenCalled();
+    expect(createMorpheusProactiveStore({ userDataDir: directories[directories.length - 1] }).settings().doNotDisturb).toBe(true);
+    store.updateSettings({ doNotDisturb: false });
     await service.tick();
     expect(submitInternal).toHaveBeenCalledWith(expect.objectContaining({
       origin: { type: 'proactive', attentionId: 'attention-failed-mission' },

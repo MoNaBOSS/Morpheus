@@ -99,6 +99,7 @@ import type {
 } from '../morpheus/memory-types';
 import type {
   CompleteMorpheusOnboardingPayload,
+  MorpheusCompanionProfilePatch,
   MorpheusOnboardingStatus,
 } from '../morpheus/onboarding-types';
 import type {
@@ -231,6 +232,7 @@ export type SettingsSnapshot = Partial<{
   startMinimized: boolean;
   launchAtStartup: boolean;
   telemetryEnabled: boolean;
+  telemetryConsentVersion: number;
   gatewayAutoStart: boolean;
   gatewayPort: number;
   proxyEnabled: boolean;
@@ -1206,6 +1208,7 @@ export type HostApiContract = {
     removeMemory: (payload: MorpheusMemoryIdPayload) => MorpheusMemoryResult;
     onboardingStatus: () => MorpheusOnboardingStatus;
     completeOnboarding: (payload: CompleteMorpheusOnboardingPayload) => MorpheusOnboardingStatus;
+    updateCompanionProfile: (payload: MorpheusCompanionProfilePatch) => MorpheusOnboardingStatus;
     resetOnboarding: () => MorpheusOnboardingStatus;
     goals: () => MorpheusGoalsSnapshot;
     goal: (payload: MorpheusGoalIdPayload) => MorpheusGoalResult;

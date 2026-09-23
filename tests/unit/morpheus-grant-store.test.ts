@@ -30,6 +30,16 @@ const SCOPE: PermissionScope = {
 };
 
 describe('grant lifecycle', () => {
+  it('does not retain a new allowance or a broader profile when persistence fails', () => {
+    const dir = freshDir();
+    const store = createMorpheusGrantStore({ userDataDir: dir });
+    store.setProfile('balanced');
+    mkdirSync(join(dir, 'morpheus', 'policy.json.tmp'));
+    expect(() => store.createGrant(SCOPE, 'persistent')).toThrow();
+    expect(store.findGrant(SCOPE)).toBeUndefined();
+    expect(() => store.setProfile('autonomous')).toThrow();
+    expect(store.getProfile()).toBe('balanced');
+  });
   it('allow-once creates no stored grant', () => {
     const store = createMorpheusGrantStore({ userDataDir: freshDir() });
     // `allow-once` never calls createGrant at all; nothing is remembered.
@@ -120,7 +130,7 @@ describe('grant lifecycle', () => {
     store.createGrant(SCOPE, 'session');
 
     store.reset();
-    expect(store.getProfile()).toBe('autonomous');
+    expect(store.getProfile()).toBe('balanced');
     expect(store.listPersistentGrants()).toEqual([]);
     expect(store.listSessionGrants()).toEqual([]);
   });
@@ -182,14 +192,14 @@ describe('stored policy is untrusted input', () => {
     mkdirSync(join(broken, 'morpheus'), { recursive: true });
     writeFileSync(join(broken, 'morpheus', 'policy.json'), '{not json', 'utf8');
     const store = createMorpheusGrantStore({ userDataDir: broken });
-    expect(store.getProfile()).toBe('autonomous');
+    expect(store.getProfile()).toBe('balanced');
     expect(store.listPersistentGrants()).toEqual([]);
   });
 
   it('falls back to the default profile for an unknown stored profile', () => {
     const dir = freshDir();
     writePolicy(dir, { v: 1, profile: 'godmode', grants: [] });
-    expect(createMorpheusGrantStore({ userDataDir: dir }).getProfile()).toBe('autonomous');
+    expect(createMorpheusGrantStore({ userDataDir: dir }).getProfile()).toBe('balanced');
   });
 
   it('never accepts a session grant from disk', () => {

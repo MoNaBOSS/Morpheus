@@ -112,6 +112,87 @@
     }
   },
   "morpheus": {
+    "socialCheckIn": { "question": "今日はどうですか？", "answer": { "good": "順調", "rough": "いまいち" }, "reply": { "good": "よかった。必要なときは声をかけてください。", "rough": "大変ですね。話したいときや手伝いが必要なときはここにいます。" }, "dismiss": "声かけを閉じる" },
+    "activationV2": {
+      "profileTitle": "あなたの Morpheus",
+      "profileDescription": "話し方や声かけの頻度を変更し、紹介画面を確認できます。既存のタスクと権限は保持されます。",
+      "preview": "紹介をプレビュー",
+      "saved": "コンパニオン設定を保存しました。",
+      "hello": "こんにちは。モーフィアスです。",
+      "nameQuestion": "何とお呼びしましょうか？",
+      "close": "閉じる",
+      "speak": "モーフィアスに話す",
+      "continue": "続ける",
+      "inputPlaceholder": "話すか入力してください...",
+      "skipName": "今はスキップ",
+      "welcome": "マトリックスの世界へようこそ、{{name}}。",
+      "friend": "友よ",
+      "firstQuestion": "何をお手伝いしましょうか？",
+      "send": "送信",
+      "personalize": "自分好みに設定",
+      "makeItYours": "くつろいでください。",
+      "optional": "少しだけ選んでください。後で変更できます。",
+      "interests": "興味のあることは？",
+      "interestsPlaceholder": "映画、アニメ、仕事など、覚えてほしいこと",
+      "humor": "ユーモア",
+      "checkIns": "声をかける頻度",
+      "voice": "声を選ぶ（タップで試聴）",
+      "voiceSample": "こんにちは。モーフィアスです。始めましょう。",
+      "voiceUnavailable": "自然な声の試聴には音声プロバイダーの接続が必要です。入力は今すぐ使えます。",
+      "speakResponses": "自然な音声が使えるときは返答を読み上げる",
+      "wakeConsent": "バックグラウンドで「Morpheus」を聞き取る（音声設定までオフ）",
+      "telemetry": "任意の診断イベントをランダムなインストールIDと共有する。初期設定はオフ。",
+      "ready": "必要なときはここにいます。",
+      "readyBody": "自然に話してください。作業を進め、重要なことをお伝えします。",
+      "enter": "モーフィアスを開く",
+      "error": "保存できませんでした。もう一度お試しください。",
+      "footer": "ご自由にどうぞ。",
+      "typeAlways": "入力もいつでも使えます。",
+      "suggestions": {
+        "openYouTube": "YouTubeを開く",
+        "research": "企画のアイデアを調べる",
+        "helpMe": "何ができますか？"
+      },
+      "humorStyles": {
+        "gentle": "控えめ",
+        "cheeky": "茶目っ気",
+        "unfiltered": "率直"
+      },
+      "proactivity": {
+        "quiet": "静か",
+        "balanced": "バランス",
+        "talkative": "よく話す"
+      }
+    },
+    "workspace": {
+      "navigation": "Morpheus ナビゲーション",
+      "tasks": "進行中のタスク",
+      "openChat": "会話を開く",
+      "openCompact": "コンパクト表示を開く",
+      "close": "閉じる",
+      "greeting": "次は何をしましょう？",
+      "greetingNamed": "次は何をしましょう、{{name}}？",
+      "subtitle": "ここにいます。話してください。",
+      "conversation": "会話と作業",
+      "you": "あなた",
+      "working": "進めています。役立つ内容をまとめてお伝えします。",
+      "result": "結果",
+      "typing": "文字入力もいつでも使えます。",
+      "placeholder": "話すか入力してください..."
+    },
+    "tasks": {
+      "active": "{{count}} 件実行中",
+      "select": "タスクを選択",
+      "control": {
+        "speech-stopped": "音声を停止しました。タスクは続行できます。",
+        "task-cancelled": "タスクをキャンセルしました。実行中の操作が終了するまで少し時間がかかる場合があります。",
+        "permission-saved": "承認を送信しました。表示された権限の範囲を記憶します。",
+        "choose-task": "複数のタスクが該当します。停止するタスクを選択してください。",
+        "choose-permission": "画面で許可する権限リクエストを選択してください。",
+        "no-task": "その名前の実行中のタスクはありません。",
+        "no-permission": "承認待ちの権限はありません。"
+      }
+    },
     "title": "Morpheus",
     "commandCenter": "コマンドセンター",
     "subtitle": "AI 実行プラットフォーム — 計画・許可・実行・監査。",
@@ -155,6 +236,7 @@
       "applicationLabel": "アプリケーション"
     },
     "applications": {
+      "spotify": "Spotify",
       "notepad": "メモ帳",
       "calculator": "電卓",
       "paint": "ペイント"
@@ -719,6 +801,8 @@
         "enabledDescription": "タスクや緊急性を捏造せず、永続的な Morpheus の状態から実際の注意事項を表示します。",
         "notifications": "プロアクティブ Windows 通知",
         "notificationsDescription": "静穏時間外に、スキャンごとに関連する通知を最大1件配信します。",
+        "doNotDisturb": "おやすみモード",
+        "doNotDisturbDescription": "オフにするまで緊急ではない通知を止めます。",
         "factualDisclosure": "通知は検査可能な Morpheus の状態からのみ生成されます。モデル出力が密かに作成することはできません。",
         "quietHours": "静穏時間",
         "quietStart": "開始",
@@ -772,6 +856,9 @@
       "outputs": { "collectArtifacts": "成果物", "retainHistory": "履歴" }
     },
     "voice": {
+      "localWake": {"title":"この PC で名前を検出","description":"Windows の英語音声認識を使用します。名前を呼び、応答を待ってから指示してください。起動前の背景音声は送信しません。認識エンジンとマイクが必要です。","disclosure":"名前の検出はこの PC 内で行います。起動後の指示音声は {{provider}} に送信して文字起こしします。音声は保存しません。"},
+      "dialogue": {"listening":"はい。何をしましょうか？","hint":"名前を繰り返さず、そのまま指示してください。この受付は 15 秒後に終了します。"},
+      "check": {"title":"Morpheus の声とマイクを確認","description":"試聴は選択した音声を使用し、少額の料金が発生する場合があります。マイク確認は短い音声を文字起こしするだけで、実行しません。音声は AI が生成します。","preview":"選択した音声を試聴","stop":"試聴を停止","microphone":"マイクを確認","finish":"マイク確認を終了","sample":"Morpheus です。やりたいことを教えてください。一歩ずつ進めましょう。難しい部分は私の仕事です。","idle":"未確認です。アカウントの設定だけでは音声の動作確認にはなりません。","playing":"選択した音声を準備または再生中…","neural":"ニューラル音声の再生が完了しました。この声はいかがですか？","windows":"選択した音声ではなく Windows の代替音声で再生しました。音声の利用設定を確認してください。","failed":"音声の再生に失敗しました。出力デバイスとプロバイダー設定を確認してください。","heard":"認識した内容：{{text}}"},
       "speechFailure": {
         "authentication": "Windows 音声に切替：音声認証に失敗しました (401)。モデル設定で選択したプロバイダーのキーを確認してください。",
         "access": "Windows 音声に切替：音声アクセスが拒否されました (403)。エンドポイントとモデルの権限を確認してください。",
@@ -826,12 +913,19 @@
         "autoSubmitDescription": "文字起こし成功後、追加クリックなしで同じ Objective Core に送ります。",
         "speakResponses": "最終応答を読み上げる",
         "speakResponsesDescription": "設定済みのニューラル音声で簡潔な結果を読み上げ、Windows 音声を代替として使用します。",
+        "handsFreeFollowUp": "会話を続ける",
+        "handsFreeFollowUpDescription": "音声結果の後、ウェイクフレーズを繰り返さずに時間制限付きの追加発話を 1 回受け付けます。",
         "neuralSpeech": "Morpheus ニューラル音声",
         "neuralSpeechReady": "{{provider}} でニューラル音声を設定済みです。音声非対応の場合は Windows 音声に切り替わります。",
         "neuralSpeechFallback": "対応する音声プロバイダーがありません。Windows 音声を使用します。",
         "speechProvider": "音声プロバイダー",
         "speechProviderAutomatic": "自動 · 文字起こしプロバイダー",
         "speechModel": "音声モデル",
+        "optimizedSetup": "ワンクリック最適化音声",
+        "optimizedSetupReady": "{{provider}} で高速文字起こしを使い、効率重視または表現力重視の Morpheus 音声を選べます。",
+        "optimizedSetupMissing": "まず Models で OpenRouter アカウントを追加してください。1つのキーで計画、文字起こし、音声を利用できます。",
+        "efficientPreset": "効率重視 · Kokoro",
+        "expressivePreset": "表現力重視 · Orpheus",
         "speechVoice": "声"
       },
       "states": {

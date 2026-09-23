@@ -19,7 +19,7 @@ beforeEach(() => {
 });
 
 describe('Morpheus operator interface state', () => {
-  it('sends only text, mode and surface to the Main-owned router', async () => {
+  it('uses automatic routing even when an old mode preference remains saved', async () => {
     routeInteraction.mockResolvedValue({
       route: 'objective', reason: 'act-selected', confidence: 'explicit', text: 'Build the site',
     });
@@ -28,7 +28,7 @@ describe('Morpheus operator interface state', () => {
     await expect(useMorpheusOperatorStore.getState().route('  Build the site  ', 'presence'))
       .resolves.toMatchObject({ route: 'objective' });
     expect(routeInteraction).toHaveBeenCalledWith({
-      text: '  Build the site  ', mode: 'act', surface: 'presence',
+      text: '  Build the site  ', mode: 'auto', surface: 'presence',
     });
   });
 

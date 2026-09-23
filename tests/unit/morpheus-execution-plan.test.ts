@@ -20,6 +20,19 @@ function interpret(objective: string) {
 }
 
 describe('supported command interpretation', () => {
+  it('opens named sites, plain domains and Spotify without provider planning', () => {
+    for (const [command, url] of [
+      ['Open YouTube', 'https://www.youtube.com/'], ['Open Instagram', 'https://www.instagram.com/'],
+      ['Open Pornhub', 'https://www.pornhub.com/'], ['Open example.com', 'https://example.com/'],
+    ]) {
+      const result = interpret(command);
+      expect(result).toMatchObject({ ok: true, plan: { steps: [{ capabilityId: 'web.openUrl', params: { url } }] } });
+    }
+    expect(interpret('Open Spotify')).toMatchObject({ ok: true, plan: { steps: [{ capabilityId: 'app.launch', params: { applicationKey: 'spotify' } }] } });
+    expect(interpret("Don't open Spotify").ok).toBe(false);
+    expect(interpret('Research music trends and open Spotify').ok).toBe(false);
+    expect(interpret('Explain https://example.com').ok).toBe(false);
+  });
   it('maps system-information phrasings to system.report', () => {
     for (const command of [
       'Show system information',

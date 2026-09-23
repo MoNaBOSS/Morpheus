@@ -6,7 +6,7 @@ import type { UpdateStatusSnapshot } from '../host-api/contract';
 import type { ChatRuntimeEvent } from '../chat-runtime-events';
 import type { MorpheusActionEvent } from '../morpheus/action-types';
 import type { MorpheusObjectiveEvent } from '../morpheus/core/objective-types';
-import type { MorpheusVoicePresence } from '../morpheus/voice-types';
+import type { MorpheusVoicePresence, MorpheusSpeechChunk } from '../morpheus/voice-types';
 import type { MorpheusRiskTier } from '../morpheus/actions/registry';
 import type {
   GatewayNotification,
@@ -113,7 +113,7 @@ export type HostEventContract = {
   morpheus: {
     actionEvent: (payload: MorpheusActionEvent) => void;
     /** Fixed global shortcut requested the trusted Quick Command surface. */
-    quickCommand: (payload: { trigger: 'global-shortcut' | 'tray' }) => void;
+    quickCommand: (payload: { trigger: 'global-shortcut' | 'tray' | 'wake-word' }) => void;
     /** Fixed global shortcut requested the trusted microphone surface. */
     voiceCommand: (payload: { trigger: 'global-shortcut' | 'tray' }) => void;
     /**
@@ -126,6 +126,7 @@ export type HostEventContract = {
     objectiveEvent: (payload: MorpheusObjectiveEvent) => void;
     /** Main-owned ambient microphone and spoken-response presence. */
     voicePresence: (payload: MorpheusVoicePresence) => void;
+    speechChunk: (payload: MorpheusSpeechChunk) => void;
   };
 };
 
@@ -211,6 +212,7 @@ export const HOST_EVENT_CHANNELS = {
     planConsent: 'morpheus:plan-consent',
     objectiveEvent: 'morpheus:objective-event',
     voicePresence: 'morpheus:voice-presence',
+    speechChunk: 'morpheus:speech-chunk',
   },
 } as const satisfies {
   [M in Exclude<HostEventModule, 'channel'>]: {

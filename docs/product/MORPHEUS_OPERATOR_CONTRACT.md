@@ -2,6 +2,12 @@
 
 Status: canonical product contract for the Windows private alpha.
 
+2026-09-22 experience-reset amendment: fresh profiles now use Balanced, clear
+direct app/site requests run promptly, independent tasks can coexist, and
+restart recovery reconciles checkpoints without replaying uncertain effects.
+These approved decisions supersede earlier default/concurrency statements below.
+See [Phase 3](../architecture/MORPHEUS_TASK_CONTINUITY.md).
+
 This document freezes the product decisions approved on 2026-08-22. When an
 older roadmap, release note, screenshot, or inherited ClawX interaction conflicts
 with this contract, this contract governs the operator campaign.
@@ -157,4 +163,3 @@ real local/BYOK operator experience, not commercial billing or a hosted managed
 provider gateway. A feature counts only when the packaged application exercises
 its real path. Contracts, mock providers, placeholder pages, and synthetic
 progress do not count.
-

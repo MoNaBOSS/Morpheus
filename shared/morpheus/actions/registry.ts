@@ -215,9 +215,9 @@ export type MorpheusActionDescriptor = {
  * `base` names a trusted process environment value resolved in Main. The
  * absolute path is always derived, never supplied.
  */
-export type MorpheusApplicationBase = 'systemRoot';
+export type MorpheusApplicationBase = 'systemRoot' | 'appData';
 
-export type MorpheusApplicationKey = 'notepad' | 'calculator' | 'paint';
+export type MorpheusApplicationKey = 'notepad' | 'calculator' | 'paint' | 'spotify';
 
 export type MorpheusDeveloperTemplateKey = 'vscode';
 
@@ -556,6 +556,15 @@ export type MorpheusParamsFor<K extends MorpheusActionId> =
   ParamsFromDescriptors<(typeof MORPHEUS_ACTIONS)[K]['params']>;
 
 export const MORPHEUS_APPLICATIONS: Readonly<Record<MorpheusApplicationKey, MorpheusApplicationEntry>> = Object.freeze({
+  spotify: Object.freeze({
+    key: 'spotify',
+    labelKey: 'dashboard:morpheus.applications.spotify',
+    platform: 'win32',
+    base: 'appData',
+    relativeDir: 'Spotify',
+    fileName: 'Spotify.exe',
+    args: Object.freeze([] as const),
+  } as const),
   notepad: Object.freeze({
     key: 'notepad',
     labelKey: 'dashboard:morpheus.applications.notepad',
@@ -602,7 +611,8 @@ export const MORPHEUS_MAX_TEXT_BYTES = PARAM_LIMITS.textContentBytes;
 export const MORPHEUS_PERMISSION_TIMEOUT_MS = 60_000;
 
 /** Concurrency and rate limits applied in Main. */
-export const MORPHEUS_MAX_CONCURRENT_RUNS = 1;
+/** Bounded admission; resource leases separately limit active native work. */
+export const MORPHEUS_MAX_CONCURRENT_RUNS = 32;
 export const MORPHEUS_MAX_RUNS_PER_MINUTE = 10;
 
 /** Upper bound on how many audit entries the Renderer may request at once. */
