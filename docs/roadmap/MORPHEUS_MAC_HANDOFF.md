@@ -2,6 +2,17 @@
 
 Updated 2026-09-23. Start here in a **new Codex task on Mac**. This Git branch is the portable record; the original Windows-local Codex task does not automatically follow you to another computer.
 
+## Phase 5 Mac checkpoint 1 — paid-path inventory (2026-09-24)
+
+Branch: `codex/morpheus-phase5-routing-accounting`, based on the Phase 4 handoff.
+Changed files: this handoff and [paid-path inventory](MORPHEUS_PHASE5_COST_PATHS.md).
+Source inspection mapped Core planning/review, ACP/OpenClaw chat/cron/plugins,
+transcription, neural speech, validation probes, direct native actions and other
+connected services. No paid requests or real cost/quality measurements were made.
+Validation: read-only source map and `git diff --check`. Windows hardware and
+package acceptance listed below remain open. Next: build a versioned offline
+evaluation format, then instrument bounded request outcomes and honest accounting.
+
 ## Product direction (settled; do not reopen by default)
 
 Morpheus is an operator and companion, not a dashboard or a chatbot-only shell. The approved UI is the [Phase 1 study](../design/MORPHEUS_APPROVED_INTERFACE_STUDY.md): luminous M-orb, subtle Matrix rain, natural conversation, work/results appearing when useful, a small animated desktop companion that expands to a workspace, and an optional listening tray presence. The [first question](../design/phase4-evidence/activation-greeting-1280x800.png), [welcome](../design/phase4-evidence/activation-welcome-1280x800.png), [ready state](../design/phase4-evidence/activation-ready-1280x800.png), and [compact companion](../design/phase4-evidence/native-compact-command.png) are screenshots captured from the **real app**, not the separate prototype. The old dense Command Center (Ask/Auto/Act modes, trust profiles, internal stages and system panels) is rejected as the everyday interface. Keep advanced controls contextual.
