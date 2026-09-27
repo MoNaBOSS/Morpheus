@@ -90,6 +90,7 @@ describe('validateApiKeyWithProvider', () => {
         body: JSON.stringify({
           model: 'glm-5.2',
           input: 'hi',
+          max_output_tokens: 1,
         }),
       })
     );

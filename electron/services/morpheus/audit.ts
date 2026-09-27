@@ -79,7 +79,7 @@ export function sanitizeAuditParams(
   for (const [key, value] of Object.entries(params)) {
     // "token" normally means a credential. These exact numeric counters are
     // metering evidence; strings or arbitrary token-named keys stay redacted.
-    if (['inputTokens', 'outputTokens', 'totalTokens', 'outputTokenLimit'].includes(key)
+    if (['inputTokens', 'outputTokens', 'totalTokens', 'outputTokenLimit', 'cacheReadTokens', 'cacheWriteTokens'].includes(key)
       && typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) {
       out[key] = value;
       continue;

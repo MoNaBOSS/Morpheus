@@ -5,6 +5,12 @@
 
 <h1 align="center">Morpheus</h1>
 
+Phase 5 source checkpoint: provider routes keep task ownership, and Core/voice
+requests have correlated usage outcomes. Local evaluation and usage-coverage tools
+are documented in the [Phase 5 protocol](docs/roadmap/MORPHEUS_PHASE5_EVALUATION.md).
+Model-quality comparisons, complete currency caps and Windows hardware acceptance
+remain pending; offline fixtures are not live provider evidence.
+
 Phase 3 task continuity: independent commands can run while other objectives are
 working; conflicting desktop/filesystem actions queue safely. Full and compact
 surfaces include task selection, separate speech/task stop controls, remembered

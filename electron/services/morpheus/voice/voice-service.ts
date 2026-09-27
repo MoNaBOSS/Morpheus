@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
+import { morpheusUsageCounts } from '@shared/morpheus/usage-evidence';
 
 import type { ProviderAccount } from '../../../shared/providers/types';
 import type { ProviderService } from '../../providers/provider-service';
@@ -421,19 +422,22 @@ export function createMorpheusVoiceService(options: {
     if (!resolved) throw new Error('No compatible transcription provider is configured.');
     const endpoint = providerEndpoint(resolved.account, '/audio/transcriptions');
     const modelId = settings.modelId.trim();
+    const requestId = randomUUID();
+    const requestStartedAt = performance.now();
+    let dispatched = false;
+    let terminalRecorded = false;
 
     await options.audit.recordControl({
       category: 'voice', event: 'transcription-started', subjectId: resolved.account.id,
       details: {
-        bytes: audio.length, durationMs: payload.durationMs,
+        requestId, costStatus: 'unknown', bytes: audio.length, durationMs: payload.durationMs,
         mimeType: payload.mimeType, modelId, ambient,
       },
       appVersion: options.appVersion,
     });
-    checkInput();
-    if (ambient) publish('transcribing');
-
     try {
+      checkInput();
+      if (ambient) publish('transcribing');
       const form = new FormData();
       form.append('model', modelId);
       form.append('file', new Blob([audio], { type: payload.mimeType }), `morpheus-voice.${audioExtension(payload.mimeType)}`);
@@ -450,6 +454,7 @@ export function createMorpheusVoiceService(options: {
       let raw: string;
       try {
         try {
+          dispatched = true;
           response = await (options.fetchImpl ?? fetch)(endpoint, {
             method: 'POST', headers: safeHeaders(resolved.account, resolved.apiKey),
             body: form, signal: controller.signal, redirect: 'error',
@@ -482,9 +487,11 @@ export function createMorpheusVoiceService(options: {
       }
       const providerLatencyMs = Math.max(0, Date.now() - providerStartedAt);
 
+      terminalRecorded = true;
       await options.audit.recordControl({
         category: 'voice', event: 'transcription-completed', subjectId: resolved.account.id,
         details: {
+          requestId, costStatus: 'unknown', dispatched, ...morpheusUsageCounts(body),
           durationMs: payload.durationMs, transcriptChars: transcript.length,
           providerLatencyMs, modelId, ambient,
         },
@@ -498,9 +505,11 @@ export function createMorpheusVoiceService(options: {
       };
     } catch (error) {
       try {
-        await options.audit.recordControl({
+        if (!terminalRecorded) await options.audit.recordControl({
           category: 'voice', event: 'transcription-failed', subjectId: resolved.account.id,
-          details: { durationMs: payload.durationMs, modelId, ambient }, appVersion: options.appVersion,
+          details: { requestId, costStatus: 'unknown', usageStatus: 'missing', dispatched,
+            providerLatencyMs: Math.max(0, Math.round(performance.now() - requestStartedAt)),
+            durationMs: payload.durationMs, modelId, ambient }, appVersion: options.appVersion,
         });
       } finally {
         if (ambient && ambientSession?.sessionId === inputSession && settings === inputSettings) {
@@ -534,10 +543,14 @@ export function createMorpheusVoiceService(options: {
     const endpoint = providerEndpoint(resolved.account, '/audio/speech');
     const modelId = settings.speechModelId.trim();
     const voice = settings.speechVoice;
+    const requestId = randomUUID();
+    let dispatched = false;
+    let terminalRecorded = false;
+    let firstAudioByteMs: number | undefined;
 
     await options.audit.recordControl({
       category: 'voice', event: 'speech-started', subjectId: resolved.account.id,
-      details: { textChars: text.length, modelId, voice }, appVersion: options.appVersion,
+      details: { requestId, costStatus: 'unknown', textChars: text.length, modelId, voice }, appVersion: options.appVersion,
     });
 
     const controller = new AbortController();
@@ -555,6 +568,7 @@ export function createMorpheusVoiceService(options: {
       publish('preparing-speech');
       let response: Response;
       try {
+        dispatched = true;
         response = await (options.fetchImpl ?? fetch)(endpoint, {
           method: 'POST',
           headers: { ...safeHeaders(resolved.account, resolved.apiKey), 'content-type': 'application/json' },
@@ -587,18 +601,23 @@ export function createMorpheusVoiceService(options: {
       let sequence = 0;
       const streamId = payload.streamId;
       const audio = await readBoundedAudio(response, MORPHEUS_SPEECH_MAX_AUDIO_BYTES, 'Speech',
-        streamId && options.emitSpeechChunk ? (bytes) => {
+        (bytes) => {
           checkCurrent();
+          if (bytes.length && firstAudioByteMs === undefined) firstAudioByteMs = Math.max(0, Date.now() - startedAt);
+          if (!streamId || !options.emitSpeechChunk) return;
           // Bound individual IPC messages as well as the complete response.
           for (let offset = 0; offset < bytes.length; offset += 48 * 1024) {
             options.emitSpeechChunk?.({ streamId, sequence: sequence++, audioBase64: bytes.subarray(offset, offset + 48 * 1024).toString('base64') });
           }
-        } : undefined);
+        });
       checkCurrent();
       const providerLatencyMs = Math.max(0, Date.now() - startedAt);
+      terminalRecorded = true;
       await options.audit.recordControl({
         category: 'voice', event: 'speech-completed', subjectId: resolved.account.id,
-        details: { textChars: text.length, bytes: audio.length, modelId, voice, providerLatencyMs },
+        details: { requestId, costStatus: 'unknown', usageStatus: 'missing', dispatched,
+          textChars: text.length, bytes: audio.length, modelId, voice, providerLatencyMs,
+          ...(firstAudioByteMs !== undefined ? { firstAudioByteMs } : {}) },
         appVersion: options.appVersion,
       });
       checkCurrent();
@@ -608,9 +627,12 @@ export function createMorpheusVoiceService(options: {
         providerAccountId: resolved.account.id, modelId, voice, providerLatencyMs,
       };
     } catch (error) {
-      await options.audit.recordControl({
+      if (!terminalRecorded) await options.audit.recordControl({
         category: 'voice', event: generation !== speechGeneration ? 'speech-cancelled' : 'speech-failed', subjectId: resolved.account.id,
         details: {
+          requestId, costStatus: 'unknown', usageStatus: 'missing', dispatched,
+          providerLatencyMs: Math.max(0, Date.now() - startedAt),
+          ...(firstAudioByteMs !== undefined ? { firstAudioByteMs } : {}),
           textChars: text.length, modelId, voice,
           ...(generation === speechGeneration ? { failureKind: speechFailureKind(error) } : {}),
         }, appVersion: options.appVersion,

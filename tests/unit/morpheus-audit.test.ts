@@ -51,9 +51,9 @@ describe('morpheus audit sink', () => {
     const auditDir = freshDir();
     const sink = createMorpheusAuditSink({ auditDir });
     await sink.recordControl({ category: 'objective', event: 'provider-usage', subjectId: 'provider', appVersion: '1.0.2',
-      details: { inputTokens: 100, outputTokens: 20, totalTokens: 120, outputTokenLimit: 4096, apiToken: 'secret' },
+      details: { inputTokens: 100, outputTokens: 20, totalTokens: 120, outputTokenLimit: 4096, cacheReadTokens: 4, cacheWriteTokens: 2, apiToken: 'secret' },
     });
-    expect(JSON.parse(readLines(auditDir)[0]).details).toEqual({ inputTokens: 100, outputTokens: 20, totalTokens: 120, outputTokenLimit: 4096, apiToken: '[redacted]' });
+    expect(JSON.parse(readLines(auditDir)[0]).details).toEqual({ inputTokens: 100, outputTokens: 20, totalTokens: 120, outputTokenLimit: 4096, cacheReadTokens: 4, cacheWriteTokens: 2, apiToken: '[redacted]' });
     expect(sanitizeAuditParams({ inputTokens: 'secret', outputTokens: -1, totalTokens: Infinity })).toEqual({ inputTokens: '[redacted]', outputTokens: '[redacted]', totalTokens: '[redacted]' });
   });
   it('writes one parseable JSON object per line', async () => {

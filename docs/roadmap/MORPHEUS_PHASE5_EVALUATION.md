@@ -78,3 +78,34 @@ counts and case coverage, and withholds cost per success when any cost/path is
 unknown. Cost per success includes failed-run spend. It does not automatically
 choose a model, enforce a currency budget, prove statistical equivalence or certify
 Windows behavior. Actual live evidence remains pending an authorized budget.
+
+## Usage coverage report
+
+On Node 24, explicitly supply the local audit and transcript files to review:
+
+```sh
+node scripts/phase5/usage-report.mjs --audit /absolute/path/to/audit.jsonl --transcript /absolute/path/to/session.jsonl
+node --test scripts/phase5/evaluate.test.mjs scripts/phase5/usage-report.test.mjs
+```
+
+Repeat either flag for additional files (including retained rotations). Files are
+read locally; the tool does not discover credentials, start providers or modify
+profiles. Canonical duplicate file paths are counted once. Copied transcripts are
+separate sources: supply each logical transcript once. Input files are limited to
+64 MiB each; use a bounded export for larger histories. Output contains aggregate
+counts only, never transcript content, prompts, audio or provider error bodies.
+
+Core/STT/TTS receipt IDs join starts to terminal outcomes, including failures and
+cancellation. Legacy events without IDs, torn lines, missing starts/completions
+and conflicting receipts are counted explicitly. OpenClaw assistant/tool usage
+uses the existing parser; absent or zero price metadata stays unknown. Its cost
+subtotal is labelled a runtime estimate and cannot be combined with a provider
+invoice as if it were verified billed spend. Image generation/editing, validation,
+plugin services and work outside retained transcripts remain coverage gaps.
+
+Audit retention is 30 days and transcript deletion removes historical evidence.
+This report is a useful accounting preparation tool, not a durable billing ledger
+or a global budget. Runtime currency reservations require verified pricing,
+durable reconciliation and interception of all paid paths. No currency control is
+enabled by this checkpoint. The existing per-planner four-request/12,288 reserved
+output-token bounds still apply; they do not cap STT, TTS or OpenClaw spend.

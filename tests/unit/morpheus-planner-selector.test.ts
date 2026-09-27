@@ -12,6 +12,13 @@ const LOCAL: ProviderAccount = {
 };
 
 describe('planner selection', () => {
+  it('reports the resolved model rather than an account-prefixed alias', async () => {
+    const selector = createMorpheusPlannerSelector({ providerService: {
+      listAccounts: vi.fn(async () => [{ ...LOCAL, model: 'ollama/qwen3:latest' }]),
+      getDefaultAccountId: vi.fn(async () => 'ollama'),
+    } as never });
+    expect(await selector.select(MORPHEUS_STARTER_AGENT_PROFILES[0])).toMatchObject({ ok: true, modelId: 'qwen3:latest' });
+  });
   it('prefers a configured real local provider for auto Agent Profiles', async () => {
     const selector = createMorpheusPlannerSelector({
       providerService: {

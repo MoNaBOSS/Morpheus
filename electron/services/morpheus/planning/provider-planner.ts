@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import type { ProviderAccount, ProviderProtocol } from '../../../shared/providers/types';
 import { getProviderDefinition } from '../../../shared/providers/registry';
+import { morpheusUsageCounts, type MorpheusUsageCounts } from '@shared/morpheus/usage-evidence';
 import type { MorpheusPlatform } from '@shared/morpheus/actions/registry';
 import {
   morpheusPlannerProtocolFor,
@@ -26,10 +27,14 @@ const MAX_PROMPT_CHARS = 48_000;
 const MAX_REQUESTS = 4;
 const MAX_RESERVED_OUTPUT_TOKENS = 12_288;
 
-export type MorpheusPlannerUsage = {
+export type MorpheusPlannerUsage = Partial<MorpheusUsageCounts> & {
   requestId: string;
   objectiveRunId?: string;
-  phase: 'started' | 'completed';
+  phase: 'started' | 'completed' | 'failed' | 'cancelled';
+  modelId: string;
+  durationMs?: number;
+  httpStatus?: number;
+  costStatus: 'unknown';
   requestNumber: number;
   inputChars: number;
   outputTokenLimit: number;
@@ -37,22 +42,6 @@ export type MorpheusPlannerUsage = {
   outputTokens?: number;
   totalTokens?: number;
 };
-
-function usageCounts(payload: unknown): Pick<MorpheusPlannerUsage, 'inputTokens' | 'outputTokens' | 'totalTokens'> {
-  const body = payload as Record<string, unknown> | null;
-  const raw = body?.usage ?? body?.usageMetadata;
-  if (!raw || typeof raw !== 'object') return {};
-  const usage = raw as Record<string, unknown>;
-  const result: Record<string, number> = {};
-  for (const [key, value] of Object.entries({
-    inputTokens: usage.input_tokens ?? usage.prompt_tokens ?? usage.promptTokenCount,
-    outputTokens: usage.output_tokens ?? usage.completion_tokens ?? usage.candidatesTokenCount,
-    totalTokens: usage.total_tokens ?? usage.totalTokenCount,
-  })) {
-    if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) result[key] = value;
-  }
-  return result;
-}
 
 async function readBoundedResponse(response: Response): Promise<string> {
   if (Number(response.headers.get('content-length')) > MAX_PROVIDER_RESPONSE_BYTES) {
@@ -124,7 +113,7 @@ function baseUrlFor(account: ProviderAccount, protocol: SupportedPlannerProtocol
   return url;
 }
 
-function modelFor(account: ProviderAccount, override?: string): string {
+export function resolveMorpheusPlannerModelId(account: ProviderAccount, override?: string): string {
   const raw = (override ?? account.model ?? getProviderDefinition(account.vendorId)?.defaultModelId ?? '').trim();
   if (!raw || raw.length > 200) throw new Error(`Provider ${account.label} has no valid planner model selected.`);
   const prefix = `${account.id}/`;
@@ -339,7 +328,7 @@ async function invokeProvider(
     const text = await readBoundedResponse(response);
     let payload: unknown;
     try { payload = JSON.parse(text); } catch { throw new Error('Planning provider returned invalid JSON transport data.'); }
-    await options.recordUsage?.({ ...allowance, phase: 'completed', ...usageCounts(payload) });
+    await options.recordUsage?.({ ...allowance, phase: 'completed', ...morpheusUsageCounts(payload) });
     return extractText(protocol, payload);
   } finally {
     signal?.removeEventListener('abort', relayAbort);
@@ -352,15 +341,23 @@ function requirePlatform(platform: string): MorpheusPlatform {
 }
 
 export function createMorpheusProviderPlanner(options: MorpheusProviderPlannerOptions): MorpheusPlanner {
+  // Provider configuration may be edited while a task runs. Pin its authority
+  // and headers along with the model instead of retaining the caller's object.
+  options = { ...options, account: { ...options.account, headers: { ...options.account.headers } } };
   const protocol = protocolFor(options.account);
   if (!protocol) throw new Error(`Provider protocol ${String(options.account.apiProtocol)} is not supported for planning.`);
-  const model = modelFor(options.account, options.modelId);
+  const model = resolveMorpheusPlannerModelId(options.account, options.modelId);
   const now = options.now ?? (() => new Date());
   const createId = options.createId ?? (() => randomUUID());
   let requestCount = 0;
   let reservedOutput = 0;
+  let ownerBound = false;
+  let ownerId: string | undefined;
   const invoke = async (system: string, user: string, objective: string, signal?: AbortSignal, objectiveRunId?: string): Promise<string> => {
     signal?.throwIfAborted();
+    if (ownerBound && ownerId !== objectiveRunId) throw new Error('A planning route cannot be reused by another objective.');
+    ownerBound = true;
+    ownerId = objectiveRunId;
     // Reserve before awaiting: failed requests and retries still consume allowance.
     const outputTokenLimit = /\b(website|web site|landing page)\b/i.test(objective) ? 4_096 : 2_048;
     const inputChars = system.length + user.length;
@@ -372,10 +369,27 @@ export function createMorpheusProviderPlanner(options: MorpheusProviderPlannerOp
     reservedOutput += outputTokenLimit;
     const allowance: MorpheusPlannerUsage = {
       requestId: randomUUID(), phase: 'started', requestNumber: requestCount, inputChars, outputTokenLimit,
+      modelId: model, costStatus: 'unknown',
       ...(objectiveRunId ? { objectiveRunId } : {}),
     };
     await options.recordUsage?.(allowance);
-    return invokeProvider(options, protocol, model, system, user, allowance, signal);
+    const startedAt = performance.now();
+    let terminalRecorded = false;
+    try {
+      return await invokeProvider({ ...options, recordUsage: async (usage) => {
+        terminalRecorded = true;
+        await options.recordUsage?.({ ...usage, durationMs: Math.max(0, Math.round(performance.now() - startedAt)) });
+      } }, protocol, model, system, user, allowance, signal);
+    } catch (error) {
+      // A parsed response already recorded its usage even if its plan text is
+      // unusable. Audit failures must not trigger another paid request here.
+      if (!terminalRecorded) await options.recordUsage?.({
+        ...allowance, phase: signal?.aborted ? 'cancelled' : 'failed', usageStatus: 'missing',
+        durationMs: Math.max(0, Math.round(performance.now() - startedAt)),
+        ...(error instanceof MorpheusProviderRequestError && error.status ? { httpStatus: error.status } : {}),
+      });
+      throw error;
+    }
   };
 
   return {

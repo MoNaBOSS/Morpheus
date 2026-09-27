@@ -81,8 +81,55 @@ describe('real provider planner adapter', () => {
     });
     await planner.plan(REQUEST);
     expect(recordUsage).toHaveBeenCalledTimes(2);
-    expect(recordUsage).toHaveBeenLastCalledWith({ requestId: expect.any(String), phase: 'completed', requestNumber: 1, inputChars: expect.any(Number), outputTokenLimit: 2048, inputTokens: 120, outputTokens: 50, totalTokens: 170 });
+    expect(recordUsage).toHaveBeenLastCalledWith(expect.objectContaining({ requestId: expect.any(String), phase: 'completed', requestNumber: 1, inputChars: expect.any(Number), outputTokenLimit: 2048, inputTokens: 120, outputTokens: 50, totalTokens: 170, modelId: 'gpt-test', usageStatus: 'reported', costStatus: 'unknown', durationMs: expect.any(Number) }));
     expect(JSON.stringify(recordUsage.mock.calls)).not.toContain('never-record');
+  });
+
+  it('pins account endpoint, headers, model and task identity through later edits', async () => {
+    const account = { ...ACCOUNT, headers: { 'x-route': 'original' } };
+    const fetchImpl = vi.fn(async () => new Response('', { status: 503 }));
+    const planner = createMorpheusProviderPlanner({ account, apiKey: 'original-key', fetchImpl });
+    account.baseUrl = 'https://other.example.test/v1';
+    account.model = 'other-model';
+    account.headers['x-route'] = 'other';
+    await expect(planner.plan({ ...REQUEST, objectiveRunId: 'task-a' })).rejects.toThrow(/503/);
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://api.example.test/v1/chat/completions');
+    expect(JSON.parse(String(init.body)).model).toBe('gpt-test');
+    expect(init.headers).toMatchObject({ 'x-route': 'original', authorization: 'Bearer original-key' });
+    await expect(planner.plan({ ...REQUEST, objectiveRunId: 'task-b' })).rejects.toThrow(/another objective/);
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it('correlates failures and preserves uncertainty without recording error bodies', async () => {
+    const recordUsage = vi.fn(async () => undefined);
+    const planner = createMorpheusProviderPlanner({ account: ACCOUNT, apiKey: 'key', recordUsage,
+      fetchImpl: vi.fn(async () => new Response('private-provider-error', { status: 429 })),
+    });
+    await expect(planner.plan({ ...REQUEST, objectiveRunId: 'task-a' })).rejects.toThrow(/429/);
+    const [start, end] = recordUsage.mock.calls.map((call) => call[0]);
+    expect(end).toMatchObject({ requestId: start.requestId, objectiveRunId: 'task-a', phase: 'failed', httpStatus: 429, usageStatus: 'missing', costStatus: 'unknown' });
+    expect(JSON.stringify(recordUsage.mock.calls)).not.toContain('private-provider-error');
+  });
+
+  it('records cancellation and does not refund request allowance', async () => {
+    const recordUsage = vi.fn(async () => undefined);
+    const controller = new AbortController();
+    const fetchImpl = vi.fn(async () => { controller.abort(); throw new DOMException('cancelled', 'AbortError'); });
+    const planner = createMorpheusProviderPlanner({ account: ACCOUNT, apiKey: 'key', recordUsage, fetchImpl });
+    await expect(planner.plan({ ...REQUEST, signal: controller.signal })).rejects.toThrow();
+    expect(recordUsage).toHaveBeenLastCalledWith(expect.objectContaining({ phase: 'cancelled', requestNumber: 1, costStatus: 'unknown' }));
+    for (let i = 0; i < 3; i++) await expect(planner.plan(REQUEST)).rejects.toThrow();
+    await expect(planner.plan(REQUEST)).rejects.toThrow(/allowance reached/);
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+
+  it('blocks network when the start receipt cannot be persisted', async () => {
+    const fetchImpl = vi.fn();
+    const planner = createMorpheusProviderPlanner({ account: ACCOUNT, apiKey: 'key', fetchImpl,
+      recordUsage: vi.fn().mockRejectedValue(new Error('audit failed')) });
+    await expect(planner.plan(REQUEST)).rejects.toThrow('audit failed');
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('cancels an oversized streamed response instead of buffering it without a limit', async () => {

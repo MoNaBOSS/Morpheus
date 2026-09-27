@@ -7,6 +7,7 @@ import type { ProviderService } from '../../providers/provider-service';
 import {
   createMorpheusProviderPlanner,
   isProviderPlannerProtocolSupported,
+  resolveMorpheusPlannerModelId,
   type MorpheusPlannerUsage,
 } from './provider-planner';
 
@@ -47,12 +48,14 @@ async function providerSelection(
     return { ok: false, reason: `Provider ${account.label} has no API key configured.` };
   }
   try {
+    const selectedModel = resolveMorpheusPlannerModelId(account, modelId);
+    const accountId = account.id;
     return {
       ok: true,
-      planner: createMorpheusProviderPlanner({ account, apiKey, modelId,
-        recordUsage: recordUsage ? (usage) => recordUsage(account.id, modelId ?? account.model, usage) : undefined }),
-      providerAccountId: account.id,
-      modelId: modelId ?? account.model,
+      planner: createMorpheusProviderPlanner({ account, apiKey, modelId: selectedModel,
+        recordUsage: recordUsage ? (usage) => recordUsage(accountId, selectedModel, usage) : undefined }),
+      providerAccountId: accountId,
+      modelId: selectedModel,
     };
   } catch (error) {
     return { ok: false, reason: error instanceof Error ? error.message : String(error) };

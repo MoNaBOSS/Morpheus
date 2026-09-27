@@ -235,6 +235,7 @@ async function performResponsesProbe(
       body: JSON.stringify({
         model: modelId,
         input: 'hi',
+        max_output_tokens: 1,
       }),
     });
     logValidationStatus(providerLabel, response.status);

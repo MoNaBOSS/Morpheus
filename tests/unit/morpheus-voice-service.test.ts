@@ -99,6 +99,30 @@ function createHarness(options?: {
 }
 
 describe('Morpheus voice service', () => {
+  it('correlates transcription and speech receipts without inferring a bill', async () => {
+    const h = createHarness({ fetchImpl: vi.fn(async (input) => String(input).endsWith('/audio/transcriptions')
+      ? new Response(JSON.stringify({ text: 'private phrase', usage: { input_tokens: 7, output_tokens: 2, total_tokens: 9 } }))
+      : new Response(new Uint8Array([1, 2, 3]))) });
+    await h.service.transcribe(PAYLOAD);
+    await h.service.synthesize({ text: 'private result' });
+    const records = h.recordControl.mock.calls.map((call) => call[0]) as Array<{ event: string; details: Record<string, unknown> }>;
+    for (const prefix of ['transcription', 'speech']) {
+      const start = records.find((entry) => entry.event === `${prefix}-started`)!;
+      const end = records.find((entry) => entry.event === `${prefix}-completed`)!;
+      expect(end.details).toMatchObject({ requestId: start.details.requestId, costStatus: 'unknown', dispatched: true });
+    }
+    expect(records.find((entry) => entry.event === 'transcription-completed')?.details).toMatchObject({ usageStatus: 'reported', totalTokens: 9 });
+    expect(records.find((entry) => entry.event === 'speech-completed')?.details).toMatchObject({ usageStatus: 'missing', firstAudioByteMs: expect.any(Number) });
+    expect(JSON.stringify(records)).not.toContain('private');
+  });
+
+  it('retains an unknown-cost receipt when speech fails after dispatch', async () => {
+    const h = createHarness({ fetchImpl: vi.fn(async () => new Response('private-error', { status: 503 })) });
+    await expect(h.service.synthesize({ text: 'private result' })).rejects.toThrow(/503/);
+    expect(h.recordControl).toHaveBeenLastCalledWith(expect.objectContaining({ event: 'speech-failed',
+      details: expect.objectContaining({ requestId: expect.any(String), dispatched: true, costStatus: 'unknown', usageStatus: 'missing' }) }));
+    expect(JSON.stringify(h.recordControl.mock.calls)).not.toContain('private');
+  });
   it('uses one OpenRouter account for compatible transcription and speech presets', async () => {
     const fetchImpl = vi.fn(async (input: URL | RequestInfo, _init?: RequestInit) => {
       if (String(input).endsWith('/audio/transcriptions')) {
