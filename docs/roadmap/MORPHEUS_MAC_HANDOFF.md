@@ -2,6 +2,31 @@
 
 Updated 2026-09-27. This Git branch is the portable record; the original Windows-local Codex task does not automatically follow you to another computer.
 
+## Phase 6 Mac checkpoint 1 — managed service foundation
+
+Latest user direction authorizes adding the Phase 6 layer now and defers payment
+selection. Active checkout remains `/Users/mona/Documents/Work/Morpheus`; branch
+`codex/morpheus-phase6-managed-layer` starts at Phase 5 `baa7709f`.
+Read [Phase 6 readiness and delivery](MORPHEUS_PHASE6_READINESS.md).
+
+Added shared managed contracts, server-side SQLite reservations/accounting events,
+authenticated allowlisted gateway, Supabase identity verifier, Main-only client
+and protected session-store boundary. Payment routes explicitly remain unavailable.
+No hosted resources, provider calls, real trial grants, UI changes or Windows
+adapter changes were made. These source modules are not yet connected to desktop
+onboarding/Core/voice/OpenClaw or a listening HTTP server.
+
+Validation: 42 focused tests, all three typechecks (node/web/managed), changed-file
+lint, harness validation/dry-run, communication replay/comparison and the
+renderer/Main/preload build pass. Build warnings remain as before. The broader
+Phase 5 baseline unit/lint limitations below were not rerun or claimed fixed.
+
+Next: configure real identity/deployment and bounded provider adapters, connect
+the existing host API/onboarding, close managed paid-path coverage, then perform
+live evaluation and Windows acceptance. Preserve the existing BYOK paths. The
+older instruction below to avoid Phase 6 without direction is satisfied by the
+user's new authorization; the Phase 5 acceptance gaps remain open.
+
 ## Phase 5 Mac checkpoint 3 — offline engineering complete; live acceptance open
 
 Read the [delivery and direction review](MORPHEUS_PHASE5_DELIVERY.md) for promised

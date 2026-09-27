@@ -270,6 +270,10 @@ task-root `RESUME.md` for continuity. This does not close Phase 2's real-device 
 
 ### Phase 6 — Accounts, live trial, managed access, and billing
 
+2026-09-27 source checkpoint: the user authorized the payment-independent layer.
+See [implemented foundation, readiness and next slices](MORPHEUS_PHASE6_READINESS.md).
+This does not mark the live trial, billing or Phase 6 completion criteria below as met.
+
 **Work:** implement Google/email login, trial allowance, server-side provider gateway, central entitlements, usage reservation/accounting, checkout and account management. Connect the already-designed onboarding to the real trial. Add opt-in selected-memory sync with deletion propagation and conflict handling only when that service is ready.
 
 **Completion:** a fresh user sees the prepared welcome, signs in, performs a real task with natural voice, views allowance, connects BYOK or purchases Premium, and can cancel/manage their subscription. Trial exhaustion is clear, no surprise charges occur, simultaneous tasks cannot overdraw quota, and payment events control entitlement. Basic remains usable with configured user providers when hosted services are unavailable, subject to the providers themselves being reachable.

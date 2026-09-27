@@ -95,3 +95,8 @@ these acceptance gaps.
 Next Phase 5 decision: choose a bounded live evaluation budget and provider set,
 or continue closing the listed metering gaps offline. Neither option requires
 reopening the accepted interface or starting Phase 6.
+
+Subsequent user direction on 2026-09-27 authorized adding the Phase 6 foundation
+with payment deferred. See [the new checkpoint](MORPHEUS_PHASE6_READINESS.md).
+This expands the authorized work; it does not retrospectively complete the
+Phase 5 live-evaluation or full-budget-enforcement requirements above.

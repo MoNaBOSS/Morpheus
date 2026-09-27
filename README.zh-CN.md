@@ -5,6 +5,10 @@
 
 <h1 align="center">Morpheus</h1>
 
+第六阶段基础模块：已加入独立于支付系统的托管身份验证、持久化额度预留、
+有界网关及受保护的会话客户端。尚未连接桌面引导流程，也未部署真实试用服务。
+参见[实现范围与后续条件](docs/roadmap/MORPHEUS_PHASE6_READINESS.md)。
+
 第五阶段源码检查点：提供商路由保持任务归属，Core 和语音请求记录可关联的用量结果。
 本地评估与用量覆盖工具见[第五阶段协议](docs/roadmap/MORPHEUS_PHASE5_EVALUATION.md)。
 模型质量对比、完整金额上限及 Windows 硬件验收仍待完成；离线测试不代表真实提供商表现。

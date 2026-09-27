@@ -13,6 +13,7 @@ ownedPaths:
   - src/stores/chat/session-catalog.ts
   - electron/main/ipc/**
   - electron/services/**
+  - services/managed/**
   - electron/gateway/**
   - electron/preload/**
   - electron/utils/**
@@ -62,6 +63,7 @@ requiredRules:
   - comms-regression
   - docs-sync
   - morpheus-phase5-evidence
+  - morpheus-managed-authority
 forbiddenPatterns:
   - window.electron.ipcRenderer.invoke in src/pages/**
   - window.electron.ipcRenderer.invoke in src/components/**

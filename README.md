@@ -5,6 +5,11 @@
 
 <h1 align="center">Morpheus</h1>
 
+Phase 6 foundation: payment-independent managed identity verification, durable
+allowance reservations, a bounded gateway and protected-session client are now
+available as source modules. They are not yet connected to desktop onboarding or
+deployed as a live trial. See [implementation and next gates](docs/roadmap/MORPHEUS_PHASE6_READINESS.md).
+
 Phase 5 source checkpoint: provider routes keep task ownership, and Core/voice
 requests have correlated usage outcomes. Local evaluation and usage-coverage tools
 are documented in the [Phase 5 protocol](docs/roadmap/MORPHEUS_PHASE5_EVALUATION.md).
