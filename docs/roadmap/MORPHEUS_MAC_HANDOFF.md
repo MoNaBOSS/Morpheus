@@ -15,6 +15,15 @@ evaluation format, then instrument bounded request outcomes and honest accountin
 
 ## Product direction (settled; do not reopen by default)
 
+Phase 5 checkpoint 2 (2026-09-27): added
+`scripts/phase5/evaluate.mjs`, `scripts/phase5/evaluate.test.mjs` and
+[evaluation protocol](MORPHEUS_PHASE5_EVALUATION.md); updated this handoff.
+All five offline reducer tests pass and `git diff --check` passes. These are
+fixture correctness checks, not model-quality evidence. Checkpoint 1 was pushed
+after network access returned. Next: add correlated terminal usage records,
+bounded route ownership and a coverage report; keep live model choice and all
+Windows hardware/package checks pending.
+
 Morpheus is an operator and companion, not a dashboard or a chatbot-only shell. The approved UI is the [Phase 1 study](../design/MORPHEUS_APPROVED_INTERFACE_STUDY.md): luminous M-orb, subtle Matrix rain, natural conversation, work/results appearing when useful, a small animated desktop companion that expands to a workspace, and an optional listening tray presence. The [first question](../design/phase4-evidence/activation-greeting-1280x800.png), [welcome](../design/phase4-evidence/activation-welcome-1280x800.png), [ready state](../design/phase4-evidence/activation-ready-1280x800.png), and [compact companion](../design/phase4-evidence/native-compact-command.png) are screenshots captured from the **real app**, not the separate prototype. The old dense Command Center (Ask/Auto/Act modes, trust profiles, internal stages and system panels) is rejected as the everyday interface. Keep advanced controls contextual.
 
 Morpheus should immediately do routine authorized actions, ask only when a genuinely new boundary or ambiguity requires it, remember preferences locally, and keep concurrent tasks going. It should adapt humor and proactivity to the person, use a natural English voice when an actual provider is configured, and never pretend a robotic OS fallback is the selected neural voice. Do not trade away existing tool access or Task Core. Privacy matters: diagnostics are opt-in; wake and cloud speech are separate choices. Do not invent a hosted trial, billing, managed API, or NerdGPT integration yet.
