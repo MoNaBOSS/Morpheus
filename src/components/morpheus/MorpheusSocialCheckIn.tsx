@@ -8,23 +8,24 @@ const DAY_MS = 24 * 60 * 60_000;
 
 /** A local, non-modal check-in. Silence costs no provider call and backs off. */
 export function MorpheusSocialCheckIn({ activeCount }: { activeCount: number }) {
-  const { t } = useTranslation('dashboard');
   const level = useMorpheusCompanionStore((s) => s.onboarding?.preferences.proactivityLevel ?? 'balanced');
   const settings = useMorpheusIntelligenceStore((s) => s.proactive.settings);
+  if (level === 'quiet' || settings.doNotDisturb || !settings.enabled || activeCount > 0) return null;
+  return <SocialCheckIn level={level} />;
+}
+
+function SocialCheckIn({ level }: { level: 'balanced' | 'talkative' }) {
+  const { t } = useTranslation('dashboard');
   const [visible, setVisible] = useState(false);
   const [answers, setAnswers] = useState(false);
   const [reply, setReply] = useState<'good' | 'rough' | null>(null);
   useEffect(() => {
-    if (level === 'quiet' || settings.doNotDisturb || !settings.enabled || activeCount > 0) {
-      setVisible(false);
-      return;
-    }
     let lastInput = Date.now();
     const activity = () => { lastInput = Date.now(); };
     window.addEventListener('pointerdown', activity, { passive: true });
     window.addEventListener('keydown', activity);
     const timer = window.setInterval(() => {
-      if (document.hidden || !document.hasFocus() || activeCount > 0 || visible) return;
+      if (document.hidden || !document.hasFocus() || visible) return;
       const previous = Number(window.localStorage.getItem(LAST_CHECK_IN) ?? 0);
       const idleMs = level === 'talkative' ? 10 * 60_000 : 30 * 60_000;
       if (Date.now() - lastInput < idleMs || Date.now() - previous < DAY_MS) return;
@@ -32,7 +33,7 @@ export function MorpheusSocialCheckIn({ activeCount }: { activeCount: number }) 
       setReply(null); setAnswers(false); setVisible(true);
     }, 60_000);
     return () => { window.clearInterval(timer); window.removeEventListener('pointerdown', activity); window.removeEventListener('keydown', activity); };
-  }, [activeCount, level, settings.doNotDisturb, settings.enabled, visible]);
+  }, [level, visible]);
   useEffect(() => {
     if (!visible) return;
     const answersTimer = window.setTimeout(() => setAnswers(true), 8_000);

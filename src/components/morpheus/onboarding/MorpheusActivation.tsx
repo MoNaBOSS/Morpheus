@@ -32,7 +32,6 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const voice = useMorpheusVoiceStore((s) => s.status);
   const voicePhase = useMorpheusVoiceStore((s) => s.phase);
   const voiceSource = useMorpheusVoiceStore((s) => s.source);
-  const voiceTranscript = useMorpheusVoiceStore((s) => s.transcript);
   const startListening = useMorpheusVoiceStore((s) => s.startListening);
   const stopListening = useMorpheusVoiceStore((s) => s.stopListening);
   const updateVoice = useMorpheusVoiceStore((s) => s.updateSettings);
@@ -73,11 +72,14 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     return () => { active = false; };
   }, [enabled, loadOnboarding]);
 
-  useEffect(() => {
-    if (voiceSource !== 'onboarding' || voicePhase !== 'ready' || !voiceTranscript?.trim()) return;
-    if (stage === 'name') setName(voiceTranscript.trim().replace(/^(?:my name is|call me|i am|i'm)\s+/i, '').replace(/[.!?]+$/, '').slice(0, 80));
-    if (stage === 'welcome') setRequest(voiceTranscript.trim());
-  }, [stage, voicePhase, voiceSource, voiceTranscript]);
+  useEffect(() => useMorpheusVoiceStore.subscribe((next, previous) => {
+    if (next.source !== 'onboarding' || next.phase !== 'ready' || !next.transcript?.trim()) return;
+    if (next.transcript === previous.transcript && previous.phase === 'ready') return;
+    // Consume a new voice result once. A stage change must not copy the spoken
+    // name into the first-request field or overwrite a later typed correction.
+    if (stage === 'name') setName(next.transcript.trim().replace(/^(?:my name is|call me|i am|i'm)\s+/i, '').replace(/[.!?]+$/, '').slice(0, 80));
+    if (stage === 'welcome') setRequest(next.transcript.trim());
+  }), [stage]);
 
   const cancelSilence = useCallback(() => {
     if (silenceTimer.current !== null) window.clearTimeout(silenceTimer.current);
@@ -119,7 +121,7 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const finish = async (firstRequest = ''): Promise<boolean> => {
     if (saving) return false;
     setSaving(true);
-    let completed = false;
+    let completed: boolean;
     try { completed = await completeOnboarding(preferences()); }
     catch { completed = false; }
     setSaving(false);

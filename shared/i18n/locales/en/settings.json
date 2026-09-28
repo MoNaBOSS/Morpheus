@@ -276,5 +276,38 @@
     "docs": "Website",
     "github": "GitHub",
     "faq": "FAQ"
+  },
+  "managedAccount": {
+    "title": "Morpheus account",
+    "description": "Your managed access and included usage. Your own AI provider accounts stay separate.",
+    "loading": "Loading account…",
+    "notConfigured": "Managed access is not available in this build yet. You can keep using your own AI providers.",
+    "signedIn": "Signed in to Morpheus",
+    "plan": "Plan: {{plan}}",
+    "remaining": "Available: {{amount}}",
+    "reserved": "Pending usage: {{amount}}",
+    "noAccess": "No active managed allowance. Your own providers remain available.",
+    "signOut": "Sign out",
+    "browser": "Finish signing in in your browser.",
+    "cancel": "Cancel sign-in",
+    "code": "Email verification code",
+    "verify": "Verify code",
+    "google": "Continue with Google",
+    "email": "Email address",
+    "sendCode": "Send a sign-in code",
+    "billingLater": "Paid plans are not available yet.",
+    "error": "Could not complete this request. Check your connection and try again. For email codes, wait a minute before requesting another.",
+    "refresh": "Refresh account",
+    "tiers": {
+      "basic": "Basic",
+      "trial": "Trial",
+      "premium": "Premium"
+    },
+    "access": {
+      "unavailable": "Managed access is temporarily unavailable.",
+      "session-expired": "Your session has expired. Sign out and sign in again.",
+      "signed-out": "Sign in to view your allowance.",
+      "not-configured": "Managed access is not configured."
+    }
   }
 }

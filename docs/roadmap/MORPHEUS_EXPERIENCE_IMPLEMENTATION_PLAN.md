@@ -270,15 +270,17 @@ task-root `RESUME.md` for continuity. This does not close Phase 2's real-device 
 
 ### Phase 6 — Accounts, live trial, managed access, and billing
 
-2026-09-27 source checkpoint: the user authorized the payment-independent layer.
-See [implemented foundation, readiness and next slices](MORPHEUS_PHASE6_READINESS.md).
+2026-09-28 source checkpoint: the authorized payment-independent layer now includes
+configurable Google/email account Settings and a runnable account-only service.
+See [implementation, readiness and next slices](MORPHEUS_PHASE6_READINESS.md) and
+the [PC return runbook](MORPHEUS_PC_RETURN_2026-09-28.md).
 This does not mark the live trial, billing or Phase 6 completion criteria below as met.
 
 **Work:** implement Google/email login, trial allowance, server-side provider gateway, central entitlements, usage reservation/accounting, checkout and account management. Connect the already-designed onboarding to the real trial. Add opt-in selected-memory sync with deletion propagation and conflict handling only when that service is ready.
 
 **Completion:** a fresh user sees the prepared welcome, signs in, performs a real task with natural voice, views allowance, connects BYOK or purchases Premium, and can cancel/manage their subscription. Trial exhaustion is clear, no surprise charges occur, simultaneous tasks cannot overdraw quota, and payment events control entitlement. Basic remains usable with configured user providers when hosted services are unavailable, subject to the providers themselves being reachable.
 
-**Required later facts:** business/payment country, owner credentials, a trial spending budget, and measured costs for pricing. These do not block Phases 0–5. Do not invent fixed subscription prices or a production provider selection now.
+**Required later facts:** business/payment country, owner credentials, a per-user trial policy, and measured costs for pricing. The owner has set no evaluation spending limit; that does not define an unlimited public trial. These do not block Phases 0–5. Do not invent fixed subscription prices or a production provider selection now.
 
 ### Phase 7 — Windows acceptance and release preparation
 

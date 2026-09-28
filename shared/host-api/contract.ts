@@ -6,6 +6,7 @@ import type {
   AcpChatRespondPermissionPayload,
 } from '../acp-chat/types';
 import type { RawMessage } from '../chat/types';
+import type { ManagedAccountSnapshot, ManagedAuthResult } from '../morpheus/managed-types';
 import type { AgentsSnapshot } from '../types/agent';
 import type { CronJob, CronJobCreateInput, CronJobUpdateInput } from '../types/cron';
 import type { GatewayHealth, GatewayStatus } from '../types/gateway';
@@ -1161,6 +1162,14 @@ export type HostApiContract = {
   };
   usage: {
     recentTokenHistory: (payload?: UsageHistoryPayload) => UsageHistoryEntry[];
+  };
+  managedAccount: {
+    status: () => ManagedAccountSnapshot;
+    googleSignIn: () => ManagedAuthResult;
+    requestEmailCode: (payload: { email: string }) => ManagedAuthResult;
+    verifyEmailCode: (payload: { code: string }) => ManagedAuthResult;
+    cancelSignIn: () => ManagedAccountSnapshot;
+    signOut: () => ManagedAuthResult;
   };
   /**
    * Morpheus native actions. Execution authority is Main-owned; the Renderer

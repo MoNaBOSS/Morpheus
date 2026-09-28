@@ -5,9 +5,11 @@
 
 <h1 align="center">Morpheus</h1>
 
-第六阶段基础模块：已加入独立于支付系统的托管身份验证、持久化额度预留、
-有界网关及受保护的会话客户端。尚未连接桌面引导流程，也未部署真实试用服务。
-参见[实现范围与后续条件](docs/roadmap/MORPHEUS_PHASE6_READINESS.md)。
+第六阶段账户检查点：设置页面已通过 Electron Main 接入可配置的 Google/邮箱登录、
+受保护的会话及额度状态。持久化账本和仅提供账户功能的服务可在配置后运行。
+真实托管登录尚未验收，托管模型/语音、首次试用及支付尚未接通。
+参见[实现范围与后续条件](docs/roadmap/MORPHEUS_PHASE6_READINESS.md)
+和[返回 PC 操作指南](docs/roadmap/MORPHEUS_PC_RETURN_2026-09-28.md)。
 
 第五阶段源码检查点：提供商路由保持任务归属，Core 和语音请求记录可关联的用量结果。
 本地评估与用量覆盖工具见[第五阶段协议](docs/roadmap/MORPHEUS_PHASE5_EVALUATION.md)。

@@ -5,10 +5,12 @@
 
 <h1 align="center">Morpheus</h1>
 
-Phase 6 foundation: payment-independent managed identity verification, durable
-allowance reservations, a bounded gateway and protected-session client are now
-available as source modules. They are not yet connected to desktop onboarding or
-deployed as a live trial. See [implementation and next gates](docs/roadmap/MORPHEUS_PHASE6_READINESS.md).
+Phase 6 account checkpoint: Settings now connects configurable Google/email sign-in,
+protected sessions and allowance status through Electron Main. The durable ledger
+and account-only service can run with deployment configuration. Live hosted login,
+managed model/voice routes, the first-run trial and billing remain unaccepted or
+unconnected. See [implementation and next gates](docs/roadmap/MORPHEUS_PHASE6_READINESS.md)
+and the [PC return runbook](docs/roadmap/MORPHEUS_PC_RETURN_2026-09-28.md).
 
 Phase 5 source checkpoint: provider routes keep task ownership, and Core/voice
 requests have correlated usage outcomes. Local evaluation and usage-coverage tools

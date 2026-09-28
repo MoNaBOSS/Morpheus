@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative as relativePath, sep } from 'node:path';
 
 const hostInvoke = vi.fn();
 
@@ -13,6 +13,16 @@ beforeEach(() => {
 });
 
 describe('hostApi facade', () => {
+  it('keeps managed account operations behind the typed host boundary', async () => {
+    hostInvoke.mockResolvedValue({ id: 'req', ok: true, data: { success: true } });
+    const { hostApi } = await import('@/lib/host-api');
+    await hostApi.managedAccount.requestEmailCode('person@example.test');
+    await hostApi.managedAccount.verifyEmailCode('123456');
+    await hostApi.managedAccount.signOut();
+    expect(hostInvoke).toHaveBeenNthCalledWith(1, expect.objectContaining({ module: 'managedAccount', action: 'requestEmailCode', payload: { email: 'person@example.test' } }));
+    expect(hostInvoke).toHaveBeenNthCalledWith(2, expect.objectContaining({ module: 'managedAccount', action: 'verifyEmailCode', payload: { code: '123456' } }));
+    expect(hostInvoke).toHaveBeenNthCalledWith(3, expect.objectContaining({ module: 'managedAccount', action: 'signOut' }));
+  });
   it('calls settings.getAll through hostInvoke', async () => {
     hostInvoke.mockResolvedValueOnce({ id: 'req', ok: true, data: { theme: 'dark' } });
     const { hostApi } = await import('@/lib/host-api');
@@ -576,7 +586,7 @@ describe('hostApi facade', () => {
     const violations = files.flatMap((file) => {
       const text = readFileSync(file, 'utf8');
       const matches = text.match(/hostApi\.(?!gateway\.rpc\b)[A-Za-z0-9_]+\.[A-Za-z0-9_]+</g) ?? [];
-      return matches.map((match) => `${file.replace(`${process.cwd()}/`, '')}: ${match}`);
+      return matches.map((match) => `${relativePath(process.cwd(), file).split(sep).join('/')}: ${match}`);
     });
 
     expect(violations).toEqual([]);
@@ -628,7 +638,7 @@ describe('hostApi facade', () => {
     };
 
     const findViolations = (root: string, patterns: RegExp[]): string[] => collectFiles(root).flatMap((file) => {
-      const relative = file.replace(`${process.cwd()}/`, '');
+      const relative = relativePath(process.cwd(), file).split(sep).join('/');
       const text = readFileSync(file, 'utf8');
       return patterns.flatMap((pattern) => (
         [...text.matchAll(pattern)].map((match) => `${relative}: ${match[0]}`)
@@ -680,7 +690,7 @@ describe('hostApi facade', () => {
       .map((entry) => join(servicesRoot, entry));
 
     const violations = files.flatMap((file) => {
-      const relative = file.replace(`${process.cwd()}/`, '');
+      const relative = relativePath(process.cwd(), file).split(sep).join('/');
       const text = readFileSync(file, 'utf8');
       const localIsRecord = text.match(/^function isRecord\(/m) ? [`${relative}: use shared payload-utils isRecord`] : [];
       const unknownHandlers = [...text.matchAll(/^\s{4}[A-Za-z][A-Za-z0-9_]*:\s*(?:async\s*)?\(payload\?: unknown\)/gm)]
@@ -817,7 +827,7 @@ describe('hostApi facade', () => {
     collect(srcRoot);
 
     const violations = files.flatMap((file) => {
-      const relative = file.replace(`${process.cwd()}/`, '');
+      const relative = relativePath(process.cwd(), file).split(sep).join('/');
       const text = readFileSync(file, 'utf8');
       const legacyIpcHelper = `${'invoke'}${'Ipc'}`;
       const legacyApiHelper = `${'invoke'}${'Api'}`;

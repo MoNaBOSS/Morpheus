@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -51,6 +51,6 @@ describe('typed shell API security', () => {
     await expect(api.openPath({ path: outsideFile }))
       .rejects.toThrow('outside Main-approved roots');
     expect(mocks.openPath).toHaveBeenCalledTimes(1);
-    expect(mocks.showItemInFolder).toHaveBeenCalledWith(trustedFile);
+    expect(mocks.showItemInFolder).toHaveBeenCalledWith(await realpath(trustedFile));
   });
 });

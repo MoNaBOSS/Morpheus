@@ -107,6 +107,8 @@ describe('capability registry', () => {
   });
 });
 
+// Drive-rooted fixture execution requires a real Windows filesystem. Keep the
+// caller-input rejection checks portable; execute the guarded tests on the PC.
 describe('win32 app.launch', () => {
   it('rejects an unknown application key without resolving a path', async () => {
     await expect(win32AppLaunchCapability.resolve({ applicationKey: 'calc' }, context()))
@@ -128,7 +130,7 @@ describe('win32 app.launch', () => {
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
-  it('derives the executable from the trusted environment base', async () => {
+  it.runIf(process.platform === 'win32')('derives the executable from the trusted environment base', async () => {
     const resolution = await win32AppLaunchCapability.resolve({ applicationKey: 'notepad' }, context());
     expect(resolution.target.kind).toBe('executable');
     if (resolution.target.kind !== 'executable') throw new Error('unreachable');
@@ -144,14 +146,14 @@ describe('win32 app.launch', () => {
     expect(() => resolveSystemRoot({ SystemRoot: '\\\\server\\share' })).toThrow(/absolute/);
   });
 
-  it('falls back to the drive-rooted default when SystemRoot is unset', () => {
+  it.runIf(process.platform === 'win32')('falls back to the drive-rooted default when SystemRoot is unset', () => {
     // An unset or empty value must not become a relative or attacker-chosen
     // base; it resolves to the well-known system location instead.
     expect(resolveSystemRoot({})).toBe('C:\\Windows');
     expect(resolveSystemRoot({ SystemRoot: '' })).toBe('C:\\Windows');
   });
 
-  it('fails resolution when the registered executable is absent', async () => {
+  it.runIf(process.platform === 'win32')('fails resolution when the registered executable is absent', async () => {
     const emptyRoot = join(scratch, 'EmptyWindows');
     mkdirSync(join(emptyRoot, 'System32'), { recursive: true });
     await expect(
@@ -160,7 +162,7 @@ describe('win32 app.launch', () => {
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
-  it('does not spawn during resolution, only during execution', async () => {
+  it.runIf(process.platform === 'win32')('does not spawn during resolution, only during execution', async () => {
     const resolution = await win32AppLaunchCapability.resolve({ applicationKey: 'notepad' }, context());
     expect(spawnMock).not.toHaveBeenCalled();
 
@@ -174,7 +176,7 @@ describe('win32 app.launch', () => {
     expect(result).toMatchObject({ kind: 'launch', applicationKey: 'notepad', pid: 4242 });
   });
 
-  it('spawns with shell disabled, window hiding, no stdio and fixed empty args', async () => {
+  it.runIf(process.platform === 'win32')('spawns with shell disabled, window hiding, no stdio and fixed empty args', async () => {
     const resolution = await win32AppLaunchCapability.resolve({ applicationKey: 'notepad' }, context());
     const child = stubChild();
     spawnMock.mockReturnValue(child);
@@ -194,7 +196,7 @@ describe('win32 app.launch', () => {
     });
   });
 
-  it('surfaces a spawn error as an execution failure', async () => {
+  it.runIf(process.platform === 'win32')('surfaces a spawn error as an execution failure', async () => {
     const resolution = await win32AppLaunchCapability.resolve({ applicationKey: 'notepad' }, context());
     const child = stubChild();
     spawnMock.mockReturnValue(child);

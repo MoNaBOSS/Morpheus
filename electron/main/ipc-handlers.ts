@@ -2,7 +2,7 @@
  * IPC Handlers
  * Registers all IPC handlers for main-renderer communication
  */
-import { ipcMain, BrowserWindow, shell, dialog, app, type Session } from 'electron';
+import { ipcMain, BrowserWindow, shell, dialog, app, safeStorage, type Session } from 'electron';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, extname, basename, resolve, sep, relative } from 'node:path';
@@ -57,6 +57,7 @@ import { createAgentsApi } from '../services/agents-api';
 import { createChatApi } from '../services/chat-api';
 import { createMorpheusService } from '../services/morpheus';
 import { createMorpheusApi } from '../services/morpheus-api';
+import { createManagedAccountApi } from '../services/managed-account-api';
 import { HOST_EVENT_CHANNELS } from '@shared/host-events/contract';
 import { AcpSessionAccessRegistry } from '../services/acp-session-access-registry';
 import { createAttachmentAccess, StagedAttachmentRegistry } from '../services/attachment-access';
@@ -215,6 +216,17 @@ function registerTypedHostHandlers(
       if (!mainWindow.isDestroyed()) mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.speechChunk, chunk);
     },
   });
+  const managedAccount = createManagedAccountApi({
+    userDataDir: app.getPath('userData'), env: process.env,
+    protection: {
+      isEncryptionAvailable: () => safeStorage.isEncryptionAvailable(),
+      encryptString: (value) => safeStorage.encryptString(value),
+      decryptString: (value) => safeStorage.decryptString(value),
+      ...(process.platform === 'linux' ? { getSelectedStorageBackend: () => safeStorage.getSelectedStorageBackend() } : {}),
+    },
+    openExternal: (url) => shell.openExternal(url),
+  });
+  app.once('before-quit', managedAccount.dispose);
   const morpheusApi = createMorpheusApi({
     runtime: morpheusService.runtime,
     grants: morpheusService.grants,
@@ -295,6 +307,7 @@ function registerTypedHostHandlers(
     cron: createCronApi({ gatewayManager }),
     skills: createSkillsApi({ clawHubService, gatewayManager }),
     usage: createUsageApi(),
+    managedAccount: managedAccount.api,
     morpheus: morpheusApi,
   });
   // Start only after the renderer can receive a batched consent request. An

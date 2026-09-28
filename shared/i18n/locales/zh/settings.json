@@ -276,5 +276,38 @@
     "docs": "官网",
     "github": "GitHub",
     "faq": "常见问题"
+  },
+  "managedAccount": {
+    "title": "Morpheus 账户",
+    "description": "查看托管服务权限和包含的用量。您自己的 AI 提供商账户独立保留。",
+    "loading": "正在加载账户…",
+    "notConfigured": "此版本尚未提供托管服务。您可以继续使用自己的 AI 提供商。",
+    "signedIn": "已登录 Morpheus",
+    "plan": "方案：{{plan}}",
+    "remaining": "可用额度：{{amount}}",
+    "reserved": "待结算用量：{{amount}}",
+    "noAccess": "没有有效的托管额度。您自己的提供商仍然可用。",
+    "signOut": "退出登录",
+    "browser": "请在浏览器中完成登录。",
+    "cancel": "取消登录",
+    "code": "邮箱验证码",
+    "verify": "验证验证码",
+    "google": "使用 Google 继续",
+    "email": "电子邮箱地址",
+    "sendCode": "发送登录验证码",
+    "billingLater": "付费方案暂未开放。",
+    "error": "无法完成请求。请检查网络后重试。重新发送邮箱验证码前，请等待一分钟。",
+    "refresh": "刷新账户",
+    "tiers": {
+      "basic": "基础版",
+      "trial": "试用版",
+      "premium": "高级版"
+    },
+    "access": {
+      "unavailable": "托管服务暂时不可用。",
+      "session-expired": "会话已过期。请退出后重新登录。",
+      "signed-out": "登录以查看额度。",
+      "not-configured": "尚未配置托管服务。"
+    }
   }
 }

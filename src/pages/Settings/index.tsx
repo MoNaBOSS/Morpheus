@@ -22,6 +22,7 @@ import { MorpheusRuntimeControl } from '@/components/morpheus/MorpheusRuntimeCon
 import { MorpheusVoiceSettings } from '@/components/morpheus/MorpheusVoiceSettings';
 import { MorpheusProactiveSettings } from '@/components/morpheus/MorpheusProactiveSettings';
 import { MorpheusOnboardingSettings } from '@/components/morpheus/onboarding/MorpheusOnboardingSettings';
+import { MorpheusManagedAccount } from '@/components/morpheus/MorpheusManagedAccount';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { toUserMessage } from '@/lib/error-message';
 import {
@@ -668,6 +669,8 @@ export function Settings() {
               <div ref={voiceSection} tabIndex={-1} data-testid="settings-voice-destination" className="scroll-mt-6 outline-none"><MorpheusVoiceSettings /></div>
               <MorpheusProactiveSettings />
               <MorpheusOnboardingSettings />
+              <Separator />
+              <MorpheusManagedAccount />
             </div>
           </div>
 

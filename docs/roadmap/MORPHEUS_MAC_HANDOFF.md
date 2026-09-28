@@ -1,6 +1,34 @@
 # Morpheus experience reset — Mac handoff
 
-Updated 2026-09-27. This Git branch is the portable record; the original Windows-local Codex task does not automatically follow you to another computer.
+Updated 2026-09-28. This Git branch is the portable record; the original Windows-local Codex task does not automatically follow you to another computer.
+
+## Phase 6 Mac checkpoint 2 — desktop accounts and PC return
+
+Current checkout: `/Users/mona/Documents/Work/Morpheus`, branch
+`codex/morpheus-phase6-managed-layer`. Start from the latest pushed tip, not the
+older Phase 4 branch. Read [today's PC return runbook](MORPHEUS_PC_RETURN_2026-09-28.md)
+for safe source pickup, exact commands, Windows acceptance and hosted configuration.
+The checkpoints below are historical records; this section supersedes their
+implementation status and next-step instructions.
+
+Implemented Main-owned configurable Google PKCE/email-code sign-in, encrypted
+origin-scoped sessions, refresh/cancellation/sign-out, typed host access, and
+account/allowance Settings in all four locales. Added a runnable account-only
+HTTP service with required configuration and no default trial or inference route.
+Fixed onboarding transcript/draft handling and quiet-mode prompt behavior. Existing
+BYOK, approved orb/Matrix presentation and Windows-specific source are preserved.
+
+Mac checks: **2,828 unit tests pass, 17 skipped**; seven skips are explicitly
+Windows-only tests to run on PC. All typechecks, build, harness validation/dry-run/CI
+and communication checks pass. Full lint has zero errors and 12 existing warnings.
+Six distinct Electron account/onboarding/voice scenarios pass. Fixtures do not
+prove actual hosted login, chosen voice quality or Windows hardware behavior.
+
+Next: verify this branch on PC, run Windows source and real-device acceptance,
+configure hosted identity, then complete measured managed provider/voice routes,
+trial lifecycle and remaining paid-path coverage. Payment remains deferred; no
+public service, paid calls or trial were enabled. See the
+[updated readiness plan](MORPHEUS_PHASE6_READINESS.md) for full-version gates.
 
 ## Phase 6 Mac checkpoint 1 — managed service foundation
 
@@ -95,7 +123,7 @@ Windows hardware/package checks pending.
 
 Morpheus is an operator and companion, not a dashboard or a chatbot-only shell. The approved UI is the [Phase 1 study](../design/MORPHEUS_APPROVED_INTERFACE_STUDY.md): luminous M-orb, subtle Matrix rain, natural conversation, work/results appearing when useful, a small animated desktop companion that expands to a workspace, and an optional listening tray presence. The [first question](../design/phase4-evidence/activation-greeting-1280x800.png), [welcome](../design/phase4-evidence/activation-welcome-1280x800.png), [ready state](../design/phase4-evidence/activation-ready-1280x800.png), and [compact companion](../design/phase4-evidence/native-compact-command.png) are screenshots captured from the **real app**, not the separate prototype. The old dense Command Center (Ask/Auto/Act modes, trust profiles, internal stages and system panels) is rejected as the everyday interface. Keep advanced controls contextual.
 
-Morpheus should immediately do routine authorized actions, ask only when a genuinely new boundary or ambiguity requires it, remember preferences locally, and keep concurrent tasks going. It should adapt humor and proactivity to the person, use a natural English voice when an actual provider is configured, and never pretend a robotic OS fallback is the selected neural voice. Do not trade away existing tool access or Task Core. Privacy matters: diagnostics are opt-in; wake and cloud speech are separate choices. Do not invent a hosted trial, billing, managed API, or NerdGPT integration yet.
+Morpheus should immediately do routine authorized actions, ask only when a genuinely new boundary or ambiguity requires it, remember preferences locally, and keep concurrent tasks going. It should adapt humor and proactivity to the person, use a natural English voice when an actual provider is configured, and never pretend a robotic OS fallback is the selected neural voice. Do not trade away existing tool access or Task Core. Privacy matters: diagnostics are opt-in; wake and cloud speech are separate choices. Report hosted trial, billing and managed inference as unavailable until actually configured and accepted. NerdGPT remains a later milestone.
 
 ## Current implementation
 
@@ -111,8 +139,8 @@ The Mac can continue platform-neutral design, accessibility, profile/memory beha
 
 ## How to continue on Mac
 
-1. Sign in to the same GitHub account, clone `https://github.com/MoNaBOSS/Morpheus.git`, and switch to `codex/morpheus-phase4-mac-handoff` (or fetch/switch it in an existing clone).
-2. Open that checkout as a saved project in Codex on Mac. Start a new task with: “Read `AGENTS.md`, `CLAUDE.md`, `PROJECT_HANDOFF.md` and `docs/roadmap/MORPHEUS_MAC_HANDOFF.md`. Continue Morpheus from the approved Phase 4 source checkpoint. Do not redesign the accepted UI. Keep Windows-only acceptance deferred, report actual test evidence, and avoid expanding into Phase 6/NerdGPT without direction.”
+1. Sign in to the same GitHub account, clone `https://github.com/MoNaBOSS/Morpheus.git`, and switch to `codex/morpheus-phase6-managed-layer` (or fetch/switch it in an existing clone).
+2. Open that checkout as a saved project in Codex on Mac. Start a new task with: “Read `AGENTS.md`, `CLAUDE.md`, `PROJECT_HANDOFF.md` and `docs/roadmap/MORPHEUS_MAC_HANDOFF.md`. Continue Morpheus from the latest Phase 6 account checkpoint and PC return runbook. Preserve the accepted UI, keep Windows-only acceptance explicit, and report actual test evidence. Payment selection is deferred; NerdGPT is later.”
 3. Keep future work on Git branches with small commits and update this handoff. Push branches before switching devices. Bring changes back to the Windows checkout via `git fetch` and an explicit merge or cherry-pick after reviewing local state—never reset away user work.
 
 The Mac task will have repository context, not the private conversation history from the Windows-local task. This file intentionally records decisions and boundaries so a context-window reset does not silently change the product.

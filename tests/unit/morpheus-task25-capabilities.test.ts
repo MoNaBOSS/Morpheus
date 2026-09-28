@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { EventEmitter } from 'node:events';
@@ -64,7 +64,7 @@ describe('task 25 bounded system capabilities', () => {
     expect(JSON.stringify(result)).not.toContain('Console');
   });
 
-  it('runs process inventory with a fixed helper and no shell', async () => {
+  it.runIf(process.platform === 'win32')('runs process inventory with a fixed helper and no shell', async () => {
     const systemRoot = join(scratch, 'Windows');
     mkdirSync(join(systemRoot, 'System32'), { recursive: true });
     writeFileSync(join(systemRoot, 'System32', 'tasklist.exe'), 'stub');
@@ -102,7 +102,7 @@ describe('task 25 bounded system capabilities', () => {
     const execution = resolution.execute();
     running.emit('spawn');
     await expect(execution).resolves.toMatchObject({ kind: 'project-launch', templateKey: 'vscode', pid: 4321, path: project });
-    expect(spawnMock).toHaveBeenCalledWith(join(codeDir, 'Code.exe'), [project], expect.objectContaining({ shell: false }));
+    expect(spawnMock).toHaveBeenCalledWith(realpathSync(join(codeDir, 'Code.exe')), [project], expect.objectContaining({ shell: false }));
     await expect(win32LaunchProjectCapability.resolve({ templateKey: 'vscode', path: '..' }, context({ ProgramFiles: programFiles }))).rejects.toThrow();
   });
 });

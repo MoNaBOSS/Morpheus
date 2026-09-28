@@ -1,11 +1,11 @@
 # Phase 6 readiness, implemented foundation, and full-version path
 
-2026-09-27. Active Mac checkout: `/Users/mona/Documents/Work/Morpheus`.
+Updated 2026-09-28. Active Mac checkout: `/Users/mona/Documents/Work/Morpheus`.
 Branch: `codex/morpheus-phase6-managed-layer`, based on Phase 5 `baa7709f`.
 
 The user authorized adding the layer now, with no stated evaluation spending
 limit and payment selection deferred. This checkpoint adds the payment-independent
-source foundation. It does not provision accounts, spend on providers, enable
+source foundation and a configurable desktop account connection. It does not provision accounts, spend on providers, enable
 an unlimited public trial, or mark Phase 5/6 accepted.
 
 ## Direction and readiness
@@ -51,14 +51,21 @@ gateway, or choose a production model/retail price from fixture results.
   discarded after local sign-out/account changes.
 - Dedicated server typecheck and focused tests, plus a durable harness rule/spec.
 
-This is an importable service/client foundation. It is **not wired into the current
-desktop host API, onboarding, Core planner, voice or OpenClaw runtime**. It does
-not start a listening server. No real provider route is installed by default and
-no account receives an automatic grant. Existing BYOK behavior remains unchanged.
+The 2026-09-28 checkpoint connects Settings → Morpheus account through the typed
+host API to Main-owned Google PKCE/email-code sign-in, refresh, cancellation and
+sign-out. Main uses Electron safeStorage and origin-scoped session files. All four
+locales are covered; missing deployment configuration stays explicitly unavailable.
+`pnpm managed:serve` now starts the account-only HTTP service on loopback when its
+required environment is supplied. Deploying it behind HTTPS remains owner setup.
+
+The first-run real trial, Core planner, voice and OpenClaw managed inference are
+**not connected**. No provider route is installed by default and no account receives
+an automatic grant. Existing BYOK behavior remains unchanged. Use the
+[PC return and hosted setup runbook](MORPHEUS_PC_RETURN_2026-09-28.md).
 
 ## Service contract and accounting rules
 
-Proposed composition: HTTPS host → `createManagedGateway` → verified identity →
+Implemented service composition (HTTPS deployment pending): HTTPS host → `createManagedGateway` → verified identity →
 server route/quote → `ManagedLedger` → bounded provider adapter. The desktop uses
 Main → managed client; the renderer continues through the existing host API.
 The gateway returns model data, never OS authority. Typed local plans, permission
@@ -98,13 +105,14 @@ invariants into tested Postgres transactions. Use Node with `node:sqlite` suppor
 
 ## Next implementation slices
 
-1. **Real identity and desktop connection.** Configure hosted auth/domain and Google
-   plus email. Implement desktop browser PKCE callback validation, session refresh,
-   revocation and account deletion. Inject Electron safeStorage after app readiness;
-   test Windows DPAPI/Mac Keychain failures. Add typed host methods and connect the
-   accepted welcome → sign-in → real trial flow, with all locales and Electron E2E.
-   Supabase's PKCE exchange requires the originating verifier; overlapping sign-ins
-   need deliberate handling. [Official PKCE documentation](https://supabase.com/docs/guides/auth/sessions/pkce-flow).
+1. **Accept configured identity and connect a real trial.** Google PKCE with a
+   loopback callback, email OTP, refresh, local sign-out, protected storage and
+   Settings UI are implemented and fixture-tested. Configure the actual issuer,
+   email delivery and service, then test live sign-in and Keychain/Windows DPAPI
+   behavior. Account deletion, production configuration delivery and the accepted
+   welcome → sign-in → real trial flow remain open; onboarding must not promise a
+   trial before provider routes and eligibility/grant controls exist.
+   [Official PKCE documentation](https://supabase.com/docs/guides/auth/sessions/pkce-flow).
 2. **One measured managed vertical slice.** Install a bounded conversation/planning
    route plus actual STT/TTS routes, including voice auditions. Pin server model,
    credentials, versioned rates and per-request maxima. Prove one real task and
@@ -115,7 +123,7 @@ invariants into tested Postgres transactions. Use Node with `node:sqlite` suppor
    explicitly. Unsupported managed services stay unavailable; preserve explicit
    BYOK access and do not silently spend from another account. Correlate task and
    speech IDs. Test outage, retry, duplicate dispatch, restart and reconciliation.
-4. **Pilot operations.** Add HTTPS listener/deployment, durable storage, backup and
+4. **Pilot operations.** Deploy behind HTTPS with persistent storage; add backup and
    restore, per-account/device admission limits, verified trial eligibility,
    revocation, reconciliation jobs, operational logs without content, service-wide
    spend controls, and an operator kill switch. Test tenant isolation and abuse
@@ -180,14 +188,22 @@ conflicting IDs, tenant separation, identity verification, expiry, cap violation
 unknown usage, timeout, cancellation, plaintext refusal, protected session restart,
 and stale responses after local sign-out. Fixture prices/outputs are test data.
 
-Validation on this Mac: 42 focused tests pass across three suites; node, web and
-managed-service typechecks pass; changed-file ESLint passes; harness validation
-and dry-run pass; communication replay/comparison pass; renderer/Main/preload
-build passes with the inherited bundle-size/dynamic-import warnings. A forced
-accounting-write failure proves reservation/dispatch roll back before network
-work. No new user-facing UI was added, so no new UI E2E is claimed.
+Validation on this Mac, 2026-09-28: full unit suite **2,828 passed, 17 skipped**;
+all node/web/managed typechecks pass; full ESLint passes with zero errors and 12
+existing Fast Refresh warnings; harness validation/dry-run/CI and communication
+replay/comparison pass; renderer/Main/preload build passes with inherited bundle
+warnings. Six distinct Electron scenarios passed: account UI (3), existing voice
+playback/availability (2), and onboarding/profile editing (1). Account/onboarding
+were rerun against the final build. UI auth uses controlled host fixtures; the
+unconfigured account case exercises real Main.
+
+The prior nine Mac failures are resolved through two canonical-path expectations
+and explicit platform guards on seven Windows drive-rooted tests. Those seven
+must run on PC; no Windows capability implementation was weakened or ported.
+The prior four UI lint errors are fixed, including transcript/draft state handling
+and quiet-mode prompt behavior. The remaining 10 skips predate this checkpoint.
 
 No paid calls, public deployment, checkout, live login, production provider choice,
-Windows hardware acceptance or full Phase 5/6 completion is claimed. The inherited
-nine Mac unit failures and four UI lint errors remain documented in the
-[Phase 5 delivery](MORPHEUS_PHASE5_DELIVERY.md).
+Windows hardware acceptance or full Phase 5/6 completion is claimed. Historical
+baseline results remain in [Phase 5 delivery](MORPHEUS_PHASE5_DELIVERY.md); current
+acceptance steps and remaining scope are in the [PC runbook](MORPHEUS_PC_RETURN_2026-09-28.md).

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ManagedAccountStatus, ManagedRequest } from '../../../../shared/morpheus/managed-types';
+import type { ManagedClientStatus, ManagedRequest } from '../../../../shared/morpheus/managed-types';
 import type { ManagedSessionStore } from './session-store';
 
 const amount = z.number().int().nonnegative().max(1_000_000_000_000);
@@ -12,9 +12,7 @@ const statusSchema = z.object({
   billing: z.literal('not-configured'),
 }).strict();
 
-export type ManagedClientStatus =
-  | { state: 'not-configured' | 'signed-out' | 'session-expired' | 'unavailable'; account: null }
-  | { state: 'ready'; account: ManagedAccountStatus };
+export type { ManagedClientStatus } from '../../../../shared/morpheus/managed-types';
 
 /** Main-only transport. Host API integration follows real desktop sign-in.
  * Origin is deployment configuration, never renderer input. No silent BYOK fallback.

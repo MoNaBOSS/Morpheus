@@ -23,13 +23,16 @@ export function MorpheusOnboardingSettings() {
   const [humorStyle, setHumorStyle] = useState<MorpheusHumorStyle>('cheeky');
   const [proactivityLevel, setProactivityLevel] = useState<MorpheusProactivityLevel>('balanced');
   useEffect(() => { void load(); }, [load]);
-  useEffect(() => {
+  const toggleEditor = () => {
     if (!onboarding) return;
-    setName(onboarding.preferences.preferredName);
-    setInterests(onboarding.preferences.interests ?? '');
-    setHumorStyle(onboarding.preferences.humorStyle ?? 'cheeky');
-    setProactivityLevel(onboarding.preferences.proactivityLevel ?? 'balanced');
-  }, [onboarding]);
+    if (!editing) {
+      setName(onboarding.preferences.preferredName);
+      setInterests(onboarding.preferences.interests ?? '');
+      setHumorStyle(onboarding.preferences.humorStyle ?? 'cheeky');
+      setProactivityLevel(onboarding.preferences.proactivityLevel ?? 'balanced');
+    }
+    setEditing(!editing); setSaved(false);
+  };
   const save = async () => {
     setSaving(true);
     const ok = await update({ preferredName: name.trim(), interests: interests.trim(), humorStyle, proactivityLevel });
@@ -37,7 +40,7 @@ export function MorpheusOnboardingSettings() {
     if (ok) setEditing(false);
   };
   return <section data-testid="settings-morpheus-activation" className="rounded-xl border border-border/60 bg-surface-modal p-4">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-medium">{t('morpheus.activationV2.profileTitle')}</p><p className="mt-1 text-xs text-muted-foreground">{t('morpheus.activationV2.profileDescription')}</p></div><div className="flex gap-2"><Button variant="outline" size="sm" data-testid="settings-edit-companion-profile" onClick={() => { setEditing((value) => !value); setSaved(false); }}>{t('morpheus.common.edit')}</Button><Button variant="outline" size="sm" data-testid="settings-replay-activation" onClick={() => setPreview(true)} className="gap-2"><RotateCcw size={14} />{t('morpheus.activationV2.preview')}</Button></div></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-medium">{t('morpheus.activationV2.profileTitle')}</p><p className="mt-1 text-xs text-muted-foreground">{t('morpheus.activationV2.profileDescription')}</p></div><div className="flex gap-2"><Button variant="outline" size="sm" data-testid="settings-edit-companion-profile" disabled={!onboarding} onClick={toggleEditor}>{t('morpheus.common.edit')}</Button><Button variant="outline" size="sm" data-testid="settings-replay-activation" onClick={() => setPreview(true)} className="gap-2"><RotateCcw size={14} />{t('morpheus.activationV2.preview')}</Button></div></div>
     {editing ? <div data-testid="settings-companion-profile" className="mt-5 max-w-xl border-t border-white/10 pt-4">
       <label className="block text-xs text-muted-foreground">{t('morpheus.activationV2.nameQuestion')}<input data-testid="settings-companion-name" value={name} maxLength={80} onChange={(event) => setName(event.target.value)} className="mt-2 h-10 w-full rounded-lg border border-border bg-[hsl(var(--morpheus-surface-2))] px-3 text-sm text-foreground" /></label>
       <label className="mt-4 block text-xs text-muted-foreground">{t('morpheus.activationV2.interests')}<input data-testid="settings-companion-interests" value={interests} maxLength={240} onChange={(event) => setInterests(event.target.value)} className="mt-2 h-10 w-full rounded-lg border border-border bg-[hsl(var(--morpheus-surface-2))] px-3 text-sm text-foreground" /></label>

@@ -440,6 +440,14 @@ export const hostApi = {
       invokeHost('usage', 'recentTokenHistory', { limit })
     ),
   },
+  managedAccount: {
+    status: () => invokeHost('managedAccount', 'status'),
+    googleSignIn: () => invokeHost('managedAccount', 'googleSignIn'),
+    requestEmailCode: (email: string) => invokeHost('managedAccount', 'requestEmailCode', { email }),
+    verifyEmailCode: (code: string) => invokeHost('managedAccount', 'verifyEmailCode', { code }),
+    cancelSignIn: () => invokeHost('managedAccount', 'cancelSignIn'),
+    signOut: () => invokeHost('managedAccount', 'signOut'),
+  },
   morpheus: {
     routeInteraction: (payload: RouteMorpheusInteractionPayload) => (
       invokeHost('morpheus', 'routeInteraction', payload)

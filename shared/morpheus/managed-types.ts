@@ -47,3 +47,16 @@ export type ManagedRequest = {
   route: string;
   input: unknown;
 };
+
+export type ManagedClientStatus =
+  | { state: 'not-configured' | 'signed-out' | 'session-expired' | 'unavailable'; account: null }
+  | { state: 'ready'; account: ManagedAccountStatus };
+
+export type ManagedAuthState = 'idle' | 'browser' | 'email-code' | 'signed-in' | 'error';
+export type ManagedAccountSnapshot = {
+  configured: boolean;
+  signedIn: boolean;
+  authState: ManagedAuthState;
+  access: ManagedClientStatus;
+};
+export type ManagedAuthResult = { success: boolean; error?: 'not-configured' | 'invalid-input' | 'rate-limited' | 'auth-failed' | 'cancelled' | 'storage-unavailable' };

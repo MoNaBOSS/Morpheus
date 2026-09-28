@@ -99,6 +99,4 @@ unrelated source:
 
 - `core.autocrlf=true` yields CRLF markdown, which the harness frontmatter parser
   (`harness/src/specs.mjs`) rejects because it only accepts LF.
-- `tests/unit/host-api-facade.test.ts` has one boundary assertion that fails on
-  Windows due to a `${cwd}/` path join that never matches backslash paths.
 - Some tests need symlink privilege (Developer Mode) and fail with `EPERM` without it.

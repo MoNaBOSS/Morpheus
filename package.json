@@ -83,6 +83,7 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck:managed": "tsc --noEmit -p tsconfig.managed.json",
+    "managed:serve": "node scripts/managed/serve.mjs",
     "typecheck": "pnpm run typecheck:node && pnpm run typecheck:web && pnpm run typecheck:managed",
     "test": "vitest run",
     "security:check": "node scripts/security/audit-dependencies.mjs",
