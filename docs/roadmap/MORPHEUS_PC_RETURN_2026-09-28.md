@@ -6,6 +6,11 @@ The branch includes Phase 4, the Phase 5 accounting checkpoints, the Phase 6
 foundation (`4fcde964`), and the subsequent desktop account integration.
 Use the latest pushed branch tip; `4fcde964` alone does not contain today's work.
 
+Later on 2026-09-28, the user requested smooth Siri-like motion alternatives. The
+[three-option motion study and integration decisions](../design/MORPHEUS_MOTION_STUDY.md)
+are included for review. The live app's animation has not been replaced by these
+concepts; select and integrate the effect before claiming Windows acceptance.
+
 ## Mac checkpoint evidence
 
 2026-09-28: full unit suite **2,828 passed, 17 skipped** (278 passing files,
