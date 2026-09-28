@@ -24,8 +24,9 @@ The standalone Mac working source is
 `/Users/mona/Documents/Work/morpheus-experience-preview`; the copy in this branch
 is a portable checkpoint. Local Mac URL while its server runs:
 `http://127.0.0.1:43830/`. This address is not remotely accessible from the PC.
-Hosted publication was attempted but blocked: Sites reports its registered
-project as not found. No live hosted link is claimed.
+For Larry, use the live [GitHub Pages experience](https://monaboss.github.io/Morpheus/).
+It was published from `gh-pages`, which contains only static design files.
+The earlier Sites publication attempt remained unavailable.
 
 Verified in the browser: desktop hover and draft retention, quick request to full
 workspace, file permission and undo, all five preferences tabs, activity
@@ -50,7 +51,7 @@ login occurred. Windows hardware and packaging remain untested on this Mac.
 ## Promised versus delivered
 
 | Commitment | Delivered now | Still required |
-| Realistic, interactive design and orb alternatives | Portable Windows-style experience, top-right hover composer, three animations and interface/state guide | Restore hosted publication; approve and integrate visuals into Electron; validate on PC |
+| Realistic, interactive design and orb alternatives | Portable Windows-style experience, top-right hover composer, three animations and interface/state guide | Collect Larry’s feedback, integrate chosen visuals into Electron, and validate on PC |
 | --- | --- | --- |
 | Preserve the Windows companion direction | Approved M/orb/Matrix UI, typing and BYOK paths preserved; account controls added to Settings | Repeat real daily workflows on Windows; extend supported app adapters |
 | Add Phase 6 without waiting for payment | Protected desktop account lifecycle, Google/email integration, allowance UI, durable ledger, authenticated gateway and runnable account service | Hosted setup, live login acceptance, evaluated model/voice routes, real trial lifecycle |

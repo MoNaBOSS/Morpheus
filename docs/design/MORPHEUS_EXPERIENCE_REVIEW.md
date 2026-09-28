@@ -10,9 +10,10 @@ this is not the final production voice.
 
 The preview source is `/Users/mona/Documents/Work/morpheus-experience-preview`.
 A portable copy is included in [morpheus-experience/index.html](morpheus-experience/index.html).
-Hosted publication is blocked: Sites reports the already registered project as
-not found. There is no successful deployment URL. No new project or public
-audience was created to work around that failure.
+The experience is published on [GitHub Pages](https://monaboss.github.io/Morpheus/)
+from the dedicated `gh-pages` branch. That branch contains only the static design
+files. The earlier Sites registration remains unavailable; GitHub Pages is the
+shareable route for Larry.
 The animation comparison remains in [the motion study](MORPHEUS_MOTION_STUDY.md).
 
 ## How to direct design and animation
