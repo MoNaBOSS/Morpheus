@@ -11,6 +11,31 @@ Later on 2026-09-28, the user requested smooth Siri-like motion alternatives. Th
 are included for review. The live app's animation has not been replaced by these
 concepts; select and integrate the effect before claiming Windows acceptance.
 
+## Interactive design checkpoint
+
+The [experience guide](../design/MORPHEUS_EXPERIENCE_REVIEW.md) and
+[portable browser experience](../design/morpheus-experience/index.html) cover the
+newest requested direction: immersive Windows desktop, top-right animated orb,
+hover-to-type composer, expanded task workspace, activity and preferences.
+Open the HTML file from the fetched checkout on PC; no install/build is needed.
+Use Experience → Opening for first use, or hover the desktop orb immediately.
+
+The standalone Mac working source is
+`/Users/mona/Documents/Work/morpheus-experience-preview`; the copy in this branch
+is a portable checkpoint. Local Mac URL while its server runs:
+`http://127.0.0.1:43830/`. This address is not remotely accessible from the PC.
+Hosted publication was attempted but blocked: Sites reports its registered
+project as not found. No live hosted link is claimed.
+
+Verified in the browser: desktop hover and draft retention, quick request to full
+workspace, file permission and undo, all five preferences tabs, activity
+restoration, three motion selections, flowing desktop orb, reduced motion and
+390px layout without horizontal overflow. Earlier full-journey checks covered
+background work, offline/failure/retry, returning and speech interruption.
+These are design checks; the Electron app has not adopted the new visual system.
+Next on PC, integrate selected surfaces with real mic/task/voice state and verify
+monitor/DPI placement, keyboard focus, resource use and all four locales.
+
 ## Mac checkpoint evidence
 
 2026-09-28: full unit suite **2,828 passed, 17 skipped** (278 passing files,
@@ -25,6 +50,7 @@ login occurred. Windows hardware and packaging remain untested on this Mac.
 ## Promised versus delivered
 
 | Commitment | Delivered now | Still required |
+| Realistic, interactive design and orb alternatives | Portable Windows-style experience, top-right hover composer, three animations and interface/state guide | Restore hosted publication; approve and integrate visuals into Electron; validate on PC |
 | --- | --- | --- |
 | Preserve the Windows companion direction | Approved M/orb/Matrix UI, typing and BYOK paths preserved; account controls added to Settings | Repeat real daily workflows on Windows; extend supported app adapters |
 | Add Phase 6 without waiting for payment | Protected desktop account lifecycle, Google/email integration, allowance UI, durable ledger, authenticated gateway and runnable account service | Hosted setup, live login acceptance, evaluated model/voice routes, real trial lifecycle |

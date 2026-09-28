@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Morpheus">
+  <title>Morpheus</title>
+  <desc>Morpheus sidebar mark: converging M with an execution stroke.</desc>
+
+  <defs>
+    <!-- userSpaceOnUse: axis-aligned strokes have a zero-width bounding box,
+         which would collapse an objectBoundingBox gradient. -->
+    <linearGradient id="morpheusMarkAccent" gradientUnits="userSpaceOnUse"
+                    x1="24" y1="30" x2="104" y2="84">
+      <stop offset="0" stop-color="#8CF7CB"/>
+      <stop offset="0.5" stop-color="#34D399"/>
+      <stop offset="1" stop-color="#0E9C70"/>
+    </linearGradient>
+    <linearGradient id="morpheusMarkExec" gradientUnits="userSpaceOnUse"
+                    x1="64" y1="76" x2="64" y2="104">
+      <stop offset="0" stop-color="#34D399"/>
+      <stop offset="1" stop-color="#34D399" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+
+  <g fill="none" stroke="url(#morpheusMarkAccent)" stroke-width="12"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 26 100 L 26 30"/>
+    <path d="M 102 100 L 102 30"/>
+    <path d="M 26 30 L 64 74"/>
+    <path d="M 102 30 L 64 74"/>
+  </g>
+
+  <path d="M 64 80 L 64 102" stroke="url(#morpheusMarkExec)" stroke-width="7" stroke-linecap="round"/>
+</svg>
