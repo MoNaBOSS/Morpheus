@@ -9,7 +9,7 @@ for current implementation evidence and next steps; the use cases here remain.
 
 Planning snapshot: 2026-09-21. Prepared from the user's decisions in this conversation and a read-only review of the existing repository. No application implementation is authorised by this document alone; the user requested planning now and implementation in a fresh task after finalisation.
 
-Progress update, 2026-09-22: the user subsequently authorised **Phase 0**, now completed in this task. See the [baseline report](../morpheus-phase-0/PHASE_0_REPORT.md) for the preserved candidate, fresh tests, corrected voice/secret-storage facts and migration contract. The user then narrowed Phase 1 to interface prototypes only and authorised Phase 2. The [interface review](../morpheus-interface-prototype/PHASE_1_INTERFACE_REPORT.md) is built and awaiting approval; voice auditions and the G1 voice choice are deferred. The [Phase 2 checkpoint](../morpheus-phase-2/PHASE_2_STATUS.md) records the real Windows orb/voice integration and the unpassed hardware, streaming-STT and secret-migration gates. Do not count Phase 2 as accepted.
+Progress update, 2026-09-22: the user subsequently authorised **Phase 0**, now completed in this task. See the baseline report (historical archive: `../morpheus-phase-0/PHASE_0_REPORT.md`) for the preserved candidate, fresh tests, corrected voice/secret-storage facts and migration contract. The user then narrowed Phase 1 to interface prototypes only and authorised Phase 2. The interface review (historical archive: `../morpheus-interface-prototype/PHASE_1_INTERFACE_REPORT.md`) is built and awaiting approval; voice auditions and the G1 voice choice are deferred. The Phase 2 checkpoint (historical archive: `../morpheus-phase-2/PHASE_2_STATUS.md`) records the real Windows orb/voice integration and the unpassed hardware, streaming-STT and secret-migration gates. Do not count Phase 2 as accepted.
 
 ## 1. Product direction and evidence
 
@@ -18,10 +18,10 @@ Morpheus is a persistent personal desktop operator with natural English speech, 
 The reference video presents: wake -> request to prepare a stream -> coordinate applications -> report readiness -> wait for the go-live instruction -> make a relevant suggestion -> understand a follow-up and show a trailer. This is the interaction reference, not proof that those integrations currently exist or work reliably.
 
 - Reference video: `C:/Users/monir/Downloads/WhatsApp Video 2026-09-08 at 11.03.53 PM.mp4`.
-- Approved orb: [user-supplied orb](references/approved-orb.png).
-- Existing app mark: [M logo](references/existing-m-logo.svg).
-- Approved layout direction: **A** in [layout comparison](references/layout-comparison.png), becoming compact like **D** when reduced.
-- Digital rain reference: [reference image](references/matrix-rain-reference.png). It is a visual reference, not a production background asset.
+- Approved orb: [retained orb artwork](../design/morpheus-experience/orb.png).
+- Existing app mark: [retained M logo](../design/morpheus-experience/favicon.svg).
+- Approved layout direction: **A** in the original layout comparison (image not retained in this checkout), becoming compact like **D** when reduced.
+- Digital rain reference: the original Matrix rain image (not retained in this checkout). It is a visual reference, not a production background asset.
 - The comparison is a static concept image, not a built or tested interface. Earlier rejected logo/UI generations are not design authority.
 
 The existing M remains the application logo. The supplied circular green mark is the companion orb. They have different roles and must not replace one another.
@@ -215,7 +215,7 @@ Official OpenAI documentation checked for the model roles: [GPT-6 Astra](https:/
 
 ### Phase 0 — Preserve and reconcile the baseline
 
-**Status: complete — 2026-09-21.** [Phase 0 report](../morpheus-phase-0/PHASE_0_REPORT.md): 66 modified and 31 untracked files preserved; 1,248 source files restored and hash-verified; 834 targeted unit tests and both typechecks passed; read-only lint passed with 24 warnings and no errors. Existing application source and runtime settings remain unchanged. Hardware voice and packaged acceptance were not run.
+**Status: complete — 2026-09-21.** Phase 0 report (historical archive: `../morpheus-phase-0/PHASE_0_REPORT.md`): 66 modified and 31 untracked files preserved; 1,248 source files restored and hash-verified; 834 targeted unit tests and both typechecks passed; read-only lint passed with 24 warnings and no errors. Existing application source and runtime settings remain unchanged. Hardware voice and packaged acceptance were not run.
 
 **Work:** inventory all existing capabilities and classify verified/partial/untested/missing. Record the current working tree and reconcile this brief with canonical docs before source changes. Preserve all current changes and settings. Do not start an isolated checkout from HEAD alone and accidentally discard the uncommitted candidate.
 
@@ -246,7 +246,7 @@ Official OpenAI documentation checked for the model roles: [GPT-6 Astra](https:/
 ### Phase 3 — Responsive work, learned permissions, and recovery
 
 Progress 2026-09-23: source implementation delivered for PC acceptance. See
-[Phase 3 status and test checklist](../morpheus-phase-3/PHASE_3_STATUS.md) and the
+Phase 3 status and test checklist (historical archive: `../morpheus-phase-3/PHASE_3_STATUS.md`) and the
 task-root `RESUME.md` for continuity. This does not close Phase 2's real-device gates.
 
 **Work:** add independent task scheduling, foreground/resource coordination, clear task cancellation, durable checkpoints and restart reconciliation. Extend the registered app/integration catalogue needed for agreed routines. Make saved permissions useful through “Always do this without asking.” Bound retries and offer recovery only when needed.

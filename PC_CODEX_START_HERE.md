@@ -63,6 +63,14 @@ claims. Recommendations are not user approvals or proof of implementation.
 `PROJECT_HANDOFF.md` and older release documents contain useful history, but their
 old “current candidate” headings must not supersede this handoff.
 
+Historical Phase 0–3 report folders and two original layout/rain reference images
+linked by the old experience plan are not present in this Mac checkout. The
+plan retains their decision/status summaries, and the current orb/M artwork and
+interactive design are committed. If the PC still has those original archives,
+preserve them and reconcile them as historical evidence; do not require them to
+start current work or fabricate their contents. The handoff preserves actionable
+context, not a verbatim export of every chat message or missing historical asset.
+
 ## 3. Preserve the user's decisions
 
 - Product: **Morpheus, your Windows companion**, with Siri-like ease, smooth
