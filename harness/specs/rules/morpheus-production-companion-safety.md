@@ -68,3 +68,9 @@ Automatic end-of-speech detection is Renderer microphone lifecycle only. It must
 retain a visible manual stop, discard no-speech timeouts without provider calls,
 and cannot manufacture transcript, Objective or completion state. Compact
 Presence must restore the exact saved full-window state on close or expansion.
+
+Desktop presence defaults to the bottom-right of the current display work area,
+with space for the taskbar. Wake, tray and global shortcuts use the same compact
+anchor; the compact panel grows upward and stays inside the available work area.
+Waking the orb must not steal focus. Full workspace expansion remains explicit.
+Browser hover designs are not evidence of native hover or audio integration.

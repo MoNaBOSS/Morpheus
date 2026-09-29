@@ -35,7 +35,9 @@ test('a wake presents the real orb without focus theft, then opens compact and f
       const area = screen.getDisplayMatching(orbBounds).workArea;
       return {
         mainVisible: mainWindow.isVisible(), orbVisible: orbWindow.isVisible(),
-        offsetX: compact.x - orbBounds.x,
+        offsetX: compact.x - (area.x + area.width - Math.min(440, area.width - 40) - 20),
+        orbRightGap: area.x + area.width - orbBounds.x - orbBounds.width,
+        orbBottomGap: area.y + area.height - orbBounds.y - orbBounds.height,
         // Check the requested placement; Windows can trim native frame pixels
         // from the height reported by getBounds after making Main non-resizable.
         offsetY: compact.y - Math.max(area.y + 20, orbBounds.y - Math.min(520, area.height - 40) - 12),
@@ -43,7 +45,7 @@ test('a wake presents the real orb without focus theft, then opens compact and f
           && compact.x + compact.width <= area.x + area.width
           && compact.y + compact.height <= area.y + area.height,
       };
-    })).toEqual({ mainVisible: true, orbVisible: false, offsetX: 0, offsetY: 0, insideDisplay: true });
+    })).toEqual({ mainVisible: true, orbVisible: false, offsetX: 0, offsetY: 0, orbRightGap: 20, orbBottomGap: 20, insideDisplay: true });
 
     await main!.getByTestId('quick-command-expand').click();
     await expect(main!.getByTestId('morpheus-quick-command')).toBeHidden();

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { createMorpheusCompanionSurfaceController } from '@electron/main/morpheus-companion-surface';
+import { wakeOrbBounds, wakeCompactBounds } from '@electron/main/morpheus-presence-layout';
 
 function fakeWindow(options: { visible?: boolean; maximized?: boolean } = {}) {
   let bounds = { x: 40, y: 50, width: 1280, height: 800 };
@@ -43,7 +44,7 @@ describe('Main-owned compact companion surface', () => {
     });
     controller.show(window, 'global-shortcut');
     controller.show(window, 'wake-word');
-    expect(window.snapshot().bounds).toEqual({ x: -1900, y: 488, width: 440, height: 520 });
+    expect(window.snapshot().bounds).toEqual({ x: -460, y: 488, width: 440, height: 520 });
     controller.expand(window);
     expect(window.snapshot().bounds).toEqual({ x: 40, y: 50, width: 1280, height: 800 });
   });
@@ -55,7 +56,7 @@ describe('Main-owned compact companion surface', () => {
     });
     controller.show(window, 'wake-word');
     expect(window.snapshot()).toMatchObject({
-      bounds: { x: 120, y: -480, width: 440, height: 360 }, minimumSize: [400, 360],
+      bounds: { x: 240, y: -480, width: 440, height: 360 }, minimumSize: [400, 360],
     });
   });
 
@@ -93,5 +94,33 @@ describe('Main-owned compact companion surface', () => {
       visible: true, maximized: true, alwaysOnTop: false, resizable: true,
     });
     expect(window.getBounds).toHaveBeenCalledOnce();
+  });
+});
+
+describe('bottom-right presence placement', () => {
+  it.each(['tray', 'global-shortcut', 'wake-word'] as const)('keeps %s beside the same screen edge', (trigger) => {
+    const area = { x: 48, y: 24, width: 1872, height: 1016 };
+    const window = fakeWindow();
+    const controller = createMorpheusCompanionSurfaceController({ getWorkArea: () => area });
+    controller.show(window, trigger);
+    const compact = window.snapshot().bounds;
+    const orb = wakeOrbBounds(area);
+    expect(orb.x + orb.width).toBe(area.x + area.width - 20);
+    expect(orb.y + orb.height).toBe(area.y + area.height - 20);
+    expect(compact.x + compact.width).toBe(orb.x + orb.width);
+    expect(compact.y + compact.height).toBeLessThan(orb.y);
+  });
+
+  it.each([
+    { x: -1920, y: 100, width: 1920, height: 1040 },
+    { x: 100, y: -500, width: 600, height: 400 },
+    { x: -80, y: -60, width: 80, height: 60 },
+  ])('fits both surfaces inside work area $width × $height', (area) => {
+    for (const bounds of [wakeOrbBounds(area), wakeCompactBounds(area, 440, 520)]) {
+      expect(bounds.x).toBeGreaterThanOrEqual(area.x);
+      expect(bounds.y).toBeGreaterThanOrEqual(area.y);
+      expect(bounds.x + bounds.width).toBeLessThanOrEqual(area.x + area.width);
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(area.y + area.height);
+    }
   });
 });

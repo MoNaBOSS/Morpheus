@@ -24,7 +24,7 @@ surfaces include task selection, separate speech/task stop controls, remembered
 exact approvals and conservative restart recovery. New profiles use Balanced;
 existing preferences are preserved. See [task continuity and acceptance limits](docs/architecture/MORPHEUS_TASK_CONTINUITY.md).
 
-Windows presence refinement: local wake shows the orb without taking focus. Clicking it opens compact chat above the same bottom-left corner, within the display work area; expanding restores the previous full window. Hiding the orb during loading keeps it hidden.
+Windows presence refinement: local wake shows the orb without taking focus. Clicking it opens compact chat above the same bottom-right corner, within the display work area; expanding restores the previous full window. Hiding the orb during loading keeps it hidden.
 
 > **1.1.2 unified presence candidate:** cinematic first-run and returning greetings,
 > a state-driven luminous Signal, compact background Presence, speech auto-end,

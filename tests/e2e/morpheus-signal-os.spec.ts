@@ -40,6 +40,7 @@ test.describe('Morpheus visual presence', () => {
   });
 
   test('keeps new permission boundaries visible while the background stays quiet', async ({ launchElectronApp }) => {
+    test.skip(process.platform !== 'win32', 'screen.capture is a Windows-only registered capability');
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);

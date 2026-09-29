@@ -3,22 +3,32 @@ import type { Rectangle } from 'electron';
 export const MORPHEUS_ORB_SIZE = 100;
 export const MORPHEUS_PRESENCE_EDGE_GAP = 20;
 
+function presenceInset(size: number): number {
+  return Math.min(MORPHEUS_PRESENCE_EDGE_GAP, Math.max(0, Math.floor((size - 1) / 2)));
+}
+
 export function wakeOrbBounds(workArea: Rectangle): Rectangle {
+  const gapX = presenceInset(workArea.width);
+  const gapY = presenceInset(workArea.height);
+  const width = Math.min(MORPHEUS_ORB_SIZE, Math.max(1, workArea.width - 2 * gapX));
+  const height = Math.min(MORPHEUS_ORB_SIZE, Math.max(1, workArea.height - 2 * gapY));
   return {
-    x: workArea.x + MORPHEUS_PRESENCE_EDGE_GAP,
-    y: workArea.y + Math.max(0, workArea.height - MORPHEUS_ORB_SIZE - MORPHEUS_PRESENCE_EDGE_GAP),
-    width: MORPHEUS_ORB_SIZE,
-    height: MORPHEUS_ORB_SIZE,
+    x: workArea.x + workArea.width - width - gapX,
+    y: workArea.y + workArea.height - height - gapY,
+    width,
+    height,
   };
 }
 
 export function wakeCompactBounds(workArea: Rectangle, width: number, height: number): Rectangle {
   const orb = wakeOrbBounds(workArea);
-  const fittedWidth = Math.min(width, Math.max(1, workArea.width - 2 * MORPHEUS_PRESENCE_EDGE_GAP));
-  const fittedHeight = Math.min(height, Math.max(1, workArea.height - 2 * MORPHEUS_PRESENCE_EDGE_GAP));
+  const gapX = presenceInset(workArea.width);
+  const gapY = presenceInset(workArea.height);
+  const fittedWidth = Math.min(width, Math.max(1, workArea.width - 2 * gapX));
+  const fittedHeight = Math.min(height, Math.max(1, workArea.height - 2 * gapY));
   return {
-    x: orb.x,
-    y: Math.max(workArea.y + MORPHEUS_PRESENCE_EDGE_GAP, orb.y - fittedHeight - 12),
+    x: orb.x + orb.width - fittedWidth,
+    y: Math.max(workArea.y + gapY, orb.y - fittedHeight - 12),
     width: fittedWidth,
     height: fittedHeight,
   };

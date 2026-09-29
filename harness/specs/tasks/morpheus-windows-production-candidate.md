@@ -27,6 +27,7 @@ touchedAreas:
   - docs/**
   - harness/reference/morpheus-windows-production-candidate.md
   - harness/specs/rules/morpheus-production-candidate-safety.md
+  - harness/specs/rules/morpheus-production-companion-safety.md
   - harness/specs/tasks/morpheus-windows-production-candidate.md
   - CLAUDE.md
   - PROJECT_HANDOFF.md
@@ -41,6 +42,7 @@ expectedUserBehavior:
   - Provider, microphone, speech, Gateway, Audit, and update readiness are diagnosable without exposing secrets.
   - Voice, Invoke, Command, Chat Act, workflows, schedules, and Systems continue through one Objective Core.
   - Interrupted objectives, failed providers, restarts, and partial plans recover to truthful terminal states.
+  - Orb and compact companion placement use the bottom-right work area for wake, tray and shortcuts, including secondary displays and constrained screen sizes.
   - The packaged app remains responsive, update-safe, and visually coherent at 1280x800.
 requiredProfiles:
   - fast

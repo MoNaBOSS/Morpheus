@@ -62,7 +62,7 @@ steady state under reduced motion. This remains a recommendation pending selecti
 
 Three everyday surfaces share one task history and state:
 
-1. **Desktop presence:** a top-right orb/tray entry, quiet by default. Hover reveals
+1. **Desktop presence:** a bottom-right orb/tray entry, quiet by default. Hover reveals
    the compact text composer without stealing focus; click/tap pins it and focuses
    typing. Pointer travel into the panel does not close it. Drafts keep it open;
    Escape or dismiss closes it while preserving the draft. Ctrl+/ also opens it.
@@ -82,7 +82,7 @@ replacement or a claim of native UI Automation coverage.
 | First opening | Name prompt with skip | Gentle arrival; stable M; no forced voice setup | Save name or skip |
 | Welcome | Name, one useful prompt, optional personalization | Minimal ambient motion | Give a task or enter workspace |
 | Returning | Existing work and readiness | Quiet halo; no repeated onboarding | Resume or give a new task |
-| Wake/hover | Top-right orb and compact composer | Flowing contours; hover never steals focus; click/tap pins typing | Submit, expand or dismiss |
+| Wake/hover | Bottom-right orb and compact composer | Flowing contours; hover never steals focus; click/tap pins typing | Submit, expand or dismiss |
 | Listening | Mic state and editable transcript | Actual microphone envelope in the real app | Submit, cancel or complete utterance |
 | Unclear request | One concrete question | Steady questioning state; retain original objective | Answer or cancel |
 | Preparing/working | Goal and factual step | Restrained motion; no invented progress percentage | Continue, background or cancel selected task |
@@ -137,7 +137,7 @@ The remaining Phase 6 gates still apply.
 - Full-viewport Windows-style desktop, centered taskbar, Start and quick settings,
   File Explorer, editable Notepad, desktop clock and completion notifications.
 - First opening/name, welcome, ready, voice interaction, background work, results,
-  interrupted return, and the top-right hover composer.
+  interrupted return, and the bottom-right hover composer.
 - Full workspace with task sidebar, activity history and shared task selection.
 - Preferences: You, Voice, Appearance, Privacy and Account. Account status is
   explicitly unavailable; there is no fabricated sign-in, trial or payment flow.

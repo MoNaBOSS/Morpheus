@@ -4,7 +4,7 @@ Open `index.html` directly in a browser, or serve this folder with a static serv
 This is a portable design checkpoint copied from the standalone Mac Site checkout
 at `/Users/mona/Documents/Work/morpheus-experience-preview`.
 
-Hover the top-right orb to reveal the text composer. Click or tap to focus it.
+Hover the bottom-right orb to reveal the text composer. Click or tap to focus it.
 Experience opens first-use scenes, motion comparisons, situations and a guide
 for writing design commands. Settings and Activity are in the full workspace.
 

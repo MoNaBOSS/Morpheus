@@ -1,5 +1,7 @@
 # Return to PC — 2026-09-28
 
+Latest: [September 29 priorities and capability review](MORPHEUS_PC_PRIORITY_2026-09-29.md).
+
 Source branch: `codex/morpheus-phase6-managed-layer`.
 Mac checkout: `/Users/mona/Documents/Work/Morpheus`.
 The branch includes Phase 4, the Phase 5 accounting checkpoints, the Phase 6
@@ -15,7 +17,7 @@ concepts; select and integrate the effect before claiming Windows acceptance.
 
 The [experience guide](../design/MORPHEUS_EXPERIENCE_REVIEW.md) and
 [portable browser experience](../design/morpheus-experience/index.html) cover the
-newest requested direction: immersive Windows desktop, top-right animated orb,
+newest requested direction: immersive Windows desktop, bottom-right animated orb,
 hover-to-type composer, expanded task workspace, activity and preferences.
 Open the HTML file from the fetched checkout on PC; no install/build is needed.
 Use Experience → Opening for first use, or hover the desktop orb immediately.
@@ -51,8 +53,8 @@ login occurred. Windows hardware and packaging remain untested on this Mac.
 ## Promised versus delivered
 
 | Commitment | Delivered now | Still required |
-| Realistic, interactive design and orb alternatives | Portable Windows-style experience, top-right hover composer, three animations and interface/state guide | Collect Larry’s feedback, integrate chosen visuals into Electron, and validate on PC |
 | --- | --- | --- |
+| Realistic, interactive design and orb alternatives | Portable Windows-style experience, bottom-right hover composer, three animations and interface/state guide | Collect Larry’s feedback, integrate chosen visuals into Electron, and validate on PC |
 | Preserve the Windows companion direction | Approved M/orb/Matrix UI, typing and BYOK paths preserved; account controls added to Settings | Repeat real daily workflows on Windows; extend supported app adapters |
 | Add Phase 6 without waiting for payment | Protected desktop account lifecycle, Google/email integration, allowance UI, durable ledger, authenticated gateway and runnable account service | Hosted setup, live login acceptance, evaluated model/voice routes, real trial lifecycle |
 | Prepare a full-version plan | Ordered PC checklist and hosted runbook; readiness document covers coverage, evaluation, operations and release | Execute the recorded acceptance gates; Phase 5/6 are not fully accepted |
