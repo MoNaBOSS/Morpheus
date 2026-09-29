@@ -1,5 +1,8 @@
 # Morpheus experience reset — Mac handoff
 
+Latest PC continuation: [PC_CODEX_START_HERE.md](../../PC_CODEX_START_HERE.md).
+Its September 29 decisions and pickup instructions take precedence.
+
 Updated 2026-09-28. This Git branch is the portable record; the original Windows-local Codex task does not automatically follow you to another computer.
 
 ## Phase 6 Mac checkpoint 2 — desktop accounts and PC return

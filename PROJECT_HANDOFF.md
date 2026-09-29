@@ -1,5 +1,11 @@
 # Morpheus Windows Production Candidate — Handoff
 
+**Latest cross-device entry point (2026-09-29):** read
+[PC_CODEX_START_HERE.md](PC_CODEX_START_HERE.md) first. It identifies the pushed
+branch, superseding bottom-right design, current evidence and concrete next work.
+The candidate summaries below are historical; do not use an old installer as
+evidence for the September 29 source.
+
 Read [`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md), and the canonical
 product, architecture, design, security, roadmap, and release documents before
 changing the runtime.
