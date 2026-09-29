@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { createMorpheusCompanionSurfaceController } from '@electron/main/morpheus-companion-surface';
-import { wakeOrbBounds, wakeCompactBounds } from '@electron/main/morpheus-presence-layout';
+import { wakeOrbBounds, wakeOrbHoverBounds, wakeCompactBounds } from '@electron/main/morpheus-presence-layout';
 
 function fakeWindow(options: { visible?: boolean; maximized?: boolean } = {}) {
   let bounds = { x: 40, y: 50, width: 1280, height: 800 };
@@ -98,7 +98,7 @@ describe('Main-owned compact companion surface', () => {
 });
 
 describe('bottom-right presence placement', () => {
-  it.each(['tray', 'global-shortcut', 'wake-word'] as const)('keeps %s beside the same screen edge', (trigger) => {
+  it.each(['tray', 'global-shortcut', 'wake-word', 'orb-click'] as const)('keeps %s beside the same screen edge', (trigger) => {
     const area = { x: 48, y: 24, width: 1872, height: 1016 };
     const window = fakeWindow();
     const controller = createMorpheusCompanionSurfaceController({ getWorkArea: () => area });
@@ -116,11 +116,21 @@ describe('bottom-right presence placement', () => {
     { x: 100, y: -500, width: 600, height: 400 },
     { x: -80, y: -60, width: 80, height: 60 },
   ])('fits both surfaces inside work area $width × $height', (area) => {
-    for (const bounds of [wakeOrbBounds(area), wakeCompactBounds(area, 440, 520)]) {
+    for (const bounds of [wakeOrbBounds(area), wakeOrbHoverBounds(area), wakeCompactBounds(area, 440, 520)]) {
       expect(bounds.x).toBeGreaterThanOrEqual(area.x);
       expect(bounds.y).toBeGreaterThanOrEqual(area.y);
       expect(bounds.x + bounds.width).toBeLessThanOrEqual(area.x + area.width);
       expect(bounds.y + bounds.height).toBeLessThanOrEqual(area.y + area.height);
     }
+  });
+
+  it('reveals the hover composer upward without moving the orb', () => {
+    const area = { x: -1920, y: 100, width: 1920, height: 1040 };
+    const orb = wakeOrbBounds(area);
+    const hover = wakeOrbHoverBounds(area);
+    expect(hover.width).toBeGreaterThan(orb.width);
+    expect(hover.height).toBeGreaterThan(orb.height);
+    expect(hover.x + hover.width).toBe(orb.x + orb.width);
+    expect(hover.y + hover.height).toBe(orb.y + orb.height);
   });
 });

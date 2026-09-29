@@ -14,6 +14,7 @@ touchedAreas:
   - docs/**
   - README*
   - PROJECT_HANDOFF.md
+  - PC_CODEX_START_HERE.md
   - package.json
   - scripts/**
 expectedUserBehavior:
@@ -41,6 +42,7 @@ requiredTests:
   - pnpm exec playwright test tests/e2e/morpheus-intelligence-voice.spec.ts --workers=1
   - pnpm exec playwright test tests/e2e/morpheus-companion-experience.spec.ts tests/e2e/morpheus-fluid-arrival.spec.ts --workers=1
   - pnpm exec playwright test tests/e2e/morpheus-motion-polish.spec.ts --workers=1
+  - pnpm exec playwright test tests/e2e/morpheus-wake-orb.spec.ts --workers=1
   - pnpm exec playwright test tests/e2e/morpheus-workspace.spec.ts --workers=1
 acceptance:
   - No audio or transcripts enter persistent settings or audit.
@@ -51,6 +53,7 @@ acceptance:
   - Animation does not subscribe React to high-frequency audio samples.
   - Matrix rain is dim behind reading content, capped at 24 fps, paused when hidden and still when reduced motion is requested.
   - The default workspace keeps text/voice input available while tasks run and shows artifacts only after real execution.
+  - The native Windows orb reveals its upward composer on hover without focus theft, collapses on pointer exit, and opens focused compact typing on click.
   - Arrival, invocation and result transitions respect reduced motion and keep controls reachable.
   - Greeting owns its speech presentation without hiding capture or error indicators.
   - The 1.0.5 visual candidate is checked at 1280x800 and 1920x1080 before delivery.

@@ -142,8 +142,8 @@ const wakeOrb = new MorpheusWakeOrb(
   () => {
     const window = mainWindow;
     if (!window || window.isDestroyed()) return;
-    companionSurfaceController.show(window, 'wake-word');
-    window.webContents.send(HOST_EVENT_CHANNELS.morpheus.quickCommand, { trigger: 'wake-word' });
+    companionSurfaceController.show(window, 'orb-click');
+    window.webContents.send(HOST_EVENT_CHANNELS.morpheus.quickCommand, { trigger: 'orb-click' });
   },
   () => mainWindow && !mainWindow.isDestroyed()
     ? screen.getDisplayMatching(mainWindow.getBounds()).workArea
@@ -793,6 +793,11 @@ if (gotTheLock) {
 
   // Application lifecycle
   app.whenReady().then(async () => {
+    if (process.platform === 'win32') {
+      screen.on('display-metrics-changed', () => wakeOrb.reposition());
+      screen.on('display-added', () => wakeOrb.reposition());
+      screen.on('display-removed', () => wakeOrb.reposition());
+    }
     try {
       await initialize();
     } catch (error) {

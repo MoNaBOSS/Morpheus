@@ -1,6 +1,8 @@
 import type { Rectangle } from 'electron';
 
 export const MORPHEUS_ORB_SIZE = 100;
+export const MORPHEUS_ORB_HOVER_WIDTH = 360;
+export const MORPHEUS_ORB_HOVER_HEIGHT = 180;
 export const MORPHEUS_PRESENCE_EDGE_GAP = 20;
 
 function presenceInset(size: number): number {
@@ -15,6 +17,21 @@ export function wakeOrbBounds(workArea: Rectangle): Rectangle {
   return {
     x: workArea.x + workArea.width - width - gapX,
     y: workArea.y + workArea.height - height - gapY,
+    width,
+    height,
+  };
+}
+
+/** Expand upward and left while keeping the orb at exactly the same screen position. */
+export function wakeOrbHoverBounds(workArea: Rectangle): Rectangle {
+  const orb = wakeOrbBounds(workArea);
+  const gapX = presenceInset(workArea.width);
+  const gapY = presenceInset(workArea.height);
+  const width = Math.min(MORPHEUS_ORB_HOVER_WIDTH, Math.max(1, workArea.width - 2 * gapX));
+  const height = Math.min(MORPHEUS_ORB_HOVER_HEIGHT, Math.max(1, workArea.height - 2 * gapY));
+  return {
+    x: orb.x + orb.width - width,
+    y: orb.y + orb.height - height,
     width,
     height,
   };

@@ -13,7 +13,7 @@ test('a wake presents the real orb without focus theft, then opens compact and f
       .find(({ title }) => title === 'Morpheus')?.page;
     expect(orb).toBeDefined();
     expect(main).toBeDefined();
-    await expect(orb!.getByRole('link', { name: 'Open Morpheus' })).toBeVisible();
+    await expect(orb!.locator('.orb')).toBeVisible();
     await expect.poll(() => app.evaluate(({ BrowserWindow }) => {
       const orbWindow = BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus presence');
       return { visible: orbWindow?.isVisible(), focused: orbWindow?.isFocused() };
@@ -21,9 +21,24 @@ test('a wake presents the real orb without focus theft, then opens compact and f
     const evidenceDir = process.env.MORPHEUS_VISUAL_EVIDENCE_DIR;
     if (evidenceDir) await orb!.screenshot({ path: join(evidenceDir, 'native-wake-orb.png') });
 
-    await orb!.getByRole('link', { name: 'Open Morpheus' }).click({ noWaitAfter: true });
+    await orb!.locator('.orb').hover();
+    await expect(orb!.locator('.hover-composer')).toHaveCSS('opacity', '1');
+    await expect.poll(() => app.evaluate(({ BrowserWindow }) => {
+      const window = BrowserWindow.getAllWindows().find((item) => item.getTitle() === 'Morpheus presence');
+      return { width: window?.getBounds().width, focused: window?.isFocused() };
+    })).toEqual({ width: 360, focused: false });
+    if (evidenceDir) await orb!.screenshot({ path: join(evidenceDir, 'native-orb-hover-composer.png') });
+    await orb!.mouse.move(-10, -10);
+    await expect.poll(() => app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows().find((item) => item.getTitle() === 'Morpheus presence')?.getBounds().width,
+    )).toBe(100);
+    await orb!.locator('.orb').hover();
+    await expect(orb!.locator('.hover-composer')).toHaveCSS('opacity', '1');
+
+    await orb!.locator('.hover-composer').click({ noWaitAfter: true });
     await expect(main!.getByTestId('morpheus-quick-command')).toBeVisible();
     await expect(main!.getByTestId('morpheus-quick-command')).toHaveCSS('opacity', '1');
+    await expect(main!.getByTestId('quick-command-input')).toBeFocused();
     if (evidenceDir) await main!.screenshot({ path: join(evidenceDir, 'native-compact-command.png') });
     await expect.poll(() => app.evaluate(({ BrowserWindow, screen }) => {
       const windows = BrowserWindow.getAllWindows();

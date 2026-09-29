@@ -5,6 +5,7 @@ import type {
 import type { UpdateStatusSnapshot } from '../host-api/contract';
 import type { ChatRuntimeEvent } from '../chat-runtime-events';
 import type { MorpheusActionEvent } from '../morpheus/action-types';
+import type { MorpheusCompanionTrigger } from '../morpheus/companion-types';
 import type { MorpheusObjectiveEvent } from '../morpheus/core/objective-types';
 import type { MorpheusVoicePresence, MorpheusSpeechChunk } from '../morpheus/voice-types';
 import type { MorpheusRiskTier } from '../morpheus/actions/registry';
@@ -113,7 +114,7 @@ export type HostEventContract = {
   morpheus: {
     actionEvent: (payload: MorpheusActionEvent) => void;
     /** Fixed global shortcut requested the trusted Quick Command surface. */
-    quickCommand: (payload: { trigger: 'global-shortcut' | 'tray' | 'wake-word' }) => void;
+    quickCommand: (payload: { trigger: MorpheusCompanionTrigger }) => void;
     /** Fixed global shortcut requested the trusted microphone surface. */
     voiceCommand: (payload: { trigger: 'global-shortcut' | 'tray' }) => void;
     /**

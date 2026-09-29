@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MorpheusWakeOrb } from '@electron/main/morpheus-wake-orb';
+import { wakeOrbBounds } from '@electron/main/morpheus-presence-layout';
 
 const mock = vi.hoisted(() => ({ windows: [] as Array<{
   finishLoad(): void;
   showInactive: ReturnType<typeof vi.fn>;
+  setBounds: ReturnType<typeof vi.fn>;
 }> }));
 
 vi.mock('electron', async () => {
@@ -66,5 +68,16 @@ describe.skipIf(process.platform !== 'win32')('native orb visibility across dela
     mock.windows[1].finishLoad();
     expect(old.showInactive).not.toHaveBeenCalled();
     expect(mock.windows[1].showInactive).toHaveBeenCalledOnce();
+  });
+
+  it('repositions the visible orb when the work area changes without showing it again', () => {
+    let workArea = { x: 0, y: 0, width: 1920, height: 1040 };
+    const orb = new MorpheusWakeOrb(vi.fn(), () => workArea);
+    orb.show();
+    mock.windows[0].finishLoad();
+    workArea = { x: -1440, y: 50, width: 1440, height: 860 };
+    orb.reposition();
+    expect(mock.windows[0].setBounds).toHaveBeenLastCalledWith(wakeOrbBounds(workArea));
+    expect(mock.windows[0].showInactive).toHaveBeenCalledOnce();
   });
 });

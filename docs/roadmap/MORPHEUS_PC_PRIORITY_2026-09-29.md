@@ -25,7 +25,7 @@ dismissal. Quiet mode, reduced motion, cancel-task and stop-speech are distinct.
 | Browser | `web.openUrl`, app launch, separate OpenClaw/browser facilities | One task flow for browse/extract/cite/interact with reliable cancellation and results |
 | Website work | Workspace files, `site.verify`, registered project launch | Native website contract currently rejects scripts/forms/remote resources; interactive apps, revision loops and publication need a reviewed execution path |
 | Task system | Objective records, Missions, independent task controls and restart checkpoints | Run actual research plus a quick app command concurrently; fixture success is not research acceptance |
-| Design | Interactive desktop, hover composer, motion alternatives and preference surfaces | Native hover, chosen motion tied to real audio/task state, and unobtrusive returning/startup behavior remain to integrate |
+| Design | Interactive desktop, native orb hover preview, motion alternatives and preference surfaces | Native preview clicks into focused compact typing; chosen motion tied to real audio/task state, full hover-input parity and unobtrusive returning/startup behavior remain to integrate |
 | Voice | Wake/record/speak lifecycle and interruption paths | Real microphone/headset, wake accuracy, latency, voice choice, device changes and sleep/resume |
 | Accounts and usage | Protected desktop account flows; account service; SQLite reservations/receipts | Live identity deployment, managed inference/voice routes, real trial, complete cost coverage and operations |
 | Release | Mac build and automated test checkpoint | Windows-only tests, installer/upgrade, signing, updates/rollback and sustained use |
@@ -35,6 +35,10 @@ single completion percentage would hide unfinished end-to-end paths. The shared
 website is a design artifact; it does not certify the application's capabilities.
 
 ## September 29 changes
+
+The [Windows continuation checkpoint](MORPHEUS_PC_CHECKPOINT_2026-09-29.md)
+records the verified source, first native hover implementation and source-level
+test results. It does not supersede the PC workflow and hardware acceptance below.
 
 - Browser design: smaller bottom-right orb, upward composer and a short hover
   dwell to avoid accidental openings. Completion cards clear the orb and taskbar.

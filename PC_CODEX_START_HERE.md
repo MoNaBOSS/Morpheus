@@ -1,5 +1,11 @@
 # PC Codex: continue Morpheus from the Mac checkpoint
 
+PC continuation note (2026-09-29): the verified Windows pickup and first native
+hover implementation are recorded in
+[the Windows checkpoint](docs/roadmap/MORPHEUS_PC_CHECKPOINT_2026-09-29.md).
+The ordered plan below still applies; source and automated Electron checks do
+not replace hardware or live-workflow acceptance.
+
 Handoff date: 2026-09-29. This is the first document to read for the current
 cross-device continuation. The conversation itself is not automatically
 available on another machine; this file and its linked records carry the working

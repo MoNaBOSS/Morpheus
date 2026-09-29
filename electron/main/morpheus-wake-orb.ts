@@ -1,7 +1,7 @@
 import { app, BrowserWindow, screen, type Rectangle } from 'electron';
 import { join } from 'node:path';
 import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
-import { wakeOrbBounds } from './morpheus-presence-layout';
+import { wakeOrbBounds, wakeOrbHoverBounds } from './morpheus-presence-layout';
 
 /** A presentation-only window. The hidden main renderer keeps ownership of audio and tasks. */
 export class MorpheusWakeOrb {
@@ -9,6 +9,7 @@ export class MorpheusWakeOrb {
   private presence: MorpheusVoicePresence['state'] = 'armed';
   private wantsVisible = false;
   private ready = false;
+  private hovered = false;
 
   constructor(
     private readonly onOpen: () => void,
@@ -20,7 +21,9 @@ export class MorpheusWakeOrb {
     this.wantsVisible = true;
     const existing = this.window;
     if (existing && !existing.isDestroyed()) {
-      existing.setBounds(wakeOrbBounds(this.getWorkArea()));
+      this.hovered = false;
+      this.reposition();
+      this.applyHover();
       if (this.ready) existing.showInactive();
       return;
     }
@@ -45,23 +48,33 @@ export class MorpheusWakeOrb {
     });
     this.window = window;
     this.ready = false;
-    const open = (url: string): void => {
-      if (url !== 'morpheus-orb:open') return;
-      this.hide();
-      this.onOpen();
+    const handleAction = (url: string): void => {
+      if (url === 'morpheus-orb:open') {
+        this.hide();
+        this.onOpen();
+      } else if (url === 'morpheus-orb:hover' && this.wantsVisible) {
+        this.hovered = true;
+        window.setBounds(wakeOrbHoverBounds(this.getWorkArea()));
+        this.applyHover();
+      } else if (url === 'morpheus-orb:collapse' && this.wantsVisible) {
+        this.hovered = false;
+        this.applyHover();
+        window.setBounds(wakeOrbBounds(this.getWorkArea()));
+      }
     };
     window.webContents.on('will-navigate', (event, url) => {
       event.preventDefault();
-      open(url);
+      handleAction(url);
     });
     window.webContents.setWindowOpenHandler(({ url }) => {
-      open(url);
+      handleAction(url);
       return { action: 'deny' };
     });
     window.webContents.once('did-finish-load', () => {
       if (window.isDestroyed() || this.window !== window) return;
       this.ready = true;
       this.applyPresence();
+      this.applyHover();
       if (this.wantsVisible) window.showInactive();
     });
     window.on('closed', () => {
@@ -86,12 +99,25 @@ export class MorpheusWakeOrb {
 
   hide(): void {
     this.wantsVisible = false;
-    if (this.window && !this.window.isDestroyed()) this.window.hide();
+    this.hovered = false;
+    if (this.window && !this.window.isDestroyed()) {
+      this.window.hide();
+      this.window.setBounds(wakeOrbBounds(this.getWorkArea()));
+      this.applyHover();
+    }
+  }
+
+  reposition(): void {
+    const window = this.window;
+    if (!this.wantsVisible || !window || window.isDestroyed()) return;
+    const workArea = this.getWorkArea();
+    window.setBounds(this.hovered ? wakeOrbHoverBounds(workArea) : wakeOrbBounds(workArea));
   }
 
   dispose(): void {
     this.wantsVisible = false;
     this.ready = false;
+    this.hovered = false;
     if (this.window && !this.window.isDestroyed()) this.window.close();
     this.window = null;
   }
@@ -103,5 +129,14 @@ export class MorpheusWakeOrb {
     const state = JSON.stringify(this.presence);
     void window.webContents.executeJavaScript(`document.documentElement.dataset.state = ${state}`, true)
       .catch(() => undefined);
+  }
+
+  private applyHover(): void {
+    const window = this.window;
+    if (!window || window.isDestroyed() || window.webContents.isLoading()) return;
+    void window.webContents.executeJavaScript(
+      `document.documentElement.dataset.hover = ${JSON.stringify(String(this.hovered))}; document.querySelector('.hover-composer').inert = ${!this.hovered}`,
+      true,
+    ).catch(() => undefined);
   }
 }

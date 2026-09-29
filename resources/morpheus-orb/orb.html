@@ -1,15 +1,22 @@
 <!doctype html>
-<html lang="en" data-state="armed">
+<html lang="en" data-state="armed" data-hover="false">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Morpheus presence</title>
   <link rel="stylesheet" href="orb.css">
 </head>
 <body>
-  <a href="morpheus-orb:open" aria-label="Open Morpheus" title="Open Morpheus">
+  <a class="hover-composer" href="morpheus-orb:open" aria-label="Open Morpheus" tabindex="-1" inert>
+    <span class="hover-composer-name">Morpheus</span><span class="hover-composer-caret" aria-hidden="true"></span>
+    <span class="hover-composer-arrow" aria-hidden="true">↗</span>
+  </a>
+  <a class="orb" href="morpheus-orb:open" aria-label="Open Morpheus" title="Open Morpheus">
     <img src="orb.png" alt="" draggable="false">
   </a>
+  <a id="hover-signal" href="morpheus-orb:hover" target="_blank" rel="noopener" hidden tabindex="-1" aria-hidden="true"></a>
+  <a id="collapse-signal" href="morpheus-orb:collapse" target="_blank" rel="noopener" hidden tabindex="-1" aria-hidden="true"></a>
+  <script src="orb.js" defer></script>
 </body>
 </html>
