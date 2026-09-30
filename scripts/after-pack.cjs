@@ -26,6 +26,7 @@ const { patchNsisExtractTemplate } = require('./patch-nsis-extract.mjs');
 const { patchNsisInstallSectionTemplate } = require('./patch-nsis-install-section.mjs');
 const { patchNsisUninstallTemplate } = require('./patch-nsis-uninstall.mjs');
 const { stampPluginBundleRevision } = require('./plugin-bundle-revision.mjs');
+const { isPackageNoticeFile, pruneDirectoryPreservingNotices } = require('./package-notice-guards.cjs');
 
 // On Windows, paths in pnpm's virtual store can exceed the default MAX_PATH
 // limit (260 chars). Node.js 18.17+ respects the system LongPathsEnabled
@@ -85,7 +86,7 @@ function cleanupUnnecessaryFiles(dir) {
     '.markdown',
   ];
   const REMOVE_FILE_NAMES = new Set([
-    '.DS_Store', 'README.md', 'CHANGELOG.md', 'LICENSE.md', 'CONTRIBUTING.md',
+    '.DS_Store', 'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
     'tsconfig.json', '.npmignore', '.eslintrc', '.prettierrc', '.editorconfig',
   ]);
 
@@ -98,12 +99,13 @@ function cleanupUnnecessaryFiles(dir) {
 
       if (entry.isDirectory()) {
         if (REMOVE_DIRS.has(entry.name)) {
-          try { rmSync(fullPath, { recursive: true, force: true }); removedCount++; } catch { /* */ }
+          removedCount += pruneDirectoryPreservingNotices(fullPath);
         } else {
           walk(fullPath);
         }
       } else if (entry.isFile()) {
         const name = entry.name;
+        if (isPackageNoticeFile(name)) continue;
         if (REMOVE_FILE_NAMES.has(name) || REMOVE_FILE_EXTS.some(e => name.endsWith(e))) {
           try { rmSync(fullPath, { force: true }); removedCount++; } catch { /* */ }
         }
@@ -307,6 +309,7 @@ function cleanupKnownRuntimeJunk(rootDir, platform, arch) {
 }
 
 exports.__test = {
+  cleanupUnnecessaryFiles,
   cleanupNativePlatformPackages,
   cleanupNodeModulesRuntimeJunk,
 };

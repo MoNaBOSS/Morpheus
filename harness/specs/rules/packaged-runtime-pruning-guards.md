@@ -11,6 +11,12 @@ requiredProfiles:
 Packaged runtime cleanup must remove only files that are not needed by the
 target artifact.
 
+General file and documentation cleanup must retain existing license/licence,
+notice, copying and copyright filename families, regardless of case or extension.
+If a removed docs/test directory contains these assets, retain just those assets
+and their parent directories. Test both the bundle and after-pack pruning stages
+with fixtures; ordinary documentation and development artifacts must still prune.
+
 For macOS universal builds, architecture pruning must preserve both x64 and
 arm64 native payloads for the same platform. This includes scoped optional
 packages such as `@openai/codex-darwin-x64` and

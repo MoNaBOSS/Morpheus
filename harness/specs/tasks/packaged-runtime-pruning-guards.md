@@ -1,20 +1,23 @@
 ---
 id: packaged-runtime-pruning-guards
-title: Guard packaged runtime pruning for universal builds
+title: Guard packaged runtime pruning for native payloads and notices
 scenario: plugin-lifecycle-management
 taskType: plugin-lifecycle
-intent: Keep packaged OpenClaw runtime cleanup size-conscious without deleting native payloads required by macOS universal artifacts.
+intent: Keep packaged OpenClaw cleanup size-conscious while retaining required native payloads and existing package notice assets.
 touchedAreas:
   - scripts/after-pack.cjs
   - scripts/bundle-openclaw.mjs
   - scripts/openclaw-bundle-config.mjs
+  - scripts/package-notice-guards.cjs
   - tests/unit/after-pack-cleanup.test.ts
   - tests/unit/openclaw-bundle-config.test.ts
   - harness/specs/rules/packaged-runtime-pruning-guards.md
   - harness/specs/tasks/packaged-runtime-pruning-guards.md
+  - docs/releases/phase7-package-notices.md
 expectedUserBehavior:
   - Packaged tree-sitter-bash runtime loading keeps a usable native prebuild for every architecture in the target artifact.
   - Size cleanup still removes non-target platform packages and known runtime junk for single-architecture builds.
+  - Both packaging cleanup stages retain existing license and notice assets without copying all documentation.
 requiredProfiles:
   - fast
 requiredTests:
@@ -25,6 +28,7 @@ acceptance:
   - `cleanupNodeModulesRuntimeJunk` keeps same-platform x64 and arm64 `tree-sitter-bash/prebuilds` directories when the target arch is `universal`.
   - Non-target platforms are still pruned from scoped native packages and tree-sitter-bash prebuilds.
   - The bundle script still skips a duplicate nested `openclaw` package.
+  - Case-insensitive license/licence, notice, copying and copyright filename families survive both cleanup stages, including inside pruned documentation/test directories.
 docs:
   required: false
 ---

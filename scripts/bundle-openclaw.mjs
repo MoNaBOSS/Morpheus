@@ -19,6 +19,8 @@
 import 'zx/globals';
 import { ELECTRON_MAIN_RUNTIME_PACKAGES, EXTRA_BUNDLED_PACKAGES } from './openclaw-bundle-config.mjs';
 import { patchExtensionOpenClawSelfImports } from './openclaw-self-import-patch.mjs';
+import noticeGuards from './package-notice-guards.cjs';
+const { isPackageNoticeFile, pruneDirectoryPreservingNotices } = noticeGuards;
 
 const ROOT = path.resolve(__dirname, '..');
 const OUTPUT = path.join(ROOT, 'build', 'openclaw');
@@ -588,14 +590,14 @@ function cleanupBundle(outputDir) {
       '.markdown',
     ];
     const NM_REMOVE_FILE_NAMES = new Set([
-      '.DS_Store', 'README.md', 'CHANGELOG.md', 'LICENSE.md', 'CONTRIBUTING.md',
+      '.DS_Store', 'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
       'tsconfig.json', '.npmignore', '.eslintrc', '.prettierrc', '.editorconfig',
     ]);
 
     // .md files inside skills/ directories are runtime content (SKILL.md,
     // block-types.md, etc.) and must NOT be removed.
     const JUNK_MD_NAMES = new Set([
-      'README.md', 'CHANGELOG.md', 'LICENSE.md', 'CONTRIBUTING.md',
+      'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
     ]);
 
     function walkExt(dir, insideNodeModules, insideSkills) {
@@ -605,7 +607,7 @@ function cleanupBundle(outputDir) {
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) {
           if (insideNodeModules && NM_REMOVE_DIRS.has(entry.name)) {
-            if (rmSafe(full)) removedCount++;
+            removedCount += pruneDirectoryPreservingNotices(full);
           } else {
             walkExt(
               full,
@@ -614,6 +616,7 @@ function cleanupBundle(outputDir) {
             );
           }
         } else if (entry.isFile()) {
+          if (isPackageNoticeFile(entry.name)) continue;
           if (insideNodeModules) {
             const name = entry.name;
             if (NM_REMOVE_FILE_NAMES.has(name) || NM_REMOVE_FILE_EXTS.some(e => name.endsWith(e))) {
@@ -648,7 +651,7 @@ function cleanupBundle(outputDir) {
       '.markdown',
     ];
     const REMOVE_FILE_NAMES = new Set([
-      '.DS_Store', 'README.md', 'CHANGELOG.md', 'LICENSE.md', 'CONTRIBUTING.md',
+      '.DS_Store', 'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
       'tsconfig.json', '.npmignore', '.eslintrc', '.prettierrc', '.editorconfig',
     ]);
 
@@ -659,12 +662,13 @@ function cleanupBundle(outputDir) {
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) {
           if (REMOVE_DIRS.has(entry.name)) {
-            if (rmSafe(full)) removedCount++;
+            removedCount += pruneDirectoryPreservingNotices(full);
           } else {
             walkClean(full);
           }
         } else if (entry.isFile()) {
           const name = entry.name;
+          if (isPackageNoticeFile(name)) continue;
           if (REMOVE_FILE_NAMES.has(name) || REMOVE_FILE_EXTS.some(e => name.endsWith(e))) {
             if (rmSafe(full)) removedCount++;
           }
