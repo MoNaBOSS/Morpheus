@@ -31,6 +31,7 @@ vi.mock('@/components/morpheus/MorpheusVoiceButton', () => ({
   MorpheusVoiceButton: () => <button type="button">Voice</button>,
 }));
 vi.mock('react-i18next', () => ({
+  initReactI18next: { type: '3rdParty', init: () => undefined },
   useTranslation: () => ({
     t: (key: string, values?: Record<string, string>) => (
       key === 'morpheus.quickCommand.objectiveState'

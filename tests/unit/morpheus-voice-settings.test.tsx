@@ -14,7 +14,10 @@ vi.mock('@/lib/host-api', () => ({
   hostApi: { morpheus: mocks },
 }));
 vi.mock('@/lib/morpheus-speech-player', () => ({ playMorpheusSpeech: mocks.play, stopMorpheusSpeech: mocks.stop }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+vi.mock('react-i18next', () => ({
+  initReactI18next: { type: '3rdParty', init: () => undefined },
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
 
 import { MorpheusVoiceSettings } from '@/components/morpheus/MorpheusVoiceSettings';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';

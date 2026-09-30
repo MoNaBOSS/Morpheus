@@ -180,6 +180,14 @@
       "typing": "Typing works too. Always.",
       "placeholder": "Speak or type your request..."
     },
+    "conversation": {
+      "waiting": "Thinking…",
+      "queued": "Waiting to send",
+      "retry": "Retry",
+      "mediaCount": "Attachments: {{count}}",
+      "workspaceUnavailable": "Conversation workspace is unavailable.",
+      "deliveryFailed": "Conversation delivery failed."
+    },
     "tasks": {
       "active": "{{count}} active",
       "select": "Choose a task",

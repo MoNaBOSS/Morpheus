@@ -11,6 +11,7 @@ import { meterMorpheusMicrophone } from '@/lib/morpheus-audio-level';
 import { MorpheusVoiceDialogue } from '@/lib/morpheus-voice-dialogue';
 import { playMorpheusWakeCue, stopMorpheusWakeCue } from '@/lib/morpheus-wake-cue';
 import { useMorpheusCommandStore } from './morpheus-command';
+import { useMorpheusConversationStore } from './morpheus-conversation';
 import { useMorpheusOperatorStore } from './morpheus-operator';
 import {
   MORPHEUS_VOICE_MAX_AUDIO_BYTES,
@@ -145,12 +146,13 @@ async function routeVoiceInput(text: string): Promise<void> {
   const operator = useMorpheusOperatorStore.getState();
   const decision = await operator.route(text, 'voice');
   if (decision.route === 'objective') {
-    await useMorpheusCommandStore.getState().runObjective(decision.text, 'voice');
+    if (await useMorpheusCommandStore.getState().runObjective(decision.text, 'voice')) {
+      useMorpheusConversationStore.getState().setDraft('');
+    }
     return;
   }
   if (decision.route === 'conversation') {
-    await hostApi.morpheus.expandCompanionSurface().catch(() => undefined);
-    operator.queueConversation(decision.text);
+    await useMorpheusConversationStore.getState().submit(decision.text, 'voice');
   }
 }
 
@@ -237,6 +239,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
       // user explicitly accepts it as their preferred name.
       if (source !== 'onboarding') {
         useMorpheusCommandStore.getState().setInput(result.transcript);
+        useMorpheusConversationStore.getState().setDraft(result.transcript);
       }
       set({
         phase: 'ready',
@@ -313,6 +316,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
           });
           if (!objective) return;
           useMorpheusCommandStore.getState().setInput(objective);
+          useMorpheusConversationStore.getState().setDraft(objective);
           if (status.settings.autoSubmitTranscript) {
             await routeVoiceInput(objective);
           }

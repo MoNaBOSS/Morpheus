@@ -10,11 +10,13 @@ import { CommandBar } from './CommandBar';
 import { MatrixRain } from '@/components/morpheus/boot/MatrixRain';
 import { MorpheusFluidOrb } from '@/components/morpheus/MorpheusFluidOrb';
 import { MorpheusSocialCheckIn } from '@/components/morpheus/MorpheusSocialCheckIn';
+import { MorpheusConversationThread } from '@/components/morpheus/MorpheusConversationThread';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { useMorpheusArrivalStore } from '@/stores/morpheus-arrival';
 import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { useMorpheusConversationStore } from '@/stores/morpheus-conversation';
 import { resolveMorpheusSignalState } from '@/components/morpheus/signal/signal-state';
 import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
 import type { ExecutionArtifact } from '@shared/morpheus/execution-types';
@@ -39,6 +41,7 @@ export function CommandCenter() {
   const preferredName = onboarding?.preferences.preferredName.trim() ?? '';
   const history = useMorpheusCommandStore((state) => state.objectiveHistory);
   const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
+  const selectedConversationId = useMorpheusConversationStore((state) => state.snapshot?.selectedConversationId ?? null);
   const selectObjective = useMorpheusCommandStore((state) => state.selectObjective);
   const cancelObjective = useMorpheusCommandStore((state) => state.cancelObjective);
   const voicePhase = useMorpheusVoiceStore((state) => state.phase);
@@ -103,6 +106,7 @@ export function CommandCenter() {
         <div className={`morpheus-workspace-main mt-5 grid min-h-0 flex-1 gap-7 ${hasResult ? 'grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]' : 'grid-cols-1'}`}>
           <section className="morpheus-workspace-thread flex min-h-0 min-w-0 flex-col" aria-label={t('morpheus.workspace.conversation')}>
             <div className="morpheus-workspace-messages min-h-0 flex-1 overflow-y-auto pr-3" role="log" aria-label={t('morpheus.workspace.conversation')}>
+              <MorpheusConversationThread sessionKey={selectedConversationId} compact={false} />
               {recentRuns.map((run) => <div key={run.objectiveRunId} className="morpheus-workspace-exchange">
                 <button type="button" data-testid={objectiveRun?.objectiveRunId === run.objectiveRunId ? 'workspace-selected-task' : undefined} onClick={() => selectObjective(run.objectiveRunId)} className={`morpheus-workspace-message morpheus-workspace-user-message text-left ${objectiveRun?.objectiveRunId === run.objectiveRunId ? 'is-selected' : ''}`}>
                   <span className="morpheus-workspace-speaker">{t('morpheus.workspace.you')}</span>

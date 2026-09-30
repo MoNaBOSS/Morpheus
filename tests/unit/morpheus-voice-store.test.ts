@@ -99,7 +99,7 @@ beforeEach(() => {
   });
   mocks.voicePresenceHandler = null;
   useMorpheusOperatorStore.setState({
-    mode: 'auto', lastDecision: null, clarification: null, pendingConversation: null,
+    mode: 'auto', lastDecision: null, clarification: null, pendingConversation: null, pendingConversations: [],
   });
   useMorpheusVoiceStore.setState({
     phase: 'idle', status: null, transcript: null, error: null, errorKind: null, source: null, startedAt: null,

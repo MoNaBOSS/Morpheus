@@ -129,6 +129,9 @@ export const hostEvents = {
   onMorpheusPlanConsent: (handler: HostEventHandler<'morpheus', 'planConsent'>) => (
     onMorpheusEvent('planConsent', handler)
   ),
+  onMorpheusAssistantSessionChanged: (handler: HostEventHandler<'morpheus', 'assistantSessionChanged'>) => (
+    onMorpheusEvent('assistantSessionChanged', handler)
+  ),
   onMorpheusActionEvent: (handler: HostEventHandler<'morpheus', 'actionEvent'>) => (
     onMorpheusEvent('actionEvent', handler)
   ),

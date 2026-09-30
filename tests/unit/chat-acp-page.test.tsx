@@ -215,6 +215,7 @@ vi.mock('@/components/file-preview/PanelResizeDivider', () => ({
 }));
 
 vi.mock('react-i18next', () => ({
+  initReactI18next: { type: '3rdParty', init: () => undefined },
   useTranslation: () => ({
     t: (key: string, options?: string | Record<string, unknown>) => {
       if (typeof options === 'string') return options;

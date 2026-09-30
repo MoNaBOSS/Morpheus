@@ -1,19 +1,186 @@
-// The orb is a sandboxed presentation surface. Only fixed navigation actions reach Main.
+// The sandboxed orb has four fixed Main actions; it never owns execution or credentials.
+const bridge = window.morpheusOrb;
 const orb = document.querySelector('.orb');
-const hoverSignal = document.querySelector('#hover-signal');
-const collapseSignal = document.querySelector('#collapse-signal');
+const composer = document.querySelector('.hover-composer');
+const input = document.querySelector('#orb-input');
+const send = document.querySelector('.hover-composer-send');
+const expand = document.querySelector('.hover-composer-expand');
+const status = document.querySelector('#orb-status');
+
+let conversationId = '';
+let revision = 0;
+let ready = false;
+let dirty = false;
+let conflict = false;
+let writing = null;
+let submitting = false;
+let composing = false;
+let pendingRequestId = '';
 let hoverTimer;
 let collapseTimer;
+let language = 'en';
+
+const notices = {
+  en: { conflict: 'The draft changed in another window. Send this text here or copy it before closing.', failed: 'Morpheus could not save that yet. Try again.', sending: 'Sending to Morpheus.' },
+  zh: { conflict: '草稿已在另一窗口更改。请在此发送或先复制文本。', failed: '暂时无法保存，请重试。', sending: '正在发送给 Morpheus。' },
+  ja: { conflict: '別のウィンドウで下書きが変更されました。ここで送信するか、閉じる前にコピーしてください。', failed: '保存できませんでした。もう一度お試しください。', sending: 'Morpheus に送信中です。' },
+  ru: { conflict: 'Черновик изменился в другом окне. Отправьте текст здесь или скопируйте его перед закрытием.', failed: 'Не удалось сохранить. Повторите попытку.', sending: 'Отправка Морфеусу.' },
+};
+
+function report(message) {
+  status.textContent = message;
+  input.title = message;
+}
+
+function setBusy(busy) {
+  submitting = busy;
+  send.disabled = busy || !ready || !input.value.trim();
+}
+
+async function snapshot({ preserveLocal = false } = {}) {
+  if (!bridge) throw new Error('Morpheus orb bridge unavailable');
+  const result = await bridge.snapshot();
+  if (!result || result.schemaVersion !== 1 || !result.draft || !result.conversationId) {
+    throw new Error('Invalid assistant snapshot');
+  }
+  conversationId = result.conversationId;
+  revision = result.draft.revision;
+  language = result.presentation?.language in notices ? result.presentation.language : 'en';
+  document.documentElement.lang = language;
+  input.placeholder = result.presentation?.placeholder || 'Ask Morpheus…';
+  send.ariaLabel = result.presentation?.submit || 'Send';
+  send.title = send.ariaLabel;
+  expand.ariaLabel = result.presentation?.open || 'Open compact conversation';
+  expand.title = expand.ariaLabel;
+  if (!preserveLocal) {
+    input.value = result.draft.text;
+    dirty = false;
+    conflict = false;
+    document.documentElement.dataset.draftConflict = 'false';
+    report('');
+  }
+  ready = true;
+  input.disabled = false;
+  if (!preserveLocal) setBusy(false);
+  return result;
+}
+
+async function saveDraft() {
+  if (!ready || conflict || !dirty) return !conflict;
+  if (writing) return writing;
+  writing = (async () => {
+    while (dirty && !conflict) {
+      const text = input.value;
+      try {
+        const next = await bridge.updateDraft({ conversationId, expectedRevision: revision, text });
+        if (!next || next.conversationId !== conversationId || !Number.isSafeInteger(next.revision)) {
+          throw new Error('Invalid draft response');
+        }
+        revision = next.revision;
+        dirty = input.value !== text;
+        report('');
+      } catch {
+        try {
+          const current = await snapshot({ preserveLocal: true });
+          if (current.draft.text === text) {
+            dirty = input.value !== text;
+            continue;
+          }
+          conflict = true;
+          document.documentElement.dataset.draftConflict = 'true';
+          report(notices[language].conflict);
+        } catch {
+          report(notices[language].failed);
+        }
+        break;
+      }
+    }
+    return !dirty && !conflict;
+  })().finally(() => { writing = null; });
+  return writing;
+}
+
+function requestId() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return `orb:${Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
+}
+
+async function openCompact() {
+  await saveDraft();
+  if (conflict || dirty) return;
+  await bridge.present('open');
+}
+
+async function submit() {
+  if (!ready || submitting || composing || !input.value.trim()) return;
+  setBusy(true);
+  const text = input.value;
+  pendingRequestId ||= requestId();
+  await saveDraft();
+  try {
+    report(notices[language].sending);
+    await bridge.admitTurn({ conversationId, clientRequestId: pendingRequestId, text, source: 'orb' });
+    // Admission is idempotent in Main; opening compact only presents the existing turn.
+    pendingRequestId = '';
+    dirty = false;
+    conflict = false;
+    input.value = '';
+    await bridge.present('open');
+  } catch {
+    report(notices[language].failed);
+  } finally {
+    setBusy(false);
+  }
+}
 
 orb.addEventListener('pointerenter', () => {
   clearTimeout(collapseTimer);
   clearTimeout(hoverTimer);
-  hoverTimer = setTimeout(() => hoverSignal.click(), 140);
+  hoverTimer = setTimeout(() => {
+    void bridge?.present('hover');
+    if (!dirty && !writing) void snapshot().catch(() => report(notices[language].failed));
+  }, 140);
+});
+
+orb.addEventListener('click', async () => {
+  clearTimeout(collapseTimer);
+  await bridge.present('focus');
+  if (!ready) await snapshot();
+  input.focus();
 });
 
 document.body.addEventListener('pointerenter', () => clearTimeout(collapseTimer));
 document.body.addEventListener('pointerleave', () => {
   clearTimeout(hoverTimer);
   clearTimeout(collapseTimer);
-  collapseTimer = setTimeout(() => collapseSignal.click(), 260);
+  if (composer.contains(document.activeElement) || conflict) return;
+  collapseTimer = setTimeout(() => { void bridge?.present('collapse'); }, 260);
 });
+
+input.addEventListener('pointerdown', () => { void bridge.present('focus'); });
+input.addEventListener('input', () => {
+  dirty = true;
+  pendingRequestId = '';
+  setBusy(false);
+  void saveDraft();
+});
+input.addEventListener('compositionstart', () => { composing = true; });
+input.addEventListener('compositionend', () => { composing = false; });
+composer.addEventListener('submit', (event) => {
+  event.preventDefault();
+  if (!composing) void submit();
+});
+expand.addEventListener('click', () => { void openCompact(); });
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  event.preventDefault();
+  void (async () => {
+    await saveDraft();
+    if (conflict || dirty) return;
+    input.blur();
+    await bridge.present('collapse');
+  })();
+});
+
+void snapshot().catch(() => report(notices[language].failed));

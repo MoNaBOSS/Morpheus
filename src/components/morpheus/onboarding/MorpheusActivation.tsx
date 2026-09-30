@@ -8,6 +8,7 @@ import { MorpheusTrayChoice } from './MorpheusTrayChoice';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
+import { useMorpheusConversationStore } from '@/stores/morpheus-conversation';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { useSettingsStore } from '@/stores/settings';
 import { speechVoicesForModel } from '@shared/morpheus/provider-policy';
@@ -28,7 +29,8 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const setObjective = useMorpheusCommandStore((s) => s.setInput);
   const runObjective = useMorpheusCommandStore((s) => s.runObjective);
   const route = useMorpheusOperatorStore((s) => s.route);
-  const queueConversation = useMorpheusOperatorStore((s) => s.queueConversation);
+  const setConversationDraft = useMorpheusConversationStore((s) => s.setDraft);
+  const submitConversation = useMorpheusConversationStore((s) => s.submit);
   const voice = useMorpheusVoiceStore((s) => s.status);
   const voicePhase = useMorpheusVoiceStore((s) => s.phase);
   const voiceSource = useMorpheusVoiceStore((s) => s.source);
@@ -132,10 +134,13 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     if (!firstRequest.trim()) return true;
     const text = firstRequest.trim();
     setObjective(text);
+    setConversationDraft(text);
     try {
       const decision = await route(text, 'command-center');
-      if (decision.route === 'objective') void runObjective(decision.text, 'command-bar');
-      else if (decision.route === 'conversation') queueConversation(decision.text);
+      if (decision.route === 'objective') {
+        if (await runObjective(decision.text, 'command-bar')) setConversationDraft('');
+      }
+      else if (decision.route === 'conversation') await submitConversation(decision.text, 'onboarding');
     } catch { /* The saved draft remains in Command Center for retry. */ }
     return true;
   };

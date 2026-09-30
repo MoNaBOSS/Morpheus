@@ -20,6 +20,7 @@ touchedAreas:
   - scripts/**
   - .github/**
   - electron-builder.yml
+  - vite.config.ts
   - package.json
   - pnpm-lock.yaml
 requiredProfiles:

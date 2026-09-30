@@ -150,6 +150,65 @@ do not prove live login; a deployment receipt alone does not prove content serve
 package, live paid workflow, acoustic trial or Phase 7 gate pass is asserted.
 Append implementation records here or link a compact per-candidate evidence file.
 
+### 7A.1 source checkpoint — 2026-09-30
+
+- Baseline source: `fa988f06`; the linked `morpheus-phase7` worktree is uncommitted
+  while A.2/A.3 work proceeds. Label: **source-only and fixture**, not packaged or
+  live-provider acceptance.
+- Main now projects selected conversation, revision-checked local draft, correlated
+  admissions and a bounded pending delivery snapshot. Duplicate request ids return
+  their prior admission; changed text/conversation rejects; stale, duplicated and
+  gapped result events cannot publish into the projection. The legacy renderer
+  handoff uses a bounded FIFO instead of one overwritable slot.
+- Focused unit tests: 10/10 in assistant-session/operator-store; adjacent API,
+  chat-input and voice-store regression tests: 92/92. Node and Web typechecks
+  passed after extension bridge generation. `git diff --check` showed no
+  whitespace errors. No paid calls, credentials, hardware, package or acoustic
+  trial were used.
+- Harness validation remains to be rerun against the combined checkpoint: the
+  narrow A.1 harness spec rejects unrelated A.2/A.3 dirty files in the shared
+  worktree. The Phase 7 umbrella and
+  the exact checkpoint diff must be checked before commit. A.1 does not close UX-03,
+  UX-04, RC-01, package or live gates.
+- Next: finish 7A.2 native composer and 7A.3 compact reply continuity, then run
+  fresh-build Electron evidence on the combined source. Existing profiles and
+  provider settings were not changed.
+
+### 7A.2–7A.3 combined source/native-automation checkpoint — 2026-09-30
+
+- Starting source: `fa988f06` on the authorized application branch; implementation
+  was built in a separate linked Windows worktree. Main owns bounded assistant
+  admissions and drafts. The sandboxed native orb has a fixed sender/frame-checked
+  snapshot/draft/admit/presentation bridge, not generic host/Gateway access.
+  Hover remains inactive, explicit click focuses real text input, Escape preserves
+  the Main draft, and duplicate request IDs admit one turn. Native hit shape excludes
+  transparent gaps. Typing remains available with ambient microphone disabled.
+- Ordinary questions now use the existing ACP conversation owner. The native
+  bottom-right compact window displays the fixture reply without `/chat` navigation,
+  while the same draft/reply survives explicit full expansion and dismissal. The
+  existing Chat page and Objective Core remain separate, reachable owners.
+- Verification after the fresh Vite/Electron build: Node/Web/managed typecheck
+  passed; lint passed with 12 existing Fast Refresh warnings and no errors;
+  communications replay and compare passed; Phase 7 umbrella harness validate
+  and dry-run passed, all three narrow specs validated structurally, and harness
+  CI passed (18/18 tests). Full Vitest suite passed: **284 files, 2,872 tests,
+  2 skipped**. The initial broader run exposed three outdated translation mocks;
+  these were fixed and the whole suite rerun green. Two focused Windows Electron
+  journeys (native orb and compact conversation) passed, plus 11 related routing,
+  Chat-presence and reduced-motion journeys. The first compact test run also caught
+  a React render loop from an uncached empty selector; it was fixed before the
+  fresh rebuild and passing reruns.
+- Local native screenshots: `phase7-evidence/native-wake-orb.png`,
+  `native-orb-hover-composer.png`, `native-orb-editable-draft.png`,
+  `native-compact-command.png`, `native-compact-reply.png` in the parent workspace
+  beside the isolated worktree. Tests can recreate them; they do not contain
+  credentials and are not a packaged-app recording. No paid provider call,
+  live microphone, hardware voice audition, installer build or profile migration
+  was used. UX-03/04 and package/live gates remain open despite source automation.
+- Next: 7A.4 shared motion and real ephemeral mic/playback level with hidden/reduced
+  motion controls, then 7B.1 protected provider-secret migration. The original PC
+  checkout and user profile/provider settings were not modified.
+
 Documentation checkpoint validation: Phase 7 spec validation and dry-run passed;
 18 harness unit tests passed across 2 files. All 21 relative Markdown links in the
 7 new documents resolved. All 9 referenced harness rules exist. Git whitespace

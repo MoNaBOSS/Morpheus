@@ -130,6 +130,15 @@ import {
 } from '@shared/morpheus/operator-types';
 import type { MorpheusCompanionSurfaceStatus } from '@shared/morpheus/companion-types';
 import {
+  MORPHEUS_ASSISTANT_MAX_TEXT_CHARS,
+  type MorpheusAssistantAckTurnPayload,
+  type MorpheusAssistantAdmitTurnPayload,
+  type MorpheusAssistantConversationPayload,
+  type MorpheusAssistantDraftPayload,
+  type MorpheusAssistantSnapshotPayload,
+} from '@shared/morpheus/assistant-session-types';
+import { MorpheusAssistantSession } from './morpheus-assistant-session';
+import {
   isMorpheusGoalId,
   type MorpheusGoalDraft,
 } from '@shared/morpheus/goal-types';
@@ -292,7 +301,73 @@ export type CreateMorpheusApiOptions = {
   now?: () => Date;
   /** Main-owned adapter boundary; raw provider output never enters here directly. */
   planner?: MorpheusPlanner;
+  assistantSession?: MorpheusAssistantSession;
+  getLocale?: () => Promise<string>;
 };
+
+export function validateAssistantSnapshotPayload(payload: unknown): MorpheusAssistantSnapshotPayload {
+  if (payload === undefined || payload === null) return {};
+  const record = requireRecord(payload, 'assistantSnapshot payload');
+  assertNoUnknownKeys(record, ['conversationId'], 'assistantSnapshot payload');
+  if (record.conversationId === undefined) return {};
+  return validateAssistantConversationPayload(record);
+}
+
+export function validateAssistantConversationPayload(payload: unknown): MorpheusAssistantConversationPayload {
+  const record = requireRecord(payload, 'assistant conversation payload');
+  assertNoUnknownKeys(record, ['conversationId'], 'assistant conversation payload');
+  const conversationId = requireNonEmptyString(record.conversationId, 'conversationId');
+  if (conversationId.length > 256 || !/^[a-zA-Z0-9:_-]+$/.test(conversationId)) {
+    throw new MorpheusValidationError('invalid conversationId');
+  }
+  return { conversationId };
+}
+
+export function validateAssistantDraftPayload(payload: unknown): MorpheusAssistantDraftPayload {
+  const record = requireRecord(payload, 'updateAssistantDraft payload');
+  assertNoUnknownKeys(record, ['conversationId', 'expectedRevision', 'text'], 'updateAssistantDraft payload');
+  const { conversationId } = validateAssistantConversationPayload({ conversationId: record.conversationId });
+  if (!Number.isSafeInteger(record.expectedRevision) || (record.expectedRevision as number) < 0) {
+    throw new MorpheusValidationError('invalid draft revision');
+  }
+  if (typeof record.text !== 'string' || record.text.length > MORPHEUS_ASSISTANT_MAX_TEXT_CHARS) {
+    throw new MorpheusValidationError('draft exceeds 4000 characters');
+  }
+  return { conversationId, expectedRevision: record.expectedRevision as number, text: record.text };
+}
+
+export function validateAssistantAdmitTurnPayload(payload: unknown): MorpheusAssistantAdmitTurnPayload {
+  const record = requireRecord(payload, 'admitAssistantTurn payload');
+  assertNoUnknownKeys(record, ['conversationId', 'clientRequestId', 'text', 'source'], 'admitAssistantTurn payload');
+  const { conversationId } = validateAssistantConversationPayload({ conversationId: record.conversationId });
+  if (typeof record.clientRequestId !== 'string' || record.clientRequestId.length < 1
+    || record.clientRequestId.length > 128 || !/^[a-zA-Z0-9:_-]+$/.test(record.clientRequestId)) {
+    throw new MorpheusValidationError('invalid clientRequestId');
+  }
+  if (typeof record.text !== 'string' || !record.text.trim() || record.text.length > MORPHEUS_ASSISTANT_MAX_TEXT_CHARS) {
+    throw new MorpheusValidationError('turn text must be between 1 and 4000 characters');
+  }
+  if (!['orb', 'compact', 'full', 'voice', 'onboarding'].includes(String(record.source))) {
+    throw new MorpheusValidationError('unsupported turn source');
+  }
+  return {
+    conversationId,
+    clientRequestId: record.clientRequestId,
+    text: record.text,
+    source: record.source as MorpheusAssistantAdmitTurnPayload['source'],
+  };
+}
+
+export function validateAssistantAckTurnPayload(payload: unknown): MorpheusAssistantAckTurnPayload {
+  const record = requireRecord(payload, 'ackAssistantTurn payload');
+  assertNoUnknownKeys(record, ['conversationId', 'turnId'], 'ackAssistantTurn payload');
+  const { conversationId } = validateAssistantConversationPayload({ conversationId: record.conversationId });
+  const turnId = requireNonEmptyString(record.turnId, 'turnId');
+  if (turnId.length > 128 || !/^turn:[a-zA-Z0-9-]+$/.test(turnId)) {
+    throw new MorpheusValidationError('invalid turnId');
+  }
+  return { conversationId, turnId };
+}
 
 export function validateSubmitObjectivePayload(payload: unknown): SubmitMorpheusObjectivePayload {
   const record = requireRecord(payload, 'submitObjective payload');
@@ -1221,7 +1296,22 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
   } = options;
   const now = options.now ?? (() => new Date());
   const planner = options.planner ?? createDeterministicMorpheusPlanner();
+  const assistantSession = options.assistantSession ?? new MorpheusAssistantSession();
+  const withLocale = async () => {
+    try { return await options.getLocale?.() ?? 'en'; } catch { return 'en'; }
+  };
   return {
+    assistantSnapshot: async (payload) => ({
+      ...assistantSession.snapshot(validateAssistantSnapshotPayload(payload)),
+      locale: await withLocale(),
+    }),
+    assistantSelectConversation: async (payload) => ({
+      ...assistantSession.selectConversation(validateAssistantConversationPayload(payload)),
+      locale: await withLocale(),
+    }),
+    updateAssistantDraft: (payload) => assistantSession.updateDraft(validateAssistantDraftPayload(payload)),
+    admitAssistantTurn: (payload) => assistantSession.admitTurn(validateAssistantAdmitTurnPayload(payload)),
+    ackAssistantTurn: (payload) => assistantSession.ackTurn(validateAssistantAckTurnPayload(payload)),
     routeInteraction: async (payload) => {
       const input = validateRouteInteractionPayload(payload);
       const control = await handleMorpheusTaskControl(input.text, {

@@ -57,6 +57,7 @@ import { createAgentsApi } from '../services/agents-api';
 import { createChatApi } from '../services/chat-api';
 import { createMorpheusService } from '../services/morpheus';
 import { createMorpheusApi } from '../services/morpheus-api';
+import { MorpheusAssistantSession } from '../services/morpheus-assistant-session';
 import { createManagedAccountApi } from '../services/managed-account-api';
 import { HOST_EVENT_CHANNELS } from '@shared/host-events/contract';
 import { AcpSessionAccessRegistry } from '../services/acp-session-access-registry';
@@ -227,7 +228,16 @@ function registerTypedHostHandlers(
     openExternal: (url) => shell.openExternal(url),
   });
   app.once('before-quit', managedAccount.dispose);
+  const assistantSession = new MorpheusAssistantSession({
+    emit: (event) => {
+      if (!mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.assistantSessionChanged, event);
+      }
+    },
+  });
   const morpheusApi = createMorpheusApi({
+    assistantSession,
+    getLocale: () => getSetting('language'),
     runtime: morpheusService.runtime,
     grants: morpheusService.grants,
     agentProfiles: morpheusService.agentProfiles,

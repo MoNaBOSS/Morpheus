@@ -15,6 +15,7 @@ beforeEach(() => {
     lastDecision: null,
     clarification: null,
     pendingConversation: null,
+    pendingConversations: [],
   });
 });
 
@@ -40,6 +41,23 @@ describe('Morpheus operator interface state', () => {
     useMorpheusOperatorStore.getState().consumeConversation(pending!.requestId);
     expect(useMorpheusOperatorStore.getState().pendingConversation).toBeNull();
     useMorpheusOperatorStore.getState().consumeConversation(pending!.requestId);
+    expect(useMorpheusOperatorStore.getState().pendingConversation).toBeNull();
+  });
+
+  it('keeps rapid conversation requests in FIFO order until each is consumed', () => {
+    const store = useMorpheusOperatorStore.getState();
+    store.queueConversation('First question');
+    store.queueConversation('Second question');
+    const [first, second] = useMorpheusOperatorStore.getState().pendingConversations;
+    expect(first.text).toBe('First question');
+    expect(second.text).toBe('Second question');
+    expect(second.requestId).not.toBe(first.requestId);
+
+    store.consumeConversation(first.requestId);
+    expect(useMorpheusOperatorStore.getState().pendingConversation).toEqual(second);
+    store.consumeConversation(first.requestId);
+    expect(useMorpheusOperatorStore.getState().pendingConversations).toEqual([second]);
+    store.consumeConversation(second.requestId);
     expect(useMorpheusOperatorStore.getState().pendingConversation).toBeNull();
   });
 

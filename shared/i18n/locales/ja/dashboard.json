@@ -180,6 +180,14 @@
       "typing": "文字入力もいつでも使えます。",
       "placeholder": "話すか入力してください..."
     },
+    "conversation": {
+      "waiting": "考えています…",
+      "queued": "送信待ち",
+      "retry": "再試行",
+      "mediaCount": "添付：{{count}}",
+      "workspaceUnavailable": "会話のワークスペースを利用できません。",
+      "deliveryFailed": "会話を送信できませんでした。"
+    },
     "tasks": {
       "active": "{{count}} 件実行中",
       "select": "タスクを選択",

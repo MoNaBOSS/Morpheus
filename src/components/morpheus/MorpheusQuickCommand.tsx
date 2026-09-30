@@ -8,11 +8,13 @@ import { MatrixRain } from './boot/MatrixRain';
 import { MorpheusFluidOrb } from './MorpheusFluidOrb';
 import { MorpheusTaskSwitcher } from './MorpheusTaskSwitcher';
 import { MorpheusVoiceButton } from './MorpheusVoiceButton';
+import { MorpheusConversationThread } from './MorpheusConversationThread';
 import { hostEvents } from '@/lib/host-events';
 import { hostApi } from '@/lib/host-api';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { useMorpheusConversationStore } from '@/stores/morpheus-conversation';
 import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
 import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
 import { resolveMorpheusSignalState } from './signal/signal-state';
@@ -27,8 +29,14 @@ export function MorpheusQuickCommand() {
   const show = useMorpheusQuickCommandStore((s) => s.show);
   const hide = useMorpheusQuickCommandStore((s) => s.hide);
   const inputRef = useRef<HTMLInputElement>(null);
-  const objective = useMorpheusCommandStore((s) => s.input);
-  const setObjective = useMorpheusCommandStore((s) => s.setInput);
+  const objective = useMorpheusConversationStore((s) => s.draftText);
+  const setObjective = useMorpheusConversationStore((s) => s.setDraft);
+  const selectedConversationId = useMorpheusConversationStore((s) => s.snapshot?.selectedConversationId ?? null);
+  const submitConversation = useMorpheusConversationStore((s) => s.submit);
+  const conversationSubmitting = useMorpheusConversationStore((s) => s.submitting);
+  const conversationError = useMorpheusConversationStore((s) => s.dispatchError);
+  const blockedTurnId = useMorpheusConversationStore((s) => s.blockedTurnId);
+  const retryConversation = useMorpheusConversationStore((s) => s.retryPending);
   const runObjective = useMorpheusCommandStore((s) => s.runObjective);
   const submitting = useMorpheusCommandStore((s) => s.submitting);
   const unsupported = useMorpheusCommandStore((s) => s.unsupported);
@@ -39,13 +47,12 @@ export function MorpheusQuickCommand() {
   const voicePresence = useMorpheusVoiceStore((s) => s.presence?.state);
   const cancelVoice = useMorpheusVoiceStore((s) => s.cancel);
   const route = useMorpheusOperatorStore((s) => s.route);
-  const queueConversation = useMorpheusOperatorStore((s) => s.queueConversation);
   const clarification = useMorpheusOperatorStore((s) => s.clarification);
   const clearClarification = useMorpheusOperatorStore((s) => s.clearClarification);
   const [showTasks, setShowTasks] = useState(false);
   const voiceBusy = ['requesting', 'listening', 'transcribing'].includes(voicePhase);
   const objectiveActive = Boolean(objectiveRun && !isObjectiveTerminalState(objectiveRun.state));
-  const busy = submitting || voiceBusy;
+  const busy = submitting || conversationSubmitting || voiceBusy;
   const compact = trigger !== null;
   const signalState = resolveMorpheusSignalState({ voicePhase, voicePresence: voicePresence === 'asleep' ? 'armed' : voicePresence, objectiveState: objectiveRun?.state });
   const recentRuns = (history?.runOrder ?? []).slice(0, 2).map((id) => history?.runsById[id]).filter((run) => run != null).reverse();
@@ -84,10 +91,11 @@ export function MorpheusQuickCommand() {
     const text = objective.trim();
     if (!text || busy) return;
     const decision = await route(text, 'quick-command');
-    if (decision.route === 'objective') await runObjective(decision.text, 'quick-command');
+    if (decision.route === 'objective') {
+      if (await runObjective(decision.text, 'quick-command')) setObjective('');
+    }
     else if (decision.route === 'conversation') {
-      if (compact) await hostApi.morpheus.expandCompanionSurface().catch(() => undefined);
-      hide(); queueConversation(decision.text);
+      await submitConversation(decision.text, 'compact');
     } else if (decision.route === 'control') setObjective('');
   };
 
@@ -108,7 +116,9 @@ export function MorpheusQuickCommand() {
       <div className="relative z-10 flex min-h-0 flex-1 flex-col px-5 py-5">
         <div className="flex items-center gap-3"><MorpheusFluidOrb state={signalState} className="h-16 w-16" label={t(`morpheus.signalOs.signal.${signalState}`)} /><div><p className="text-lg font-semibold text-[#edf5ef]">{t('morpheus.workspace.greeting')}</p><p data-testid="quick-command-live-state" className="text-xs text-[#a0b6aa]">{voiceBusy ? t(`morpheus.voice.states.${voicePhase}`) : t('morpheus.workspace.subtitle')}</p></div></div>
         <div className="mt-5 min-h-0 flex-1 space-y-4 overflow-y-auto pr-2" role="log" aria-label={t('morpheus.workspace.conversation')}>
+          <MorpheusConversationThread sessionKey={selectedConversationId} compact />
           {recentRuns.map((run) => <div key={run.objectiveRunId} className="space-y-3"><div className="ml-6 rounded-xl bg-[#14231a] p-3 text-sm text-[#edf5ef]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.workspace.you')}</span>{run.objective}</div><div className="text-sm leading-relaxed text-[#d8e7dd]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.title')}</span>{run.clarification ?? run.error?.message ?? run.summary ?? t('morpheus.workspace.working')}</div></div>)}
+          {conversationError ? <div role="alert" className="rounded-xl border border-red-500/30 bg-red-950/30 p-3 text-sm text-red-200">{conversationError}{blockedTurnId ? <button type="button" onClick={retryConversation} className="ml-2 underline">{t('morpheus.conversation.retry')}</button> : null}</div> : null}
           {clarification ? <p className="rounded-xl border border-[#345341] bg-[#0e1b15] p-3 text-sm text-[#edf5ef]">{clarification}</p> : null}
           {unsupported ? <p className="text-xs text-amber-200">{t('morpheus.quickCommand.unsupported')}</p> : null}
         </div>

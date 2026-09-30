@@ -85,6 +85,21 @@ export default defineConfig({
           },
         },
       },
+      {
+        // The sandboxed orb has a separate, fixed capability surface. Keep its
+        // output separate so Vite cannot empty the main preload directory.
+        entry: 'electron/preload/morpheus-orb.ts',
+        onstart(options) {
+          options.reload();
+        },
+        vite: {
+          resolve: { alias },
+          build: {
+            outDir: 'dist-electron/orb-preload',
+            rollupOptions: { external: ['electron'] },
+          },
+        },
+      },
     ]),
     renderer(),
   ],

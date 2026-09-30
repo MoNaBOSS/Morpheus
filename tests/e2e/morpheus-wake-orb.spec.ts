@@ -1,7 +1,24 @@
 import { join } from 'node:path';
+import type { Page } from '@playwright/test';
 import { closeElectronApp, expect, test } from './fixtures/electron';
 
-test('a wake presents the real orb without focus theft, then opens compact and full', async ({ launchElectronApp }) => {
+type NativeOrbSnapshot = {
+  conversationId: string;
+  draft: { conversationId: string; revision: number; text: string };
+  turns: Array<{ conversationId: string; turnId: string; clientRequestId: string; source: string }>;
+};
+
+async function orbSnapshot(orb: Page): Promise<NativeOrbSnapshot> {
+  return orb.evaluate(async () => {
+    const bridge = (window as unknown as {
+      morpheusOrb?: { snapshot: () => Promise<NativeOrbSnapshot> };
+    }).morpheusOrb;
+    if (!bridge) throw new Error('Native orb bridge unavailable');
+    return bridge.snapshot();
+  });
+}
+
+test('the native orb edits a preserved draft and admits one turn before compact and full', async ({ launchElectronApp }) => {
   test.skip(process.platform !== 'win32', 'Windows native presence');
   const app = await launchElectronApp({ skipSetup: true, additionalArgs: ['--morpheus-test-wake-orb'] });
   try {
@@ -14,6 +31,7 @@ test('a wake presents the real orb without focus theft, then opens compact and f
     expect(orb).toBeDefined();
     expect(main).toBeDefined();
     await expect(orb!.locator('.orb')).toBeVisible();
+    await expect(orb!.locator('#orb-input')).toBeEnabled();
     await expect.poll(() => app.evaluate(({ BrowserWindow }) => {
       const orbWindow = BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus presence');
       return { visible: orbWindow?.isVisible(), focused: orbWindow?.isFocused() };
@@ -23,6 +41,7 @@ test('a wake presents the real orb without focus theft, then opens compact and f
 
     await orb!.locator('.orb').hover();
     await expect(orb!.locator('.hover-composer')).toHaveCSS('opacity', '1');
+    await expect(orb!.locator('#orb-input')).toBeEnabled();
     await expect.poll(() => app.evaluate(({ BrowserWindow }) => {
       const window = BrowserWindow.getAllWindows().find((item) => item.getTitle() === 'Morpheus presence');
       return { width: window?.getBounds().width, focused: window?.isFocused() };
@@ -35,10 +54,38 @@ test('a wake presents the real orb without focus theft, then opens compact and f
     await orb!.locator('.orb').hover();
     await expect(orb!.locator('.hover-composer')).toHaveCSS('opacity', '1');
 
-    await orb!.locator('.hover-composer').click({ noWaitAfter: true });
+    await orb!.locator('.orb').click();
+    await expect(orb!.locator('#orb-input')).toBeFocused();
+    const draft = 'Hello from the native companion';
+    await orb!.locator('#orb-input').fill(draft);
+    await orb!.locator('#orb-input').press('Escape');
+    await expect.poll(() => app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows().find((item) => item.getTitle() === 'Morpheus presence')?.getBounds().width,
+    )).toBe(100);
+    await expect.poll(async () => (await orbSnapshot(orb!)).draft.text).toBe(draft);
+
+    await orb!.locator('.orb').click();
+    await expect(orb!.locator('#orb-input')).toBeFocused();
+    await expect(orb!.locator('#orb-input')).toHaveValue(draft);
+    const beforeSubmit = await orbSnapshot(orb!);
+    expect(beforeSubmit.draft.conversationId).toBe(beforeSubmit.conversationId);
+    expect(beforeSubmit.turns.filter((turn) => turn.source === 'orb')).toHaveLength(0);
+    if (evidenceDir) await orb!.screenshot({ path: join(evidenceDir, 'native-orb-editable-draft.png') });
+
+    await orb!.locator('#orb-input').press('Enter');
     await expect(main!.getByTestId('morpheus-quick-command')).toBeVisible();
     await expect(main!.getByTestId('morpheus-quick-command')).toHaveCSS('opacity', '1');
     await expect(main!.getByTestId('quick-command-input')).toBeFocused();
+    await expect.poll(async () => {
+      const snapshot = await orbSnapshot(orb!);
+      return {
+        draft: snapshot.draft.text,
+        turns: snapshot.turns.filter((turn) => turn.source === 'orb')
+          .map((turn) => ({ conversationId: turn.conversationId, requestId: turn.clientRequestId })),
+      };
+    }).toMatchObject({ draft: '', turns: [{ conversationId: beforeSubmit.conversationId }] });
+    const afterSubmit = await orbSnapshot(orb!);
+    expect(afterSubmit.turns.filter((turn) => turn.source === 'orb').map((turn) => turn.turnId)).toHaveLength(1);
     if (evidenceDir) await main!.screenshot({ path: join(evidenceDir, 'native-compact-command.png') });
     await expect.poll(() => app.evaluate(({ BrowserWindow, screen }) => {
       const windows = BrowserWindow.getAllWindows();

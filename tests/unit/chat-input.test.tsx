@@ -268,7 +268,7 @@ describe('ChatInput agent targeting', () => {
       text: text.trim(),
     }));
     useMorpheusOperatorStore.setState({
-      mode: 'ask', lastDecision: null, clarification: null, pendingConversation: null,
+      mode: 'ask', lastDecision: null, clarification: null, pendingConversation: null, pendingConversations: [],
     });
     artifactPanelMocks.openPreview.mockReset();
     useMorpheusCommandStore.setState({

@@ -6,6 +6,7 @@ import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusWorkspacesStore } from '@/stores/morpheus-workspaces';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { useMorpheusConversationStore } from '@/stores/morpheus-conversation';
 import { useMorpheusIntelligenceStore } from '@/stores/morpheus-intelligence';
 import { MorpheusCaptureIndicator } from './MorpheusCaptureIndicator';
 import { MorpheusPermissionDialog } from './MorpheusPermissionDialog';
@@ -31,9 +32,14 @@ export function MorpheusGlobalRuntime() {
   const objectiveUpdatedAt = useMorpheusCommandStore((state) => state.objectiveRun?.updatedAt);
   const subscribeVoicePresence = useMorpheusVoiceStore((state) => state.subscribePresence);
   const loadVoiceStatus = useMorpheusVoiceStore((state) => state.loadStatus);
+  const startConversation = useMorpheusConversationStore((state) => state.start);
   const ensureAmbient = useMorpheusVoiceStore((state) => state.ensureAmbient);
   const loadIntelligence = useMorpheusIntelligenceStore((state) => state.load);
   const refreshToday = useMorpheusIntelligenceStore((state) => state.refreshToday);
+
+  useEffect(() => {
+    return startConversation();
+  }, [startConversation]);
 
   useEffect(() => {
     const unsubscribe = subscribe();

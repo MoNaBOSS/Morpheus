@@ -109,6 +109,16 @@ import type {
 } from '../morpheus/operator-types';
 import type { MorpheusCompanionSurfaceStatus } from '../morpheus/companion-types';
 import type {
+  MorpheusAssistantAckTurnPayload,
+  MorpheusAssistantAdmitTurnPayload,
+  MorpheusAssistantConversationPayload,
+  MorpheusAssistantDraft,
+  MorpheusAssistantDraftPayload,
+  MorpheusAssistantSnapshot,
+  MorpheusAssistantSnapshotPayload,
+  MorpheusAssistantTurn,
+} from '../morpheus/assistant-session-types';
+import type {
   MorpheusGoalDraft,
   MorpheusGoalIdPayload,
   MorpheusGoalResult,
@@ -1177,6 +1187,12 @@ export type HostApiContract = {
    * `harness/reference/morpheus-execution-architecture.md`.
    */
   morpheus: {
+    /** Bounded Main projection shared by native orb, compact and full surfaces. */
+    assistantSnapshot: (payload?: MorpheusAssistantSnapshotPayload) => MorpheusAssistantSnapshot;
+    assistantSelectConversation: (payload: MorpheusAssistantConversationPayload) => MorpheusAssistantSnapshot;
+    updateAssistantDraft: (payload: MorpheusAssistantDraftPayload) => MorpheusAssistantDraft;
+    admitAssistantTurn: (payload: MorpheusAssistantAdmitTurnPayload) => MorpheusAssistantTurn;
+    ackAssistantTurn: (payload: MorpheusAssistantAckTurnPayload) => MorpheusAssistantTurn;
     /** Main-owned Ask/Auto/Act routing shared by every interaction surface. */
     routeInteraction: (payload: RouteMorpheusInteractionPayload) => MorpheusInteractionDecision;
     describeActions: () => MorpheusDescribeActionsResult;

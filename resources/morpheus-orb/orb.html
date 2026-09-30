@@ -8,15 +8,16 @@
   <link rel="stylesheet" href="orb.css">
 </head>
 <body>
-  <a class="hover-composer" href="morpheus-orb:open" aria-label="Open Morpheus" tabindex="-1" inert>
-    <span class="hover-composer-name">Morpheus</span><span class="hover-composer-caret" aria-hidden="true"></span>
-    <span class="hover-composer-arrow" aria-hidden="true">↗</span>
-  </a>
-  <a class="orb" href="morpheus-orb:open" aria-label="Open Morpheus" title="Open Morpheus">
+  <form class="hover-composer" inert aria-label="Morpheus command">
+    <label class="sr-only" for="orb-input">Morpheus</label>
+    <input id="orb-input" type="text" autocomplete="off" spellcheck="true" maxlength="4000" placeholder="Ask Morpheus…" disabled>
+    <button class="hover-composer-send" type="submit" aria-label="Send" title="Send" disabled>↗</button>
+    <button class="hover-composer-expand" type="button" aria-label="Open compact conversation" title="Open compact conversation">⤢</button>
+  </form>
+  <button class="orb" type="button" aria-label="Ask Morpheus" title="Ask Morpheus">
     <img src="orb.png" alt="" draggable="false">
-  </a>
-  <a id="hover-signal" href="morpheus-orb:hover" target="_blank" rel="noopener" hidden tabindex="-1" aria-hidden="true"></a>
-  <a id="collapse-signal" href="morpheus-orb:collapse" target="_blank" rel="noopener" hidden tabindex="-1" aria-hidden="true"></a>
+  </button>
+  <div id="orb-status" class="sr-only" role="status" aria-live="polite"></div>
   <script src="orb.js" defer></script>
 </body>
 </html>

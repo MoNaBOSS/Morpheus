@@ -82,6 +82,13 @@ import type {
 import type { CompleteMorpheusOnboardingPayload, MorpheusCompanionProfilePatch } from '@shared/morpheus/onboarding-types';
 import type { RouteMorpheusInteractionPayload } from '@shared/morpheus/operator-types';
 import type {
+  MorpheusAssistantAckTurnPayload,
+  MorpheusAssistantAdmitTurnPayload,
+  MorpheusAssistantConversationPayload,
+  MorpheusAssistantDraftPayload,
+  MorpheusAssistantSnapshotPayload,
+} from '@shared/morpheus/assistant-session-types';
+import type {
   CreateMorpheusSystemFromMissionPayload,
   MorpheusSystemDraft,
 } from '@shared/morpheus/system-types';
@@ -449,6 +456,21 @@ export const hostApi = {
     signOut: () => invokeHost('managedAccount', 'signOut'),
   },
   morpheus: {
+    assistantSnapshot: (payload: MorpheusAssistantSnapshotPayload = {}) => (
+      invokeHost('morpheus', 'assistantSnapshot', payload)
+    ),
+    assistantSelectConversation: (payload: MorpheusAssistantConversationPayload) => (
+      invokeHost('morpheus', 'assistantSelectConversation', payload)
+    ),
+    updateAssistantDraft: (payload: MorpheusAssistantDraftPayload) => (
+      invokeHost('morpheus', 'updateAssistantDraft', payload)
+    ),
+    admitAssistantTurn: (payload: MorpheusAssistantAdmitTurnPayload) => (
+      invokeHost('morpheus', 'admitAssistantTurn', payload)
+    ),
+    ackAssistantTurn: (payload: MorpheusAssistantAckTurnPayload) => (
+      invokeHost('morpheus', 'ackAssistantTurn', payload)
+    ),
     routeInteraction: (payload: RouteMorpheusInteractionPayload) => (
       invokeHost('morpheus', 'routeInteraction', payload)
     ),

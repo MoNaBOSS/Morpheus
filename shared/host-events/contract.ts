@@ -6,6 +6,7 @@ import type { UpdateStatusSnapshot } from '../host-api/contract';
 import type { ChatRuntimeEvent } from '../chat-runtime-events';
 import type { MorpheusActionEvent } from '../morpheus/action-types';
 import type { MorpheusCompanionTrigger } from '../morpheus/companion-types';
+import type { MorpheusAssistantSessionChanged } from '../morpheus/assistant-session-types';
 import type { MorpheusObjectiveEvent } from '../morpheus/core/objective-types';
 import type { MorpheusVoicePresence, MorpheusSpeechChunk } from '../morpheus/voice-types';
 import type { MorpheusRiskTier } from '../morpheus/actions/registry';
@@ -112,6 +113,8 @@ export type HostEventContract = {
    * channel. Every emission originates from a real Main-process transition.
    */
   morpheus: {
+    /** Content-free invalidation; consumers recover from assistantSnapshot. */
+    assistantSessionChanged: (payload: MorpheusAssistantSessionChanged) => void;
     actionEvent: (payload: MorpheusActionEvent) => void;
     /** Fixed global shortcut requested the trusted Quick Command surface. */
     quickCommand: (payload: { trigger: MorpheusCompanionTrigger }) => void;
@@ -207,6 +210,7 @@ export const HOST_EVENT_CHANNELS = {
     openClawCliInstalled: 'openclaw:cli-installed',
   },
   morpheus: {
+    assistantSessionChanged: 'morpheus:assistant-session-changed',
     actionEvent: 'morpheus:action-event',
     quickCommand: 'morpheus:quick-command',
     voiceCommand: 'morpheus:voice-command',

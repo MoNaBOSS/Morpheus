@@ -64,6 +64,14 @@ import { installMorpheusMediaPermissionPolicy } from './morpheus-media-permissio
 import { classifyMainNavigation } from './navigation-policy';
 import { createMorpheusCompanionSurfaceController } from './morpheus-companion-surface';
 import { MorpheusWakeOrb } from './morpheus-wake-orb';
+import { registerMorpheusOrbBridge } from './morpheus-orb-bridge';
+import type {
+  MorpheusAssistantAdmitTurnPayload,
+  MorpheusAssistantDraftPayload,
+  MorpheusAssistantSnapshot,
+  MorpheusAssistantDraft,
+  MorpheusAssistantTurn,
+} from '@shared/morpheus/assistant-session-types';
 
 const WINDOWS_APP_USER_MODEL_ID = 'app.morpheus.desktop';
 const isE2EMode = process.env.CLAWX_E2E === '1';
@@ -395,6 +403,11 @@ function createMainWindow(): BrowserWindow {
   });
 
   win.on('show', () => wakeOrb.hide());
+  win.on('hide', () => {
+    if (!isQuitting() && (!isE2EMode || process.argv.includes('--morpheus-test-wake-orb'))) {
+      wakeOrb.show();
+    }
+  });
 
   mainWindow = win;
   return win;
@@ -500,6 +513,26 @@ async function initialize(): Promise<void> {
       },
     },
   );
+
+  // The sandboxed orb can call only these fixed Main-owned assistant actions.
+  // No generic host invoke, provider secret, or Gateway capability crosses this window.
+  const assistantAction = async <T>(name: string, payload: unknown): Promise<T> => {
+    const action = hostApiRegistry.resolve('morpheus', name);
+    if (!action) throw new Error(`Morpheus assistant action unavailable: ${name}`);
+    return await action(payload) as T;
+  };
+  const unregisterOrbBridge = registerMorpheusOrbBridge({
+    getOrbWebContents: () => wakeOrb.getWebContents(),
+    snapshot: () => assistantAction<MorpheusAssistantSnapshot>('assistantSnapshot', {}),
+    updateDraft: (payload: MorpheusAssistantDraftPayload) => (
+      assistantAction<MorpheusAssistantDraft>('updateAssistantDraft', payload)
+    ),
+    admitTurn: (payload: MorpheusAssistantAdmitTurnPayload) => (
+      assistantAction<MorpheusAssistantTurn>('admitAssistantTurn', payload)
+    ),
+    present: (action) => wakeOrb.present(action),
+  });
+  app.once('before-quit', unregisterOrbBridge);
 
   loadMainWindow(window);
 

@@ -1,8 +1,9 @@
 # Sol: continue Phase 7 implementation
 
-Prepared by the Astra architecture pass on 2026-09-30. The user wants implementation
-on Sol next, not another discovery session. NerdGPT is deferred. **This handoff
-does not say Phase 7 is implemented or accepted.**
+Prepared by the Astra architecture pass on 2026-09-30 and updated after the Sol
+7A.1–7A.3 source checkpoint. NerdGPT is deferred. **Phase 7 is not complete or
+packaged/live accepted.** The next row is 7A.4; read the current checkpoint and
+evidence ledger for actual test scope before extending it.
 
 ## Verify source, preserve work
 
@@ -33,14 +34,15 @@ two-edition and sequential-all-tasks product descriptions. Existing permission,
 audit and runtime-isolation rules remain. Do not reread the entire historical
 conversation or redesign a logo to start implementation.
 
-## First work
+## Next work
 
-Start **7A.1: Main assistant session/turn projection**. Reproduce the existing
-compact-question redirect with a focused test and retain it as the A.3 acceptance
-target. Build correlated, bounded turn admission and shared surface state on
-existing conversation/task owners; do not introduce a second agent/task engine.
-Then finish A.2 real native upward composer, A.3 compact conversation continuity,
-and A.4 shared fluid motion in distinct validated checkpoints.
+7A.1 Main session, 7A.2 editable native upward composer and 7A.3 compact
+conversation continuity are implemented in source and pass focused Windows
+Electron automation. They are not installer/hardware/live-provider acceptance.
+Next implement **7A.4 shared fluid motion and actual ephemeral mic/playback level**
+with reduced-motion, hidden-window and keyboard behavior. Then continue 7B.1
+protected provider-secret migration before paid live-path testing. Preserve the
+same assistant/conversation/task owner; no second engine or dashboard.
 
 Use [the Phase 7 harness spec](harness/specs/tasks/morpheus-phase7-assistant.md)
 as the umbrella and create a narrowly scoped task spec per communication change.

@@ -64,9 +64,9 @@ Only record what the evidence supports. All rows below start TODO.
 
 | ID / status | Deliverable and concrete pass condition | Depends on |
 | --- | --- | --- |
-| 7A.1 TODO | Main assistant session/turn projection. Duplicate request returns same admission; two rapid turns neither overwrite nor cross conversations; stale events rejected. | Baseline |
-| 7A.2 TODO | Native real upward composer. Hover never steals focus; click/tap types; Escape preserves draft; display changes keep anchor visible. | A.1 |
-| 7A.3 TODO | Compact and full share conversation/tasks/results. A normal question receives its reply in compact, no `/chat` redirect or forced expansion; task selection/draft survive transitions. | A.1–2 |
+| 7A.1 IMPLEMENTED | Main assistant session/turn projection. Duplicate request returns same admission; two rapid turns neither overwrite nor cross conversations; stale events rejected. Focused source tests pass; packaged/live continuity remains open. | Baseline |
+| 7A.2 AUTOMATED | Native real upward composer. Windows Electron source-build test covers inactive hover, explicit focus/type, Escape draft, one admission, screen anchor and compact handoff. Packaged hardware/accessibility acceptance remains open. | A.1 |
+| 7A.3 AUTOMATED | Compact/full project the same ACP conversation and Main draft; fixture reply stays in a native compact window with no `/chat` redirect, and expansion/dismiss preserves draft. Live provider and packaged acceptance remain open. | A.1–2 |
 | 7A.4 TODO | Shared orb motion + actual mic/playback level. Native/React fidelity, reduced motion, keyboard access, hidden animation pause and tray transition recorded. | A.2–3 |
 | 7B.1 TODO | Protected provider secret migration across consumers. Crash fixtures preserve keys/settings; no migrated plaintext copies; unavailable protection fails safely. | Baseline; before paid live tests |
 | 7C.1 TODO | Real wake/capture lifecycle. Same-breath wake+command captured once, mic mute/lock respected, unplug/replug and missing input produce usable recovery. | A.1–2, B.1 |
@@ -184,11 +184,18 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
 
 ### Current checkpoint (replace, do not append another contradictory “latest”)
 
-- Completed: repository audit and Phase 7 architecture/design/acceptance handoff.
-- Application changes in this Astra pass: **none**. Profiles/providers untouched.
-- Next executable checkpoint: **7A.1 — Main assistant session/turn projection**.
-- Immediate regression to reproduce: submit an ordinary question in compact;
-  current code expands/navigates to Chat. Capture in E2E before correcting A.3.
+- Completed in the isolated Windows source worktree: 7A.1 Main assistant session,
+  7A.2 editable native upward composer and 7A.3 compact conversation continuity.
+  The old forced Chat redirect is no longer used for normal Morpheus turns.
+  Native source-build Electron journeys, full unit suite, typecheck, lint,
+  communications replay/compare and harness checks are recorded in the ledger.
+  No second executor or conversation history store was introduced.
+- Next executable checkpoint: **7A.4 — shared fluid motion and actual ephemeral
+  mic/playback amplitude**, with reduced-motion/hidden-window validation. Then
+  proceed to 7B.1 protected provider-secret migration before paid live testing.
+- The Windows worktree is separate from the original PC checkout. Profiles and
+  provider settings have not been changed. Commit/push continuity is recorded
+  in the ledger; source-build tests do not certify an installer.
 - Remaining input blockers: production identity/managed routes and payment setup,
   signing/update ownership, approved deployment target for a live publication,
   actual microphone/monitor access and human voice acceptance.

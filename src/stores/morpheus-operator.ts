@@ -21,6 +21,7 @@ type MorpheusOperatorState = {
   lastDecision: MorpheusInteractionDecision | null;
   clarification: string | null;
   pendingConversation: PendingConversation | null;
+  pendingConversations: PendingConversation[];
   setMode: (mode: MorpheusInteractionMode) => void;
   route: (text: string, surface: MorpheusInteractionSurface) => Promise<MorpheusInteractionDecision>;
   queueConversation: (text: string) => void;
@@ -37,6 +38,7 @@ export const useMorpheusOperatorStore = create<MorpheusOperatorState>()(
       lastDecision: null,
       clarification: null,
       pendingConversation: null,
+      pendingConversations: [],
 
       setMode: (mode) => set({ mode, clarification: null }),
 
@@ -59,16 +61,20 @@ export const useMorpheusOperatorStore = create<MorpheusOperatorState>()(
         return decision;
       },
 
-      queueConversation: (text) => set({
-        pendingConversation: { requestId: nextConversationRequestId++, text },
-        clarification: null,
+      queueConversation: (text) => set((state) => {
+        if (state.pendingConversations.length >= 32) throw new Error('Morpheus conversation queue is full');
+        const pendingConversations = [
+          ...state.pendingConversations,
+          { requestId: nextConversationRequestId++, text },
+        ];
+        return { pendingConversations, pendingConversation: pendingConversations[0], clarification: null };
       }),
 
-      consumeConversation: (requestId) => set((state) => (
-        state.pendingConversation?.requestId === requestId
-          ? { pendingConversation: null }
-          : state
-      )),
+      consumeConversation: (requestId) => set((state) => {
+        const pendingConversations = state.pendingConversations.filter((pending) => pending.requestId !== requestId);
+        if (pendingConversations.length === state.pendingConversations.length) return state;
+        return { pendingConversations, pendingConversation: pendingConversations[0] ?? null };
+      }),
 
       clearClarification: () => set({ clarification: null }),
     }),

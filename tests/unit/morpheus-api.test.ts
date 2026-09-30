@@ -616,11 +616,15 @@ describe('runtime control validation', () => {
 describe('createMorpheusApi', () => {
   it('exposes exactly the contract surface', () => {
     expect(Object.keys(createMorpheusApi(stubOptions())).sort()).toEqual([
+      'ackAssistantTurn',
       'actOnAttention',
       'activateSystem',
       'addWorkspace',
+      'admitAssistantTurn',
       'agentProfile',
       'agentProfiles',
+      'assistantSelectConversation',
+      'assistantSnapshot',
       'auditQuery',
       'auditRecent',
       'beginAmbientVoice',
@@ -700,6 +704,7 @@ describe('createMorpheusApi', () => {
       'testSystem',
       'transcribeAmbientAudio',
       'transcribeAudio',
+      'updateAssistantDraft',
       'updateCompanionProfile',
       'updateProactiveSettings',
       'updateVoiceSettings',
@@ -709,6 +714,25 @@ describe('createMorpheusApi', () => {
       'workflows',
       'workspaces',
     ]);
+  });
+
+  it('projects assistant admissions through the typed Main API', async () => {
+    const api = createMorpheusApi({ ...stubOptions(), getLocale: async () => 'ja' });
+    const initial = await api.assistantSnapshot({});
+    expect(initial).toMatchObject({
+      locale: 'ja', selectedConversationId: 'agent:main:main', draft: { revision: 0, text: '' },
+    });
+    expect(await api.updateAssistantDraft({
+      conversationId: initial.conversationId, expectedRevision: 0, text: 'Hello',
+    })).toMatchObject({ revision: 1, text: 'Hello' });
+    const request = {
+      conversationId: initial.conversationId, clientRequestId: 'host-test-1', text: 'Hello', source: 'orb' as const,
+    };
+    const admitted = await api.admitAssistantTurn(request);
+    expect(await api.admitAssistantTurn(request)).toEqual(admitted);
+    expect((await api.assistantSnapshot({})).pendingTurns).toMatchObject([{ turnId: admitted.turnId, text: 'Hello' }]);
+    await api.ackAssistantTurn({ conversationId: admitted.conversationId, turnId: admitted.turnId });
+    expect((await api.assistantSnapshot({})).pendingTurns).toEqual([]);
   });
 
   it('forwards validated payloads to the runtime', async () => {
