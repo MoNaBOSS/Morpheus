@@ -160,7 +160,9 @@ export function MorpheusVoiceRuntime() {
           ) : null}
           {error ? (
             <p data-testid="morpheus-voice-error" className="mt-0.5 truncate text-2xs text-[hsl(var(--morpheus-danger))]">
-              {errorKind === 'repeat'
+              {errorKind === 'device'
+                ? t('morpheus.voice.deviceBody')
+                : errorKind === 'repeat'
                 ? t('morpheus.voice.repeatBody')
                 : errorKind === 'network'
                   ? t('morpheus.voice.networkBody')

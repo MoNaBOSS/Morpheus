@@ -342,6 +342,25 @@ Append implementation records here or link a compact per-candidate evidence file
   or handed over at this source checkpoint; packaging uses a spacious checkout because C: had only
   about 2.1 GiB free (D:/E: had ample space). No paid API call occurred.
 
+### 7C.1 wake/capture source automation — 2026-10-01
+
+Local addressed wake-plus-command passes a bounded ephemeral suffix through Main,
+audits before emission and dispatches once through the existing route without a
+second STT call. Pending mic acquisition cancellation, capture-admission recheck,
+device-loss cleanup and localized recovery (en/zh/ja/ru) preserve typing/local work.
+59 focused tests, full typecheck, focused lint, communications checks and narrow
+diff-aware harness validation/dry-run passed. A fresh build passed six selected
+Electron voice journeys, including duplicate wake-event suppression/zero extra
+capture/STT and localized missing-input recovery. Native screenshot is retained
+under ignored test-results, not treated as actual microphone evidence. Details:
+[C.1 source evidence](phase7-c1-source-checkpoint.md).
+
+This establishes source/native-fixture behavior only. Actual System.Speech accuracy,
+speaker echo, mute/lock and unplug/replug on physical devices, voice listening
+quality and the exact packaged candidate remain unverified. No paid call, real
+provider key or owner profile was used. Next source checkpoint is C.2 bounded
+neural auditions/no-speech checks; build a fresh internal Windows installer.
+
 Earlier Astra documentation checkpoint validation: Phase 7 spec validation and dry-run passed;
 18 harness unit tests passed across 2 files. All 21 relative Markdown links in the
 7 new documents resolved. All 9 referenced harness rules exist. Git whitespace

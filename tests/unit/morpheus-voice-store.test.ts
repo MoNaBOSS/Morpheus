@@ -112,6 +112,27 @@ beforeEach(() => {
 });
 
 describe('Morpheus renderer voice controller', () => {
+  it('classifies disconnected and missing microphone errors for localized recovery', () => {
+    expect(classifyMorpheusVoiceError(new Error('Microphone disconnected. Reconnect it and restart ambient voice.'))).toBe('device');
+    expect(classifyMorpheusVoiceError(new DOMException('Requested device not found', 'NotFoundError'))).toBe('device');
+  });
+  it('dispatches a Main-audited local command once without recording or paid transcription', async () => {
+    const status = await mocks.voiceStatus();
+    status.settings.localWakeEnabled = true;
+    status.settings.ambientEnabled = true;
+    // No capture startup is needed to exercise a real Main event handoff.
+    status.transcriptionAvailable = false;
+    useMorpheusVoiceStore.setState({ status, presence: { v: 1, state: 'armed', ambientEnabled: true, wakeSequence: 1 } });
+    const unsubscribe = useMorpheusVoiceStore.getState().subscribePresence();
+    const presence = { v: 1, state: 'understanding', ambientEnabled: true, wakeSequence: 2, wakeCommand: 'Open Notepad' };
+    mocks.voicePresenceHandler?.(presence);
+    mocks.voicePresenceHandler?.(presence);
+    await vi.waitFor(() => expect(mocks.submitObjective).toHaveBeenCalledOnce());
+    expect(mocks.routeInteraction).toHaveBeenCalledOnce();
+    expect(mocks.transcribeAudio).not.toHaveBeenCalled();
+    expect(getUserMedia).not.toHaveBeenCalled();
+    unsubscribe();
+  });
   it('ignores a completed transcription after the user cancels the interaction', async () => {
     let deliver!: (value: unknown) => void;
     mocks.transcribeAudio.mockReturnValueOnce(new Promise((resolve) => { deliver = resolve; }));

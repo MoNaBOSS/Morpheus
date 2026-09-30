@@ -34,6 +34,8 @@ Windows companion source checkpoint (7A.1–7A.3): local wake shows the orb with
 
 Phase 7B.1 provider-secret source work is in progress. The app-owned API-key path now writes a versioned file encrypted with Electron `safeStorage` and migrates matching legacy entries only after read-back verification. Synthetic interruption, conflict and unavailable-protection tests cover the store and legacy adapter; an isolated Windows Electron run decrypted a synthetic key after a same-user restart. Static OpenClaw runtime SecretRefs and exact-match prelaunch recovery have source tests. Existing-profile upgrade, packaged and live-provider acceptance remain unverified. Upstream-managed OAuth credentials are outside this static-key protection claim.
 
+Phase 7C.1 source automation now covers local wake-plus-command dispatch once without a second STT call, cancelled microphone acquisition, and localized device-loss recovery. Six fresh-build Electron voice journeys passed with synthetic events/audio or missing configuration; actual microphone recognition and packaged/live voice acceptance remain open.
+
 > **1.1.2 unified presence candidate:** cinematic first-run and returning greetings,
 > a state-driven luminous Signal, compact background Presence, speech auto-end,
 > bounded hands-free follow-up, selected voice preview, streamed neural playback,

@@ -46,10 +46,13 @@ export type MorpheusVoiceErrorKind =
   | 'configuration'
   | 'permission'
   | 'security'
+  | 'device'
   | 'recording';
 
 export function classifyMorpheusVoiceError(error: unknown): MorpheusVoiceErrorKind {
   const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
+  if (message.includes('microphone disconnected') || message.includes('notfounderror')
+    || message.includes('requested device not found')) return 'device';
   if (message.includes('empty') || message.includes('no speech') || message.includes("couldn't hear")) {
     return 'repeat';
   }
@@ -323,6 +326,9 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
         },
         onError(error) {
           if (sessionGeneration !== ambientGeneration) return;
+          ambientAutoStartBlocked = true;
+          stopAmbientLocal();
+          void hostApi.morpheus.endAmbientVoice().catch(() => undefined);
           set({ phase: 'error', error: error.message, errorKind: classifyMorpheusVoiceError(error) });
         },
       });
@@ -424,15 +430,30 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
           set({ followUpUntil: null });
         }
         if (status?.settings.localWakeEnabled && presence.ambientEnabled
+          && presence.state === 'understanding' && presence.wakeCommand
+          && (presence.wakeSequence ?? 0) > previousWake) {
+          stopMorpheusSpeech();
+          endFollowUp();
+          const command = presence.wakeCommand;
+          set({ phase: 'ready', source: 'ambient', transcript: command, error: null, errorKind: null,
+            lastAmbientHeardAt: Date.now() });
+          useMorpheusCommandStore.getState().setInput(command);
+          useMorpheusConversationStore.getState().setDraft(command);
+          if (status.settings.autoSubmitTranscript) void routeVoiceInput(command).catch(fail);
+        }
+        if (status?.settings.localWakeEnabled && presence.ambientEnabled
           && presence.state === 'armed' && (presence.wakeSequence ?? 0) > previousWake) acknowledgeWake(presence);
         if (presence.ambientEnabled
           && presence.state !== 'error'
+          && presence.state !== 'asleep'
           && status?.transcriptionAvailable
           && !ambientAutoStartBlocked
           && !ambientCapture
           && !ambientStarting) {
           void get().ensureAmbient().catch(() => undefined);
-        } else if (!presence.ambientEnabled) stopAmbientLocal();
+        } else if (!presence.ambientEnabled || presence.state === 'asleep' || presence.state === 'error') {
+          stopAmbientLocal();
+        }
       });
     },
 

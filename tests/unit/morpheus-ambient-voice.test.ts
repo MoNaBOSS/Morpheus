@@ -8,6 +8,56 @@ import {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ambient Morpheus wake phrase', () => {
+  it('releases a microphone returned after cancellation without creating an audio context', async () => {
+    let resolveStream!: (stream: MediaStream) => void;
+    const stop = vi.fn();
+    const audioContext = vi.fn();
+    vi.stubGlobal('MediaRecorder', { isTypeSupported: () => true });
+    vi.stubGlobal('AudioContext', audioContext);
+    vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: () => new Promise<MediaStream>((resolve) => { resolveStream = resolve; }) } });
+    const capture = new MorpheusAmbientVoiceCapture({
+      silenceMs: 1000, maxUtteranceMs: 20000,
+      onCaptureStarted: vi.fn(async () => undefined), onCaptureEnded: vi.fn(async () => undefined),
+      onBargeIn: vi.fn(), onUtterance: vi.fn(async () => undefined), onError: vi.fn(),
+    });
+    const starting = capture.start();
+    capture.stop();
+    resolveStream({ getTracks: () => [{ stop }] } as unknown as MediaStream);
+    await starting;
+    expect(stop).toHaveBeenCalledOnce();
+    expect(audioContext).not.toHaveBeenCalled();
+  });
+
+  it('releases all microphone resources and reports device loss once', async () => {
+    vi.useFakeTimers();
+    const track = new EventTarget() as EventTarget & { stop: () => void };
+    track.stop = vi.fn();
+    const close = vi.fn(async () => undefined);
+    const onError = vi.fn();
+    vi.stubGlobal('MediaRecorder', { isTypeSupported: () => true });
+    vi.stubGlobal('AudioContext', class {
+      createAnalyser() { return { fftSize: 32, getByteTimeDomainData: (sample: Uint8Array) => sample.fill(128) }; }
+      createMediaStreamSource() { return { connect: vi.fn() }; }
+      close = close;
+    });
+    vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: async () => ({ getTracks: () => [track], getAudioTracks: () => [track] }) } });
+    const capture = new MorpheusAmbientVoiceCapture({
+      silenceMs: 1000, maxUtteranceMs: 20000,
+      onCaptureStarted: vi.fn(async () => undefined), onCaptureEnded: vi.fn(async () => undefined),
+      onBargeIn: vi.fn(), onUtterance: vi.fn(async () => undefined), onError,
+    });
+    try {
+      await capture.start();
+      track.dispatchEvent(new Event('ended'));
+      track.dispatchEvent(new Event('ended'));
+      expect(track.stop).toHaveBeenCalledOnce();
+      expect(close).toHaveBeenCalledOnce();
+      expect(onError).toHaveBeenCalledOnce();
+      expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Reconnect') }));
+      expect(vi.getTimerCount()).toBe(0);
+    } finally { capture.stop(); vi.useRealTimers(); }
+  });
+
   it('monitors audio without animation frames and releases the timer on stop', async () => {
     vi.useFakeTimers();
     const frames = vi.fn();

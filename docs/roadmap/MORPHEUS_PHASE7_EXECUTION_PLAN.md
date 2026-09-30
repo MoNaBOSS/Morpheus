@@ -69,7 +69,7 @@ Only record what the evidence supports. All rows below start TODO.
 | 7A.3 AUTOMATED | Compact/full project the same ACP conversation and Main draft; fixture reply stays in a native compact window with no `/chat` redirect, and expansion/dismiss preserves draft. Live provider and packaged acceptance remain open. | A.1–2 |
 | 7A.4 AUTOMATED | Shared native/React M-orb motion and bounded scalar from actual mic/neural playback paths. Source-build Electron tests cover reduced motion, keyboard focus, hidden Main/native animation pause and the guarded Main-hide/tray handoff. Hardware audio, true tray, motion recording and packaged acceptance remain open. | A.2–3 |
 | 7B.1 IN PROGRESS | Protected app-owned static-key store, runtime SecretRefs, exact-match pre-commit/pre-spawn reconciliation and synthetic Windows same-user restart passed source checks. Copied existing-profile upgrade, packaged/live and upstream OAuth limits remain open. | Baseline; before paid live tests |
-| 7C.1 TODO | Real wake/capture lifecycle. Same-breath wake+command captured once, mic mute/lock respected, unplug/replug and missing input produce usable recovery. | A.1–2, B.1 |
+| 7C.1 AUTOMATED (source fixtures) | Same-breath command dispatch once without second STT, cancelled mic acquisition and localized missing-device recovery pass 59 focused units and six fresh-build Electron journeys. Actual System.Speech accuracy, mute/lock/device hardware and exact packaged acceptance remain open. | A.1–2, B.1 |
 | 7C.2 TODO | Natural output, barge-in and follow-ups. Three true voice auditions; interruption kills old audio/generation; speech stop does not cancel work; no-speech costs zero. | C.1 |
 | 7C.3 TODO | Unified persona, short onboarding and returning behavior. Name/skip/Matrix welcome, existing-profile preservation, 8-second genuine-question fallback, daily greeting and DND cases pass. | A.3, C.2 |
 | 7C.4 TODO | Useful bounded memory/proactivity. Correct/delete/export memory; ignored check-in backs off; no inferred emotions or paid polling; existing chat retention preserved. | C.3 |
@@ -96,11 +96,11 @@ settled the cross-cutting decisions in this pack; do not automatically invoke
 another expensive model for each file or repeat the entire audit each turn.
 No runtime provider/model decision is implied by the development-model choice.
 
-The linked worktree currently contains an uncommitted 7A.4 source implementation.
-The row remains TODO until the focused tests, communication checks, fresh-build
-native behavior and visual evidence have been reviewed. Its narrow harness task
-is [shared orb motion](../../harness/specs/tasks/morpheus-phase7-shared-orb-motion.md).
-This checkpoint cannot close packaged, hardware or live-provider gates.
+7A.4 is committed at `1edfd536` with reviewed source-build evidence. Its narrow
+harness task is [shared orb motion](../../harness/specs/tasks/morpheus-phase7-shared-orb-motion.md).
+7B.1 app-owned static-key migration/runtime recovery is committed at `2469c650`;
+synthetic upgrade and protected Windows restart passed. These checkpoints cannot
+close packaged, hardware or live-provider gates.
 
 ### Order and non-blocking work
 
@@ -197,11 +197,14 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
   Native source-build Electron journeys, full unit suite, typecheck, lint,
   communications replay/compare and harness checks are recorded in the ledger.
   No second executor or conversation history store was introduced.
-- Next executable checkpoint: **finish 7B.1 — protected provider-secret migration**
-  before paid live testing. Source work now covers the app-owned static-key vault,
-  static OpenClaw SecretRefs, image relay, exact-match old-key reconciliation
-  and every owned-spawn recovery. Rehearse a copied existing-profile upgrade,
-  preserve imported profiles, and distinguish upstream OAuth throughout.
+- 7B.1 source migration/recovery is committed as `2469c650`. Copied synthetic
+  legacy-profile migration and protected Windows restart passed; imported
+  credentials and real owner profiles were preserved. Its packaged/live gates
+  and upstream plaintext limits remain explicitly open.
+- Next executable checkpoints: **7C.1 wake/capture and 7C.2 natural output**.
+  C.1 same-breath suffix, audit/dispatch-once and device-loss cleanup have source
+  tests; finish its fresh-build native event journey and localized recovery,
+  then the bounded neural auditions/no-speech checks. No paid test is inferred.
 - The Windows worktree is separate from the original PC checkout. Profiles and
   provider settings have not been changed. Commit/push continuity is recorded
   in the ledger; source-build tests do not certify an installer.

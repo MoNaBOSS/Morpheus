@@ -309,7 +309,7 @@ export function createMorpheusVoiceService(options: {
     state: 'asleep',
     ambientEnabled: settings.ambientEnabled,
   };
-  const publish = (state: MorpheusVoicePresenceState, reason?: string): MorpheusVoicePresence => {
+  const publish = (state: MorpheusVoicePresenceState, reason?: string, wakeCommand?: string): MorpheusVoicePresence => {
     currentPresence = {
       v: MORPHEUS_VOICE_VERSION,
       state,
@@ -321,6 +321,7 @@ export function createMorpheusVoiceService(options: {
       ...(reason ? { reason } : {}),
       ...(speechFailure ? { speechFailure } : {}),
       ...(wakeSequence ? { wakeSequence } : {}),
+      ...(wakeCommand ? { wakeCommand } : {}),
       ...(followUpUntil > Date.now() ? { followUpUntil: new Date(followUpUntil).toISOString() } : {}),
       ...(conversationTurn ? { conversationTurn } : {}),
     };
@@ -728,7 +729,8 @@ export function createMorpheusVoiceService(options: {
         try {
           const controller = (options.startLocalWake ?? startWindowsWake)({
             phrase: settings.wakePhrase,
-            onWake() {
+            onWake(command) {
+              if (command !== undefined && (typeof command !== 'string' || !command.trim() || command.length > 2000)) return;
               const interruptingSpeech = currentPresence.state === 'speaking'
                 || currentPresence.state === 'preparing-speech';
               if (!ambientSession || ambientSession.sessionId !== sessionId
@@ -747,6 +749,12 @@ export function createMorpheusVoiceService(options: {
                   cancelSpeech();
                 }
                 wakeSequence += 1;
+                if (command) {
+                  clearFollowUp();
+                  localCaptureUntil = 0;
+                  publish('understanding', undefined, command.trim());
+                  return;
+                }
                 void openFollowUp('wake').catch(() => {
                   localWake?.stop();
                   publish('error', 'Local wake stopped because Audit is unavailable.');

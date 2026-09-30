@@ -36,6 +36,20 @@ describe.skipIf(process.platform !== 'win32')('Windows local wake boundary', () 
     expect(() => startWindowsWake({ phrase: 'x; Start-Process calc', onWake: vi.fn(), onError: vi.fn() })).toThrow('Invalid');
     expect(mocks.spawn).not.toHaveBeenCalled();
   });
+  it('hands off a bounded same-breath command suffix recognized locally', async () => {
+    const child = Object.assign(new EventEmitter(), {
+      stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn(),
+    });
+    mocks.spawn.mockReturnValue(child);
+    const onWake = vi.fn();
+    const controller = startWindowsWake({ phrase: 'Morpheus', onWake, onError: vi.fn() });
+    child.stdout.write('ready\n');
+    await controller.ready;
+    child.stdout.write('command:"open Notepad"\n');
+    expect(onWake).toHaveBeenCalledExactlyOnceWith('open Notepad');
+    expect(WINDOWS_WAKE_BRIDGE).toContain('AppendDictation()');
+    controller.stop();
+  });
   it('rejects oversized protocol output and does not restart', async () => {
     const child = Object.assign(new EventEmitter(), {
       stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn(),

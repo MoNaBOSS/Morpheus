@@ -21,6 +21,10 @@ try {
     $grammar = [System.Speech.Recognition.GrammarBuilder]::new($choices)
     $grammar.Culture = $info.Culture
     $engine.LoadGrammar([System.Speech.Recognition.Grammar]::new($grammar))
+    $commandGrammar = [System.Speech.Recognition.GrammarBuilder]::new($choices)
+    $commandGrammar.Culture = $info.Culture
+    $commandGrammar.AppendDictation()
+    $engine.LoadGrammar([System.Speech.Recognition.Grammar]::new($commandGrammar))
     $engine.EndSilenceTimeout = [TimeSpan]::FromMilliseconds(200)
     $engine.EndSilenceTimeoutAmbiguous = [TimeSpan]::FromMilliseconds(300)
     $engine.BabbleTimeout = [TimeSpan]::FromSeconds(2)
@@ -28,7 +32,18 @@ try {
     [Console]::WriteLine('ready')
     while (Get-Process -Id $config.parentPid -ErrorAction SilentlyContinue) {
       $result = $engine.Recognize([TimeSpan]::FromSeconds(1))
-      if ($null -ne $result -and $result.Confidence -ge 0.82) { [Console]::WriteLine('wake') }
+      if ($null -ne $result -and $result.Confidence -ge 0.82) {
+        $text = [string]$result.Text
+        $prefix = [string]$config.phrase
+        if ($text.StartsWith('hey ' + $prefix, [StringComparison]::OrdinalIgnoreCase)) { $prefix = 'hey ' + $prefix }
+        if ($text.Equals($prefix, [StringComparison]::OrdinalIgnoreCase)) { [Console]::WriteLine('wake') }
+        elseif ($text.StartsWith($prefix + ' ', [StringComparison]::OrdinalIgnoreCase)) {
+          $command = $text.Substring($prefix.Length).Trim()
+          if ($command.Length -gt 0 -and $command.Length -le 2000) {
+            [Console]::WriteLine('command:' + (ConvertTo-Json -InputObject $command -Compress))
+          }
+        }
+      }
     }
   } finally { $engine.Dispose() }
 } catch { [Console]::WriteLine('unavailable'); exit 1 }
@@ -37,7 +52,7 @@ try {
 export type LocalWakeController = { ready: Promise<void>; stop(): void };
 export function startWindowsWake(options: {
   phrase: string;
-  onWake(): void;
+  onWake(command?: string): void;
   onError(): void;
 }): LocalWakeController {
   if (process.platform !== 'win32') throw new Error('Local wake detection currently requires Windows.');
@@ -83,6 +98,13 @@ export function startWindowsWake(options: {
       buffer = buffer.slice(newline + 1);
       if (line === 'ready' && !ready) { ready = true; clearTimeout(timeout); accept(); }
       else if (line === 'wake' && ready) options.onWake();
+      else if (line.startsWith('command:') && ready) {
+        try {
+          const command: unknown = JSON.parse(line.slice(8));
+          if (typeof command !== 'string' || !command.trim() || command.length > 2000) { failed(); return; }
+          options.onWake(command.trim());
+        } catch { failed(); return; }
+      }
       else { failed(); return; }
     }
   });

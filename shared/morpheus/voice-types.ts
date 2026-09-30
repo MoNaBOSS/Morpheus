@@ -72,6 +72,8 @@ export type MorpheusVoicePresence = {
   reason?: string;
   /** Monotonic Main-audited local wake event, not a renderer-supplied transcript. */
   wakeSequence?: number;
+  /** Ephemeral command suffix recognized locally in the same addressed utterance. */
+  wakeCommand?: string;
   /** Main-authored admission window for one additional ambient turn. */
   followUpUntil?: string;
   /** Bounded turn number; presentation only and never permission authority. */

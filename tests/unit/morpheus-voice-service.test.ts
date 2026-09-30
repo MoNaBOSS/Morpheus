@@ -212,6 +212,29 @@ describe('Morpheus voice service', () => {
     expect(h.service.presence().state).toBe('asleep');
   });
 
+  it('publishes one audited same-breath local command without opening a second capture window', async () => {
+    let wake!: (command?: string) => void;
+    const h = createHarness({ startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), stop: vi.fn() };
+    } });
+    await h.service.updateSettings({ localWakeEnabled: true, ambientEnabled: true });
+    wake('Open Notepad');
+    wake('Open Notepad');
+    await vi.waitFor(() => expect(h.service.presence()).toMatchObject({
+      state: 'understanding', wakeSequence: 1, wakeCommand: 'Open Notepad',
+    }));
+    expect(h.auditOrder.indexOf('audit:local-wake-detected')).toBeLessThan(h.auditOrder.indexOf('emit:understanding'));
+    expect(h.service.presence().followUpUntil).toBeUndefined();
+    await expect(h.service.setAmbientListening(true)).rejects.toThrow('wake phrase');
+    expect(h.fetchImpl).not.toHaveBeenCalled();
+    await h.service.endAmbientSession();
+    wake('Open Notepad');
+    await Promise.resolve();
+    expect(h.service.presence().wakeCommand).toBeUndefined();
+    expect(h.service.presence().state).toBe('asleep');
+    h.service.dispose();
+  });
+
   it('accepts a new wake during task work and keeps the old result from closing the new listening turn', async () => {
     let wake!: () => void;
     const h = createHarness({ startLocalWake: ({ onWake }) => { wake = onWake; return { ready: Promise.resolve(), stop: vi.fn() }; } });

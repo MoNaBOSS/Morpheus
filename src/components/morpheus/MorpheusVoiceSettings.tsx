@@ -19,6 +19,8 @@ export function MorpheusVoiceSettings() {
   const status = useMorpheusVoiceStore((state) => state.status);
   const speechFailure = useMorpheusVoiceStore((state) => state.presence?.speechFailure);
   const error = useMorpheusVoiceStore((state) => state.error);
+  const errorKind = useMorpheusVoiceStore((state) => state.errorKind);
+  const displayError = errorKind === 'device' ? t('morpheus.voice.deviceBody') : error;
   const loadStatus = useMorpheusVoiceStore((state) => state.loadStatus);
   const updateSettings = useMorpheusVoiceStore((state) => state.updateSettings);
 
@@ -29,7 +31,7 @@ export function MorpheusVoiceSettings() {
   if (!status) {
     return (
       <div className="rounded-xl border border-border/60 bg-[hsl(var(--morpheus-surface-2))]/80 p-4 text-xs text-muted-foreground">
-        {error ?? t('morpheus.voice.settings.loading')}
+        {displayError ?? t('morpheus.voice.settings.loading')}
       </div>
     );
   }
@@ -326,7 +328,7 @@ export function MorpheusVoiceSettings() {
             </div>
           </div>
         ) : null}
-        {error ? <p data-testid="morpheus-voice-settings-error" className="text-xs text-[hsl(var(--morpheus-danger))]">{error}</p> : null}
+        {error ? <p data-testid="morpheus-voice-settings-error" className="text-xs text-[hsl(var(--morpheus-danger))]">{displayError}</p> : null}
       </div>
     </section>
   );

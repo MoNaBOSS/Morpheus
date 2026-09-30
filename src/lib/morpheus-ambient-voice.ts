@@ -58,11 +58,13 @@ export class MorpheusAmbientVoiceCapture {
   private stopped = true;
   private maxTimer: number | null = null;
   private discardCurrent = false;
+  private generation = 0;
 
   constructor(private readonly options: MorpheusAmbientVoiceCaptureOptions) {}
 
   async start(): Promise<void> {
     if (!this.stopped) return;
+    const generation = ++this.generation;
     const mimeType = this.supportedMimeType();
     if (!mimeType || !navigator.mediaDevices?.getUserMedia || typeof AudioContext === 'undefined') {
       throw new Error('Ambient voice is not supported by this Windows audio environment.');
@@ -71,6 +73,10 @@ export class MorpheusAmbientVoiceCapture {
       audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
       video: false,
     });
+    if (generation !== this.generation) {
+      stream.getTracks().forEach((track) => track.stop());
+      return;
+    }
     try {
       const context = new AudioContext();
       const analyser = context.createAnalyser();
@@ -81,6 +87,13 @@ export class MorpheusAmbientVoiceCapture {
       this.context = context;
       this.analyser = analyser;
       this.stopped = false;
+      for (const track of stream.getAudioTracks()) {
+        track.addEventListener('ended', () => {
+          if (generation !== this.generation || this.stopped) return;
+          this.stop();
+          this.options.onError(new Error('Microphone disconnected. Reconnect it and restart ambient voice.'));
+        }, { once: true });
+      }
       this.monitor(mimeType);
     } catch (error) {
       stream.getTracks().forEach((track) => track.stop());
@@ -94,6 +107,7 @@ export class MorpheusAmbientVoiceCapture {
   }
 
   stop(): void {
+    this.generation += 1;
     this.stopped = true;
     this.level.dispose();
     if (this.monitorTimer !== null) window.clearTimeout(this.monitorTimer);
@@ -158,7 +172,8 @@ export class MorpheusAmbientVoiceCapture {
     try {
       await this.options.onCaptureStarted();
       audited = true;
-      if (!this.stream || this.recorder || this.suppressed || this.stopped) {
+      if (!this.stream || this.recorder || this.suppressed || this.stopped
+        || !(this.options.shouldCapture?.() ?? true)) {
         await this.options.onCaptureEnded();
         return;
       }

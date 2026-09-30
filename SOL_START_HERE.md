@@ -36,34 +36,22 @@ conversation or redesign a logo to start implementation.
 
 ## Next work
 
-7A.1 Main session, 7A.2 editable native upward composer, 7A.3 compact
-conversation continuity and 7A.4 shared orb motion/ephemeral visual audio level
-pass focused Windows Electron source automation. They are not installer/hardware/
-live-provider acceptance. **7B.1 is in progress in the linked worktree, not accepted.**
-The app-owned static-key store and legacy adapter now write an OS-protected,
-versioned file, verify before legacy cleanup and fail closed when protection is
-unavailable. Focused synthetic store/adapter/provider-service tests passed 33/33.
-The current source path also uses pinned OpenClaw env SecretRefs for new
-app-owned static and image-relay keys, rather than writing those keys into
-auth/config files. Synthetic runtime tests, typecheck, lint, communications
-replay/compare, narrow harness validation, the full unit suite (2,925 passed,
-two skipped), seven fresh-build isolated provider-lifecycle Electron journeys,
-and a synthetic Windows same-user protected-store restart have passed. No real
-provider key or owner profile was used. Exact-match pre-commit and pre-spawn
-reconciliation now make app-owned static-key and protected image-relay
-rotation/relaunch recoverable in source tests without overwriting imported
-mismatches. A legacy image key can be adopted only by explicitly re-entering
-that same key; conflicting keys are preserved and rejected before a vault
-write. **7B.1 remains open**: pre-existing image-relay keys without matching
-app provenance are preserved,
-upstream OAuth and transient upgrade snapshots have separate plaintext limits,
-and a copied existing-profile upgrade plus packaged/live verification are not
-yet complete. Next finish the narrow
-[7B.1 task checks](harness/specs/tasks/morpheus-phase7-b1-provider-secret-migration.md)
-and a safe existing-profile upgrade rehearsal before paid live-path testing.
-Do not destroy real keys or claim upstream OAuth
-plaintext elimination without a supported path. Preserve the same
-assistant/conversation/task owner; no second engine or dashboard.
+7A.1–7A.4 have focused Windows source automation. B.1 app-owned static-key
+migration/runtime recovery is committed as `2469c650`: protected storage,
+SecretRefs, exact-match rotation/relaunch, stable sibling-account selection,
+OAuth activation without stale replay and safe deletion. A copied synthetic
+legacy profile and same-user Windows protected restart passed; unrelated
+credentials and owner profiles were preserved. The narrow B.1 diff-aware
+harness validation/dry-run passed in the isolated build clone against `1edfd536`.
+Upstream OAuth, unprovenanced old image keys and transient upgrade snapshots
+retain documented plaintext limits; B.1 packaged/real-profile/live gates remain
+open. Do not reopen its source discovery or destroy those existing credentials.
+
+Current source work is C.1 wake/capture and C.2 output verification. Read their
+narrow source evidence in `docs/releases/` and the current checkpoint in the
+roadmap. Exact installer identity/checks appear in the acceptance ledger when
+built; a source build or packaged-payload smoke is not hardware/live acceptance.
+Preserve the same assistant/conversation/task owner; no second engine or dashboard.
 
 Use [the Phase 7 harness spec](harness/specs/tasks/morpheus-phase7-assistant.md)
 as the umbrella and create a narrowly scoped task spec per communication change.
