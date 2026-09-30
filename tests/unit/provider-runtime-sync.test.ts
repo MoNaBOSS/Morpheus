@@ -14,8 +14,13 @@ const mocks = vi.hoisted(() => ({
   getProviderDefaultModel: vi.fn(),
   removeProviderFromOpenClaw: vi.fn(),
   removeProviderKeyFromOpenClaw: vi.fn(),
+  removeAppOwnedProviderRuntimeKeyRefs: vi.fn(),
   saveOAuthTokenToOpenClaw: vi.fn(),
+  activateOpenClawOAuthProfile: vi.fn(),
+  loadActiveRuntimeProviderAccounts: vi.fn(),
+  reconcileAppOwnedProviderModelKeysBeforeLaunch: vi.fn(),
   saveProviderKeyToOpenClaw: vi.fn(),
+  saveProviderKeyRefToOpenClaw: vi.fn(),
   setOpenClawDefaultModel: vi.fn(),
   setOpenClawDefaultModelWithOverride: vi.fn(),
   syncProviderConfigToOpenClaw: vi.fn(),
@@ -32,6 +37,12 @@ vi.mock('@electron/services/providers/provider-store', () => ({
 
 vi.mock('@electron/services/secrets/secret-store', () => ({
   getProviderSecret: mocks.getProviderSecret,
+}));
+vi.mock('@electron/services/providers/active-runtime-provider-selection', () => ({
+  loadActiveRuntimeProviderAccounts: mocks.loadActiveRuntimeProviderAccounts,
+}));
+vi.mock('@electron/gateway/provider-model-key-reconciliation', () => ({
+  reconcileAppOwnedProviderModelKeysBeforeLaunch: mocks.reconcileAppOwnedProviderModelKeysBeforeLaunch,
 }));
 
 vi.mock('@electron/utils/secure-storage', () => ({
@@ -53,8 +64,11 @@ vi.mock('@electron/utils/openclaw-auth', () => ({
   pruneInvalidApiProviderEntries: vi.fn().mockResolvedValue([]),
   removeProviderFromOpenClaw: mocks.removeProviderFromOpenClaw,
   removeProviderKeyFromOpenClaw: mocks.removeProviderKeyFromOpenClaw,
+  removeAppOwnedProviderRuntimeKeyRefs: mocks.removeAppOwnedProviderRuntimeKeyRefs,
   saveOAuthTokenToOpenClaw: mocks.saveOAuthTokenToOpenClaw,
+  activateOpenClawOAuthProfile: mocks.activateOpenClawOAuthProfile,
   saveProviderKeyToOpenClaw: mocks.saveProviderKeyToOpenClaw,
+  saveProviderKeyRefToOpenClaw: mocks.saveProviderKeyRefToOpenClaw,
   OPENAI_CODEX_OAUTH_PROVIDER_CONFIG: {
     baseUrl: 'https://chatgpt.com/backend-api/codex',
     api: 'openai-chatgpt-responses',
@@ -81,12 +95,17 @@ vi.mock('@electron/utils/logger', () => ({
 }));
 
 import {
+  reconcileProviderBeforeStaticKeyReplacement,
+  reconcileProviderBeforeRuntimeKeyChange,
   syncAgentModelOverrideToRuntime,
   syncDefaultProviderToRuntime,
   syncDeletedProviderApiKeyToRuntime,
   syncDeletedProviderToRuntime,
   syncSavedProviderToRuntime,
+  syncProviderApiKeyToRuntime,
   syncUpdatedProviderToRuntime,
+  syncAllProviderAuthToRuntime,
+  finishProviderSecretDeletionToRuntime,
 } from '@electron/services/providers/provider-runtime-sync';
 
 function createProvider(overrides: Partial<ProviderConfig> = {}): ProviderConfig {
@@ -107,6 +126,7 @@ function createGateway(state: 'running' | 'stopped' = 'running') {
     debouncedReload: vi.fn(),
     debouncedRestart: vi.fn(),
     restart: vi.fn(),
+    restartOwnedForProviderSecretChange: vi.fn().mockResolvedValue(true),
     getStatus: vi.fn(() => ({ state } as ReturnType<GatewayManager['getStatus']>)),
   };
 }
@@ -121,6 +141,7 @@ describe('provider-runtime-sync config delivery', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getProviderAccount.mockResolvedValue(null);
+    mocks.loadActiveRuntimeProviderAccounts.mockResolvedValue(new Map());
     mocks.getProviderSecret.mockResolvedValue(undefined);
     mocks.getAllProviders.mockResolvedValue([]);
     mocks.getApiKey.mockResolvedValue('sk-test');
@@ -136,6 +157,7 @@ describe('provider-runtime-sync config delivery', () => {
     mocks.setOpenClawDefaultModel.mockResolvedValue(undefined);
     mocks.setOpenClawDefaultModelWithOverride.mockResolvedValue(undefined);
     mocks.saveProviderKeyToOpenClaw.mockResolvedValue(undefined);
+    mocks.saveProviderKeyRefToOpenClaw.mockResolvedValue(undefined);
     mocks.removeProviderFromOpenClaw.mockResolvedValue(undefined);
     mocks.removeProviderKeyFromOpenClaw.mockResolvedValue(undefined);
     mocks.updateAgentModelProvider.mockResolvedValue(undefined);
@@ -150,6 +172,98 @@ describe('provider-runtime-sync config delivery', () => {
     await syncSavedProviderToRuntime(createProvider(), undefined, gateway as GatewayManager);
 
     expectNoGatewayLifecycleCalls(gateway);
+  });
+
+  it('writes a static-key SecretRef and restarts only an owned running Gateway', async () => {
+    const gateway = createGateway('running');
+    const rawKey = 'synthetic-app-key';
+    await syncSavedProviderToRuntime(createProvider(), rawKey, gateway as GatewayManager);
+
+    expect(mocks.saveProviderKeyRefToOpenClaw).toHaveBeenCalledWith(
+      'moonshot',
+      expect.stringMatching(/^MORPHEUS_PROVIDER_KEY_[A-F0-9]{24}$/),
+      [rawKey],
+    );
+    expect(mocks.syncProviderConfigToOpenClaw).toHaveBeenCalledWith(
+      'moonshot',
+      'kimi-k2.6',
+      expect.objectContaining({
+        apiKeyRef: {
+          source: 'env', provider: 'default',
+          id: expect.stringMatching(/^MORPHEUS_PROVIDER_KEY_[A-F0-9]{24}$/),
+        },
+      }),
+    );
+    expect(gateway.restartOwnedForProviderSecretChange).toHaveBeenCalledOnce();
+    expect(mocks.saveProviderKeyToOpenClaw).not.toHaveBeenCalled();
+    expect(JSON.stringify(mocks.syncProviderConfigToOpenClaw.mock.calls)).not.toContain(rawKey);
+  });
+
+  it('reports a running external Gateway that cannot receive the new environment', async () => {
+    const gateway = createGateway('running');
+    gateway.restartOwnedForProviderSecretChange.mockResolvedValue(false);
+    await expect(syncProviderApiKeyToRuntime('moonshot', 'moonshot', 'synthetic-app-key', undefined, gateway as GatewayManager))
+      .rejects.toThrow('Gateway restart with the updated environment is required');
+  });
+
+  it('replaces a legacy config key after a key-only Settings update', async () => {
+    const gateway = createGateway('running');
+    await syncProviderApiKeyToRuntime(
+      'moonshot', 'moonshot', 'synthetic-new-key', 'synthetic-old-key', gateway as GatewayManager,
+    );
+
+    expect(mocks.saveProviderKeyRefToOpenClaw).toHaveBeenCalledWith(
+      'moonshot', expect.any(String), ['synthetic-new-key', 'synthetic-old-key'],
+    );
+    expect(mocks.syncProviderConfigToOpenClaw).toHaveBeenCalledWith(
+      'moonshot', 'kimi-k2.6', expect.objectContaining({
+        apiKeyRef: expect.objectContaining({ source: 'env' }),
+      }),
+    );
+    expect(gateway.restartOwnedForProviderSecretChange.mock.invocationCallOrder[0])
+      .toBeLessThan(mocks.syncProviderConfigToOpenClaw.mock.invocationCallOrder[0]);
+  });
+
+  it('reconciles the verified old key before a protected rotation', async () => {
+    mocks.getApiKey.mockResolvedValue('synthetic-old-key');
+    mocks.getProviderSecret.mockResolvedValue({ type: 'api_key', apiKey: 'synthetic-old-key' });
+    const gateway = createGateway('running');
+
+    await reconcileProviderBeforeStaticKeyReplacement(
+      createProvider(), 'synthetic-old-key', 'synthetic-new-key', gateway as GatewayManager,
+    );
+
+    expect(mocks.saveProviderKeyRefToOpenClaw).toHaveBeenCalledWith(
+      'moonshot', expect.any(String), ['synthetic-old-key', 'synthetic-old-key'],
+    );
+    expect(gateway.restartOwnedForProviderSecretChange).toHaveBeenCalledOnce();
+    expect(mocks.syncProviderConfigToOpenClaw).toHaveBeenCalledWith(
+      'moonshot', 'kimi-k2.6', expect.objectContaining({ apiKeyRef: expect.objectContaining({ source: 'env' }) }),
+    );
+  });
+
+  it('does not touch runtime files if the stored key changed during rotation', async () => {
+    mocks.getApiKey.mockResolvedValue('different-current-key');
+    await expect(reconcileProviderBeforeStaticKeyReplacement(
+      createProvider(), 'synthetic-old-key', 'synthetic-new-key', createGateway() as GatewayManager,
+    )).rejects.toThrow('Provider key changed during replacement');
+    expect(mocks.saveProviderKeyRefToOpenClaw).not.toHaveBeenCalled();
+    expect(mocks.syncProviderConfigToOpenClaw).not.toHaveBeenCalled();
+  });
+
+  it('clears an abandoned runtime secret reference before changing vendor metadata', async () => {
+    await reconcileProviderBeforeRuntimeKeyChange(createProvider(), 'openrouter', 'synthetic-old-key');
+    expect(mocks.removeAppOwnedProviderRuntimeKeyRefs).toHaveBeenCalledWith(
+      'moonshot', expect.stringMatching(/^MORPHEUS_PROVIDER_KEY_/), 'synthetic-old-key',
+    );
+    expect(mocks.removeProviderKeyFromOpenClaw).toHaveBeenCalledWith('moonshot', undefined, 'synthetic-old-key');
+  });
+
+  it('keeps a shared runtime reference when a sibling account still supplies it', async () => {
+    mocks.listProviderAccounts.mockResolvedValue([{ id: 'moonshot-sibling', vendorId: 'moonshot' }]);
+    mocks.getProviderSecret.mockResolvedValue({ type: 'api_key', apiKey: 'synthetic-sibling-key' });
+    await reconcileProviderBeforeRuntimeKeyChange(createProvider(), 'openrouter', 'synthetic-old-key');
+    expect(mocks.removeAppOwnedProviderRuntimeKeyRefs).not.toHaveBeenCalled();
   });
 
   it('propagates per-agent model registry sync failures after saving provider config', async () => {
@@ -226,8 +340,85 @@ describe('provider-runtime-sync config delivery', () => {
 
     await syncDeletedProviderApiKeyToRuntime(openaiProvider, 'openai-personal');
 
-    expect(mocks.removeProviderKeyFromOpenClaw).toHaveBeenCalledWith('openai');
+    expect(mocks.removeProviderKeyFromOpenClaw).toHaveBeenCalledWith('openai', undefined, undefined);
     expect(mocks.removeProviderFromOpenClaw).not.toHaveBeenCalled();
+  });
+
+  it('keeps the shared runtime slot when another account survives deletion', async () => {
+    mocks.listProviderAccounts.mockResolvedValue([{ id: 'surviving', vendorId: 'moonshot', enabled: true }]);
+    await syncDeletedProviderToRuntime(createProvider(), 'moonshot');
+    await syncDeletedProviderApiKeyToRuntime(createProvider(), 'moonshot', undefined, 'deleted-key');
+    expect(mocks.removeProviderFromOpenClaw).not.toHaveBeenCalled();
+    expect(mocks.removeProviderKeyFromOpenClaw).not.toHaveBeenCalled();
+    expect(mocks.reconcileAppOwnedProviderModelKeysBeforeLaunch).toHaveBeenCalledTimes(2);
+  });
+
+  it('refreshes the owned child environment after protected key deletion', async () => {
+    const gateway = createGateway();
+    await finishProviderSecretDeletionToRuntime(gateway as GatewayManager);
+    expect(gateway.restartOwnedForProviderSecretChange).toHaveBeenCalledOnce();
+  });
+
+  it('matches the previous literal key when deleting an app-owned legacy profile', async () => {
+    await syncDeletedProviderApiKeyToRuntime(createProvider(), 'moonshot', undefined, 'synthetic-old-key');
+    expect(mocks.removeAppOwnedProviderRuntimeKeyRefs).toHaveBeenCalledWith(
+      'moonshot', expect.stringMatching(/^MORPHEUS_PROVIDER_KEY_/), 'synthetic-old-key',
+    );
+    expect(mocks.removeProviderKeyFromOpenClaw).toHaveBeenCalledWith(
+      'moonshot', undefined, 'synthetic-old-key',
+    );
+  });
+
+  it('does not replay stale OAuth during startup provider reconciliation', async () => {
+    const account = {
+      id: 'openai-personal', vendorId: 'openai', label: 'OpenAI',
+      authMode: 'oauth_browser', enabled: true,
+      createdAt: '2026-03-14T00:00:00.000Z', updatedAt: '2026-03-14T00:00:00.000Z',
+    };
+    mocks.loadActiveRuntimeProviderAccounts.mockResolvedValue(new Map([
+      ['openai', { account, verifiedKeys: new Set(['synthetic-sibling-key']) }],
+    ]));
+    mocks.getProviderSecret.mockResolvedValue({
+      type: 'oauth', accessToken: 'stale-access', refreshToken: 'stale-refresh', expiresAt: 1,
+    });
+
+    await syncAllProviderAuthToRuntime();
+
+    expect(mocks.saveOAuthTokenToOpenClaw).toHaveBeenCalledWith(
+      'openai',
+      expect.objectContaining({ access: 'stale-access' }),
+      undefined,
+      { onlyIfMissing: true, activate: false },
+    );
+    expect(mocks.activateOpenClawOAuthProfile).toHaveBeenCalledWith('openai');
+    expect(mocks.saveProviderKeyRefToOpenClaw).toHaveBeenCalledWith(
+      'openai', expect.any(String), ['synthetic-sibling-key'], undefined, { activate: false },
+    );
+  });
+
+  it('does not let an inactive sibling key hijack the selected runtime account', async () => {
+    mocks.loadActiveRuntimeProviderAccounts.mockResolvedValue(new Map([
+      ['moonshot', { account: { id: 'selected-sibling' }, key: 'selected-key' }],
+    ]));
+    const gateway = createGateway();
+    await syncSavedProviderToRuntime(createProvider(), 'inactive-key', gateway as GatewayManager);
+    await syncProviderApiKeyToRuntime('moonshot', 'moonshot', 'inactive-key', undefined, gateway as GatewayManager);
+    expect(mocks.saveProviderKeyRefToOpenClaw).not.toHaveBeenCalled();
+    expect(mocks.syncProviderConfigToOpenClaw).not.toHaveBeenCalled();
+    expect(gateway.restartOwnedForProviderSecretChange).not.toHaveBeenCalled();
+  });
+
+  it('reconciles old inactive sibling keys before vault rotation without activating them', async () => {
+    mocks.getApiKey.mockResolvedValue('inactive-old');
+    mocks.loadActiveRuntimeProviderAccounts.mockResolvedValue(new Map([
+      ['moonshot', { account: { id: 'selected-oauth' }, verifiedKeys: new Set(['inactive-old']) }],
+    ]));
+    await reconcileProviderBeforeStaticKeyReplacement(createProvider(), 'inactive-old', 'inactive-new');
+    expect(mocks.saveProviderKeyRefToOpenClaw).toHaveBeenCalledWith(
+      'moonshot', expect.any(String), ['inactive-old', 'inactive-old'], undefined, { activate: false },
+    );
+    expect(mocks.reconcileAppOwnedProviderModelKeysBeforeLaunch).toHaveBeenCalledOnce();
+    expect(mocks.syncProviderConfigToOpenClaw).not.toHaveBeenCalled();
   });
 
   it('does not schedule an independent reload or restart after switching the default provider', async () => {
@@ -264,6 +455,9 @@ describe('provider-runtime-sync config delivery', () => {
 
     const gateway = createGateway('running');
     await syncDefaultProviderToRuntime('openai-personal', gateway as GatewayManager);
+    expect(mocks.activateOpenClawOAuthProfile).toHaveBeenCalledWith('openai');
+    expect(mocks.removeAppOwnedProviderRuntimeKeyRefs).toHaveBeenCalledWith('openai', expect.any(String));
+    expect(gateway.restartOwnedForProviderSecretChange).toHaveBeenCalledOnce();
 
     expect(mocks.setOpenClawDefaultModelWithOverride).toHaveBeenCalledWith(
       'openai',

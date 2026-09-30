@@ -9,10 +9,11 @@
  * equivalents could stall for 500 ms – 2 s+ per call, causing "Not
  * Responding" hangs.
  */
-import { access, mkdir, readFile, readdir, writeFile } from 'fs/promises';
+import { access, mkdir, readFile, readdir, rename, unlink, writeFile } from 'fs/promises';
 import { constants, readdirSync, readFileSync, existsSync } from 'fs';
 import { dirname, isAbsolute, join } from 'path';
 import { homedir } from 'os';
+import { randomUUID } from 'node:crypto';
 import { listConfiguredAgentIds } from './agent-config';
 import { getOpenClawResolvedDir } from './paths';
 import {
@@ -56,6 +57,7 @@ import {
   writeAuthProfilesToSqlite,
   type PersistedAuthProfilesStore,
 } from './openclaw-auth-sqlite';
+import type { RuntimeProviderSecretRef } from '../services/providers/provider-runtime-secret-ref';
 
 const AUTH_STORE_VERSION = 1;
 const AUTH_PROFILE_FILENAME = 'auth-profiles.json';
@@ -328,7 +330,8 @@ async function writeJsonFile(filePath: string, data: unknown): Promise<void> {
 interface AuthProfileEntry {
   type: 'api_key';
   provider: string;
-  key: string;
+  key?: string;
+  keyRef?: RuntimeProviderSecretRef;
 }
 
 interface OAuthProfileEntry {
@@ -446,6 +449,97 @@ async function writeAuthProfiles(store: AuthProfilesStore, agentId = 'main'): Pr
     await writeJsonFile(getAuthProfilesPath(agentId), store);
   } catch (error) {
     console.warn(`Failed to update compatibility auth-profiles.json for agent "${agentId}":`, error);
+  }
+}
+
+/** SQLite is authoritative once populated; JSON is only a legacy import source. */
+async function readMergedAuthProfiles(agentId: string): Promise<AuthProfilesStore> {
+  const sqlite = readAuthProfilesFromSqlite(agentId);
+  if (sqlite && Object.keys(sqlite.profiles).length > 0) return sqlite;
+  const json = await readAuthProfilesJson(agentId);
+  return json ?? sqlite ?? { version: AUTH_STORE_VERSION, profiles: {} };
+}
+
+/** A failed compatibility write must not make a plaintext scrub appear complete. */
+async function writeAuthProfilesStrict(
+  store: AuthProfilesStore,
+  agentId: string,
+  ownedProfileIds: readonly string[],
+): Promise<void> {
+  const target = getAuthProfilesPath(agentId);
+  let compatibilityStore: AuthProfilesStore;
+  try {
+    compatibilityStore = JSON.parse(await readFile(target, 'utf8')) as AuthProfilesStore;
+    if (!isPlainRecord(compatibilityStore) || !isPlainRecord(compatibilityStore.profiles)) {
+      throw new Error(`Invalid compatibility auth profiles for agent "${agentId}"`);
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    compatibilityStore = { version: AUTH_STORE_VERSION, profiles: {} };
+  }
+  const ownedIds = new Set(ownedProfileIds);
+  for (const profileId of ownedIds) {
+    removeProfileFromStore(compatibilityStore, profileId);
+    const profile = store.profiles[profileId];
+    if (profile) compatibilityStore.profiles[profileId] = profile;
+  }
+  for (const [provider, profileIds] of Object.entries(store.order ?? {})) {
+    const ownedOrder = profileIds.filter((profileId) => ownedIds.has(profileId));
+    if (ownedOrder.length === 0) continue;
+    compatibilityStore.order ??= {};
+    compatibilityStore.order[provider] = [...ownedOrder, ...(compatibilityStore.order[provider] ?? [])];
+  }
+  for (const [provider, profileId] of Object.entries(store.lastGood ?? {})) {
+    if (!ownedIds.has(profileId)) continue;
+    compatibilityStore.lastGood ??= {};
+    compatibilityStore.lastGood[provider] = profileId;
+  }
+  writeAuthProfilesToSqlite(store, agentId);
+  const temporary = `${target}.${process.pid}.${randomUUID()}.tmp`;
+  await ensureDir(dirname(target));
+  try {
+    await writeFile(temporary, JSON.stringify(compatibilityStore, null, 2), { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+    await rename(temporary, target);
+  } finally {
+    await unlink(temporary).catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== 'ENOENT') throw error;
+    });
+  }
+}
+
+async function scrubAppOwnedAgentModelKey(
+  provider: string,
+  agentId: string,
+  envVar: string,
+  expectedLegacyKeys: readonly string[],
+): Promise<void> {
+  const target = join(homedir(), '.openclaw', 'agents', agentId, 'agent', 'models.json');
+  let raw: string;
+  try {
+    raw = await readFile(target, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+    throw error;
+  }
+  const data = JSON.parse(raw) as Record<string, unknown>;
+  const providers = isPlainRecord(data.providers) ? data.providers : null;
+  const entry = providers && isPlainRecord(providers[provider]) ? providers[provider] : null;
+  if (!entry || typeof entry.apiKey !== 'string') return;
+  if (!expectedLegacyKeys.includes(entry.apiKey)) {
+    if (entry.apiKey !== envVar) {
+      console.warn(`[auth-sync] Preserved unverified models.json credential for provider "${provider}" (agent "${agentId}")`);
+    }
+    return;
+  }
+  entry.apiKey = envVar;
+  const temporary = `${target}.${process.pid}.${randomUUID()}.tmp`;
+  try {
+    await writeFile(temporary, JSON.stringify(data, null, 2), { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+    await rename(temporary, target);
+  } finally {
+    await unlink(temporary).catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== 'ENOENT') throw error;
+    });
   }
 }
 
@@ -955,16 +1049,31 @@ export async function saveOAuthTokenToOpenClaw(
     projectId?: string;
     accountId?: string;
   },
-  agentId?: string
+  agentId?: string,
+  options?: { onlyIfMissing?: boolean; activate?: boolean },
 ): Promise<void> {
   const agentIds = agentId ? [agentId] : await discoverAgentIds();
   if (agentIds.length === 0) agentIds.push('main');
 
   for (const id of agentIds) {
     const store = await readAuthProfiles(id);
-    const profileId = `${provider}:default`;
+    const defaultId = `${provider}:default`;
+    const existingOAuthId = Object.keys(store.profiles).find((profileId) => (
+      store.profiles[profileId].provider === provider && store.profiles[profileId].type === 'oauth'
+    ));
+    const profileId = options?.onlyIfMissing && existingOAuthId
+      ? existingOAuthId
+      : store.profiles[defaultId] && store.profiles[defaultId].type !== 'oauth'
+        ? `${provider}:morpheus-oauth` : defaultId;
+    if (store.profiles[profileId] && store.profiles[profileId].type !== 'oauth') {
+      throw new Error(`OpenClaw OAuth profile conflict for provider "${provider}"`);
+    }
 
-    store.profiles[profileId] = {
+    // OpenClaw rotates OAuth credentials in its own store. Replaying the
+    // app's older copy during startup would revoke an otherwise healthy login.
+    const retainRotatedToken = options?.onlyIfMissing && existingOAuthId !== undefined;
+    if (retainRotatedToken && options.activate === false) continue;
+    if (!retainRotatedToken) store.profiles[profileId] = {
       type: 'oauth',
       provider,
       access: token.access,
@@ -977,17 +1086,44 @@ export async function saveOAuthTokenToOpenClaw(
 
     if (!store.order) store.order = {};
     if (!store.order[provider]) store.order[provider] = [];
-    if (!store.order[provider].includes(profileId)) {
+    if (options?.activate !== false) {
+      store.order[provider] = [profileId, ...store.order[provider].filter((entry) => entry !== profileId)];
+    } else if (!store.order[provider].includes(profileId)) {
       store.order[provider].push(profileId);
     }
 
-    if (!store.lastGood) store.lastGood = {};
-    store.lastGood[provider] = profileId;
+    if (options?.activate !== false) {
+      if (!store.lastGood) store.lastGood = {};
+      store.lastGood[provider] = profileId;
+    }
 
-    await writeAuthProfiles(store, id);
+    if (retainRotatedToken) writeAuthProfilesToSqlite(store, id);
+    else await writeAuthProfilesStrict(store, id, [profileId]);
   }
   await reloadOpenClawSecretsIfRunning();
   console.log(`Saved OAuth token for provider "${provider}" to OpenClaw auth-profiles (agents: ${agentIds.join(', ')})`);
+}
+
+/** Select the runtime's current OAuth token without replaying or copying its secret. */
+export async function activateOpenClawOAuthProfile(provider: string): Promise<void> {
+  const agentIds = await discoverAgentIds();
+  if (agentIds.length === 0) agentIds.push('main');
+  for (const id of agentIds) {
+    const store = await readMergedAuthProfiles(id);
+    const candidates = [
+      store.lastGood?.[provider], ...(store.order?.[provider] ?? []), `${provider}:default`,
+      ...Object.keys(store.profiles),
+    ];
+    const profileId = candidates.find((candidate) => candidate
+      && store.profiles[candidate]?.provider === provider && store.profiles[candidate]?.type === 'oauth');
+    if (!profileId) throw new Error(`OAuth profile is unavailable for provider "${provider}"`);
+    store.order ??= {};
+    store.order[provider] = [profileId, ...(store.order[provider] ?? []).filter((entry) => entry !== profileId)];
+    store.lastGood ??= {};
+    store.lastGood[provider] = profileId;
+    writeAuthProfilesToSqlite(store, id);
+  }
+  await reloadOpenClawSecretsIfRunning();
 }
 
 /**
@@ -1004,8 +1140,9 @@ export async function getOAuthTokenFromOpenClaw(
 ): Promise<string | null> {
   try {
     const store = await readAuthProfiles(agentId);
-    const profileId = `${provider}:default`;
-    const profile = store.profiles[profileId];
+    const profileId = [store.lastGood?.[provider], ...(store.order?.[provider] ?? []), `${provider}:default`, ...Object.keys(store.profiles)]
+      .find((id) => id && store.profiles[id]?.provider === provider && store.profiles[id]?.type === 'oauth');
+    const profile = profileId ? store.profiles[profileId] : undefined;
 
     if (profile && profile.type === 'oauth' && 'access' in profile) {
       return (profile as OAuthProfileEntry).access;
@@ -1052,21 +1189,94 @@ export async function saveProviderKeyToOpenClaw(
   console.log(`Saved API key for provider "${provider}" to OpenClaw auth-profiles (agents: ${agentIds.join(', ')})`);
 }
 
+/** Persist a reference for an app-owned static key without replacing imported credentials. */
+export async function saveProviderKeyRefToOpenClaw(
+  provider: string,
+  envVar: string,
+  expectedLegacyKeys: readonly string[] = [],
+  agentId?: string,
+  options?: { activate?: boolean },
+): Promise<void> {
+  if (!/^MORPHEUS_PROVIDER_KEY_[A-F0-9]{24}$/.test(envVar)) {
+    throw new Error('Invalid app provider SecretRef environment name');
+  }
+  const agentIds = agentId ? [agentId] : await discoverAgentIds();
+  if (agentIds.length === 0) agentIds.push('main');
+  const ref: RuntimeProviderSecretRef = { source: 'env', provider: 'default', id: envVar };
+
+  for (const id of agentIds) {
+    const store = await readMergedAuthProfiles(id);
+    const defaultId = `${provider}:default`;
+    const ownedId = `${provider}:morpheus`;
+    const defaultProfile = store.profiles[defaultId];
+    const defaultIsOwned = !defaultProfile
+      || (defaultProfile.type === 'api_key' && (
+        (defaultProfile.keyRef as RuntimeProviderSecretRef | undefined)?.id === envVar
+        || (typeof defaultProfile.key === 'string' && expectedLegacyKeys.includes(defaultProfile.key))
+      ));
+    const profileId = defaultIsOwned ? defaultId : ownedId;
+    const occupiedOwned = store.profiles[ownedId];
+    if (!defaultIsOwned && occupiedOwned && !(
+      occupiedOwned.type === 'api_key' && (
+        (occupiedOwned.keyRef as RuntimeProviderSecretRef | undefined)?.id === envVar
+        || (typeof occupiedOwned.key === 'string' && expectedLegacyKeys.includes(occupiedOwned.key))
+      )
+    )) {
+      throw new Error(`OpenClaw auth profile conflict for provider "${provider}"`);
+    }
+
+    store.profiles[profileId] = { type: 'api_key', provider, keyRef: ref };
+    if (!store.order) store.order = {};
+    if (options?.activate !== false) {
+      store.order[provider] = [profileId, ...(store.order[provider] ?? []).filter((entry) => entry !== profileId)];
+      if (!store.lastGood) store.lastGood = {};
+      store.lastGood[provider] = profileId;
+    } else if (!(store.order[provider] ?? []).includes(profileId)) {
+      store.order[provider] = [...(store.order[provider] ?? []), profileId];
+    }
+    await writeAuthProfilesStrict(store, id, [profileId]);
+    await scrubAppOwnedAgentModelKey(provider, id, envVar, expectedLegacyKeys);
+    if (!defaultIsOwned) {
+      console.warn(`[auth-sync] Preserved unverified OpenClaw default credential for provider "${provider}" (agent "${id}")`);
+    }
+  }
+  // The new env ref may not exist in an already running Gateway process.
+  // Its owner must restart with a fresh launch environment before activation.
+}
+
 /**
  * Remove a provider API key from OpenClaw auth-profiles.json
  */
 export async function removeProviderKeyFromOpenClaw(
   provider: string,
-  agentId?: string
+  agentId?: string,
+  expectedLegacyKey?: string,
 ): Promise<void> {
   const agentIds = agentId ? [agentId] : await discoverAgentIds();
   if (agentIds.length === 0) agentIds.push('main');
   let modified = false;
 
   for (const id of agentIds) {
-    const store = await readAuthProfiles(id);
-    if (removeProfileFromStore(store, `${provider}:default`, 'api_key')) {
-      await writeAuthProfiles(store, id);
+    const store = await readMergedAuthProfiles(id);
+    const defaultId = `${provider}:default`;
+    const defaultProfile = store.profiles[defaultId];
+    const defaultIsOwned = !defaultProfile || (defaultProfile.type === 'api_key' && (
+      (defaultProfile.keyRef as RuntimeProviderSecretRef | undefined)?.id?.startsWith('MORPHEUS_PROVIDER_KEY_')
+      || (!!expectedLegacyKey && defaultProfile.key === expectedLegacyKey)
+    ));
+    const ownedId = `${provider}:morpheus`;
+    const ownedProfile = store.profiles[ownedId];
+    const secondaryIsOwned = ownedProfile?.type === 'api_key' && (
+      (ownedProfile.keyRef as RuntimeProviderSecretRef | undefined)?.id?.startsWith('MORPHEUS_PROVIDER_KEY_')
+      || (!!expectedLegacyKey && ownedProfile.key === expectedLegacyKey)
+    );
+    const removedOwned = secondaryIsOwned && removeProfileFromStore(store, ownedId, 'api_key');
+    const removedDefault = defaultIsOwned && removeProfileFromStore(store, defaultId, 'api_key');
+    if (removedOwned || removedDefault) {
+      await writeAuthProfilesStrict(store, id, [
+        ...(removedOwned ? [ownedId] : []),
+        ...(removedDefault ? [defaultId] : []),
+      ]);
       modified = true;
     }
   }
@@ -1074,6 +1284,57 @@ export async function removeProviderKeyFromOpenClaw(
     await reloadOpenClawSecretsIfRunning();
   }
   console.log(`Removed API key for provider "${provider}" from OpenClaw auth-profiles (agents: ${agentIds.join(', ')})`);
+}
+
+/** Remove only this app-owned key's config/model references before deleting its vault value. */
+export async function removeAppOwnedProviderRuntimeKeyRefs(
+  provider: string,
+  envVar: string,
+  previousKey?: string,
+): Promise<void> {
+  if (!/^MORPHEUS_PROVIDER_KEY_[A-F0-9]{24}$/.test(envVar)) {
+    throw new Error('Invalid app provider SecretRef environment name');
+  }
+  const isOwned = (value: unknown): boolean => (
+    value === envVar
+    || (!!previousKey && value === previousKey)
+    || (value !== null && typeof value === 'object' && !Array.isArray(value)
+      && (value as Record<string, unknown>).source === 'env'
+      && (value as Record<string, unknown>).provider === 'default'
+      && (value as Record<string, unknown>).id === envVar
+      && Object.keys(value).length === 3)
+  );
+  await mutateOpenClawConfig((config) => {
+    const entry = readModelsProvider(config, provider);
+    if (entry && isOwned(entry.apiKey)) delete entry.apiKey;
+  });
+
+  const agentIds = await discoverAgentIds();
+  if (agentIds.length === 0) agentIds.push('main');
+  for (const id of agentIds) {
+    const target = join(homedir(), '.openclaw', 'agents', id, 'agent', 'models.json');
+    let raw: string;
+    try {
+      raw = await readFile(target, 'utf8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
+      throw error;
+    }
+    const data: unknown = JSON.parse(raw);
+    const providers = isPlainRecord(data) && isPlainRecord(data.providers) ? data.providers : null;
+    const entry = providers && isPlainRecord(providers[provider]) ? providers[provider] : null;
+    if (!entry || !isOwned(entry.apiKey)) continue;
+    delete entry.apiKey;
+    const temporary = `${target}.${process.pid}.${randomUUID()}.tmp`;
+    try {
+      await writeFile(temporary, JSON.stringify(data, null, 2), { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+      await rename(temporary, target);
+    } finally {
+      await unlink(temporary).catch((error: NodeJS.ErrnoException) => {
+        if (error.code !== 'ENOENT') throw error;
+      });
+    }
+  }
 }
 
 /**
@@ -1608,6 +1869,7 @@ interface RuntimeProviderConfigOverride {
   baseUrl?: string;
   api?: string;
   apiKeyEnv?: string;
+  apiKeyRef?: RuntimeProviderSecretRef;
   headers?: Record<string, string>;
   authHeader?: boolean;
 }
@@ -1616,6 +1878,7 @@ type ProviderEntryBuildOptions = {
   baseUrl: string;
   api: string;
   apiKeyEnv?: string;
+  apiKeyRef?: RuntimeProviderSecretRef;
   headers?: Record<string, string>;
   authHeader?: boolean;
   request?: Record<string, unknown>;
@@ -1946,7 +2209,8 @@ function upsertOpenClawProviderEntry(
   if (options.api === 'anthropic-messages') {
     ensureAnthropicMessagesProviderDefaults(nextProvider, provider);
   }
-  if (options.apiKeyEnv) nextProvider.apiKey = options.apiKeyEnv;
+  if (options.apiKeyRef) nextProvider.apiKey = options.apiKeyRef;
+  else if (options.apiKeyEnv) nextProvider.apiKey = options.apiKeyEnv;
   if (options.headers !== undefined) {
     if (Object.keys(options.headers).length > 0) {
       nextProvider.headers = options.headers;
@@ -2098,6 +2362,7 @@ export async function syncProviderConfigToOpenClaw(
         baseUrl: override.baseUrl,
         api: override.api,
         apiKeyEnv: override.apiKeyEnv,
+        apiKeyRef: override.apiKeyRef,
         headers: override.headers,
         modelIds: modelId ? [modelId] : [],
         mergeExistingModels: true,
@@ -2147,6 +2412,72 @@ function readModelsProvidersOpenAi(config: Record<string, unknown>): Record<stri
   return readModelsProvider(config, 'openai');
 }
 
+/** Convert only the verified old image-relay key before replacing its protected value. */
+export async function reconcileImageRelayModelKeyRefBeforeRotation(
+  previousKey: string,
+  ref: RuntimeProviderSecretRef,
+): Promise<void> {
+  await mutateOpenClawConfig((config) => {
+    const relay = readModelsProvider(config, CLAWX_OPENAI_IMAGE_PROVIDER_KEY);
+    if (!relay || !Object.hasOwn(relay, 'apiKey')) return;
+    const current = relay.apiKey;
+    if (current === previousKey || current === ref.id) {
+      relay.apiKey = ref;
+      return;
+    }
+    if (isPlainRecord(current)
+      && current.source === ref.source
+      && current.provider === ref.provider
+      && current.id === ref.id
+      && Object.keys(current).length === 3) return;
+    throw new Error('Unverified OpenClaw image relay credential; protected key was not replaced');
+  });
+}
+
+/** A first protected relay key may adopt only identical legacy credentials. */
+export async function assertImageRelayInitialKeyCompatible(
+  candidateKey: string,
+  ref: RuntimeProviderSecretRef,
+): Promise<void> {
+  const assertKey = (value: unknown): void => {
+    if (value === undefined) return;
+    if (value === candidateKey || value === ref.id) return;
+    if (isPlainRecord(value)
+      && value.source === ref.source
+      && value.provider === ref.provider
+      && value.id === ref.id
+      && Object.keys(value).length === 3) return;
+    throw new Error('Existing image relay credential is unverified; re-enter its current key before migration');
+  };
+
+  const snapshot = await readOpenClawConfigSnapshot();
+  assertKey(readModelsProvider(snapshot.config, CLAWX_OPENAI_IMAGE_PROVIDER_KEY)?.apiKey);
+  const agentIds = await discoverAgentIds();
+  if (agentIds.length === 0) agentIds.push('main');
+  for (const id of agentIds) {
+    const store = await readMergedAuthProfiles(id);
+    for (const profile of Object.values(store.profiles)) {
+      if (profile.type !== 'api_key' || profile.provider !== CLAWX_OPENAI_IMAGE_PROVIDER_KEY) continue;
+      assertKey(profile.key);
+      assertKey(profile.keyRef);
+    }
+    const path = join(homedir(), '.openclaw', 'agents', id, 'agent', 'models.json');
+    let raw: string;
+    try {
+      raw = await readFile(path, 'utf8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
+      throw error;
+    }
+    const modelStore: unknown = JSON.parse(raw);
+    const providers = isPlainRecord(modelStore) && isPlainRecord(modelStore.providers)
+      ? modelStore.providers : null;
+    const entry = providers && isPlainRecord(providers[CLAWX_OPENAI_IMAGE_PROVIDER_KEY])
+      ? providers[CLAWX_OPENAI_IMAGE_PROVIDER_KEY] : null;
+    assertKey(entry?.apiKey);
+  }
+}
+
 function ensurePluginRegistrationEnabled(config: Record<string, unknown>, pluginId: string): void {
   const plugins = isPlainRecord(config.plugins)
     ? config.plugins
@@ -2175,7 +2506,8 @@ function ensurePluginRegistrationEnabled(config: Record<string, unknown>, plugin
 export async function syncOpenAiCompatibleImageRelay(params: {
   enabled: boolean;
   baseUrl?: string | null;
-  apiKey?: string;
+  apiKeyRef?: RuntimeProviderSecretRef;
+  expectedLegacyKey?: string;
   imageModelIds?: string[];
 }): Promise<void> {
   await mutateOpenClawConfig((config) => {
@@ -2232,6 +2564,7 @@ export async function syncOpenAiCompatibleImageRelay(params: {
     upsertOpenClawProviderEntry(config, CLAWX_OPENAI_IMAGE_PROVIDER_KEY, {
       baseUrl,
       api: 'openai-completions',
+      apiKeyRef: params.apiKeyRef,
       modelIds,
       mergeExistingModels: false,
       request: { allowPrivateNetwork: true },
@@ -2249,10 +2582,7 @@ export async function syncOpenAiCompatibleImageRelay(params: {
   });
 
   if (!params.enabled) {
-    await removeProviderKeyFromOpenClaw(CLAWX_OPENAI_IMAGE_PROVIDER_KEY);
-  }
-  if (params.apiKey?.trim()) {
-    await saveProviderKeyToOpenClaw(CLAWX_OPENAI_IMAGE_PROVIDER_KEY, params.apiKey.trim());
+    await removeProviderKeyFromOpenClaw(CLAWX_OPENAI_IMAGE_PROVIDER_KEY, undefined, params.expectedLegacyKey);
   }
 }
 
@@ -2311,6 +2641,7 @@ export async function setOpenClawDefaultModelWithOverride(
         baseUrl: override.baseUrl,
         api: override.api,
         apiKeyEnv: override.apiKeyEnv,
+        apiKeyRef: override.apiKeyRef,
         headers: override.headers,
         authHeader: override.authHeader,
         modelIds: [modelId, ...fallbackModelIds],

@@ -354,12 +354,12 @@ export class ProviderService {
 
   async createAccount(account: ProviderAccount, apiKey?: string): Promise<ProviderAccount> {
     await ensureProviderStoreMigrated();
-    // Only save to providerAccounts store — do NOT call saveProvider() which
-    // writes to the legacy `providers` store and causes phantom/duplicate issues.
-    await saveProviderAccount(account);
     if (apiKey !== undefined && apiKey.trim()) {
       await storeApiKey(account.id, apiKey.trim());
     }
+    // Only save to providerAccounts store — do NOT call saveProvider() which
+    // writes to the legacy `providers` store and causes phantom/duplicate issues.
+    await saveProviderAccount(account);
     return (await getProviderAccount(account.id)) ?? account;
   }
 
@@ -381,8 +381,6 @@ export class ProviderService {
       updatedAt: patch.updatedAt ?? new Date().toISOString(),
     };
 
-    // Only save to providerAccounts store — skip legacy saveProvider().
-    await saveProviderAccount(nextAccount);
     if (apiKey !== undefined) {
       const trimmedKey = apiKey.trim();
       if (trimmedKey) {
@@ -391,6 +389,8 @@ export class ProviderService {
         await deleteApiKey(accountId);
       }
     }
+    // Only save to providerAccounts after the protected secret operation succeeds.
+    await saveProviderAccount(nextAccount);
 
     return (await getProviderAccount(accountId)) ?? nextAccount;
   }
@@ -450,8 +450,7 @@ export class ProviderService {
   /** Internal: delete a provider account by id. */
   async _deleteProviderInternal(providerId: string): Promise<boolean> {
     await ensureProviderStoreMigrated();
-    await this.deleteAccount(providerId);
-    return true;
+    return this.deleteAccount(providerId);
   }
 
   /** Internal: set default account without warning. */
@@ -495,9 +494,9 @@ export class ProviderService {
     const results: Array<{ accountId: string; hasKey: boolean; keyMasked: string | null }> = [];
     for (const account of accounts) {
       const runtimeProviderKey = resolveOpenClawProviderKey(account);
-      const apiKey = (await getProviderApiKeyFromOpenClaw(runtimeProviderKey))
-        ?? (await getApiKey(account.id))
-        ?? (runtimeProviderKey !== account.id ? await getApiKey(runtimeProviderKey) : null);
+      const apiKey = (await getApiKey(account.id))
+        ?? (runtimeProviderKey !== account.id ? await getApiKey(runtimeProviderKey) : null)
+        ?? (await getProviderApiKeyFromOpenClaw(runtimeProviderKey));
       results.push({
         accountId: account.id,
         hasKey: !!apiKey,
@@ -523,9 +522,9 @@ export class ProviderService {
     const account = await this.getAccount(accountId);
     if (!account) return null;
     const runtimeProviderKey = resolveOpenClawProviderKey(account);
-    return (await getProviderApiKeyFromOpenClaw(runtimeProviderKey))
-      ?? (await getApiKey(account.id))
-      ?? (runtimeProviderKey !== account.id ? await getApiKey(runtimeProviderKey) : null);
+    return (await getApiKey(account.id))
+      ?? (runtimeProviderKey !== account.id ? await getApiKey(runtimeProviderKey) : null)
+      ?? (await getProviderApiKeyFromOpenClaw(runtimeProviderKey));
   }
 
   /** Check whether an account has an API key stored. */
@@ -534,13 +533,13 @@ export class ProviderService {
     const runtimeProviderKey = account
       ? resolveOpenClawProviderKey(account)
       : accountId;
-    if (await getProviderApiKeyFromOpenClaw(runtimeProviderKey)) {
+    if (await hasApiKey(accountId)) {
       return true;
     }
     if (runtimeProviderKey !== accountId && (await hasApiKey(runtimeProviderKey))) {
       return true;
     }
-    return this._hasProviderApiKeyInternal(accountId);
+    return !!(await getProviderApiKeyFromOpenClaw(runtimeProviderKey));
   }
 
   // ── Legacy public API (logs deprecation warning once per method) ─

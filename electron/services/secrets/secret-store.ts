@@ -1,82 +1,37 @@
+import { dirname, join } from 'node:path';
 import type { ProviderSecret } from '../../shared/providers/types';
 import { getClawXProviderStore } from '../providers/store-instance';
+import {
+  createProtectedProviderSecretStore,
+  type LegacyProviderSecretStore,
+  type SecretStore,
+} from './protected-provider-secret-store';
 
-export interface SecretStore {
-  get(accountId: string): Promise<ProviderSecret | null>;
-  set(secret: ProviderSecret): Promise<void>;
-  delete(accountId: string): Promise<void>;
-}
+export type { SecretStore } from './protected-provider-secret-store';
 
+/** Main-process adapter; Electron is imported only when a secret operation runs. */
 export class ElectronStoreSecretStore implements SecretStore {
-  async get(accountId: string): Promise<ProviderSecret | null> {
-    const store = await getClawXProviderStore();
-    const secrets = (store.get('providerSecrets') ?? {}) as Record<string, ProviderSecret>;
-    const secret = secrets[accountId];
-    if (secret) {
-      return secret;
-    }
+  private delegate: Promise<SecretStore> | null = null;
 
-    const apiKeys = (store.get('apiKeys') ?? {}) as Record<string, string>;
-    const apiKey = apiKeys[accountId];
-    if (!apiKey) {
-      return null;
-    }
-
-    return {
-      type: 'api_key',
-      accountId,
-      apiKey,
-    };
+  private async target(): Promise<SecretStore> {
+    this.delegate ??= Promise.all([getClawXProviderStore(), import('electron')]).then(([legacyStore, electron]) =>
+      createProtectedProviderSecretStore({
+        path: join(dirname(legacyStore.path), 'clawx-provider-secrets.v1.json'),
+        legacyStore: legacyStore as LegacyProviderSecretStore,
+        protection: electron.safeStorage,
+      }));
+    return this.delegate;
   }
 
-  async set(secret: ProviderSecret): Promise<void> {
-    const store = await getClawXProviderStore();
-    const secrets = (store.get('providerSecrets') ?? {}) as Record<string, ProviderSecret>;
-    secrets[secret.accountId] = secret;
-    store.set('providerSecrets', secrets);
-
-    // Keep legacy apiKeys in sync until the rest of the app moves to account-based secrets.
-    const apiKeys = (store.get('apiKeys') ?? {}) as Record<string, string>;
-    if (secret.type === 'api_key') {
-      apiKeys[secret.accountId] = secret.apiKey;
-    } else if (secret.type === 'local') {
-      if (secret.apiKey) {
-        apiKeys[secret.accountId] = secret.apiKey;
-      } else {
-        delete apiKeys[secret.accountId];
-      }
-    } else {
-      delete apiKeys[secret.accountId];
-    }
-    store.set('apiKeys', apiKeys);
-  }
-
-  async delete(accountId: string): Promise<void> {
-    const store = await getClawXProviderStore();
-    const secrets = (store.get('providerSecrets') ?? {}) as Record<string, ProviderSecret>;
-    delete secrets[accountId];
-    store.set('providerSecrets', secrets);
-
-    const apiKeys = (store.get('apiKeys') ?? {}) as Record<string, string>;
-    delete apiKeys[accountId];
-    store.set('apiKeys', apiKeys);
-  }
+  async get(accountId: string): Promise<ProviderSecret | null> { return (await this.target()).get(accountId); }
+  async set(secret: ProviderSecret): Promise<void> { return (await this.target()).set(secret); }
+  async delete(accountId: string): Promise<void> { return (await this.target()).delete(accountId); }
+  async listAccountIds(): Promise<string[]> { return (await this.target()).listAccountIds(); }
 }
 
 const secretStore = new ElectronStoreSecretStore();
 
-export function getSecretStore(): SecretStore {
-  return secretStore;
-}
-
-export async function getProviderSecret(accountId: string): Promise<ProviderSecret | null> {
-  return getSecretStore().get(accountId);
-}
-
-export async function setProviderSecret(secret: ProviderSecret): Promise<void> {
-  await getSecretStore().set(secret);
-}
-
-export async function deleteProviderSecret(accountId: string): Promise<void> {
-  await getSecretStore().delete(accountId);
-}
+export function getSecretStore(): SecretStore { return secretStore; }
+export async function getProviderSecret(accountId: string): Promise<ProviderSecret | null> { return secretStore.get(accountId); }
+export async function setProviderSecret(secret: ProviderSecret): Promise<void> { await secretStore.set(secret); }
+export async function deleteProviderSecret(accountId: string): Promise<void> { await secretStore.delete(accountId); }

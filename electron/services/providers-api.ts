@@ -5,13 +5,16 @@ import type { GatewayManager } from '../gateway/manager';
 import type { ProviderConfig } from '../utils/secure-storage';
 import { browserOAuthManager, type BrowserOAuthProviderType } from '../utils/browser-oauth';
 import { deviceOAuthManager, type OAuthProviderType } from '../utils/device-oauth';
-import { removeProviderFromOpenClaw, saveProviderKeyToOpenClaw } from '../utils/openclaw-auth';
+import { removeProviderFromOpenClaw } from '../utils/openclaw-auth';
 import { getProviderConfig } from '../utils/provider-registry';
 import { logger } from '../utils/logger';
 import { getProviderService } from './providers/provider-service';
 import { providerAccountToConfig } from './providers/provider-store';
 import {
+  finishProviderSecretDeletionToRuntime,
   getOpenClawProviderKey,
+  reconcileProviderBeforeStaticKeyReplacement,
+  reconcileProviderBeforeRuntimeKeyChange,
   syncDefaultProviderToRuntime,
   syncDeletedProviderApiKeyToRuntime,
   syncDeletedProviderToRuntime,
@@ -196,15 +199,18 @@ async function saveProvider(payload: ProviderPayload<'save'>, gatewayManager?: G
   const providerService = getProviderService();
   const { config, apiKey } = getSavePayload(payload);
   try {
+    const previousKey = await providerService._getProviderApiKeyInternal(config.id);
+    const existing = await providerService._getProviderInternal(config.id);
+    await reconcileProviderBeforeStaticKeyReplacement(existing, previousKey, apiKey, gatewayManager);
+    await reconcileProviderBeforeRuntimeKeyChange(existing, config.type, previousKey);
     await providerService._saveProviderInternal(config);
     if (apiKey !== undefined) {
       const trimmedKey = apiKey.trim();
       if (trimmedKey) {
         await providerService._setProviderApiKeyInternal(config.id, trimmedKey);
-        await syncProviderApiKeyToRuntime(config.type, config.id, trimmedKey);
       }
     }
-    await syncSavedProviderToRuntime(config, apiKey, gatewayManager);
+    await syncSavedProviderToRuntime(config, apiKey, gatewayManager, previousKey ?? undefined);
     return { success: true };
   } catch (error) {
     return { success: false, error: String(error) };
@@ -217,21 +223,27 @@ async function deleteProvider(payload: ProviderPayload<'delete'>, gatewayManager
   try {
     const existing = await providerService._getProviderInternal(providerId);
     await syncDeletedProviderToRuntime(existing, providerId, gatewayManager);
-    await providerService._deleteProviderInternal(providerId);
+    if (await providerService._deleteProviderInternal(providerId) === false) {
+      throw new Error('Provider account could not be deleted; existing records were retained');
+    }
+    await finishProviderSecretDeletionToRuntime(gatewayManager);
     return { success: true };
   } catch (error) {
     return { success: false, error: String(error) };
   }
 }
 
-async function setProviderApiKey(payload: ProviderPayload<'setApiKey'>) {
+async function setProviderApiKey(payload: ProviderPayload<'setApiKey'>, gatewayManager?: GatewayManager) {
   const providerService = getProviderService();
   const { providerId, apiKey } = getApiKeyPayload(payload, 'setApiKey');
   try {
+    const previousKey = await providerService._getProviderApiKeyInternal(providerId);
+    const existing = await providerService._getProviderInternal(providerId);
+    await reconcileProviderBeforeStaticKeyReplacement(existing, previousKey, apiKey, gatewayManager);
     await providerService._setProviderApiKeyInternal(providerId, apiKey);
     const provider = await providerService._getProviderInternal(providerId);
     const providerType = provider?.type || providerId;
-    await syncProviderApiKeyToRuntime(providerType, providerId, apiKey);
+    await syncProviderApiKeyToRuntime(providerType, providerId, apiKey, previousKey ?? undefined, gatewayManager);
     return { success: true };
   } catch (error) {
     return { success: false, error: String(error) };
@@ -255,28 +267,29 @@ async function updateProviderWithKey(payload: ProviderPayload<'updateWithKey'>, 
       ...updates,
       updatedAt: new Date().toISOString(),
     };
-    const ock = getOpenClawProviderKey(nextConfig.type, providerId);
+    await reconcileProviderBeforeStaticKeyReplacement(existing, previousKey, apiKey, gatewayManager);
+    await reconcileProviderBeforeRuntimeKeyChange(existing, nextConfig.type, previousKey);
     await providerService._saveProviderInternal(nextConfig);
 
     if (apiKey !== undefined) {
       const trimmedKey = apiKey.trim();
       if (trimmedKey) {
         await providerService._setProviderApiKeyInternal(providerId, trimmedKey);
-        await syncProviderApiKeyToRuntime(nextConfig.type, providerId, trimmedKey);
       } else {
+        await syncDeletedProviderApiKeyToRuntime(nextConfig, providerId, undefined, previousKey ?? undefined);
         await providerService._deleteProviderApiKeyInternal(providerId);
-        await removeProviderFromOpenClaw(ock);
+        await finishProviderSecretDeletionToRuntime(gatewayManager);
       }
     }
 
-    await syncUpdatedProviderToRuntime(nextConfig, apiKey, gatewayManager);
+    await syncUpdatedProviderToRuntime(nextConfig, apiKey, gatewayManager, previousKey ?? undefined);
     return { success: true };
   } catch (error) {
     try {
       await providerService._saveProviderInternal(existing);
       if (previousKey) {
         await providerService._setProviderApiKeyInternal(providerId, previousKey);
-        await saveProviderKeyToOpenClaw(previousOck, previousKey);
+        await syncProviderApiKeyToRuntime(existing.type, providerId, previousKey);
       } else {
         await providerService._deleteProviderApiKeyInternal(providerId);
         await removeProviderFromOpenClaw(previousOck);
@@ -288,13 +301,15 @@ async function updateProviderWithKey(payload: ProviderPayload<'updateWithKey'>, 
   }
 }
 
-async function deleteProviderApiKey(payload: ProviderPayload<'deleteApiKey'>) {
+async function deleteProviderApiKey(payload: ProviderPayload<'deleteApiKey'>, gatewayManager?: GatewayManager) {
   const providerService = getProviderService();
   const providerId = getProviderId(payload, 'deleteApiKey');
   try {
-    await providerService._deleteProviderApiKeyInternal(providerId);
+    const previousKey = await providerService._getProviderApiKeyInternal(providerId);
     const provider = await providerService._getProviderInternal(providerId);
-    await syncDeletedProviderApiKeyToRuntime(provider, providerId);
+    await syncDeletedProviderApiKeyToRuntime(provider, providerId, undefined, previousKey ?? undefined);
+    await providerService._deleteProviderApiKeyInternal(providerId);
+    await finishProviderSecretDeletionToRuntime(gatewayManager);
     return { success: true };
   } catch (error) {
     return { success: false, error: String(error) };
@@ -321,8 +336,25 @@ async function createAccount(payload: ProviderPayload<'createAccount'>, gatewayM
   }
   const apiKey = typeof body.apiKey === 'string' ? body.apiKey : undefined;
   try {
+    const previousKey = apiKey !== undefined && typeof body.account.id === 'string'
+      ? await providerService.getAccountApiKey(body.account.id)
+      : null;
+    const existing = typeof body.account.id === 'string'
+      ? await providerService.getAccount(body.account.id)
+      : null;
+    await reconcileProviderBeforeStaticKeyReplacement(
+      existing ? providerAccountToConfig(existing) : null,
+      previousKey,
+      apiKey,
+      gatewayManager,
+    );
+    await reconcileProviderBeforeRuntimeKeyChange(
+      existing ? providerAccountToConfig(existing) : null,
+      typeof body.account.vendorId === 'string' ? body.account.vendorId : existing?.vendorId ?? '',
+      previousKey,
+    );
     const account = await providerService.createAccount(body.account as unknown as ProviderAccount, apiKey);
-    await syncSavedProviderToRuntime(providerAccountToConfig(account), apiKey, gatewayManager);
+    await syncSavedProviderToRuntime(providerAccountToConfig(account), apiKey, gatewayManager, previousKey ?? undefined);
     return { success: true, account };
   } catch (error) {
     return { success: false, error: String(error) };
@@ -347,8 +379,21 @@ async function updateAccount(payload: ProviderPayload<'updateAccount'>, gatewayM
     if (!hasPatchChanges && apiKey === undefined) {
       return { success: true, noChange: true, account: existing };
     }
+    const previousKey = apiKey !== undefined
+      ? await providerService.getAccountApiKey(accountId)
+      : null;
+    await reconcileProviderBeforeStaticKeyReplacement(
+      providerAccountToConfig(existing), previousKey, apiKey, gatewayManager,
+    );
+    await reconcileProviderBeforeRuntimeKeyChange(
+      providerAccountToConfig(existing), updates.vendorId ?? existing.vendorId, previousKey,
+    );
+    if (apiKey !== undefined && !apiKey.trim()) {
+      await syncDeletedProviderApiKeyToRuntime(providerAccountToConfig(existing), accountId, undefined, previousKey ?? undefined);
+    }
     const account = await providerService.updateAccount(accountId, updates, apiKey);
-    await syncUpdatedProviderToRuntime(providerAccountToConfig(account), apiKey, gatewayManager);
+    if (apiKey !== undefined && !apiKey.trim()) await finishProviderSecretDeletionToRuntime(gatewayManager);
+    await syncUpdatedProviderToRuntime(providerAccountToConfig(account), apiKey, gatewayManager, previousKey ?? undefined);
     return { success: true, account };
   } catch (error) {
     return { success: false, error: String(error) };
@@ -372,12 +417,15 @@ async function deleteAccount(
       ? 'openai'
       : undefined;
     if (apiKeyOnly) {
+      const previousKey = await providerService._getProviderApiKeyInternal(accountId);
       await syncDeletedProviderApiKeyToRuntime(
         existing ? providerAccountToConfig(existing) : null,
         accountId,
         runtimeProviderKey,
+        previousKey ?? undefined,
       );
       await providerService._deleteProviderApiKeyInternal(accountId);
+      await finishProviderSecretDeletionToRuntime(gatewayManager);
       return { success: true };
     }
     const currentDefaultAccountId = await providerService.getDefaultAccountId();
@@ -386,8 +434,8 @@ async function deleteAccount(
       : undefined;
 
     if (replacementDefault) {
-      await syncDefaultProviderToRuntime(replacementDefault.id);
       await providerService.setDefaultAccount(replacementDefault.id);
+      await syncDefaultProviderToRuntime(replacementDefault.id, gatewayManager);
     }
     await syncDeletedProviderToRuntime(
       existing ? providerAccountToConfig(existing) : null,
@@ -395,7 +443,10 @@ async function deleteAccount(
       gatewayManager,
       runtimeProviderKey,
     );
-    await providerService.deleteAccount(accountId);
+    if (await providerService.deleteAccount(accountId) === false) {
+      throw new Error('Provider account could not be deleted; existing records were retained');
+    }
+    await finishProviderSecretDeletionToRuntime(gatewayManager);
     return { success: true };
   } catch (error) {
     return { success: false, error: String(error) };
@@ -480,9 +531,9 @@ export function createProvidersApi(ctx: ProvidersApiContext): CompleteHostServic
     validateKey,
     save: async (payload) => saveProvider(payload, ctx.gatewayManager),
     delete: async (payload) => deleteProvider(payload, ctx.gatewayManager),
-    setApiKey: setProviderApiKey,
+    setApiKey: async (payload) => setProviderApiKey(payload, ctx.gatewayManager),
     updateWithKey: async (payload) => updateProviderWithKey(payload, ctx.gatewayManager),
-    deleteApiKey: deleteProviderApiKey,
+    deleteApiKey: async (payload) => deleteProviderApiKey(payload, ctx.gatewayManager),
     setDefault: async (payload) => setDefaultProvider(payload, ctx.gatewayManager),
     accounts: async () => providerService.listAccounts(),
     vendors: async () => providerService.listVendors(),

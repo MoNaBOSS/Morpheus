@@ -25,6 +25,8 @@ Google／メール認証、保護されたセッション、利用枠表示に�
 
 Windows コンパニオンのソース実装（7A.1–7A.3）：ローカルの呼びかけでフォーカスを奪わずにオーブを表示します。ホバーすると上方向に編集可能な入力欄が現れ、クリックすると実際のテキスト入力欄にフォーカスします。ポインターが離れたときや Escape を押したときも、Main が管理する下書きは残ります。Enter では関連付けられた会話ターンを一度だけ送信し、通常の返信は Chat へ自動移動せずコンパクトな会話に表示されます。明示的にフル画面へ展開しても会話と下書きは同じままで、画面や作業領域が変わってもオーブは右下に配置されます。これらのソース上の動作は新しくビルドした Windows Electron の自動テストで確認しました。インストーラー、実機ハードウェア、実際のプロバイダーによる受け入れ確認は未完了です。
 
+フェーズ 7B.1 のプロバイダー資格情報のソース実装は進行中です。アプリが管理する API キーは、バージョン付きの Electron `safeStorage` 暗号化ファイルに書き込み、読み戻して検証した後で一致する旧形式の値だけを消去します。合成テストでは中断、競合、OS 保護が利用できない場合を確認し、隔離された Windows Electron テストでは同じユーザーによる再起動後に合成キーを復号できました。静的 OpenClaw SecretRef と起動前の完全一致による復旧はソーステスト済みです。既存プロファイルのアップグレード、インストーラー、実プロバイダーでの受け入れ確認は未検証です。OpenClaw が管理する OAuth 資格情報は、この静的キーの保護範囲に含まれません。
+
 > **1.1.0 プロダクションコンパニオン候補版：**シネマティックな初回・再訪時の挨拶、状態連動の発光 Signal、コンパクトなバックグラウンド Presence を追加。
 > マイク音量に反応する Signal、選択した音声の試聴、
 > 発話終了の自動検出、上限付きのハンズフリー継続、MP3 ストリーミング、任意の Windows ローカル名前検出を追加しました。
@@ -158,7 +160,7 @@ Morpheus はドキュメント処理スキル（`pdf`、`xlsx`、`docx`、`pptx`
 Skills ページでは OpenClaw の複数ソース（管理ディレクトリ、workspace、追加スキルディレクトリ）から検出されたスキルを表示でき、各スキルの実際のパスを確認して実フォルダを直接開けます。OpenClaw 同梱の bundled skill については、コミュニティ版ではパッケージにも表示にも `skill-creator` のみを残し、dev 起動時と packaged 起動時の両方で他の bundled skill を物理的に削除します。さらに、削除済み bundled skill の古い `openclaw.json` エントリも一緒に掃除します。
 
 ### 🔐 セキュアなプロバイダー統合
-複数のAIプロバイダー（OpenAI、Anthropic、Z.AI / GLMなど）に接続でき、資格情報はシステムのネイティブキーチェーンに安全に保存されます。OpenAI は API キーとブラウザ OAuth（Codex サブスクリプション）の両方に対応しています。
+複数の AI プロバイダー（OpenAI、Anthropic、Z.AI / GLM など）に接続できます。フェーズ 7B.1 のソース実装では、アプリが管理する API キーを Electron `safeStorage` で暗号化したファイルに保存し、OS の保護が利用できない場合に平文保存へ切り替えません。これはキーの端末間移行や、OpenClaw が管理する OAuth トークンとすべてのランタイム資格情報の暗号化を意味しません。OpenAI は API キーとブラウザ OAuth（Codex サブスクリプション）の両方に対応しています。
 開発者モードでは、専用の Image Generation ページで、独立した OpenAI 互換の画像生成エンドポイント（Base URL、API キー、`gpt-image-2` などのモデル名）を設定でき、画像生成だけ専用の `/v1/images/generations` サービスを使い、チャットは通常の OpenAI Provider のまま継続できます。
 OpenAI-compatible ゲートウェイを **Custom プロバイダー** で使う場合、**設定 → AI Providers → Provider 編集** でカスタム `User-Agent` を設定でき、互換性が必要なエンドポイントで有効です。
 プロバイダーの編集や切り替え時、Morpheus は `input: ["text", "image"]` など既存のモデル単位の能力メタデータを保持します。新しく選択した Custom プロバイダーのモデルには OpenClaw onboarding と同等の画像入力推論を適用し、不明なモデルはテキスト専用として扱います。
@@ -302,7 +304,7 @@ Morpheusには、Electron、OpenClaw Gateway、またはTelegramなどのチャ�
 
 Morpheusは、**デュアルプロセス + Host API 統一アクセス**構成を採用しています。Renderer は単一クライアント抽象を呼び出し、プロトコル選択とライフサイクルは Main が管理します：
 
-OpenClaw の設定配信も Electron Main が一元管理します。Gateway の実行中は `config.get` の正規スナップショットを基準にし、変更を `config.set` でコミットします。Gateway が停止中または起動中の場合は、同じコーディネーターが解決済みの JSON5 設定ファイルだけを更新し、Gateway を起動しません。そのため、通常の Provider、Agent、Channel、バインディング、Skill、モデル変更では Gateway プロセスを置き換えません。完全な再起動は、プロキシなどのプロセス起動環境の変更、ユーザーによる明示的な操作、ヘルスチェックやクラッシュ復旧に限定されます。認証プロファイルを SQLite に書き込んだ後は OpenClaw の `secrets.reload` を呼び出し、実行中の Agent がプロセス再起動なしで新しい認証情報を読み取れるようにします。
+OpenClaw の設定配信も Electron Main が一元管理します。Gateway の実行中は `config.get` の正規スナップショットを基準にし、変更を `config.set` でコミットします。Gateway が停止中または起動中の場合は、同じコーディネーターが解決済みの JSON5 設定ファイルだけを更新し、Gateway を起動しません。設定だけを変更する Provider、Agent、Channel、バインディング、Skill、モデル操作では Gateway プロセスを置き換えません。フェーズ 7B.1 のソース経路では、アプリ管理の静的 API キーを追加または置き換える際に、SecretRef のプロセス環境を更新するためアプリが所有する Gateway の再起動が必要です。外部管理の Gateway はアプリから再起動せず、別途更新が必要です。プロキシなどの起動環境の変更、ユーザー操作、ヘルスチェックやクラッシュ復旧でも再起動する場合があります。上流 OAuth 認証プロファイルを SQLite に書き込んだ後は OpenClaw の `secrets.reload` で、実行中の Agent がプロセス再起動なしで新しい資格情報を読み取れます。
 
 Chat は Electron Main が所有する ACP stdio bridge を使用します。Renderer は型付き host event を受け取り、メモリ上の ACP timeline を描画します。Gateway は providers、models、skills、workspace、settings、diagnostics、media configuration などの非 Chat 機能を引き続き担当します。
 
@@ -426,7 +428,7 @@ AI を開発ワークフローに統合できます。エージェントを使�
 ├── electron/                 # Electron メインプロセス
 │   ├── services/            # 型付き Host API、Provider/Secrets/ランタイムサービス
 │   │   ├── providers/       # provider/account モデル同期ロジック
-│   │   └── secrets/         # OS キーチェーンと秘密情報管理
+│   │   └── secrets/         # Electron safeStorage で保護するアプリ管理の資格情報
 │   ├── shared/              # 共通 Provider スキーマ/定数
 │   │   └── providers/
 │   ├── main/                # アプリ入口、ウィンドウ、IPC 登録

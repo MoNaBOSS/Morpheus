@@ -6,6 +6,7 @@ import { logger } from '../utils/logger';
 import { buildOpenClawControlUiUrl } from '../utils/openclaw-control-ui';
 import { getSetting } from '../utils/store';
 import { isRecord } from './payload-utils';
+import { syncAllProviderAuthToRuntime } from './providers/provider-runtime-sync';
 
 type HealthPayload = {
   probe?: unknown;
@@ -52,6 +53,7 @@ export function createGatewayApi(gatewayManager: GatewayManager): CompleteHostSe
   return {
     status: () => gatewayManager.getStatus(),
     start: async () => {
+      await syncAllProviderAuthToRuntime();
       await gatewayManager.start();
       return { success: true };
     },
@@ -60,6 +62,7 @@ export function createGatewayApi(gatewayManager: GatewayManager): CompleteHostSe
       return { success: true };
     },
     restart: async () => {
+      await syncAllProviderAuthToRuntime();
       await gatewayManager.restart();
       return { success: true };
     },

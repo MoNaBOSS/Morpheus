@@ -2,6 +2,7 @@ import { dialog, nativeImage } from 'electron';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { CompleteHostServiceRegistry } from '../main/ipc/host-contract';
+import type { GatewayManager } from '../gateway/manager';
 import type { AttachmentFileRef } from '@shared/host-api/contract';
 import { resolveOutgoingMediaAttachment, type AttachmentAccess } from './attachment-access';
 import { resolveOpenClawStateDir } from '../utils/paths';
@@ -29,6 +30,7 @@ type ThumbnailEntry = {
 
 type MediaApiDependencies = {
   attachmentAccess?: Pick<AttachmentAccess, 'resolveAttachment' | 'readAttachmentBinary'>;
+  gatewayManager?: GatewayManager;
 };
 
 const OPAQUE_ATTACHMENT_KEY = /^[a-f0-9]{64}$/;
@@ -243,7 +245,7 @@ export function createMediaApi(dependencies: MediaApiDependencies = {}): Complet
           baseUrl: typeof body.openAiRelayBaseUrl === 'string' ? body.openAiRelayBaseUrl : null,
           apiKey: typeof body.openAiRelayApiKey === 'string' ? body.openAiRelayApiKey : undefined,
           model: relayModel,
-        });
+        }, dependencies.gatewayManager);
       }
 
       const config = await setImageGenerationConfig(next);

@@ -675,7 +675,7 @@ describe('ProviderService.listAccountsKeyInfo', () => {
     service = new ProviderService();
   });
 
-  it('prefers OpenClaw runtime auth when reporting account key status', async () => {
+  it('uses imported OpenClaw runtime auth when no app-owned key exists', async () => {
     mocks.listProviderAccounts.mockResolvedValue([
       makeAccount({
         id: 'custom-ui-account-id',
@@ -693,7 +693,7 @@ describe('ProviderService.listAccountsKeyInfo', () => {
     const result = await service.listAccountsKeyInfo();
 
     expect(mocks.getProviderApiKeyFromOpenClaw).toHaveBeenCalledWith('custom-runtime');
-    expect(mocks.getApiKey).not.toHaveBeenCalled();
+    expect(mocks.getApiKey).toHaveBeenCalledWith('custom-ui-account-id');
     expect(result).toEqual([
       {
         accountId: 'custom-ui-account-id',
@@ -703,7 +703,7 @@ describe('ProviderService.listAccountsKeyInfo', () => {
     ]);
   });
 
-  it('falls back to ClawX local secrets when OpenClaw has no runtime key', async () => {
+  it('prefers the protected app-owned key over imported OpenClaw runtime auth', async () => {
     mocks.listProviderAccounts.mockResolvedValue([
       makeAccount({
         id: 'openrouter-ui-account-id',
@@ -716,13 +716,14 @@ describe('ProviderService.listAccountsKeyInfo', () => {
       defaultModel: undefined,
     });
     mocks.getOpenClawProviderKeyForType.mockReturnValue('openrouter');
+    mocks.getProviderApiKeyFromOpenClaw.mockResolvedValue('sk-stale-imported-key');
     mocks.getApiKey.mockImplementation(async (id: string) => (
       id === 'openrouter-ui-account-id' ? 'sk-local-provider-key' : null
     ));
 
     const result = await service.listAccountsKeyInfo();
 
-    expect(mocks.getProviderApiKeyFromOpenClaw).toHaveBeenCalledWith('openrouter');
+    expect(mocks.getProviderApiKeyFromOpenClaw).not.toHaveBeenCalled();
     expect(mocks.getApiKey).toHaveBeenCalledWith('openrouter-ui-account-id');
     expect(result[0]).toMatchObject({
       accountId: 'openrouter-ui-account-id',

@@ -79,8 +79,76 @@ describe('OpenClaw 2026.7.1 upgrade snapshot', () => {
     expect(removed.status).toBe('removed');
     await expect(stat(join(removed.snapshotDir, 'snapshot.json'))).rejects.toThrow();
 
+    await writeFile(configPath, '{"version":"new"}\n');
+    const nextLaunch = await ensureOpenClaw2026_7_1UpgradeSnapshot({ stateDir, configPath });
+    expect(nextLaunch.status).toBe('completed');
+    await expect(stat(join(nextLaunch.snapshotDir, 'snapshot.json'))).rejects.toThrow();
+    await expect(readFile(`${created.snapshotDir}.complete`, 'utf8'))
+      .resolves.toBe('openclaw-2026.7.1\n');
+
     const missing = await removeOpenClaw2026_7_1UpgradeSnapshot({ stateDir });
     expect(missing.status).toBe('missing');
+  });
+
+  it('leaves snapshot creation retryable when cleanup runs without a snapshot', async () => {
+    const stateDir = await createTempStateDir();
+    const configPath = join(stateDir, 'openclaw.json');
+    await writeFile(configPath, '{"version":"old"}\n');
+
+    const missing = await removeOpenClaw2026_7_1UpgradeSnapshot({ stateDir });
+    expect(missing.status).toBe('missing');
+    await expect(stat(`${missing.snapshotDir}.complete`)).rejects.toThrow();
+
+    const retry = await ensureOpenClaw2026_7_1UpgradeSnapshot({ stateDir, configPath });
+    expect(retry.status).toBe('created');
+    await expect(readFile(join(retry.snapshotDir, 'config', 'openclaw.json'), 'utf8'))
+      .resolves.toBe('{"version":"old"}\n');
+  });
+
+  it('retains the original snapshot until readiness and if completion cannot be recorded', async () => {
+    const stateDir = await createTempStateDir();
+    const configPath = join(stateDir, 'openclaw.json');
+    await writeFile(configPath, '{"version":"old"}\n');
+
+    const created = await ensureOpenClaw2026_7_1UpgradeSnapshot({ stateDir, configPath });
+    await writeFile(configPath, '{"version":"new"}\n');
+
+    // A failed Gateway startup never calls cleanup. The next launch must keep
+    // the original pre-migration data instead of replacing it with new state.
+    const retry = await ensureOpenClaw2026_7_1UpgradeSnapshot({ stateDir, configPath });
+    expect(retry.status).toBe('exists');
+    await expect(readFile(join(retry.snapshotDir, 'config', 'openclaw.json'), 'utf8'))
+      .resolves.toBe('{"version":"old"}\n');
+
+    // If the durable marker cannot be written, cleanup must leave that data.
+    await mkdir(`${created.snapshotDir}.complete`);
+    await expect(removeOpenClaw2026_7_1UpgradeSnapshot({ stateDir }))
+      .rejects.toThrow('Invalid OpenClaw upgrade completion marker');
+    await expect(readFile(join(created.snapshotDir, 'config', 'openclaw.json'), 'utf8'))
+      .resolves.toBe('{"version":"old"}\n');
+    await rm(`${created.snapshotDir}.complete`, { recursive: true });
+
+    await expect(removeOpenClaw2026_7_1UpgradeSnapshot({ stateDir }))
+      .resolves.toMatchObject({ status: 'removed' });
+  });
+
+  it('retries deletion without recopying after interruption between completion and cleanup', async () => {
+    const stateDir = await createTempStateDir();
+    const configPath = join(stateDir, 'openclaw.json');
+    await writeFile(configPath, '{"version":"old"}\n');
+    const created = await ensureOpenClaw2026_7_1UpgradeSnapshot({ stateDir, configPath });
+
+    // The completion marker is durable before the backup directory is removed.
+    await writeFile(`${created.snapshotDir}.complete`, 'openclaw-2026.7.1\n');
+    await writeFile(configPath, '{"version":"new"}\n');
+    const retry = await ensureOpenClaw2026_7_1UpgradeSnapshot({ stateDir, configPath });
+    expect(retry.status).toBe('completed');
+    await expect(readFile(join(created.snapshotDir, 'config', 'openclaw.json'), 'utf8'))
+      .resolves.toBe('{"version":"old"}\n');
+
+    await expect(removeOpenClaw2026_7_1UpgradeSnapshot({ stateDir }))
+      .resolves.toMatchObject({ status: 'removed' });
+    await expect(stat(created.snapshotDir)).rejects.toThrow();
   });
 
   it('does not follow symlinks when copying snapshot files', async () => {

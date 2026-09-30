@@ -1,9 +1,12 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const syncAllProviderAuthToRuntime = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
 vi.mock('../../electron/utils/control-ui-device-pairing', () => ({
   approvePendingLocalDeviceRequests: vi.fn(),
 }));
 vi.mock('../../electron/utils/store', () => ({ getSetting: vi.fn() }));
+vi.mock('../../electron/services/providers/provider-runtime-sync', () => ({ syncAllProviderAuthToRuntime }));
 
 import {
   RENDERER_GATEWAY_RPC_METHODS,
@@ -11,6 +14,21 @@ import {
 } from '../../electron/services/gateway-api';
 
 describe('renderer Gateway RPC boundary', () => {
+  beforeEach(() => syncAllProviderAuthToRuntime.mockClear());
+
+  it('prepares provider references before manual Gateway start or restart', async () => {
+    const start = vi.fn().mockResolvedValue(undefined);
+    const restart = vi.fn().mockResolvedValue(undefined);
+    const api = createGatewayApi({ start, restart } as never);
+
+    await api.start();
+    await api.restart();
+
+    expect(syncAllProviderAuthToRuntime).toHaveBeenCalledTimes(2);
+    expect(syncAllProviderAuthToRuntime.mock.invocationCallOrder[0]).toBeLessThan(start.mock.invocationCallOrder[0]);
+    expect(syncAllProviderAuthToRuntime.mock.invocationCallOrder[1]).toBeLessThan(restart.mock.invocationCallOrder[0]);
+  });
+
   it('forwards only the compatibility methods required by Chat and Channels', async () => {
     const rpc = vi.fn().mockResolvedValue({ ok: true });
     const api = createGatewayApi({ rpc } as never);

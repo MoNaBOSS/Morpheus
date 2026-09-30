@@ -48,6 +48,14 @@ vi.mock('@electron/utils/plugin-install', () => ({
   ensureClawXOpenAiImagePluginInstalled: ensureImagePluginInstalledMock,
 }));
 
+const keyStoreMocks = vi.hoisted(() => ({
+  getApiKey: vi.fn().mockResolvedValue(null),
+  storeApiKey: vi.fn().mockResolvedValue(true),
+  deleteApiKey: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock('@electron/utils/secure-storage', () => keyStoreMocks);
+
 async function writeOpenClawJson(config: unknown): Promise<void> {
   const openclawDir = join(testHome, '.openclaw');
   await mkdir(openclawDir, { recursive: true });
@@ -64,8 +72,151 @@ describe('openclaw-image-generation helpers', () => {
     vi.resetModules();
     ensureImagePluginInstalledMock.mockReset();
     ensureImagePluginInstalledMock.mockResolvedValue({ installed: true });
+    keyStoreMocks.getApiKey.mockReset().mockResolvedValue(null);
+    keyStoreMocks.storeApiKey.mockReset().mockResolvedValue(true);
+    keyStoreMocks.deleteApiKey.mockReset().mockResolvedValue(true);
     await rm(testHome, { recursive: true, force: true });
     await rm(testUserData, { recursive: true, force: true });
+  });
+
+  it('stores a new image relay key in the protected store and writes only SecretRefs', async () => {
+    const { applyOpenAiImageRelaySettings } = await import('@electron/utils/openclaw-image-generation');
+    await applyOpenAiImageRelaySettings({
+      enabled: true,
+      baseUrl: 'https://relay.example.com',
+      apiKey: 'synthetic-image-key',
+      model: 'gpt-image-2',
+    });
+
+    expect(keyStoreMocks.storeApiKey).toHaveBeenCalledWith('clawx-openai-image', 'synthetic-image-key');
+    const config = await readOpenClawJson();
+    const provider = ((config.models as Record<string, unknown>).providers as Record<string, unknown>)['clawx-openai-image'] as Record<string, unknown>;
+    expect(provider.apiKey).toMatchObject({ source: 'env', provider: 'default' });
+    const authPath = join(testHome, '.openclaw', 'agents', 'main', 'agent', 'auth-profiles.json');
+    const auth = JSON.parse(await readFile(authPath, 'utf8')) as { profiles: Record<string, Record<string, unknown>> };
+    expect(auth.profiles['clawx-openai-image:default'].keyRef).toEqual(provider.apiKey);
+    expect(JSON.stringify(config) + JSON.stringify(auth)).not.toContain('synthetic-image-key');
+  });
+
+  it('does not claim a live relay update when the Gateway cannot receive the new env', async () => {
+    const manager = {
+      getStatus: vi.fn(() => ({ state: 'running' as const })),
+      restartOwnedForProviderSecretChange: vi.fn().mockResolvedValue(false),
+    };
+    const { applyOpenAiImageRelaySettings } = await import('@electron/utils/openclaw-image-generation');
+    await expect(applyOpenAiImageRelaySettings({
+      enabled: true,
+      baseUrl: 'https://relay.example.com',
+      apiKey: 'synthetic-image-key',
+    }, manager as Parameters<typeof applyOpenAiImageRelaySettings>[1]))
+      .rejects.toThrow('Gateway restart with the updated environment is required');
+    expect(keyStoreMocks.storeApiKey).toHaveBeenCalledOnce();
+    expect(manager.restartOwnedForProviderSecretChange).toHaveBeenCalledOnce();
+  });
+
+  it('converts the verified old relay model key before replacing the protected key', async () => {
+    keyStoreMocks.getApiKey.mockResolvedValue('synthetic-old-relay-key');
+    await writeOpenClawJson({
+      models: { providers: {
+        'clawx-openai-image': {
+          baseUrl: 'https://old.example.com/v1',
+          apiKey: 'synthetic-old-relay-key',
+          models: [{ id: 'old-model' }],
+        },
+      } },
+    });
+    const agentDir = join(testHome, '.openclaw', 'agents', 'main', 'agent');
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(join(agentDir, 'models.json'), JSON.stringify({
+      providers: { 'clawx-openai-image': { apiKey: 'synthetic-old-relay-key' } },
+    }), 'utf8');
+    await writeFile(join(agentDir, 'auth-profiles.json'), JSON.stringify({
+      version: 1,
+      profiles: { 'clawx-openai-image:default': {
+        type: 'api_key', provider: 'clawx-openai-image', key: 'synthetic-old-relay-key',
+      } },
+    }), 'utf8');
+    let configAtProtectedWrite: Record<string, unknown> | undefined;
+    let modelsAtProtectedWrite: string | undefined;
+    let authAtProtectedWrite: string | undefined;
+    keyStoreMocks.storeApiKey.mockImplementation(async () => {
+      configAtProtectedWrite = await readOpenClawJson();
+      modelsAtProtectedWrite = await readFile(join(agentDir, 'models.json'), 'utf8');
+      authAtProtectedWrite = await readFile(join(agentDir, 'auth-profiles.json'), 'utf8');
+      return true;
+    });
+
+    const { applyOpenAiImageRelaySettings } = await import('@electron/utils/openclaw-image-generation');
+    await applyOpenAiImageRelaySettings({
+      enabled: true,
+      baseUrl: 'https://new.example.com',
+      apiKey: 'synthetic-new-relay-key',
+    });
+
+    const atWrite = ((configAtProtectedWrite?.models as Record<string, unknown>).providers as Record<string, unknown>)['clawx-openai-image'] as Record<string, unknown>;
+    expect(atWrite.baseUrl).toBe('https://old.example.com/v1');
+    expect(atWrite.apiKey).toMatchObject({ source: 'env', provider: 'default' });
+    expect(JSON.stringify(configAtProtectedWrite)).not.toContain('synthetic-old-relay-key');
+    expect(modelsAtProtectedWrite).not.toContain('synthetic-old-relay-key');
+    expect(authAtProtectedWrite).not.toContain('synthetic-old-relay-key');
+    expect(keyStoreMocks.storeApiKey).toHaveBeenCalledWith('clawx-openai-image', 'synthetic-new-relay-key');
+  });
+
+  it('does not replace a relay key when the owned Gateway cannot restart with the old key', async () => {
+    keyStoreMocks.getApiKey.mockResolvedValue('synthetic-old-relay-key');
+    await writeOpenClawJson({
+      models: { providers: { 'clawx-openai-image': { apiKey: 'synthetic-old-relay-key' } } },
+    });
+    const manager = {
+      getStatus: vi.fn(() => ({ state: 'running' as const })),
+      restartOwnedForProviderSecretChange: vi.fn().mockResolvedValue(false),
+    };
+    const { applyOpenAiImageRelaySettings } = await import('@electron/utils/openclaw-image-generation');
+    await expect(applyOpenAiImageRelaySettings({
+      enabled: true,
+      baseUrl: 'https://new.example.com',
+      apiKey: 'synthetic-new-relay-key',
+    }, manager as Parameters<typeof applyOpenAiImageRelaySettings>[1]))
+      .rejects.toThrow('Image relay key was not replaced');
+
+    expect(manager.restartOwnedForProviderSecretChange).toHaveBeenCalledOnce();
+    expect(keyStoreMocks.storeApiKey).not.toHaveBeenCalled();
+    const config = await readOpenClawJson();
+    const relay = ((config.models as Record<string, unknown>).providers as Record<string, unknown>)['clawx-openai-image'] as Record<string, unknown>;
+    expect(relay.apiKey).toMatchObject({ source: 'env', provider: 'default' });
+  });
+
+  it('rejects a first protected relay key that conflicts with a legacy credential', async () => {
+    await writeOpenClawJson({
+      models: { providers: { 'clawx-openai-image': { apiKey: 'synthetic-imported-key' } } },
+    });
+    const { applyOpenAiImageRelaySettings } = await import('@electron/utils/openclaw-image-generation');
+    await expect(applyOpenAiImageRelaySettings({
+      enabled: true, baseUrl: 'https://relay.example.com', apiKey: 'synthetic-new-key',
+    })).rejects.toThrow('Existing image relay credential is unverified');
+    expect(keyStoreMocks.storeApiKey).not.toHaveBeenCalled();
+    const config = await readOpenClawJson();
+    const relay = ((config.models as Record<string, unknown>).providers as Record<string, unknown>)['clawx-openai-image'] as Record<string, unknown>;
+    expect(relay.apiKey).toBe('synthetic-imported-key');
+  });
+
+  it('adopts an explicitly re-entered matching legacy relay key without retaining raw auth', async () => {
+    const agentDir = join(testHome, '.openclaw', 'agents', 'main', 'agent');
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(join(agentDir, 'auth-profiles.json'), JSON.stringify({
+      version: 1,
+      profiles: { 'clawx-openai-image:default': {
+        type: 'api_key', provider: 'clawx-openai-image', key: 'synthetic-reentered-key',
+      } },
+    }), 'utf8');
+    const { applyOpenAiImageRelaySettings } = await import('@electron/utils/openclaw-image-generation');
+    await applyOpenAiImageRelaySettings({
+      enabled: true, baseUrl: 'https://relay.example.com', apiKey: 'synthetic-reentered-key',
+    });
+    expect(keyStoreMocks.storeApiKey).toHaveBeenCalledWith('clawx-openai-image', 'synthetic-reentered-key');
+    const auth = await readFile(join(agentDir, 'auth-profiles.json'), 'utf8');
+    expect(auth).not.toContain('synthetic-reentered-key');
+    expect(JSON.parse(auth).profiles['clawx-openai-image:default'].keyRef).toMatchObject({ source: 'env' });
   });
 
   it('parses and validates provider/model refs', async () => {

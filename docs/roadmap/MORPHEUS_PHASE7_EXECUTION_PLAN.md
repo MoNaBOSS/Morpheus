@@ -68,7 +68,7 @@ Only record what the evidence supports. All rows below start TODO.
 | 7A.2 AUTOMATED | Native real upward composer. Windows Electron source-build test covers inactive hover, explicit focus/type, Escape draft, one admission, screen anchor and compact handoff. Packaged hardware/accessibility acceptance remains open. | A.1 |
 | 7A.3 AUTOMATED | Compact/full project the same ACP conversation and Main draft; fixture reply stays in a native compact window with no `/chat` redirect, and expansion/dismiss preserves draft. Live provider and packaged acceptance remain open. | A.1–2 |
 | 7A.4 AUTOMATED | Shared native/React M-orb motion and bounded scalar from actual mic/neural playback paths. Source-build Electron tests cover reduced motion, keyboard focus, hidden Main/native animation pause and the guarded Main-hide/tray handoff. Hardware audio, true tray, motion recording and packaged acceptance remain open. | A.2–3 |
-| 7B.1 TODO | Protected provider secret migration across consumers. Crash fixtures preserve keys/settings; no migrated plaintext copies; unavailable protection fails safely. | Baseline; before paid live tests |
+| 7B.1 IN PROGRESS | Protected app-owned static-key store, runtime SecretRefs, exact-match pre-commit/pre-spawn reconciliation and synthetic Windows same-user restart passed source checks. Copied existing-profile upgrade, packaged/live and upstream OAuth limits remain open. | Baseline; before paid live tests |
 | 7C.1 TODO | Real wake/capture lifecycle. Same-breath wake+command captured once, mic mute/lock respected, unplug/replug and missing input produce usable recovery. | A.1–2, B.1 |
 | 7C.2 TODO | Natural output, barge-in and follow-ups. Three true voice auditions; interruption kills old audio/generation; speech stop does not cancel work; no-speech costs zero. | C.1 |
 | 7C.3 TODO | Unified persona, short onboarding and returning behavior. Name/skip/Matrix welcome, existing-profile preservation, 8-second genuine-question fallback, daily greeting and DND cases pass. | A.3, C.2 |
@@ -197,10 +197,11 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
   Native source-build Electron journeys, full unit suite, typecheck, lint,
   communications replay/compare and harness checks are recorded in the ledger.
   No second executor or conversation history store was introduced.
-- Next executable checkpoint: **7B.1 — protected provider-secret migration**
-  before paid live testing. Audit every app-owned and OpenClaw runtime consumer,
-  preserve existing keys/settings through crash fixtures, and distinguish static
-  API keys from upstream-managed OAuth tokens before changing storage.
+- Next executable checkpoint: **finish 7B.1 — protected provider-secret migration**
+  before paid live testing. Source work now covers the app-owned static-key vault,
+  static OpenClaw SecretRefs, image relay, exact-match old-key reconciliation
+  and every owned-spawn recovery. Rehearse a copied existing-profile upgrade,
+  preserve imported profiles, and distinguish upstream OAuth throughout.
 - The Windows worktree is separate from the original PC checkout. Profiles and
   provider settings have not been changed. Commit/push continuity is recorded
   in the ledger; source-build tests do not certify an installer.

@@ -32,6 +32,8 @@ existing preferences are preserved. See [task continuity and acceptance limits](
 
 Windows companion source checkpoint (7A.1–7A.3): local wake shows the orb without taking focus. Hover reveals an editable upward composer; a click focuses its real text input. Pointer exit or Escape preserves the Main-owned draft. Enter admits one correlated turn, and ordinary replies stay in compact conversation without automatic Chat navigation. Explicit full expansion keeps the same conversation and draft; display/work-area changes retain the bottom-right anchor. Fresh-build Windows Electron automation covered these source flows. Packaged, hardware and live-provider acceptance remain pending.
 
+Phase 7B.1 provider-secret source work is in progress. The app-owned API-key path now writes a versioned file encrypted with Electron `safeStorage` and migrates matching legacy entries only after read-back verification. Synthetic interruption, conflict and unavailable-protection tests cover the store and legacy adapter; an isolated Windows Electron run decrypted a synthetic key after a same-user restart. Static OpenClaw runtime SecretRefs and exact-match prelaunch recovery have source tests. Existing-profile upgrade, packaged and live-provider acceptance remain unverified. Upstream-managed OAuth credentials are outside this static-key protection claim.
+
 > **1.1.2 unified presence candidate:** cinematic first-run and returning greetings,
 > a state-driven luminous Signal, compact background Presence, speech auto-end,
 > bounded hands-free follow-up, selected voice preview, streamed neural playback,
@@ -177,7 +179,7 @@ Morpheus also pre-bundles full document-processing skills (`pdf`, `xlsx`, `docx`
 The Skills page can display skills discovered from multiple OpenClaw sources (managed dir, workspace, and extra skill dirs), and now shows each skill's actual location so you can open the real folder directly. For bundled OpenClaw skills, community builds now ship and expose only `skill-creator`; non-allowlisted bundled skills are physically trimmed in both dev and packaged startup, and any stale `openclaw.json` entries left behind for those removed bundled skills are pruned.
 
 ### 🔐 Secure Provider Integration
-Connect to multiple AI providers (OpenAI, Anthropic, Z.AI / GLM, and more) with credentials stored securely in your system's native keychain. OpenAI supports both API key and browser OAuth (Codex subscription) sign-in.
+Connect to multiple AI providers (OpenAI, Anthropic, Z.AI / GLM, and more). The Phase 7B.1 source implementation stores app-owned API keys in an Electron `safeStorage`-encrypted file and rejects plaintext fallback when OS protection is unavailable. It is not a portable keychain or a claim that OpenClaw-owned OAuth tokens and all runtime credential copies are encrypted. OpenAI supports both API key and browser OAuth (Codex subscription) sign-in.
 In developer mode, the dedicated Image Generation page supports an independent OpenAI-compatible image-generation endpoint (Base URL, API key, and model name such as `gpt-image-2`) so image generation can use a dedicated `/v1/images/generations` service while chat continues using the normal OpenAI provider.
 For **Custom** providers used with OpenAI-compatible gateways, you can set a custom `User-Agent` in **Settings → AI Providers → Edit Provider** for compatibility-sensitive endpoints.
 When you edit or switch providers, Morpheus preserves existing per-model capability metadata such as `input: ["text", "image"]`. Newly selected Custom-provider models use OpenClaw onboarding-compatible image-input inference, with unknown models defaulting to text-only.
@@ -382,7 +384,7 @@ Notes:
 
 Morpheus employs a **dual-process architecture** with a unified host API layer. The renderer talks to a single client abstraction, while Electron Main owns protocol selection and process lifecycle:
 
-Electron Main also owns OpenClaw configuration delivery. While the Gateway is running, Morpheus reads the authoritative `config.get` snapshot and commits changes with `config.set`; while it is stopped or starting, the same coordinator updates the resolved JSON5 config file without starting the Gateway. Ordinary provider, agent, channel, binding, skill, and model changes therefore do not replace the Gateway process. Full restarts remain for process-launch environment changes such as proxy settings, explicit user actions, and health or crash recovery. Auth-profile SQLite updates use OpenClaw's `secrets.reload` RPC so running agents see new credentials without a process restart.
+Electron Main also owns OpenClaw configuration delivery. While the Gateway is running, Morpheus reads the authoritative `config.get` snapshot and commits changes with `config.set`; while it is stopped or starting, the same coordinator updates the resolved JSON5 config file without starting the Gateway. Configuration-only provider, agent, channel, binding, skill, and model changes do not replace the Gateway process. In the Phase 7B.1 source path, adding or replacing an app-owned static API key requires a restart of an app-owned Gateway so its process environment receives the new SecretRef value; an externally managed Gateway is not restarted by the app and requires separate refresh. Process-launch changes such as proxy settings, explicit user actions, and health or crash recovery can also restart the Gateway. Upstream OAuth auth-profile updates use OpenClaw's `secrets.reload` RPC without a process restart.
 
 Chat uses an ACP stdio bridge owned by Electron Main. Renderer receives typed host events and renders an in-memory ACP timeline. Gateway remains responsible for non-Chat capabilities such as providers, models, skills, workspace, settings, diagnostics, and media configuration.
 
@@ -455,7 +457,7 @@ ACP Chat can also display generated image previews when image-generation media i
 - **Main-Process Transport Ownership**: Electron Main owns the ACP Chat stdio bridge and Gateway transports; the renderer talks to Main over typed IPC
 - **Extension IPC Contributions**: Main-process extensions contribute host-api actions through the typed IPC registry instead of HTTP routes
 - **Graceful Recovery**: Built-in reconnect, timeout, and backoff logic handles transient failures automatically
-- **Secure Storage**: API keys and sensitive data leverage the operating system's native secure storage mechanisms
+- **Protected app-owned static keys**: Electron `safeStorage` encrypts a versioned Main-owned file; upstream OAuth/runtime storage and packaged upgrade remain separate acceptance gates
 - **CORS-Safe by Design**: The renderer does not call local Gateway or Host API HTTP endpoints directly
 
 ### Process Model & Gateway Troubleshooting
@@ -506,7 +508,7 @@ Chain multiple skills together to create sophisticated automation pipelines. Pro
 ├── electron/                 # Electron Main Process
 │   ├── services/            # Typed host APIs, provider, secrets and runtime services
 │   │   ├── providers/       # Provider/account model sync logic
-│   │   └── secrets/         # OS keychain and secret storage
+│   │   └── secrets/         # Electron safeStorage-backed app-owned secrets
 │   ├── shared/              # Shared provider schemas/constants
 │   │   └── providers/
 │   ├── main/                # App entry, windows, IPC registration

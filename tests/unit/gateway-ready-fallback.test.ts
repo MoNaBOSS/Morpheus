@@ -29,6 +29,18 @@ vi.mock('@electron/gateway/startup-orchestrator', () => ({
   }),
 }));
 
+vi.mock('@electron/gateway/config-sync', () => ({
+  loadProviderEnv: vi.fn(async () => ({ providerEnv: { OPENAI_API_KEY: 'first' }, loadedProviderKeyCount: 1 })),
+  prepareGatewayLaunchContext: vi.fn(),
+}));
+
+vi.mock('@electron/utils/openclaw-upgrade-snapshot', () => ({
+  removeOpenClaw2026_7_1UpgradeSnapshot: vi.fn(async () => ({
+    status: 'missing',
+    snapshotDir: '/tmp/snapshot',
+  })),
+}));
+
 describe('GatewayManager gatewayReady fallback', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -74,6 +86,128 @@ describe('GatewayManager gatewayReady fallback', () => {
 
     const readyUpdate = statusUpdates.find((u) => u.gatewayReady === true);
     expect(readyUpdate).toBeDefined();
+  });
+
+  it('records upgrade completion only for an owned Gateway', async () => {
+    vi.resetModules();
+    const { GatewayManager } = await import('@electron/gateway/manager');
+    const { removeOpenClaw2026_7_1UpgradeSnapshot } = await import('@electron/utils/openclaw-upgrade-snapshot');
+    const manager = new GatewayManager();
+
+    manager.emit('gateway:ready', {});
+    expect(removeOpenClaw2026_7_1UpgradeSnapshot).not.toHaveBeenCalled();
+
+    (manager as unknown as { ownsProcess: boolean }).ownsProcess = true;
+    manager.emit('gateway:ready', {});
+    expect(removeOpenClaw2026_7_1UpgradeSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('refreshes changed owned launch secrets despite cooldown and skips unchanged/external children', async () => {
+    vi.resetModules();
+    const { GatewayManager } = await import('@electron/gateway/manager');
+    const manager = new GatewayManager();
+    const internals = manager as unknown as {
+      ownsProcess: boolean;
+      process: { pid: number } | null;
+      stateController: { setStatus: (update: Record<string, unknown>) => void };
+      launchEnvFingerprints: Record<string, string>;
+      fingerprintEnvValue: (value: string | undefined) => string;
+    };
+    internals.stateController.setStatus({ state: 'running' });
+    const { loadProviderEnv } = await import('@electron/gateway/config-sync');
+    let currentKey = 'second';
+    vi.mocked(loadProviderEnv).mockImplementation(async () => ({ providerEnv: { OPENAI_API_KEY: currentKey }, loadedProviderKeyCount: 1 }));
+    internals.launchEnvFingerprints = { OPENAI_API_KEY: internals.fingerprintEnvValue('first') };
+    const stop = vi.spyOn(manager, 'stop').mockResolvedValue(undefined);
+    const start = vi.spyOn(manager, 'start').mockImplementation(async () => {
+      internals.process = { pid: (internals.process?.pid ?? 500) + 1 };
+      internals.launchEnvFingerprints = { OPENAI_API_KEY: internals.fingerprintEnvValue(currentKey) };
+    });
+
+    internals.process = { pid: 501 };
+    expect(await manager.restartOwnedForProviderSecretChange()).toBe(false);
+    expect(stop).not.toHaveBeenCalled();
+
+    internals.ownsProcess = true;
+    expect(await manager.restartOwnedForProviderSecretChange()).toBe(true);
+    expect(start).toHaveBeenCalledOnce();
+
+    expect(await manager.restartOwnedForProviderSecretChange()).toBe(true);
+    expect(start).toHaveBeenCalledOnce();
+    currentKey = 'third';
+    expect(await manager.restartOwnedForProviderSecretChange()).toBe(true);
+    expect(start).toHaveBeenCalledTimes(2);
+    await manager.restart();
+    expect(start).toHaveBeenCalledTimes(2);
+  });
+
+  it('refreshes removed standard keys and SecretRefs when the active account becomes OAuth', async () => {
+    vi.resetModules();
+    const { GatewayManager } = await import('@electron/gateway/manager');
+    const { loadProviderEnv } = await import('@electron/gateway/config-sync');
+    const manager = new GatewayManager();
+    const internals = manager as unknown as {
+      ownsProcess: boolean; process: { pid: number };
+      stateController: { setStatus: (update: Record<string, unknown>) => void };
+      launchEnvFingerprints: Record<string, string>;
+      fingerprintEnvValue: (value: string | undefined) => string;
+    };
+    internals.ownsProcess = true;
+    internals.process = { pid: 501 };
+    internals.stateController.setStatus({ state: 'running' });
+    internals.launchEnvFingerprints = {
+      OPENAI_API_KEY: internals.fingerprintEnvValue('old-static-key'),
+      MORPHEUS_PROVIDER_KEY_OLD: internals.fingerprintEnvValue('old-static-key'),
+    };
+    // loadProviderEnv explicitly includes unset standard keys for OAuth and
+    // omits SecretRefs belonging to a no-longer-active static account.
+    vi.mocked(loadProviderEnv).mockResolvedValue({ providerEnv: { OPENAI_API_KEY: undefined }, loadedProviderKeyCount: 0 });
+    vi.spyOn(manager, 'stop').mockResolvedValue(undefined);
+    const start = vi.spyOn(manager, 'start').mockImplementation(async () => {
+      internals.process = { pid: 502 };
+      internals.launchEnvFingerprints = { OPENAI_API_KEY: internals.fingerprintEnvValue(undefined) };
+    });
+    expect(await manager.restartOwnedForProviderSecretChange()).toBe(true);
+    expect(start).toHaveBeenCalledOnce();
+    // Runtime-sync callers treat true as successfully refreshed/already fresh.
+    expect(await manager.restartOwnedForProviderSecretChange()).toBe(true);
+    expect(start).toHaveBeenCalledOnce();
+  });
+
+  it('serializes a changed default arriving during a secret refresh', async () => {
+    vi.resetModules();
+    const { GatewayManager } = await import('@electron/gateway/manager');
+    const { loadProviderEnv } = await import('@electron/gateway/config-sync');
+    const manager = new GatewayManager();
+    const internals = manager as unknown as {
+      ownsProcess: boolean; process: { pid: number };
+      stateController: { setStatus: (update: Record<string, unknown>) => void };
+      launchEnvFingerprints: Record<string, string>;
+      fingerprintEnvValue: (value: string | undefined) => string;
+    };
+    internals.ownsProcess = true;
+    internals.process = { pid: 501 };
+    internals.stateController.setStatus({ state: 'running' });
+    let key = 'second';
+    vi.mocked(loadProviderEnv).mockImplementation(async () => ({ providerEnv: { OPENAI_API_KEY: key }, loadedProviderKeyCount: 1 }));
+    internals.launchEnvFingerprints = { OPENAI_API_KEY: internals.fingerprintEnvValue('first') };
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => { release = resolve; });
+    vi.spyOn(manager, 'stop').mockResolvedValue(undefined);
+    const start = vi.spyOn(manager, 'start').mockImplementation(async () => {
+      const launchedKey = key;
+      if (start.mock.calls.length === 1) await blocked;
+      internals.process = { pid: internals.process.pid + 1 };
+      internals.launchEnvFingerprints = { OPENAI_API_KEY: internals.fingerprintEnvValue(launchedKey) };
+    });
+    const first = manager.restartOwnedForProviderSecretChange();
+    await vi.waitFor(() => expect(start).toHaveBeenCalledOnce());
+    key = 'third';
+    const second = manager.restartOwnedForProviderSecretChange();
+    release();
+    expect(await first).toBe(true);
+    expect(await second).toBe(true);
+    expect(start).toHaveBeenCalledTimes(2);
   });
 
   it('auto-sets gatewayReady=true after fallback RPC router probe succeeds', async () => {

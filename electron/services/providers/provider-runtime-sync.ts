@@ -11,8 +11,10 @@ import {
   pruneInvalidApiProviderEntries,
   removeProviderFromOpenClaw,
   removeProviderKeyFromOpenClaw,
+  removeAppOwnedProviderRuntimeKeyRefs,
   saveOAuthTokenToOpenClaw,
-  saveProviderKeyToOpenClaw,
+  activateOpenClawOAuthProfile,
+  saveProviderKeyRefToOpenClaw,
   OPENAI_CODEX_OAUTH_PROVIDER_CONFIG,
   setOpenClawDefaultModel,
   setOpenClawDefaultModelWithOverride,
@@ -27,6 +29,9 @@ import {
 } from '../../shared/pi-ai-model-cost';
 import { logger } from '../../utils/logger';
 import { listAgentsSnapshot } from '../../utils/agent-config';
+import { getRuntimeProviderSecretEnvVar, getRuntimeProviderSecretRef } from './provider-runtime-secret-ref';
+import { loadActiveRuntimeProviderAccounts } from './active-runtime-provider-selection';
+import { reconcileAppOwnedProviderModelKeysBeforeLaunch } from '../../gateway/provider-model-key-reconciliation';
 
 /** OpenClaw Codex OAuth hooks only apply to the canonical `openai` provider id. */
 const OPENAI_OAUTH_RUNTIME_PROVIDER = 'openai';
@@ -189,51 +194,65 @@ export async function syncProviderApiKeyToRuntime(
   providerType: string,
   providerId: string,
   apiKey: string,
+  previousKey?: string,
+  gatewayManager?: GatewayManager,
 ): Promise<void> {
   const ock = getOpenClawProviderKey(providerType, providerId);
-  await saveProviderKeyToOpenClaw(ock, apiKey);
+  const selected = (await loadActiveRuntimeProviderAccounts()).get(ock);
+  if (selected && selected.account.id !== providerId) return;
+  await saveProviderKeyRefToOpenClaw(
+    ock,
+    getRuntimeProviderSecretEnvVar(ock),
+    [...(selected?.verifiedKeys ?? []), apiKey, previousKey].filter((key): key is string => Boolean(key)),
+  );
+  await refreshOwnedGatewayProviderEnv(gatewayManager);
+  // The key-only Settings route must also replace a legacy literal key in
+  // models.providers; saving only the auth profile would leave that copy.
+  const provider = await getProvider(providerId);
+  if (provider) {
+    const context = await resolveRuntimeSyncContext(provider);
+    if (context) await syncRuntimeProviderConfig(provider, context, true);
+  }
+}
+
+async function refreshOwnedGatewayProviderEnv(gatewayManager?: GatewayManager): Promise<void> {
+  if (!gatewayManager || gatewayManager.getStatus().state === 'stopped') return;
+  if (!await gatewayManager.restartOwnedForProviderSecretChange()) {
+    throw new Error('Provider key saved; Gateway restart with the updated environment is required');
+  }
+}
+
+/** Re-select surviving accounts and retire the deleted credential's child env. */
+export async function finishProviderSecretDeletionToRuntime(gatewayManager?: GatewayManager): Promise<void> {
+  await syncAllProviderAuthToRuntime();
+  await refreshOwnedGatewayProviderEnv(gatewayManager);
+}
+
+async function hasEnabledRuntimeSibling(providerId: string, runtimeProviderKey: string): Promise<boolean> {
+  return (await listProviderAccounts()).some((account) => account.id !== providerId
+    && account.enabled !== false
+    && getOpenClawProviderKey(account.vendorId, account.id) === runtimeProviderKey);
 }
 
 export async function syncAllProviderAuthToRuntime(): Promise<void> {
   await migrateAllAgentAuthProfilesToSqlite();
-  const accounts = await listProviderAccounts();
-  for (const account of accounts) {
-    const runtimeProviderKey = await resolveRuntimeProviderKey({
-      id: account.id,
-      name: account.label,
-      type: account.vendorId,
-      baseUrl: account.baseUrl,
-      model: account.model,
-      fallbackModels: account.fallbackModels,
-      fallbackProviderIds: account.fallbackAccountIds,
-      enabled: account.enabled,
-      createdAt: account.createdAt,
-      updatedAt: account.updatedAt,
-    });
-
+  const selected = await loadActiveRuntimeProviderAccounts();
+  for (const [runtimeProviderKey, { account, key, verifiedKeys }] of selected) {
+    if (verifiedKeys?.size) {
+      await saveProviderKeyRefToOpenClaw(runtimeProviderKey, getRuntimeProviderSecretEnvVar(runtimeProviderKey),
+        [...verifiedKeys], undefined, { activate: Boolean(key) });
+    }
     const secret = await getProviderSecret(account.id);
-    if (!secret) {
-      continue;
-    }
-
-    if (secret.type === 'api_key') {
-      await saveProviderKeyToOpenClaw(runtimeProviderKey, secret.apiKey);
-      continue;
-    }
-
-    if (secret.type === 'local' && secret.apiKey) {
-      await saveProviderKeyToOpenClaw(runtimeProviderKey, secret.apiKey);
-      continue;
-    }
-
-    if (secret.type === 'oauth') {
+    if (secret?.type === 'oauth') {
       await saveOAuthTokenToOpenClaw(runtimeProviderKey, {
         access: secret.accessToken,
         refresh: secret.refreshToken,
         expires: secret.expiresAt,
         email: secret.email,
         projectId: secret.subject,
-      });
+      }, undefined, { onlyIfMissing: true, activate: false });
+      await activateOpenClawOAuthProfile(runtimeProviderKey);
+      await removeAppOwnedProviderRuntimeKeyRefs(runtimeProviderKey, getRuntimeProviderSecretEnvVar(runtimeProviderKey));
     }
   }
 }
@@ -242,25 +261,28 @@ async function syncProviderSecretToRuntime(
   config: ProviderConfig,
   runtimeProviderKey: string,
   apiKey: string | undefined,
-): Promise<void> {
+  previousKey?: string,
+): Promise<boolean> {
   const secret = await getProviderSecret(config.id);
   if (apiKey !== undefined) {
     const trimmedKey = apiKey.trim();
     if (trimmedKey) {
-      await saveProviderKeyToOpenClaw(runtimeProviderKey, trimmedKey);
+      await saveProviderKeyRefToOpenClaw(runtimeProviderKey, getRuntimeProviderSecretEnvVar(runtimeProviderKey),
+        [trimmedKey, previousKey].filter((key): key is string => Boolean(key)));
+      return true;
     } else {
       // An explicit empty string means the caller wants to clear the key.
       // Mirror that intent into OpenClaw auth-profiles so the gateway no
       // longer authenticates with the stale value (matches the explicit
       // delete branch in the legacy /api/providers/:id PUT handler).
-      await removeProviderKeyFromOpenClaw(runtimeProviderKey);
+      await removeProviderKeyFromOpenClaw(runtimeProviderKey, undefined, previousKey);
     }
-    return;
+    return false;
   }
 
   if (secret?.type === 'api_key') {
-    await saveProviderKeyToOpenClaw(runtimeProviderKey, secret.apiKey);
-    return;
+    await saveProviderKeyRefToOpenClaw(runtimeProviderKey, getRuntimeProviderSecretEnvVar(runtimeProviderKey), [secret.apiKey, previousKey].filter((key): key is string => Boolean(key)));
+    return true;
   }
 
   if (secret?.type === 'oauth') {
@@ -270,13 +292,15 @@ async function syncProviderSecretToRuntime(
       expires: secret.expiresAt,
       email: secret.email,
       projectId: secret.subject,
-    });
-    return;
+    }, undefined, { onlyIfMissing: true });
+    return false;
   }
 
   if (secret?.type === 'local' && secret.apiKey) {
-    await saveProviderKeyToOpenClaw(runtimeProviderKey, secret.apiKey);
+    await saveProviderKeyRefToOpenClaw(runtimeProviderKey, getRuntimeProviderSecretEnvVar(runtimeProviderKey), [secret.apiKey, previousKey].filter((key): key is string => Boolean(key)));
+    return true;
   }
+  return false;
 }
 
 async function resolveRuntimeSyncContext(config: ProviderConfig): Promise<RuntimeProviderSyncContext | null> {
@@ -297,27 +321,34 @@ async function resolveRuntimeSyncContext(config: ProviderConfig): Promise<Runtim
 async function syncRuntimeProviderConfig(
   config: ProviderConfig,
   context: RuntimeProviderSyncContext,
+  hasStaticKey: boolean,
 ): Promise<void> {
   const modelId = normalizeRuntimeModelId(context.runtimeProviderKey, config.model);
   await syncProviderConfigToOpenClaw(context.runtimeProviderKey, modelId, {
     baseUrl: normalizeProviderBaseUrl(config, config.baseUrl || context.meta?.baseUrl, context.api),
     api: context.api,
     apiKeyEnv: context.meta?.apiKeyEnv,
+    apiKeyRef: hasStaticKey ? getRuntimeProviderSecretRef(context.runtimeProviderKey) : undefined,
     headers: config.headers ?? context.meta?.headers,
   });
+  if (!hasStaticKey) {
+    await removeAppOwnedProviderRuntimeKeyRefs(
+      context.runtimeProviderKey,
+      getRuntimeProviderSecretEnvVar(context.runtimeProviderKey),
+    );
+  }
 }
 
 async function syncCustomProviderAgentModel(
   config: ProviderConfig,
   runtimeProviderKey: string,
-  apiKey: string | undefined,
+  hasStaticKey: boolean,
 ): Promise<void> {
   if (!isUnregisteredProviderType(config.type)) {
     return;
   }
 
-  const resolvedKey = apiKey !== undefined ? (apiKey.trim() || null) : await getApiKey(config.id);
-  if (!resolvedKey || !config.baseUrl) {
+  if (!hasStaticKey || !config.baseUrl) {
     return;
   }
 
@@ -326,22 +357,27 @@ async function syncCustomProviderAgentModel(
     baseUrl: normalizeProviderBaseUrl(config, config.baseUrl, config.apiProtocol || 'openai-completions'),
     api: config.apiProtocol || 'openai-completions',
     models: modelId ? [piAiModelsJsonModelEntry(modelId)] : [],
-    apiKey: resolvedKey,
   });
 }
 
 async function syncProviderToRuntime(
   config: ProviderConfig,
   apiKey: string | undefined,
+  gatewayManager?: GatewayManager,
+  previousKey?: string,
 ): Promise<RuntimeProviderSyncContext | null> {
+  if (config.enabled === false) return null;
   const context = await resolveRuntimeSyncContext(config);
   if (!context) {
     return null;
   }
+  const selected = (await loadActiveRuntimeProviderAccounts()).get(context.runtimeProviderKey);
+  if (selected && selected.account.id !== config.id) return null;
 
-  await syncProviderSecretToRuntime(config, context.runtimeProviderKey, apiKey);
-  await syncRuntimeProviderConfig(config, context);
-  await syncCustomProviderAgentModel(config, context.runtimeProviderKey, apiKey);
+  const hasStaticKey = await syncProviderSecretToRuntime(config, context.runtimeProviderKey, apiKey, previousKey);
+  if (hasStaticKey) await refreshOwnedGatewayProviderEnv(gatewayManager);
+  await syncRuntimeProviderConfig(config, context, hasStaticKey);
+  await syncCustomProviderAgentModel(config, context.runtimeProviderKey, hasStaticKey);
   return context;
 }
 
@@ -438,13 +474,11 @@ async function buildAgentModelProviderEntry(
   let apiKey: string | undefined;
   let authHeader: boolean | undefined;
 
-  if (isUnregisteredProviderType(config.type)) {
-    apiKey = (await getApiKey(config.id)) || undefined;
-  } else if (config.type === 'minimax-portal' || config.type === 'minimax-portal-cn') {
+  // The SecretRef in openclaw.json is authoritative for static keys. A
+  // targeted scrub replaces only previously app-owned raw models.json keys.
+  if (config.type === 'minimax-portal' || config.type === 'minimax-portal-cn') {
     const accountApiKey = await getApiKey(config.id);
-    if (accountApiKey) {
-      apiKey = accountApiKey;
-    } else {
+    if (!accountApiKey) {
       authHeader = true;
       apiKey = 'minimax-oauth';
     }
@@ -499,9 +533,10 @@ export async function syncAgentModelOverrideToRuntime(agentId: string): Promise<
 export async function syncSavedProviderToRuntime(
   config: ProviderConfig,
   apiKey: string | undefined,
-  _gatewayManager?: GatewayManager,
+  gatewayManager?: GatewayManager,
+  previousKey?: string,
 ): Promise<void> {
-  const context = await syncProviderToRuntime(config, apiKey);
+  const context = await syncProviderToRuntime(config, apiKey, gatewayManager, previousKey);
   if (!context) {
     return;
   }
@@ -510,12 +545,69 @@ export async function syncSavedProviderToRuntime(
 
 }
 
+/**
+ * Migrate the *old* app-owned key out of OpenClaw's plaintext config before
+ * replacing that key in the protected vault. If the process stops after the
+ * protected write, the durable config already points at the stable env ref.
+ */
+export async function reconcileProviderBeforeStaticKeyReplacement(
+  existing: ProviderConfig | null,
+  previousKey: string | null,
+  nextKey: string | undefined,
+  gatewayManager?: GatewayManager,
+): Promise<void> {
+  const replacement = nextKey?.trim();
+  if (!previousKey || !replacement || replacement === previousKey) return;
+  if (!existing || !await resolveRuntimeSyncContext(existing)) {
+    throw new Error('Existing provider cannot be reconciled before replacing its key');
+  }
+  if (await getApiKey(existing.id) !== previousKey) {
+    throw new Error('Provider key changed during replacement; retry the operation');
+  }
+  const runtimeKey = await resolveRuntimeProviderKey(existing);
+  const selected = (await loadActiveRuntimeProviderAccounts()).get(runtimeKey);
+  if (selected && selected.account.id !== existing.id) {
+    // Rotation must scrub the old key while its vault provenance still exists,
+    // without changing which sibling account supplies this runtime provider.
+    await saveProviderKeyRefToOpenClaw(runtimeKey, getRuntimeProviderSecretEnvVar(runtimeKey),
+      [...(selected.verifiedKeys ?? []), previousKey], undefined, { activate: Boolean(selected.key) });
+    await reconcileAppOwnedProviderModelKeysBeforeLaunch();
+    return;
+  }
+  await syncSavedProviderToRuntime(existing, undefined, gatewayManager, previousKey);
+}
+
+/** Clear an abandoned runtime key before account metadata stops supplying its env value. */
+export async function reconcileProviderBeforeRuntimeKeyChange(
+  existing: ProviderConfig | null,
+  nextType: string,
+  previousKey?: string | null,
+): Promise<void> {
+  if (!existing) return;
+  const oldRuntimeKey = await resolveRuntimeProviderKey(existing);
+  const nextRuntimeKey = getOpenClawProviderKey(nextType, existing.id);
+  if (oldRuntimeKey === nextRuntimeKey) return;
+  const key = previousKey ?? await getApiKey(existing.id);
+  if (!key) return;
+  const siblings = await listProviderAccounts();
+  for (const account of siblings) {
+    if (account.id === existing.id || getOpenClawProviderKey(account.vendorId, account.id) !== oldRuntimeKey) continue;
+    const siblingSecret = await getProviderSecret(account.id);
+    if (siblingSecret?.type === 'api_key' || (siblingSecret?.type === 'local' && siblingSecret.apiKey)) {
+      return; // another account still supplies this shared runtime provider
+    }
+  }
+  await removeAppOwnedProviderRuntimeKeyRefs(oldRuntimeKey, getRuntimeProviderSecretEnvVar(oldRuntimeKey), key);
+  await removeProviderKeyFromOpenClaw(oldRuntimeKey, undefined, key);
+}
+
 export async function syncUpdatedProviderToRuntime(
   config: ProviderConfig,
   apiKey: string | undefined,
-  _gatewayManager?: GatewayManager,
+  gatewayManager?: GatewayManager,
+  previousKey?: string,
 ): Promise<void> {
-  const context = await syncProviderToRuntime(config, apiKey);
+  const context = await syncProviderToRuntime(config, apiKey, gatewayManager, previousKey);
   if (!context) {
     return;
   }
@@ -534,6 +626,7 @@ export async function syncUpdatedProviderToRuntime(
           baseUrl: normalizeProviderBaseUrl(config, config.baseUrl || context.meta?.baseUrl, context.api),
           api: context.api,
           apiKeyEnv: context.meta?.apiKeyEnv,
+          apiKeyRef: await getApiKey(config.id) ? getRuntimeProviderSecretRef(ock) : undefined,
           headers: config.headers ?? context.meta?.headers,
         }, fallbackModels);
       } else {
@@ -543,6 +636,7 @@ export async function syncUpdatedProviderToRuntime(
       await setOpenClawDefaultModelWithOverride(ock, modelOverride, {
         baseUrl: normalizeProviderBaseUrl(config, config.baseUrl, config.apiProtocol || 'openai-completions'),
         api: config.apiProtocol || 'openai-completions',
+        apiKeyRef: await getApiKey(config.id) ? getRuntimeProviderSecretRef(ock) : undefined,
         headers: config.headers,
       }, fallbackModels);
     }
@@ -563,6 +657,13 @@ export async function syncDeletedProviderToRuntime(
   }
 
   const ock = runtimeProviderKey ?? await resolveRuntimeProviderKey({ ...provider, id: providerId });
+  if (await hasEnabledRuntimeSibling(providerId, ock)) {
+    // A built-in vendor has one runtime slot, shared by multiple app accounts.
+    // Convert all verified literals before removing this account's provenance.
+    await syncAllProviderAuthToRuntime();
+    await reconcileAppOwnedProviderModelKeysBeforeLaunch();
+    return;
+  }
   await removeDeletedProviderFromOpenClaw(provider, providerId, ock);
 
 }
@@ -571,18 +672,25 @@ export async function syncDeletedProviderApiKeyToRuntime(
   provider: ProviderConfig | null,
   providerId: string,
   runtimeProviderKey?: string,
+  previousKey?: string,
 ): Promise<void> {
   if (!provider?.type) {
     return;
   }
 
   const ock = runtimeProviderKey ?? await resolveRuntimeProviderKey({ ...provider, id: providerId });
-  await removeProviderKeyFromOpenClaw(ock);
+  if (await hasEnabledRuntimeSibling(providerId, ock)) {
+    await syncAllProviderAuthToRuntime();
+    await reconcileAppOwnedProviderModelKeysBeforeLaunch();
+    return;
+  }
+  await removeAppOwnedProviderRuntimeKeyRefs(ock, getRuntimeProviderSecretEnvVar(ock), previousKey);
+  await removeProviderKeyFromOpenClaw(ock, undefined, previousKey);
 }
 
 export async function syncDefaultProviderToRuntime(
   providerId: string,
-  _gatewayManager?: GatewayManager,
+  gatewayManager?: GatewayManager,
 ): Promise<void> {
   const provider = await getProvider(providerId);
   if (!provider) {
@@ -639,6 +747,10 @@ export async function syncDefaultProviderToRuntime(
   const isOAuthProvider = (oauthTypes.includes(provider.type) && !providerKey) || Boolean(browserOAuthRuntimeProvider);
 
   if (!isOAuthProvider) {
+    if (providerKey) {
+      await saveProviderKeyRefToOpenClaw(ock, getRuntimeProviderSecretEnvVar(ock), [providerKey]);
+      await refreshOwnedGatewayProviderEnv(gatewayManager);
+    }
     const modelOverride = provider.model
       ? (provider.model.startsWith(`${ock}/`) ? provider.model : `${ock}/${provider.model}`)
       : undefined;
@@ -647,6 +759,7 @@ export async function syncDefaultProviderToRuntime(
       await setOpenClawDefaultModelWithOverride(ock, modelOverride, {
         baseUrl: normalizeProviderBaseUrl(provider, provider.baseUrl, provider.apiProtocol || 'openai-completions'),
         api: provider.apiProtocol || 'openai-completions',
+        apiKeyRef: providerKey ? getRuntimeProviderSecretRef(ock) : undefined,
         headers: provider.headers,
       }, fallbackModels);
     } else if (shouldUseExplicitDefaultOverride(provider, ock)) {
@@ -658,15 +771,21 @@ export async function syncDefaultProviderToRuntime(
         ),
         api: provider.apiProtocol || getProviderConfig(provider.type)?.api,
         apiKeyEnv: getProviderConfig(provider.type)?.apiKeyEnv,
+        apiKeyRef: providerKey ? getRuntimeProviderSecretRef(ock) : undefined,
         headers: provider.headers ?? getProviderConfig(provider.type)?.headers,
+      }, fallbackModels);
+    } else if (providerKey) {
+      const meta = getProviderConfig(provider.type);
+      await setOpenClawDefaultModelWithOverride(ock, modelOverride, {
+        baseUrl: normalizeProviderBaseUrl(provider, meta?.baseUrl, meta?.api),
+        api: meta?.api,
+        apiKeyRef: getRuntimeProviderSecretRef(ock),
+        headers: meta?.headers,
       }, fallbackModels);
     } else {
       await setOpenClawDefaultModel(ock, modelOverride, fallbackModels);
     }
 
-    if (providerKey) {
-      await saveProviderKeyToOpenClaw(ock, providerKey);
-    }
   } else {
     if (browserOAuthRuntimeProvider) {
       const secret = await getProviderSecret(provider.id);
@@ -678,8 +797,11 @@ export async function syncDefaultProviderToRuntime(
           email: secret.email,
           projectId: secret.subject,
           accountId: secret.subject,
-        });
+        }, undefined, { onlyIfMissing: true, activate: false });
       }
+      await activateOpenClawOAuthProfile(browserOAuthRuntimeProvider);
+      await removeAppOwnedProviderRuntimeKeyRefs(browserOAuthRuntimeProvider, getRuntimeProviderSecretEnvVar(browserOAuthRuntimeProvider));
+      await refreshOwnedGatewayProviderEnv(gatewayManager);
 
       const defaultModelRef = OPENAI_OAUTH_DEFAULT_MODEL_REF;
       const modelOverride = provider.model
@@ -743,7 +865,6 @@ export async function syncDefaultProviderToRuntime(
       baseUrl: normalizeProviderBaseUrl(provider, provider.baseUrl, provider.apiProtocol || 'openai-completions'),
       api: provider.apiProtocol || 'openai-completions',
       models: modelId ? [piAiModelsJsonModelEntry(modelId)] : [],
-      apiKey: providerKey,
     });
   }
 

@@ -71,6 +71,73 @@ async function writeAgentAuthProfiles(agentId: string, store: Record<string, unk
   await writeFile(join(agentDir, 'auth-profiles.json'), JSON.stringify(store, null, 2), 'utf8');
 }
 
+describe('startup OAuth synchronization', () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.restoreAllMocks();
+    await rm(testHome, { recursive: true, force: true });
+    await rm(testUserData, { recursive: true, force: true });
+  });
+
+  it('keeps an OpenClaw-rotated token instead of replaying a stale app token', async () => {
+    const rotated = {
+      type: 'oauth', provider: 'openai-codex', access: 'rotated-access',
+      refresh: 'rotated-refresh', expires: 9000,
+    };
+    await writeAgentAuthProfiles('main', { version: 1, profiles: { 'openai-codex:default': rotated } });
+    const { saveOAuthTokenToOpenClaw } = await import('@electron/utils/openclaw-auth');
+
+    await saveOAuthTokenToOpenClaw('openai-codex', {
+      access: 'stale-access', refresh: 'stale-refresh', expires: 1000,
+    }, 'main', { onlyIfMissing: true });
+
+    const store = await readAuthProfiles('main');
+    expect((store.profiles as Record<string, unknown>)['openai-codex:default']).toEqual(rotated);
+  });
+
+  it('seeds a missing profile while leaving explicit token saves able to replace it', async () => {
+    const { saveOAuthTokenToOpenClaw } = await import('@electron/utils/openclaw-auth');
+    await saveOAuthTokenToOpenClaw('openai-codex', {
+      access: 'initial', refresh: 'initial-refresh', expires: 1000,
+    }, 'main', { onlyIfMissing: true });
+    await saveOAuthTokenToOpenClaw('openai-codex', {
+      access: 'explicit-new', refresh: 'explicit-refresh', expires: 9000,
+    }, 'main');
+
+    const store = await readAuthProfiles('main');
+    expect((store.profiles as Record<string, { access: string }>)['openai-codex:default'].access).toBe('explicit-new');
+  });
+
+  it('activates the current OAuth token after a static sibling without replaying or exporting tokens', async () => {
+    const envVar = 'MORPHEUS_PROVIDER_KEY_0123456789ABCDEF01234567';
+    const rotated = { type: 'oauth' as const, provider: 'openai', access: 'rotated-access', refresh: 'rotated-refresh', expires: 9000 };
+    const { writeAuthProfilesToSqlite, readAuthProfilesFromSqlite } = await import('@electron/utils/openclaw-auth-sqlite');
+    writeAuthProfilesToSqlite({ version: 1, profiles: {
+      'openai:default': rotated,
+      'openai:morpheus': { type: 'api_key', provider: 'openai', keyRef: { source: 'env', provider: 'default', id: envVar } },
+    }, order: { openai: ['openai:morpheus', 'openai:default'] }, lastGood: { openai: 'openai:morpheus' } }, 'main');
+    const { saveOAuthTokenToOpenClaw, activateOpenClawOAuthProfile, saveProviderKeyRefToOpenClaw } = await import('@electron/utils/openclaw-auth');
+    await saveProviderKeyRefToOpenClaw('openai', envVar, [], 'main', { activate: false });
+    await saveOAuthTokenToOpenClaw('openai', { access: 'stale-access', refresh: 'stale-refresh', expires: 1 }, 'main', { onlyIfMissing: true, activate: false });
+    await activateOpenClawOAuthProfile('openai');
+    const selected = readAuthProfilesFromSqlite('main');
+    expect(selected?.lastGood?.openai).toBe('openai:default');
+    expect(selected?.order?.openai[0]).toBe('openai:default');
+    expect(selected?.profiles['openai:default']).toEqual(rotated);
+    expect(JSON.stringify(await readAuthProfiles('main'))).not.toMatch(/rotated-access|rotated-refresh|stale-access/);
+  });
+
+  it('preserves imported static credentials when seeding a missing OAuth login', async () => {
+    const imported = { type: 'api_key', provider: 'openai', key: 'synthetic-imported-static' };
+    await writeAgentAuthProfiles('main', { version: 1, profiles: { 'openai:default': imported } });
+    const { saveOAuthTokenToOpenClaw } = await import('@electron/utils/openclaw-auth');
+    await saveOAuthTokenToOpenClaw('openai', { access: 'new-oauth', refresh: 'new-refresh', expires: 10 }, 'main', { onlyIfMissing: true });
+    const store = await readAuthProfiles('main');
+    expect((store.profiles as Record<string, unknown>)['openai:default']).toEqual(imported);
+    expect((store.profiles as Record<string, { access: string }>)['openai:morpheus-oauth'].access).toBe('new-oauth');
+  });
+});
+
 describe('saveProviderKeyToOpenClaw', () => {
   beforeEach(async () => {
     vi.resetModules();
@@ -160,12 +227,158 @@ describe('saveProviderKeyToOpenClaw', () => {
   });
 });
 
+describe('saveProviderKeyRefToOpenClaw', () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.restoreAllMocks();
+    await rm(testHome, { recursive: true, force: true });
+    await rm(testUserData, { recursive: true, force: true });
+  });
+
+  it('replaces only an app-owned static key in JSON, SQLite, and generated models', async () => {
+    const agentDir = join(testHome, '.openclaw', 'agents', 'main', 'agent');
+    await mkdir(agentDir, { recursive: true });
+    await writeAgentAuthProfiles('main', {
+      version: 1,
+      profiles: {
+        'custom-demo:default': { type: 'api_key', provider: 'custom-demo', key: 'synthetic-old-key' },
+        'other:default': { type: 'api_key', provider: 'other', key: 'synthetic-imported-key' },
+      },
+    });
+    await writeFile(join(agentDir, 'models.json'), JSON.stringify({ providers: {
+      'custom-demo': { apiKey: 'synthetic-old-key', models: [{ id: 'demo', name: 'Demo' }] },
+      other: { apiKey: 'synthetic-imported-key' },
+    } }), 'utf8');
+    const { saveProviderKeyRefToOpenClaw } = await import('@electron/utils/openclaw-auth');
+    const envVar = 'MORPHEUS_PROVIDER_KEY_0123456789ABCDEF01234567';
+    await saveProviderKeyRefToOpenClaw('custom-demo', envVar, ['synthetic-old-key'], 'main');
+
+    const json = await readAuthProfiles('main') as { profiles: Record<string, Record<string, unknown>> };
+    const { readAuthProfilesFromSqlite } = await import('@electron/utils/openclaw-auth-sqlite');
+    const sqlite = readAuthProfilesFromSqlite('main');
+    const models = JSON.parse(await readFile(join(agentDir, 'models.json'), 'utf8')) as {
+      providers: Record<string, { apiKey: string }>;
+    };
+    const expectedRef = { source: 'env', provider: 'default', id: envVar };
+    expect(json.profiles['custom-demo:default']).toEqual({ type: 'api_key', provider: 'custom-demo', keyRef: expectedRef });
+    expect(sqlite?.profiles['custom-demo:default']).toEqual(json.profiles['custom-demo:default']);
+    expect(models.providers['custom-demo'].apiKey).toBe(envVar);
+    expect(models.providers.other.apiKey).toBe('synthetic-imported-key');
+    expect(JSON.stringify(json)).not.toContain('synthetic-old-key');
+    expect(json.profiles['other:default'].key).toBe('synthetic-imported-key');
+  });
+
+  it('preserves an unrelated default profile and gives the app a separate ref profile', async () => {
+    await writeAgentAuthProfiles('main', {
+      version: 1,
+      profiles: { 'openrouter:default': { type: 'api_key', provider: 'openrouter', key: 'synthetic-imported-key' } },
+      order: { openrouter: ['openrouter:default'] },
+    });
+    const { saveProviderKeyRefToOpenClaw } = await import('@electron/utils/openclaw-auth');
+    const envVar = 'MORPHEUS_PROVIDER_KEY_0123456789ABCDEF01234567';
+    await saveProviderKeyRefToOpenClaw('openrouter', envVar, ['synthetic-app-key'], 'main');
+    const json = await readAuthProfiles('main') as {
+      profiles: Record<string, Record<string, unknown>>;
+      order: Record<string, string[]>;
+    };
+    expect(json.profiles['openrouter:default'].key).toBe('synthetic-imported-key');
+    expect(json.profiles['openrouter:morpheus'].keyRef).toEqual({ source: 'env', provider: 'default', id: envVar });
+    expect(json.order.openrouter[0]).toBe('openrouter:morpheus');
+  });
+
+  it('does not restore stale JSON credentials when SQLite already has profiles', async () => {
+    await writeAgentAuthProfiles('main', {
+      version: 1,
+      profiles: { 'other:default': { type: 'api_key', provider: 'other', key: 'stale-json-only-key' } },
+    });
+    const { writeAuthProfilesToSqlite, readAuthProfilesFromSqlite } = await import('@electron/utils/openclaw-auth-sqlite');
+    writeAuthProfilesToSqlite({
+      version: 1,
+      profiles: { 'other:default': { type: 'api_key', provider: 'other', key: 'current-sqlite-key' } },
+    }, 'main');
+    const { saveProviderKeyRefToOpenClaw } = await import('@electron/utils/openclaw-auth');
+    await saveProviderKeyRefToOpenClaw('image-relay', 'MORPHEUS_PROVIDER_KEY_0123456789ABCDEF01234567', [], 'main');
+    const json = await readAuthProfiles('main') as { profiles: Record<string, Record<string, unknown>> };
+    expect(json.profiles['other:default'].key).toBe('stale-json-only-key');
+    expect(readAuthProfilesFromSqlite('main')?.profiles['other:default'].key).toBe('current-sqlite-key');
+    expect(JSON.stringify(json)).not.toContain('current-sqlite-key');
+  });
+
+  it('patches owned JSON profiles without materializing unrelated SQLite-only secrets or state', async () => {
+    const existing = {
+      version: 1,
+      profiles: { 'json-only:default': { type: 'api_key', provider: 'json-only', key: 'existing-json-key' } },
+      order: { 'json-only': ['json-only:default'] },
+      lastGood: { 'json-only': 'json-only:default' },
+      usageStats: { 'json-only:default': { errorCount: 2 } },
+      customMetadata: { retained: true },
+    };
+    await writeAgentAuthProfiles('main', existing);
+    const { writeAuthProfilesToSqlite, readAuthProfilesFromSqlite } = await import('@electron/utils/openclaw-auth-sqlite');
+    const sqliteOnly = {
+      'openai-codex:default': {
+        type: 'oauth', provider: 'openai-codex', access: 'sqlite-only-access', refresh: 'sqlite-only-refresh', expires: 9000,
+      },
+      'imported:default': { type: 'api_key', provider: 'imported', key: 'sqlite-only-imported-key' },
+    };
+    writeAuthProfilesToSqlite({
+      version: 1,
+      profiles: sqliteOnly,
+      order: { imported: ['imported:default'], 'openai-codex': ['openai-codex:default'] },
+      lastGood: { imported: 'imported:default' },
+    }, 'main');
+    const { saveProviderKeyRefToOpenClaw } = await import('@electron/utils/openclaw-auth');
+    const envVar = 'MORPHEUS_PROVIDER_KEY_0123456789ABCDEF01234567';
+    await saveProviderKeyRefToOpenClaw('image-relay', envVar, [], 'main');
+
+    expect(await readAuthProfiles('main')).toEqual({
+      ...existing,
+      profiles: {
+        ...existing.profiles,
+        'image-relay:default': { type: 'api_key', provider: 'image-relay', keyRef: { source: 'env', provider: 'default', id: envVar } },
+      },
+      order: { ...existing.order, 'image-relay': ['image-relay:default'] },
+      lastGood: { ...existing.lastGood, 'image-relay': 'image-relay:default' },
+    });
+    expect(readAuthProfilesFromSqlite('main')?.profiles).toMatchObject(sqliteOnly);
+  });
+});
+
 describe('removeProviderKeyFromOpenClaw', () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.restoreAllMocks();
     await rm(testHome, { recursive: true, force: true });
     await rm(testUserData, { recursive: true, force: true });
+  });
+
+  it('removes only owned JSON entries without copying unrelated SQLite-only OAuth tokens', async () => {
+    const owned = { type: 'api_key', provider: 'image-relay', key: 'owned-legacy-key' };
+    const jsonOnly = { type: 'api_key', provider: 'json-only', key: 'existing-json-key' };
+    await writeAgentAuthProfiles('main', {
+      version: 1,
+      profiles: { 'image-relay:default': owned, 'json-only:default': jsonOnly },
+      order: { 'image-relay': ['image-relay:default'], 'json-only': ['json-only:default'] },
+      lastGood: { 'image-relay': 'image-relay:default', 'json-only': 'json-only:default' },
+      customMetadata: { retained: true },
+    });
+    const { writeAuthProfilesToSqlite, readAuthProfilesFromSqlite } = await import('@electron/utils/openclaw-auth-sqlite');
+    const oauth = {
+      type: 'oauth', provider: 'openai-codex', access: 'sqlite-only-access', refresh: 'sqlite-only-refresh', expires: 9000,
+    };
+    writeAuthProfilesToSqlite({ version: 1, profiles: { 'image-relay:default': owned, 'openai-codex:default': oauth } }, 'main');
+    const { removeProviderKeyFromOpenClaw } = await import('@electron/utils/openclaw-auth');
+
+    await removeProviderKeyFromOpenClaw('image-relay', 'main', 'owned-legacy-key');
+
+    expect(await readAuthProfiles('main')).toEqual({
+      version: 1,
+      profiles: { 'json-only:default': jsonOnly },
+      order: { 'json-only': ['json-only:default'] },
+      lastGood: { 'json-only': 'json-only:default' },
+      customMetadata: { retained: true },
+    });
+    expect(readAuthProfilesFromSqlite('main')?.profiles).toEqual({ 'openai-codex:default': oauth });
   });
 
   it('removes only the default api-key profile for a provider', async () => {
@@ -196,7 +409,7 @@ describe('removeProviderKeyFromOpenClaw', () => {
 
     const { removeProviderKeyFromOpenClaw } = await import('@electron/utils/openclaw-auth');
 
-    await removeProviderKeyFromOpenClaw('custom-abc12345', 'main');
+    await removeProviderKeyFromOpenClaw('custom-abc12345', 'main', 'sk-main');
 
     const mainProfiles = await readAuthProfiles('main');
     expect(mainProfiles.profiles).toEqual({
@@ -323,7 +536,7 @@ describe('removeProviderKeyFromOpenClaw', () => {
 
     const { removeProviderKeyFromOpenClaw } = await import('@electron/utils/openclaw-auth');
 
-    await removeProviderKeyFromOpenClaw('minimax-portal', 'main');
+    await removeProviderKeyFromOpenClaw('minimax-portal', 'main', 'sk-minimax');
 
     const mainProfiles = await readAuthProfiles('main');
     expect(mainProfiles.profiles).toEqual({
@@ -339,6 +552,50 @@ describe('removeProviderKeyFromOpenClaw', () => {
       'minimax-portal': ['minimax-portal:oauth-backup'],
     });
     expect(mainProfiles.lastGood).toEqual({});
+  });
+});
+
+describe('removeAppOwnedProviderRuntimeKeyRefs', () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.restoreAllMocks();
+    await rm(testHome, { recursive: true, force: true });
+    await rm(testUserData, { recursive: true, force: true });
+  });
+
+  it('removes only the deleted app key from config and generated models', async () => {
+    const envVar = 'MORPHEUS_PROVIDER_KEY_0123456789ABCDEF01234567';
+    await writeOpenClawJson({ models: { providers: {
+      openrouter: { apiKey: { source: 'env', provider: 'default', id: envVar }, models: [{ id: 'test' }] },
+      imported: { apiKey: 'synthetic-imported-key' },
+    } } });
+    const agentDir = join(testHome, '.openclaw', 'agents', 'main', 'agent');
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(join(agentDir, 'models.json'), JSON.stringify({ providers: {
+      openrouter: { apiKey: envVar, models: [{ id: 'test' }] },
+      imported: { apiKey: 'synthetic-imported-key' },
+    } }));
+    const { removeAppOwnedProviderRuntimeKeyRefs } = await import('@electron/utils/openclaw-auth');
+    await removeAppOwnedProviderRuntimeKeyRefs('openrouter', envVar);
+    const config = await readOpenClawJson();
+    const configProviders = (config.models as Record<string, unknown>).providers as Record<string, Record<string, unknown>>;
+    const modelStore = JSON.parse(await readFile(join(agentDir, 'models.json'), 'utf8')) as { providers: Record<string, Record<string, unknown>> };
+    expect(configProviders.openrouter.apiKey).toBeUndefined();
+    expect(modelStore.providers.openrouter.apiKey).toBeUndefined();
+    expect(configProviders.openrouter.models).toEqual([{ id: 'test' }]);
+    expect(modelStore.providers.imported.apiKey).toBe('synthetic-imported-key');
+  });
+
+  it('preserves a different credential under the same runtime provider key', async () => {
+    const envVar = 'MORPHEUS_PROVIDER_KEY_0123456789ABCDEF01234567';
+    await writeOpenClawJson({ models: { providers: {
+      openrouter: { apiKey: 'synthetic-imported-key' },
+    } } });
+    const { removeAppOwnedProviderRuntimeKeyRefs } = await import('@electron/utils/openclaw-auth');
+    await removeAppOwnedProviderRuntimeKeyRefs('openrouter', envVar, 'synthetic-old-app-key');
+    const config = await readOpenClawJson();
+    const providers = (config.models as Record<string, unknown>).providers as Record<string, Record<string, unknown>>;
+    expect(providers.openrouter.apiKey).toBe('synthetic-imported-key');
   });
 });
 
@@ -2190,6 +2447,20 @@ describe('syncOpenAiCompatibleImageRelay', () => {
     await rm(testUserData, { recursive: true, force: true });
   });
 
+  it('preserves a mismatched imported image-relay model credential during rotation', async () => {
+    const original = {
+      models: { providers: { 'clawx-openai-image': {
+        baseUrl: 'https://relay.example.com/v1', apiKey: 'synthetic-imported-key',
+      } } },
+    };
+    await writeOpenClawJson(original);
+    const { reconcileImageRelayModelKeyRefBeforeRotation } = await import('@electron/utils/openclaw-auth');
+    await expect(reconcileImageRelayModelKeyRefBeforeRotation('synthetic-owned-old-key', {
+      source: 'env', provider: 'default', id: 'MORPHEUS_PROVIDER_KEY_0123456789ABCDEF01234567',
+    })).rejects.toThrow('Unverified OpenClaw image relay credential');
+    expect(await readOpenClawJson()).toEqual(original);
+  });
+
   it('writes a ClawX-owned provider with a custom image base URL without changing OpenAI chat config', async () => {
     await writeOpenClawJson({
       models: {
@@ -2203,7 +2474,10 @@ describe('syncOpenAiCompatibleImageRelay', () => {
     await syncOpenAiCompatibleImageRelay({
       enabled: true,
       baseUrl: 'https://relay.example.com',
-      apiKey: 'sk-relay-test',
+      apiKeyRef: {
+        source: 'env', provider: 'default',
+        id: 'MORPHEUS_PROVIDER_KEY_0123456789ABCDEF01234567',
+      },
       imageModelIds: ['gpt-image-2'],
     });
 
@@ -2216,14 +2490,17 @@ describe('syncOpenAiCompatibleImageRelay', () => {
     expect(imageRelay.baseUrl).toBe('https://relay.example.com/v1');
     expect(imageRelay.api).toBe('openai-completions');
     expect(imageRelay.request).toEqual({ allowPrivateNetwork: true });
+    expect(imageRelay.apiKey).toEqual({
+      source: 'env', provider: 'default',
+      id: 'MORPHEUS_PROVIDER_KEY_0123456789ABCDEF01234567',
+    });
     expect(imageRelay.models).toEqual([{ id: 'gpt-image-2', name: 'gpt-image-2' }]);
 
     const plugins = result.plugins as Record<string, unknown>;
     const entries = plugins.entries as Record<string, unknown>;
     expect((entries['clawx-openai-image'] as Record<string, unknown>).enabled).toBe(true);
 
-    const auth = await readAuthProfiles('main');
-    expect((auth.profiles['clawx-openai-image:default'] as Record<string, unknown>).key).toBe('sk-relay-test');
+    expect(JSON.stringify(result)).not.toContain('sk-relay-test');
   });
 
   it('preserves metadata for retained relay models while dropping deselected models', async () => {

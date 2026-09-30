@@ -1,7 +1,7 @@
 # Sol: continue Phase 7 implementation
 
 Prepared by the Astra architecture pass on 2026-09-30 and updated after the Sol
-7A.1–7A.4 source checkpoints. NerdGPT is deferred. **Phase 7 is not complete or
+7A.1–7A.4 source checkpoints and the partial 7B.1 source pass. NerdGPT is deferred. **Phase 7 is not complete or
 packaged/live accepted.** Read the current checkpoint and evidence ledger for the
 actual test scope before extending it.
 
@@ -39,16 +39,48 @@ conversation or redesign a logo to start implementation.
 7A.1 Main session, 7A.2 editable native upward composer, 7A.3 compact
 conversation continuity and 7A.4 shared orb motion/ephemeral visual audio level
 pass focused Windows Electron source automation. They are not installer/hardware/
-live-provider acceptance. Next implement **7B.1 protected provider-secret migration**
-before paid live-path testing. Audit app-owned plaintext duplication and pinned
-OpenClaw runtime credential consumers first; do not destroy real keys or claim
-OAuth plaintext elimination without a supported upstream path. Preserve the same
+live-provider acceptance. **7B.1 is in progress in the linked worktree, not accepted.**
+The app-owned static-key store and legacy adapter now write an OS-protected,
+versioned file, verify before legacy cleanup and fail closed when protection is
+unavailable. Focused synthetic store/adapter/provider-service tests passed 33/33.
+The current source path also uses pinned OpenClaw env SecretRefs for new
+app-owned static and image-relay keys, rather than writing those keys into
+auth/config files. Synthetic runtime tests, typecheck, lint, communications
+replay/compare, narrow harness validation, the full unit suite (2,925 passed,
+two skipped), seven fresh-build isolated provider-lifecycle Electron journeys,
+and a synthetic Windows same-user protected-store restart have passed. No real
+provider key or owner profile was used. Exact-match pre-commit and pre-spawn
+reconciliation now make app-owned static-key and protected image-relay
+rotation/relaunch recoverable in source tests without overwriting imported
+mismatches. A legacy image key can be adopted only by explicitly re-entering
+that same key; conflicting keys are preserved and rejected before a vault
+write. **7B.1 remains open**: pre-existing image-relay keys without matching
+app provenance are preserved,
+upstream OAuth and transient upgrade snapshots have separate plaintext limits,
+and a copied existing-profile upgrade plus packaged/live verification are not
+yet complete. Next finish the narrow
+[7B.1 task checks](harness/specs/tasks/morpheus-phase7-b1-provider-secret-migration.md)
+and a safe existing-profile upgrade rehearsal before paid live-path testing.
+Do not destroy real keys or claim upstream OAuth
+plaintext elimination without a supported path. Preserve the same
 assistant/conversation/task owner; no second engine or dashboard.
 
 Use [the Phase 7 harness spec](harness/specs/tasks/morpheus-phase7-assistant.md)
 as the umbrella and create a narrowly scoped task spec per communication change.
 Keep changes reviewable. No generic privileged bridge; no changing the local HTML
 viewer into an unrestricted browser; no dropping existing integrations/settings.
+
+The B.1 final-review fixes are implemented: exact runtime deletion/vendor cleanup,
+stable active sibling selection, current OAuth activation, scoped compatibility
+JSON writes, protected deletion failure reporting, serialized mandatory secret
+refresh and the missing-snapshot completion marker fix. Final combined B.1/C.1
+source checks passed 2,959 unit tests (two skipped), all typechecks, lint (zero
+errors, 12 existing warnings), build, communications and umbrella diff-aware
+harness checks. Eight fresh-build provider journeys passed, including copied
+synthetic legacy migration and same-user Windows protected restart. B.1 remains
+open for exact packaged/real-profile/live acceptance and documented upstream
+plaintext limits. The separate C.1 source checkpoint is being verified next;
+continue its narrow harness/evidence rather than redoing B.1 discovery.
 
 ## Operating rules for continuity and cost
 
@@ -77,7 +109,13 @@ User-ready resume prompt:
 
 > Continue Morpheus Phase 7 on Sol from SOL_START_HERE.md on
 > codex/morpheus-phase6-managed-layer. Verify the checkout and preserve all work.
-> Read the current checkpoint, then continue at 7B.1 in
+> Read the current checkpoint, then finish 7B.1 integration and verification in
 > the documented small checkpoints. Keep the approved bottom-right Siri-style Morpheus companion,
 > not a dashboard. NerdGPT later. Update tests, evidence and handoff as you go;
 > distinguish source implementation from packaged/live acceptance.
+
+Windows `.exe` delivery is still owed. `pnpm run package:win` creates an
+unsigned local NSIS installer with `--publish never`; it has **not** been run
+for this checkpoint. C: had only about 2.1 GiB free on 2026-10-01; D:/E: had
+space. Build on a spacious isolated checkout when the package candidate is
+ready, then provide the exact installer path and verify that fresh binary.

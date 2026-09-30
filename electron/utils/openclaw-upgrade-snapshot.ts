@@ -1,4 +1,5 @@
-import { chmod, copyFile, lstat, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { chmod, copyFile, lstat, mkdir, open, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import { resolveOpenClawConfigPath, resolveOpenClawStateDir } from './paths';
 
@@ -13,7 +14,7 @@ const AGENT_AUTH_BASENAMES = new Set([
 ]);
 
 export type OpenClawUpgradeSnapshotResult = {
-  status: 'created' | 'exists';
+  status: 'created' | 'exists' | 'completed';
   snapshotDir: string;
   files: string[];
 };
@@ -30,6 +31,40 @@ type SnapshotOptions = {
 
 function resolveSnapshotDir(stateDir: string): string {
   return join(stateDir, 'backups', `clawx-${UPGRADE_ID}-pre-migration`);
+}
+
+function resolveCompletionMarkerPath(stateDir: string): string {
+  return `${resolveSnapshotDir(stateDir)}.complete`;
+}
+
+async function completionMarkerExists(stateDir: string): Promise<boolean> {
+  try {
+    const info = await lstat(resolveCompletionMarkerPath(stateDir));
+    if (!info.isFile()) throw new Error('Invalid OpenClaw upgrade completion marker');
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    throw error;
+  }
+}
+
+async function writeCompletionMarker(stateDir: string): Promise<void> {
+  if (await completionMarkerExists(stateDir)) return;
+  const markerPath = resolveCompletionMarkerPath(stateDir);
+  await mkdir(dirname(markerPath), { recursive: true, mode: SNAPSHOT_DIR_MODE });
+  const temporary = `${markerPath}.${randomUUID()}.tmp`;
+  try {
+    const handle = await open(temporary, 'wx', SNAPSHOT_FILE_MODE);
+    try {
+      await handle.writeFile(`${UPGRADE_ID}\n`);
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    await rename(temporary, markerPath);
+  } finally {
+    await rm(temporary, { force: true });
+  }
 }
 
 async function isCopyableRegularFile(path: string): Promise<boolean> {
@@ -97,6 +132,10 @@ export async function ensureOpenClaw2026_7_1UpgradeSnapshot(
   const configPath = resolve(options.configPath ?? resolveOpenClawConfigPath());
   const snapshotDir = resolveSnapshotDir(stateDir);
   const markerPath = join(snapshotDir, 'snapshot.json');
+
+  if (await completionMarkerExists(stateDir)) {
+    return { status: 'completed', snapshotDir, files: [] };
+  }
 
   if (await snapshotMarkerExists(markerPath)) {
     try {
@@ -175,6 +214,9 @@ export async function removeOpenClaw2026_7_1UpgradeSnapshot(
     return { status: 'missing', snapshotDir };
   }
 
+  // Persist completion before deleting the backup. If cleanup is interrupted,
+  // the next launch skips recopying secrets and a later ready event retries removal.
+  await writeCompletionMarker(stateDir);
   await rm(snapshotDir, { recursive: true, force: true });
   return { status: 'removed', snapshotDir };
 }

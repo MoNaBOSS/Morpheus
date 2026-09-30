@@ -4,6 +4,7 @@
  */
 import { app } from 'electron';
 import path from 'path';
+import { createHash } from 'node:crypto';
 import { EventEmitter } from 'events';
 import WebSocket from 'ws';
 import { PORTS } from '../utils/config';
@@ -35,7 +36,7 @@ import {
 } from './request-store';
 import { dispatchJsonRpcNotification, dispatchProtocolEvent } from './event-dispatch';
 import { GatewayStateController } from './state';
-import { prepareGatewayLaunchContext } from './config-sync';
+import { loadProviderEnv, prepareGatewayLaunchContext } from './config-sync';
 import { connectGatewaySocket, waitForGatewayReady } from './ws-client';
 import {
   findExistingGatewayProcess,
@@ -186,6 +187,8 @@ export class GatewayManager extends EventEmitter {
   private pendingRequests: Map<string, PendingGatewayRequest> = new Map();
   private deviceIdentity: DeviceIdentity | null = null;
   private restartInFlight: Promise<void> | null = null;
+  private providerSecretRefreshInFlight: Promise<boolean> | null = null;
+  private launchEnvFingerprints: Record<string, string> = {};
   private readonly connectionMonitor = new GatewayConnectionMonitor();
   private readonly lifecycleController = new GatewayLifecycleController();
   private readonly restartController = new GatewayRestartController();
@@ -249,7 +252,9 @@ export class GatewayManager extends EventEmitter {
         logger.info('Gateway subsystems ready (event received)');
         this.setStatus({ gatewayReady: true });
       }
-      void this.cleanupOpenClawUpgradeSnapshot();
+      if (this.ownsProcess) {
+        void this.cleanupOpenClawUpgradeSnapshot();
+      }
     });
     this.on('gateway:health', (payload) => {
       this.capabilityMonitor.recordOpenClawHealth(payload);
@@ -574,6 +579,10 @@ export class GatewayManager extends EventEmitter {
    * Restart Gateway process
    */
   async restart(): Promise<void> {
+    return this.restartWithPolicy(false);
+  }
+
+  private async restartWithPolicy(requiredSecretRefresh: boolean): Promise<void> {
     if (this.restartController.isRestartDeferred({
       state: this.status.state,
       startLock: this.startLock,
@@ -591,7 +600,7 @@ export class GatewayManager extends EventEmitter {
       return;
     }
 
-    const decision = this.restartGovernor.decide();
+    const decision = requiredSecretRefresh ? { allow: true as const } : this.restartGovernor.decide();
     if (!decision.allow) {
       const observability = this.restartGovernor.getObservability();
       logger.warn(
@@ -658,6 +667,46 @@ export class GatewayManager extends EventEmitter {
         },
       );
     }
+  }
+
+  /** SecretRef launch env is immutable in a running child. Return true when an
+   * owned running Gateway is already fresh or was refreshed successfully. Never
+   * restart an externally managed Gateway on an app-owned provider-key change. */
+  async restartOwnedForProviderSecretChange(): Promise<boolean> {
+    const precedingRefresh = this.providerSecretRefreshInFlight;
+    if (!precedingRefresh && !this.restartInFlight
+      && (!this.ownsProcess || !this.process?.pid || this.status.state !== 'running')) {
+      return false;
+    }
+    const refresh = (async () => {
+      if (precedingRefresh) await precedingRefresh;
+      if (this.restartInFlight) await this.restartInFlight;
+      const previousPid = this.process?.pid;
+      if (!this.ownsProcess || !previousPid || this.status.state !== 'running') return false;
+      const { providerEnv } = await loadProviderEnv();
+      if (this.restartInFlight) await this.restartInFlight;
+      if (!this.ownsProcess || !this.process?.pid || this.status.state !== 'running') return false;
+      const keys = new Set([
+        ...Object.keys(providerEnv),
+        ...Object.keys(this.launchEnvFingerprints).filter((key) => key.startsWith('MORPHEUS_PROVIDER_KEY_')),
+      ]);
+      const changed = [...keys].some((key) => this.launchEnvFingerprints[key]
+        !== this.fingerprintEnvValue(providerEnv[key]));
+      if (!changed) return true;
+      await this.restartWithPolicy(true);
+      return this.ownsProcess && this.status.state === 'running'
+        && this.process?.pid != null && this.process.pid !== previousPid;
+    })();
+    this.providerSecretRefreshInFlight = refresh;
+    try {
+      return await refresh;
+    } finally {
+      if (this.providerSecretRefreshInFlight === refresh) this.providerSecretRefreshInFlight = null;
+    }
+  }
+
+  private fingerprintEnvValue(value: string | undefined): string {
+    return createHash('sha256').update(JSON.stringify(value ?? null)).digest('hex');
   }
 
   /**
@@ -1021,6 +1070,8 @@ export class GatewayManager extends EventEmitter {
 
     this.process = child;
     this.ownsProcess = true;
+    this.launchEnvFingerprints = Object.fromEntries(Object.entries(launchContext.forkEnv)
+      .map(([key, value]) => [key, this.fingerprintEnvValue(value)]));
     logger.debug(`Gateway manager now owns process pid=${child.pid ?? 'unknown'}`);
     this.lastSpawnSummary = lastSpawnSummary;
   }

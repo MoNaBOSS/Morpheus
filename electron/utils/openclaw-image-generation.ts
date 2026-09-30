@@ -2,13 +2,19 @@
  * Read/write agents.defaults.imageGenerationModel and per-agent auth readiness.
  */
 import { mutateOpenClawConfig } from '../gateway/config-delivery';
+import type { GatewayManager } from '../gateway/manager';
 import { readOpenClawConfig } from './channel-config';
 import {
+  assertImageRelayInitialKeyCompatible,
   getOAuthTokenFromOpenClaw,
   getProviderApiKeyFromOpenClaw,
   readOpenAiCompatibleImageRelayState,
+  reconcileImageRelayModelKeyRefBeforeRotation,
+  saveProviderKeyRefToOpenClaw,
   syncOpenAiCompatibleImageRelay,
 } from './openclaw-auth';
+import { deleteApiKey, getApiKey, storeApiKey } from './secure-storage';
+import { getRuntimeProviderSecretEnvVar, getRuntimeProviderSecretRef } from '../services/providers/provider-runtime-secret-ref';
 import { ensureClawXOpenAiImagePluginInstalled } from './plugin-install';
 import {
   listAgentsSnapshot,
@@ -179,6 +185,9 @@ export async function isImageProviderAuthenticated(
   agentId: string,
 ): Promise<boolean> {
   for (const candidate of authProviderCandidates(providerKey)) {
+    if (candidate === CLAWX_OPENAI_IMAGE_PROVIDER_KEY && await getApiKey(candidate)) {
+      return true;
+    }
     const apiKey = await getProviderApiKeyFromOpenClaw(candidate, agentId);
     if (apiKey) {
       return true;
@@ -351,7 +360,7 @@ export async function applyOpenAiImageRelaySettings(params: {
   baseUrl?: string | null;
   apiKey?: string;
   model?: string | null;
-}): Promise<void> {
+}, gatewayManager?: GatewayManager): Promise<void> {
   if (params.enabled) {
     const plugin = await ensureClawXOpenAiImagePluginInstalled();
     if (!plugin.installed) {
@@ -368,12 +377,50 @@ export async function applyOpenAiImageRelaySettings(params: {
     imageModelIds.push(CLAWX_OPENAI_IMAGE_DEFAULT_MODEL);
   }
 
+  const previousKey = await getApiKey(CLAWX_OPENAI_IMAGE_PROVIDER_KEY);
+  const nextKey = params.apiKey?.trim();
+  const relaySecretRef = getRuntimeProviderSecretRef(CLAWX_OPENAI_IMAGE_PROVIDER_KEY);
+  const relayEnvVar = getRuntimeProviderSecretEnvVar(CLAWX_OPENAI_IMAGE_PROVIDER_KEY);
+  if (params.enabled && nextKey && !previousKey) {
+    await assertImageRelayInitialKeyCompatible(nextKey, relaySecretRef);
+  }
+  if (params.enabled && previousKey && nextKey && previousKey !== nextKey) {
+    // A crash after replacing the protected key cannot prove ownership of an
+    // old raw model key. Move every verified old reference first, then restart
+    // the owned Gateway with the still-valid old environment.
+    await saveProviderKeyRefToOpenClaw(CLAWX_OPENAI_IMAGE_PROVIDER_KEY, relayEnvVar, [previousKey]);
+    await reconcileImageRelayModelKeyRefBeforeRotation(previousKey, relaySecretRef);
+    if (gatewayManager && gatewayManager.getStatus().state !== 'stopped'
+      && !await gatewayManager.restartOwnedForProviderSecretChange()) {
+      throw new Error('Image relay key was not replaced; Gateway must accept the current protected environment');
+    }
+  }
+  if (params.enabled && nextKey) {
+    await storeApiKey(CLAWX_OPENAI_IMAGE_PROVIDER_KEY, nextKey);
+  }
+  const protectedKey = params.enabled ? (nextKey || previousKey) : null;
+  if (protectedKey) {
+    await saveProviderKeyRefToOpenClaw(
+      CLAWX_OPENAI_IMAGE_PROVIDER_KEY,
+      relayEnvVar,
+      [protectedKey, previousKey].filter((key): key is string => Boolean(key)),
+    );
+    if (gatewayManager && gatewayManager.getStatus().state !== 'stopped'
+      && !await gatewayManager.restartOwnedForProviderSecretChange()) {
+      throw new Error('Image relay key saved; Gateway restart with the updated environment is required');
+    }
+  }
+
   await syncOpenAiCompatibleImageRelay({
     enabled: params.enabled,
     baseUrl: params.enabled ? (params.baseUrl ?? '') : null,
-    apiKey: params.apiKey,
+    apiKeyRef: protectedKey ? relaySecretRef : undefined,
+    expectedLegacyKey: previousKey ?? undefined,
     imageModelIds,
   });
+  if (!params.enabled && previousKey) {
+    await deleteApiKey(CLAWX_OPENAI_IMAGE_PROVIDER_KEY);
+  }
 }
 
 export async function listImageGenerationProvidersFromRuntime(): Promise<ImageGenerationProviderRow[]> {

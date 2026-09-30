@@ -249,6 +249,99 @@ Append implementation records here or link a compact per-candidate evidence file
   provider setting was changed. Next: 7B.1 secret migration and crash fixtures
   before any paid live-path test.
 
+### 7B.1 protected provider secrets — partial source checkpoint, 2026-09-30
+
+- Label: **source implementation in progress; no 7B.1 or DT-01 acceptance**. The
+  linked worktree adds an app-owned, versioned Electron `safeStorage` vault for
+  static provider keys. Per-account migration validates legacy records, writes
+  the encrypted destination atomically, decrypts and compares it, then removes
+  only matching plaintext fields. A non-secret expected-vault marker detects a
+  missing encrypted file; conflicting or malformed legacy records fail with
+  recoverable errors before that account is migrated. Deletion uses a tombstone
+  to prevent an interrupted operation from reviving a legacy key. New app-owned
+  key writes do not recreate the old plaintext copies.
+- The legacy storage adapter now propagates protection and decryption errors
+  instead of returning an absent key. Provider account metadata is saved only
+  after a protected key operation succeeds; app-owned keys take precedence over
+  imported OpenClaw credentials where both exist. Focused synthetic store,
+  adapter and provider-service tests passed **33/33** across three files. Those
+  fixtures cover interruption/restart, conflict, unavailable protection and
+  missing-vault behavior; they do not use the owner's real profile.
+- The candidate OpenClaw static-key SecretRef/runtime path, image-relay
+  protected save, OAuth startup replay guard and SQLite-authoritative profile
+  merge are implemented in source. Combined full typecheck, lint (0 errors;
+  12 existing Fast Refresh warnings), 178 focused tests across 11 files,
+  communications replay/compare, and narrow harness validation/dry-run passed.
+  The first full unit run exposed one stale mock expectation; after correction,
+  a full rerun passed **2,911** tests with two skipped across 286 files. A fresh
+  Vite/Electron build succeeded and its isolated provider-lifecycle automation
+  passed **7/7** journeys. No owner-profile legacy upgrade, packaged build,
+  live provider or paid call was verified. Existing user profiles and provider
+  settings were not changed.
+- Scope limit: upstream-managed OAuth token storage is separate from the
+  app-owned static-key vault. Adding or replacing an app-owned static key may
+  need an owned Gateway restart to refresh its child-process environment; an
+  attached Gateway is not restarted by the app. At the time of this September
+  source snapshot, raw `openclaw.json` rotation recovery was still open;
+  unprovenanced
+  legacy image-relay credentials remain untouched. The upgrade snapshot stays
+  plaintext until an owned Gateway reaches readiness. Do not claim all provider
+  credentials or runtime copies are encrypted. Next: add exact-match pre-commit
+  and pre-spawn reconciliation with crash fixtures, then run the exact
+  [7B.1 task spec](../../harness/specs/tasks/morpheus-phase7-b1-provider-secret-migration.md)
+  and combined checks, then perform a protected Windows restart and safe
+  existing-profile upgrade rehearsal before DT-01 or 7B.1 acceptance.
+
+### 7B.1 source continuation — 2026-10-01
+
+- Label: **source checks passed; B.1 and DT-01 acceptance still open**. A
+  protected old key is reconciled to a stable runtime env reference before
+  replacement, and every owned Gateway launch exact-matches old raw
+  `openclaw.json` and per-agent `models.json` values against protected keys
+  before spawn. A conflicting/imported value is preserved and blocks ambiguous
+  launch; an unavailable protected store does not silently fall back to raw
+  credentials. Sequential atomic file writes are idempotent after interruption.
+  OAuth startup synchronization no longer replays an older app token over a
+  present OpenClaw token. Synthetic rotation, conflict, restart and delete
+  fixtures were added; the original checkout/profile was untouched.
+- Image-relay rotation now converts exact old auth/config/model keys before
+  replacing the protected value; an owned Gateway that cannot restart with
+  the old key aborts replacement. A first protected key rejects conflicting
+  legacy credentials, while an explicitly re-entered exact key can be adopted.
+  Pre-spawn reconciliation retries image auth-profile cleanup if interrupted.
+  Older relay auth profiles have no reliable ownership marker, so untouched
+  unverified raw keys are not silently imported or described as protected.
+- Latest combined verification: full typecheck passed; lint had zero errors
+  and 12 existing Fast Refresh warnings; full unit suite **2,925 passed, two
+  skipped, 287 files**; communications replay/compare passed; narrow B.1
+  harness validation/dry-run passed; fresh Vite/Electron build passed; isolated
+  provider-lifecycle Electron journeys **7/7**. The added relay and pre-spawn
+  tests are included in that full rerun. A separate Windows Electron
+  E2E used a synthetic key in an isolated test profile, verified encrypted
+  ciphertext lacked the key and decrypted it after same-user app relaunch
+  (**1/1**). This is source-build evidence, not packaged or real-profile proof.
+- Final-review source fixes now select one stable enabled account per runtime
+  provider (explicit default first), preserve sibling vault keys, activate
+  current OAuth without replaying stale tokens, and avoid exporting unrelated
+  SQLite-only credentials into compatibility JSON. Key/vendor deletion removes
+  exact owned refs before the protected value and refreshes the owned child's
+  environment afterward. Changed-secret refreshes serialize without ordinary
+  cooldown suppression; unchanged owned environments are successful no-ops.
+  Protection deletion failures are reported rather than hidden.
+- Final combined B.1/C.1 source check on October 1: **2,959 passed, two skipped,
+  288 unit files**; full typecheck; lint (zero errors, 12 existing warnings);
+  communications replay/compare; umbrella diff-aware harness validation/dry-run
+  and 18 harness regressions; fresh Vite/Electron build. Provider journeys
+  passed **8/8**, including a copied synthetic legacy secret profile migration,
+  metadata/default preservation, plaintext cleanup and same-user Windows
+  DPAPI decryption after restart. No owner profile or paid API was used.
+- Remaining: verify packaged upgrade and live-provider behavior, and handle
+  upstream OAuth/unknown legacy image-relay credentials without false
+  protection claims. Transient upgrade snapshots can contain plaintext until
+  owned Gateway readiness. A final Windows installer `.exe` has not been built
+  or handed over at this source checkpoint; packaging uses a spacious checkout because C: had only
+  about 2.1 GiB free (D:/E: had ample space). No paid API call occurred.
+
 Earlier Astra documentation checkpoint validation: Phase 7 spec validation and dry-run passed;
 18 harness unit tests passed across 2 files. All 21 relative Markdown links in the
 7 new documents resolved. All 9 referenced harness rules exist. Git whitespace

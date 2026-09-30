@@ -16,8 +16,10 @@ function fsPath(filePath: string): string {
   return `\\\\?\\${windowsPath}`;
 }
 import { getAllSettings } from '../utils/store';
-import { getApiKey, getDefaultProvider, getProvider } from '../utils/secure-storage';
+import { getApiKey } from '../utils/secure-storage';
 import { getProviderEnvVar, getKeyableProviderTypes } from '../utils/provider-registry';
+import { getRuntimeProviderSecretEnvVar } from '../services/providers/provider-runtime-secret-ref';
+import { loadActiveRuntimeProviderAccounts, type SelectedRuntimeProviderAccount } from '../services/providers/active-runtime-provider-selection';
 import {
   getOpenClawConfigDir,
   getOpenClawDir,
@@ -39,6 +41,7 @@ import { needsPluginBundleRefresh } from '../utils/plugin-bundle-revision';
 import { CLAWX_OPENAI_IMAGE_PROVIDER_KEY } from '../utils/openclaw-image-relay-constants';
 import { ensureOpenClaw2026_7_1UpgradeSnapshot } from '../utils/openclaw-upgrade-snapshot';
 import { stripSystemdSupervisorEnv } from './config-sync-env';
+import { reconcileAppOwnedProviderModelKeysBeforeLaunch } from './provider-model-key-reconciliation';
 import { cleanupAgentsSymlinkedSkills, cleanupStalePluginRuntimeDeps } from './skills-symlink-cleanup';
 import {
   buildPrelaunchMaintenanceCacheKey,
@@ -562,42 +565,30 @@ export async function syncGatewayConfigBeforeLaunch(
   };
 }
 
-async function loadProviderEnv(): Promise<{ providerEnv: Record<string, string>; loadedProviderKeyCount: number }> {
-  const providerEnv: Record<string, string> = {};
-  const providerTypes = getKeyableProviderTypes();
+export async function loadProviderEnv(
+  selected?: ReadonlyMap<string, SelectedRuntimeProviderAccount>,
+): Promise<{ providerEnv: Record<string, string | undefined>; loadedProviderKeyCount: number }> {
+  const providerEnv: Record<string, string | undefined> = {};
   let loadedProviderKeyCount = 0;
-
-  try {
-    const defaultProviderId = await getDefaultProvider();
-    if (defaultProviderId) {
-      const defaultProvider = await getProvider(defaultProviderId);
-      const defaultProviderType = defaultProvider?.type;
-      const defaultProviderKey = await getApiKey(defaultProviderId);
-      if (defaultProviderType && defaultProviderKey) {
-        const envVar = getProviderEnvVar(defaultProviderType);
-        if (envVar) {
-          providerEnv[envVar] = defaultProviderKey;
-          loadedProviderKeyCount++;
-        }
-      }
-    }
-  } catch (err) {
-    logger.warn('Failed to load default provider key for environment injection:', err);
+  // Explicitly clear inherited standard keys, including an inactive OpenAI
+  // key when the selected account uses OAuth.
+  for (const providerType of getKeyableProviderTypes()) {
+    const envVar = getProviderEnvVar(providerType);
+    if (envVar) providerEnv[envVar] = undefined;
+  }
+  // OpenClaw SecretRefs address each app-owned runtime provider separately.
+  // These values exist only in the owned Gateway process launch environment.
+  for (const [runtimeKey, active] of selected ?? await loadActiveRuntimeProviderAccounts()) {
+    providerEnv[getRuntimeProviderSecretEnvVar(runtimeKey)] = active.key;
+    const nativeEnvVar = getProviderEnvVar(active.account.vendorId);
+    if (nativeEnvVar) providerEnv[nativeEnvVar] = active.key;
+    if (active.key) loadedProviderKeyCount++;
   }
 
-  for (const providerType of providerTypes) {
-    try {
-      const key = await getApiKey(providerType);
-      if (key) {
-        const envVar = getProviderEnvVar(providerType);
-        if (envVar) {
-          providerEnv[envVar] = key;
-          loadedProviderKeyCount++;
-        }
-      }
-    } catch (err) {
-      logger.warn(`Failed to load API key for ${providerType}:`, err);
-    }
+  const imageRelayKey = await getApiKey(CLAWX_OPENAI_IMAGE_PROVIDER_KEY);
+  if (imageRelayKey) {
+    providerEnv[getRuntimeProviderSecretEnvVar(CLAWX_OPENAI_IMAGE_PROVIDER_KEY)] = imageRelayKey;
+    loadedProviderKeyCount++;
   }
 
   return { providerEnv, loadedProviderKeyCount };
@@ -640,6 +631,10 @@ export async function prepareGatewayLaunchContext(port: number): Promise<Gateway
     throw new Error(`OpenClaw package not found at: ${openclawDir}`);
   }
 
+  // Repair only exact matches to protected app keys before any owned spawn.
+  // Failure is fatal: starting with an ambiguous raw credential is unsafe.
+  const selectedProviders = await measureAsync(timingsMs, 'providerModelKeyReconcileMs', reconcileAppOwnedProviderModelKeysBeforeLaunch);
+
   await measureAsync(timingsMs, 'upgradeSnapshotMs', async () => {
     try {
       const snapshot = await ensureOpenClaw2026_7_1UpgradeSnapshot();
@@ -673,7 +668,7 @@ export async function prepareGatewayLaunchContext(port: number): Promise<Gateway
     : path.join(process.cwd(), 'resources', 'bin', target);
   const binPathExists = existsSync(binPath);
 
-  const { providerEnv, loadedProviderKeyCount } = await measureAsync(timingsMs, 'providerEnvMs', loadProviderEnv);
+  const { providerEnv, loadedProviderKeyCount } = await measureAsync(timingsMs, 'providerEnvMs', () => loadProviderEnv(selectedProviders));
   const { skipChannels, channelStartupSummary } = await measureAsync(
     timingsMs,
     'channelStartupPolicyMs',

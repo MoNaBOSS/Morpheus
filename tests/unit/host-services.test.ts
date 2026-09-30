@@ -38,6 +38,8 @@ const {
   setChannelEnabledMock,
   setSettingMock,
   syncDefaultProviderToRuntimeMock,
+  finishProviderSecretDeletionToRuntimeMock,
+  reconcileProviderBeforeStaticKeyReplacementMock,
   syncDeletedProviderToRuntimeMock,
   syncSavedProviderToRuntimeMock,
   syncLaunchAtStartupSettingFromStoreMock,
@@ -115,6 +117,8 @@ const {
   setChannelEnabledMock: vi.fn(),
   setSettingMock: vi.fn(),
   syncDefaultProviderToRuntimeMock: vi.fn(),
+  finishProviderSecretDeletionToRuntimeMock: vi.fn(),
+  reconcileProviderBeforeStaticKeyReplacementMock: vi.fn(),
   syncDeletedProviderToRuntimeMock: vi.fn(),
   syncSavedProviderToRuntimeMock: vi.fn(),
   syncLaunchAtStartupSettingFromStoreMock: vi.fn(),
@@ -210,6 +214,9 @@ vi.mock('@electron/utils/openclaw-workspace', () => ({
 }));
 
 vi.mock('@electron/services/providers/provider-runtime-sync', () => ({
+  finishProviderSecretDeletionToRuntime: (...args: unknown[]) => finishProviderSecretDeletionToRuntimeMock(...args),
+  reconcileProviderBeforeStaticKeyReplacement: (...args: unknown[]) => reconcileProviderBeforeStaticKeyReplacementMock(...args),
+  reconcileProviderBeforeRuntimeKeyChange: vi.fn(),
   syncAllProviderAuthToRuntime: vi.fn(),
   syncAgentModelOverrideToRuntime: vi.fn(),
   syncDefaultProviderToRuntime: (...args: unknown[]) => syncDefaultProviderToRuntimeMock(...args),
@@ -522,7 +529,54 @@ describe('host services', () => {
       expect.objectContaining({ id: 'custom-local', type: 'custom' }),
       'sk-test',
       gatewayManager,
+      undefined,
     );
+  });
+
+  it('reconciles an old account key before committing its protected replacement', async () => {
+    const account = {
+      id: 'custom-local', vendorId: 'custom', label: 'Local', authMode: 'api_key',
+      baseUrl: 'http://127.0.0.1:1234/v1', model: 'local-model', enabled: true,
+      createdAt: '2026-05-31T00:00:00.000Z', updatedAt: '2026-05-31T00:00:00.000Z',
+    };
+    providerServiceMock.getAccount.mockResolvedValue(account);
+    providerServiceMock.getAccountApiKey.mockResolvedValue('synthetic-old-key');
+    providerServiceMock.updateAccount.mockResolvedValue({ ...account, label: 'Updated' });
+    const gatewayManager = { getStatus: vi.fn(() => ({ state: 'stopped' })) };
+    const { createProvidersApi } = await import('@electron/services/providers-api');
+
+    await expect(createProvidersApi({
+      gatewayManager: gatewayManager as never, mainWindow: {} as never,
+    }).updateAccount({
+      accountId: account.id, updates: { label: 'Updated' }, apiKey: 'synthetic-new-key',
+    })).resolves.toMatchObject({ success: true });
+
+    expect(reconcileProviderBeforeStaticKeyReplacementMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: account.id, type: 'custom' }),
+      'synthetic-old-key', 'synthetic-new-key', gatewayManager,
+    );
+    expect(reconcileProviderBeforeStaticKeyReplacementMock.mock.invocationCallOrder[0])
+      .toBeLessThan(providerServiceMock.updateAccount.mock.invocationCallOrder[0]);
+  });
+
+  it('does not replace a protected account key when precommit reconciliation fails', async () => {
+    const account = {
+      id: 'custom-local', vendorId: 'custom', label: 'Local', authMode: 'api_key',
+      baseUrl: 'http://127.0.0.1:1234/v1', model: 'local-model', enabled: true,
+      createdAt: '2026-05-31T00:00:00.000Z', updatedAt: '2026-05-31T00:00:00.000Z',
+    };
+    providerServiceMock.getAccount.mockResolvedValue(account);
+    providerServiceMock.getAccountApiKey.mockResolvedValue('synthetic-old-key');
+    reconcileProviderBeforeStaticKeyReplacementMock.mockRejectedValueOnce(new Error('unverified runtime key'));
+    const { createProvidersApi } = await import('@electron/services/providers-api');
+
+    await expect(createProvidersApi({
+      gatewayManager: {} as never, mainWindow: {} as never,
+    }).updateAccount({
+      accountId: account.id, updates: { label: 'Updated' }, apiKey: 'synthetic-new-key',
+    })).resolves.toMatchObject({ success: false, error: expect.stringContaining('unverified runtime key') });
+
+    expect(providerServiceMock.updateAccount).not.toHaveBeenCalled();
   });
 
   it('removes provider runtime state before deleting the local provider record', async () => {
@@ -545,6 +599,72 @@ describe('host services', () => {
     expect(syncDeletedProviderToRuntimeMock).toHaveBeenCalledWith(provider, provider.id, gatewayManager);
     expect(syncDeletedProviderToRuntimeMock.mock.invocationCallOrder[0])
       .toBeLessThan(providerServiceMock._deleteProviderInternal.mock.invocationCallOrder[0]);
+    expect(finishProviderSecretDeletionToRuntimeMock).toHaveBeenCalledWith(gatewayManager);
+    expect(providerServiceMock._deleteProviderInternal.mock.invocationCallOrder[0])
+      .toBeLessThan(finishProviderSecretDeletionToRuntimeMock.mock.invocationCallOrder[0]);
+  });
+
+  it.each(['deleteApiKey', 'deleteAccountApiKey'] as const)('refreshes owned env after %s deletes the protected key', async (action) => {
+    const account = { id: 'key-only-account', vendorId: 'openai', authMode: 'api_key', enabled: true };
+    providerServiceMock.getAccount.mockResolvedValue(account);
+    providerServiceMock._getProviderInternal.mockResolvedValue({ id: account.id, type: 'openai', enabled: true });
+    providerServiceMock._getProviderApiKeyInternal.mockResolvedValue('old-key');
+    const gatewayManager = {};
+    const { createProvidersApi } = await import('@electron/services/providers-api');
+    const api = createProvidersApi({ gatewayManager: gatewayManager as never, mainWindow: {} as never });
+    const result = action === 'deleteApiKey'
+      ? await api.deleteApiKey({ providerId: account.id })
+      : await api.deleteAccountApiKey({ accountId: account.id });
+    expect(result).toEqual({ success: true });
+    expect(finishProviderSecretDeletionToRuntimeMock).toHaveBeenCalledWith(gatewayManager);
+    expect(providerServiceMock._deleteProviderApiKeyInternal.mock.invocationCallOrder[0])
+      .toBeLessThan(finishProviderSecretDeletionToRuntimeMock.mock.invocationCallOrder[0]);
+  });
+
+  it('cleans runtime refs before blank legacy update deletes its key and refreshes afterward', async () => {
+    const provider = { id: 'blank-legacy', type: 'openai', enabled: true };
+    providerServiceMock._getProviderInternal.mockResolvedValue(provider);
+    providerServiceMock._getProviderApiKeyInternal.mockResolvedValue('old-key');
+    const gatewayManager = {};
+    const { createProvidersApi } = await import('@electron/services/providers-api');
+    const { syncDeletedProviderApiKeyToRuntime } = await import('@electron/services/providers/provider-runtime-sync');
+    await expect(createProvidersApi({ gatewayManager: gatewayManager as never, mainWindow: {} as never })
+      .updateWithKey({ providerId: provider.id, updates: {}, apiKey: '  ' })).resolves.toEqual({ success: true });
+    expect(vi.mocked(syncDeletedProviderApiKeyToRuntime).mock.invocationCallOrder[0])
+      .toBeLessThan(providerServiceMock._deleteProviderApiKeyInternal.mock.invocationCallOrder[0]);
+    expect(providerServiceMock._deleteProviderApiKeyInternal.mock.invocationCallOrder[0])
+      .toBeLessThan(finishProviderSecretDeletionToRuntimeMock.mock.invocationCallOrder[0]);
+    expect(finishProviderSecretDeletionToRuntimeMock).toHaveBeenCalledWith(gatewayManager);
+  });
+
+  it('reports a failed post-deletion env refresh instead of claiming key deletion completed', async () => {
+    providerServiceMock._getProviderInternal.mockResolvedValue({ id: 'refresh-fails', type: 'openai' });
+    finishProviderSecretDeletionToRuntimeMock.mockRejectedValueOnce(new Error('owned Gateway refresh failed'));
+    const { createProvidersApi } = await import('@electron/services/providers-api');
+    await expect(createProvidersApi({ gatewayManager: {} as never, mainWindow: {} as never })
+      .deleteApiKey({ providerId: 'refresh-fails' })).resolves.toMatchObject({
+        success: false, error: expect.stringContaining('owned Gateway refresh failed'),
+      });
+  });
+
+  it('cleans runtime refs before blank account update deletes its key and refreshes afterward', async () => {
+    const account = { id: 'blank-account', vendorId: 'openai', authMode: 'api_key', enabled: true };
+    providerServiceMock.getAccount.mockResolvedValue(account);
+    providerServiceMock.getAccountApiKey.mockResolvedValue('old-key');
+    providerServiceMock.updateAccount.mockResolvedValue(account);
+    const gatewayManager = {};
+    const { createProvidersApi } = await import('@electron/services/providers-api');
+    const { syncDeletedProviderApiKeyToRuntime } = await import('@electron/services/providers/provider-runtime-sync');
+    await expect(createProvidersApi({ gatewayManager: gatewayManager as never, mainWindow: {} as never })
+      .updateAccount({ accountId: account.id, updates: {}, apiKey: '  ' })).resolves.toMatchObject({ success: true });
+    expect(syncDeletedProviderApiKeyToRuntime).toHaveBeenCalledWith(
+      expect.objectContaining({ id: account.id, type: 'openai' }), account.id, undefined, 'old-key',
+    );
+    expect(vi.mocked(syncDeletedProviderApiKeyToRuntime).mock.invocationCallOrder[0])
+      .toBeLessThan(providerServiceMock.updateAccount.mock.invocationCallOrder[0]);
+    expect(providerServiceMock.updateAccount.mock.invocationCallOrder[0])
+      .toBeLessThan(finishProviderSecretDeletionToRuntimeMock.mock.invocationCallOrder[0]);
+    expect(finishProviderSecretDeletionToRuntimeMock).toHaveBeenCalledWith(gatewayManager);
   });
 
   it('sets the default provider account and syncs runtime defaults', async () => {
@@ -559,6 +679,18 @@ describe('host services', () => {
 
     expect(providerServiceMock.setDefaultAccount).toHaveBeenCalledWith('custom-local');
     expect(syncDefaultProviderToRuntimeMock).toHaveBeenCalledWith('custom-local', gatewayManager);
+  });
+
+  it('reports a protected provider deletion failure instead of claiming success', async () => {
+    providerServiceMock.getAccount.mockResolvedValue(null);
+    providerServiceMock.getDefaultAccountId.mockResolvedValue('other-account');
+    providerServiceMock.deleteAccount.mockResolvedValueOnce(false);
+    const { createProvidersApi } = await import('@electron/services/providers-api');
+    await expect(createProvidersApi({
+      gatewayManager: {} as never, mainWindow: {} as never,
+    }).deleteAccount({ accountId: 'retained-account' })).resolves.toMatchObject({
+      success: false, error: expect.stringContaining('could not be deleted'),
+    });
   });
 
   it('promotes the newest enabled account before removing the deleted default from runtime', async () => {
@@ -608,7 +740,9 @@ describe('host services', () => {
     }).deleteAccount({ accountId: deletedAccount.id })).resolves.toEqual({ success: true });
 
     expect(providerServiceMock.setDefaultAccount).toHaveBeenCalledWith(newestEnabledAccount.id);
-    expect(syncDefaultProviderToRuntimeMock).toHaveBeenCalledWith(newestEnabledAccount.id);
+    expect(syncDefaultProviderToRuntimeMock).toHaveBeenCalledWith(newestEnabledAccount.id, gatewayManager);
+    expect(providerServiceMock.setDefaultAccount.mock.invocationCallOrder[0])
+      .toBeLessThan(syncDefaultProviderToRuntimeMock.mock.invocationCallOrder[0]);
     expect(syncDeletedProviderToRuntimeMock).toHaveBeenCalledWith(
       expect.objectContaining({ id: deletedAccount.id, type: deletedAccount.vendorId }),
       deletedAccount.id,

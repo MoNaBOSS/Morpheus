@@ -24,6 +24,8 @@
 
 Windows 桌面伴侣源码检查点（7A.1–7A.3）：本地唤醒显示光球而不抢占焦点。悬停会显示可编辑的向上输入框；点击后可在真正的文本框中输入。指针移开或按 Escape 会保留由 Main 管理的草稿。按 Enter 只提交一个关联的对话回合，普通回复留在紧凑对话中，不会自动跳转到 Chat。显式展开完整界面后，对话和草稿保持一致；显示器或工作区域变化时，光球仍锚定在右下角。全新构建的 Windows Electron 自动化已覆盖这些源码流程。安装包、实机硬件和真实提供商验收仍待完成。
 
+第 7B.1 阶段的 Provider 凭证源码工作仍在进行。应用自行管理的 API Key 路径现将密文写入带版本号的 Electron `safeStorage` 文件，并仅在读取验证后清理相匹配的旧记录。合成测试覆盖存储与旧版适配层的中断、冲突及系统保护不可用情形；隔离的 Windows Electron 测试已验证同一用户重启后可解密合成密钥。静态 OpenClaw SecretRef 与启动前精确匹配恢复已通过源码测试。现有用户资料升级、安装包及真实 Provider 验收仍未验证；OpenClaw 自行管理的 OAuth 凭证不在此静态 Key 保护声明范围内。
+
 > **1.1.0 生产级伴侣候选版：**加入电影感首次与回访问候、状态驱动的发光 Signal 和紧凑后台 Presence。
 > 包含随麦克风音量变化的 Signal、所选语音试听、有界 MP3
 > 自动检测说话结束、有界免唤醒追问、流式播放和可选的 Windows 本地名字检测。命令识别仍需转录提供商。真实麦克风和
@@ -157,7 +159,7 @@ Morpheus 还会内置预装完整的文档处理技能（`pdf`、`xlsx`、`docx`
 Skills 页面可展示来自多个 OpenClaw 来源的技能（托管目录、workspace、额外技能目录），并显示每个技能的实际路径，便于直接打开真实安装位置。对于 OpenClaw 自带的 bundled skills，社区版现在在打包产物里只保留并展示 `skill-creator`；开发模式和打包版启动时都会直接清理其它 bundled skill，同时把这些已删除 bundled skill 在 `openclaw.json` 中残留的旧配置一并移除。
 
 ### 🔐 安全的供应商集成
-连接多个 AI 供应商（OpenAI、Anthropic、Z.AI / GLM 等），凭证安全存储在系统原生密钥链中。OpenAI 同时支持 API Key 与浏览器 OAuth（Codex 订阅）登录。
+可连接多个 AI 供应商（OpenAI、Anthropic、Z.AI / GLM 等）。第 7B.1 阶段的源码实现将应用自行管理的 API Key 存入经 Electron `safeStorage` 加密的文件；若系统保护不可用，则拒绝退回明文存储。这不表示密钥可跨设备移植，也不表示 OpenClaw 管理的 OAuth Token 与所有运行时凭证副本均已加密。OpenAI 同时支持 API Key 与浏览器 OAuth（Codex 订阅）登录。
 在开发者模式下，独立的“图像生成”页面支持配置 OpenAI 兼容生图端点（Base URL、API Key 和模型名，例如 `gpt-image-2`），生图请求会走专用的 `/v1/images/generations` 服务，聊天仍继续使用正常的 OpenAI Provider。
 如果你通过 **自定义（Custom）Provider** 对接 OpenAI-compatible 网关，可以在 **设置 → AI Providers → 编辑 Provider** 中配置自定义 `User-Agent`，以提高兼容性。
 编辑或切换 Provider 时，Morpheus 会保留已有的模型级能力元数据，例如 `input: ["text", "image"]`。新选择的自定义 Provider 模型会使用与 OpenClaw onboarding 一致的图片输入能力推断；未知模型默认按纯文本模型处理。
@@ -304,7 +306,7 @@ Morpheus 内置了代理设置，适用于需要通过本地代理客户端访�
 
 Morpheus 采用 **双进程 + Host API 统一接入架构**。渲染进程只调用统一客户端抽象，协议选择与进程生命周期由 Electron 主进程统一管理：
 
-OpenClaw 配置交付也统一由 Electron Main 管理。Gateway 运行时，Morpheus 以 `config.get` 返回的权威快照为基线，并通过 `config.set` 提交修改；Gateway 停止或启动中时，同一个协调器只更新解析后的 JSON5 配置文件，不会因此启动 Gateway。因此，普通的 Provider、Agent、Channel、绑定、Skill 和模型修改不会替换 Gateway 进程。完整重启仅保留给代理等进程启动环境变化、用户显式操作以及健康检查或崩溃恢复。认证配置写入 SQLite 后，Morpheus 会调用 OpenClaw 的 `secrets.reload`，让运行中的 Agent 无需重启即可读取新凭据。
+OpenClaw 配置交付也统一由 Electron Main 管理。Gateway 运行时，Morpheus 以 `config.get` 返回的权威快照为基线，并通过 `config.set` 提交修改；Gateway 停止或启动中时，同一个协调器只更新解析后的 JSON5 配置文件，不会因此启动 Gateway。仅修改配置的 Provider、Agent、Channel、绑定、Skill 和模型操作不会替换 Gateway 进程。第 7B.1 阶段的源码路径中，新增或替换应用自行管理的静态 API Key 需要重启由本应用启动的 Gateway，以更新进程环境中的 SecretRef 值；应用不会重启外部管理的 Gateway，后者需另行刷新。代理等进程启动环境变化、用户显式操作以及健康检查或崩溃恢复也可能触发重启。上游 OAuth 认证配置写入 SQLite 后，OpenClaw 的 `secrets.reload` 可让运行中的 Agent 无需重启进程即可读取新凭据。
 
 Chat 使用由 Electron Main 持有的 ACP stdio bridge。Renderer 接收类型化 host events，并渲染内存中的 ACP timeline。Gateway 仍负责 providers、models、skills、workspace、settings、diagnostics 和 media configuration 等非 Chat 能力。
 
@@ -428,7 +430,7 @@ ACP Chat 也可在 runtime 以可信结构化媒体投递图像生成结果时�
 ├── electron/                 # Electron 主进程
 │   ├── services/            # 类型化 Host API、Provider、Secrets 与运行时服务
 │   │   ├── providers/       # Provider/account 模型同步逻辑
-│   │   └── secrets/         # 系统钥匙串与密钥存储
+│   │   └── secrets/         # 受 Electron safeStorage 保护的应用凭证
 │   ├── shared/              # 共享 Provider schema/常量
 │   │   └── providers/
 │   ├── main/                # 应用入口、窗口、IPC 注册
