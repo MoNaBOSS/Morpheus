@@ -137,7 +137,7 @@
       "humor": "幽默风格",
       "checkIns": "我该多久主动关心一次？",
       "voice": "选择声音（点击试听）",
-      "voiceSample": "你好，我是 Morpheus。我们开始吧。",
+      "voiceSample": "你好，我是 Morpheus。我的超能力？你忘了为什么打开冰箱时，我还记得任务。下面是一段任务进度示例：报告已准备好，并附上了来源。",
       "voiceUnavailable": "自然语音试听需要连接语音服务。现在可以输入，稍后在设置中连接。",
       "speakResponses": "有自然语音时朗读回复",
       "wakeConsent": "在后台聆听“Morpheus”（语音配置前保持关闭）",

@@ -70,7 +70,7 @@ Only record what the evidence supports. All rows below start TODO.
 | 7A.4 AUTOMATED | Shared native/React M-orb motion and bounded scalar from actual mic/neural playback paths. Source-build Electron tests cover reduced motion, keyboard focus, hidden Main/native animation pause and the guarded Main-hide/tray handoff. Hardware audio, true tray, motion recording and packaged acceptance remain open. | A.2–3 |
 | 7B.1 IN PROGRESS | Protected app-owned static-key store, runtime SecretRefs, exact-match pre-commit/pre-spawn reconciliation and synthetic Windows same-user restart passed source checks. Copied existing-profile upgrade, packaged/live and upstream OAuth limits remain open. | Baseline; before paid live tests |
 | 7C.1 AUTOMATED (source fixtures) | Same-breath command dispatch once without second STT, cancelled mic acquisition and localized missing-device recovery pass 59 focused units and six fresh-build Electron journeys. Actual System.Speech accuracy, mute/lock/device hardware and exact packaged acceptance remain open. | A.1–2, B.1 |
-| 7C.2 TODO | Natural output, barge-in and follow-ups. Three true voice auditions; interruption kills old audio/generation; speech stop does not cancel work; no-speech costs zero. | C.1 |
+| 7C.2 AUTOMATED (source fixtures) | Three neural preview choices use one bounded greeting/joke/example-update audition with no OS fallback. Speech generation/cancellation/follow-up units and a silent real-Chromium fixture pass; silence makes zero provider/task requests. Human neural auditions, speaker echo, hardware interruption and exact package/live voice remain open. | C.1 |
 | 7C.3 TODO | Unified persona, short onboarding and returning behavior. Name/skip/Matrix welcome, existing-profile preservation, 8-second genuine-question fallback, daily greeting and DND cases pass. | A.3, C.2 |
 | 7C.4 TODO | Useful bounded memory/proactivity. Correct/delete/export memory; ignored check-in backs off; no inferred emotions or paid polling; existing chat retention preserved. | C.3 |
 | 7D.1 TODO | Core worker port and one existing runtime adapter. Owned ids, scoped tools, leases, cancellation, artifacts, usage and unknown-effect recovery verified with fixtures. | A.1, B.1 |
@@ -201,10 +201,14 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
   legacy-profile migration and protected Windows restart passed; imported
   credentials and real owner profiles were preserved. Its packaged/live gates
   and upstream plaintext limits remain explicitly open.
-- Next executable checkpoints: **7C.1 wake/capture and 7C.2 natural output**.
-  C.1 same-breath suffix, audit/dispatch-once and device-loss cleanup have source
-  tests; finish its fresh-build native event journey and localized recovery,
-  then the bounded neural auditions/no-speech checks. No paid test is inferred.
+- C.1 is committed as `05499670`: 59 focused units and six fresh-build Electron
+  journeys cover addressed command dispatch once and localized mic recovery.
+  C.2 adds bounded neural auditions and real-Chromium synthetic silence with zero
+  provider/task requests; its focused source checks are in the linked ledger.
+- Next executable source row after the internal package checkpoint: **7C.3 persona,
+  short onboarding and returning behavior**, then C.4 → D → E → F → G → H.
+  The fresh internal installer does not mean these later rows or physical/live
+  gates are complete. No paid test is inferred.
 - The Windows worktree is separate from the original PC checkout. Profiles and
   provider settings have not been changed. Commit/push continuity is recorded
   in the ledger; source-build tests do not certify an installer.

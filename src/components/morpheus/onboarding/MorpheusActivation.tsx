@@ -151,6 +151,8 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     stopMorpheusSpeech();
     try {
       await updateVoice({ speechVoice: selected as MorpheusSpeechVoice });
+      // One bounded prepared audition covers greeting, humor and an explicitly
+      // labeled example task update. No personality-model rewrite or OS voice.
       await playMorpheusSpeech(t('morpheus.activationV2.voiceSample'), { neuralAvailable: true, allowWindowsFallback: false, onSpeakingChange: setSpeaking });
     } catch { setError(true); }
   };

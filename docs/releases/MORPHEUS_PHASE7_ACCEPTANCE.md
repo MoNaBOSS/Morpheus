@@ -355,11 +355,31 @@ capture/STT and localized missing-input recovery. Native screenshot is retained
 under ignored test-results, not treated as actual microphone evidence. Details:
 [C.1 source evidence](phase7-c1-source-checkpoint.md).
 
+On the actual Windows host, the installed English System.Speech engine also
+loaded the addressed wake-plus-dictation grammar successfully without opening
+a microphone. This validates local grammar compatibility, not speech accuracy.
+
 This establishes source/native-fixture behavior only. Actual System.Speech accuracy,
 speaker echo, mute/lock and unplug/replug on physical devices, voice listening
 quality and the exact packaged candidate remain unverified. No paid call, real
 provider key or owner profile was used. Next source checkpoint is C.2 bounded
 neural auditions/no-speech checks; build a fresh internal Windows installer.
+
+### 7C.2 bounded neural audition and silence source checks — 2026-10-01
+
+The three existing neural voice choices now audition a bounded greeting, light
+joke and explicitly labelled example update, localized in four languages. Each
+click remains one speech request with Windows fallback forbidden. 21 focused
+audition/player/dialogue/playback units, web typecheck, changed-file lint,
+communications and narrow harness checks passed. One Electron journey used a
+zero-valued synthetic MediaStream with production Chromium analyser/recorder/VAD:
+the no-speech timeout released input and emitted no provider/task request.
+Details: [C.2 source evidence](phase7-c2-source-checkpoint.md).
+
+This is not a human neural audition, physical mic, ambient-hours cost measurement
+or speaker-echo/barge-in result. Those exact packaged/live gates remain open.
+The final package build must include the new locale samples. No paid calls or
+owner-profile changes occurred; Phase 7 remains incomplete.
 
 Earlier Astra documentation checkpoint validation: Phase 7 spec validation and dry-run passed;
 18 harness unit tests passed across 2 files. All 21 relative Markdown links in the

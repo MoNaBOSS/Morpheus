@@ -137,7 +137,7 @@
       "humor": "Humour",
       "checkIns": "How often should I check in?",
       "voice": "Choose a voice (tap to hear)",
-      "voiceSample": "Hello. I'm Morpheus. Let's get to work.",
+      "voiceSample": "Hello, I'm Morpheus. My superpower? Remembering the task while you forget why you opened the fridge. Here's an example task update: your report is ready, with the sources attached.",
       "voiceUnavailable": "Natural voice previews need a connected speech provider. Typing works now; connect one later in Settings.",
       "speakResponses": "Speak replies when natural voice is available.",
       "wakeConsent": "Listen for “Morpheus” in the background (off until voice is configured).",

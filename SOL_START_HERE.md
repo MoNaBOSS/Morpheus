@@ -47,7 +47,7 @@ Upstream OAuth, unprovenanced old image keys and transient upgrade snapshots
 retain documented plaintext limits; B.1 packaged/real-profile/live gates remain
 open. Do not reopen its source discovery or destroy those existing credentials.
 
-Current source work is C.1 wake/capture and C.2 output verification. Read their
+Current source checkpoints are C.1 wake/capture (`05499670`) and C.2 output verification. Read their
 narrow source evidence in `docs/releases/` and the current checkpoint in the
 roadmap. Exact installer identity/checks appear in the acceptance ledger when
 built; a source build or packaged-payload smoke is not hardware/live acceptance.
@@ -67,8 +67,12 @@ errors, 12 existing warnings), build, communications and umbrella diff-aware
 harness checks. Eight fresh-build provider journeys passed, including copied
 synthetic legacy migration and same-user Windows protected restart. B.1 remains
 open for exact packaged/real-profile/live acceptance and documented upstream
-plaintext limits. The separate C.1 source checkpoint is being verified next;
-continue its narrow harness/evidence rather than redoing B.1 discovery.
+plaintext limits. C.1 passed 59 focused units and six fresh-build Electron voice
+journeys; C.2 passed 21 focused units and a real-Chromium synthetic silence
+journey with zero provider/task requests. Neural auditions now include a greeting,
+joke and explicitly prepared update in one request. Hardware/live voice remains
+open. Next: final source/package checks, then C.3 persona/onboarding/returning
+behavior. Do not redo B.1/C.1 discovery or call the whole Phase 7 complete.
 
 ## Operating rules for continuity and cost
 
