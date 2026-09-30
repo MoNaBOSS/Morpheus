@@ -1,5 +1,9 @@
 # Morpheus — Roadmap
 
+Current delivery sequence: [Phase 7 execution plan](MORPHEUS_PHASE7_EXECUTION_PLAN.md)
+(2026-09-30). The milestones below are historical architecture/source records;
+“shipped” here is not proof of today's packaged/live Windows acceptance.
+
 Direction, not commitment. Sequencing may change; the architectural constraints in
 [PRODUCT_PRINCIPLES.md](../product/PRODUCT_PRINCIPLES.md) may not.
 

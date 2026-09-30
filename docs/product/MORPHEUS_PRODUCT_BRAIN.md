@@ -33,17 +33,28 @@ an unwaivable consequential action requires confirmation.
 
 ## One core, several surfaces
 
+Current experience: [Phase 7 assistant contract](../architecture/MORPHEUS_ASSISTANT_ARCHITECTURE.md)
+and [original agreed decisions](../roadmap/MORPHEUS_EXPERIENCE_IMPLEMENTATION_PLAN.md).
+September 29 bottom-right placement supersedes older left/top-right references.
+
 Command Center, Voice, Quick Command and Chat execution mode are entry surfaces
 into the same Morpheus Core. They do not own separate planners, permission
 systems, execution engines, memories or histories.
 
-- **Command Center** is the primary instrument: objective, state, plan,
-  execution, artifacts and trust.
+- **Companion** is the primary interaction: bottom-right orb, upward composer,
+  compact conversation; full workspace opens only on request. Conversation,
+  selected task, draft and results persist across surfaces. Internal planning
+  and provider/trust controls are not everyday UI.
 - **Voice** is a first-class input and optional output, not a second command
   grammar.
 - **Quick Command** is the global, low-friction overlay for immediate work.
 - **Chat** remains the OpenClaw conversation surface and can explicitly submit
   an objective into Morpheus Core without changing ordinary chat semantics.
+
+Natural conversation is also available in compact presence without navigating to
+Chat. Personality and natural voice share preferences across providers; no second
+model pass merely to add humor. Keep the M/orb and Matrix identity. Managed service
+and future NerdGPT use the same runtime, not separate products or permission rules.
 
 ## Runtime ownership
 
@@ -78,7 +89,7 @@ provider output -> schema parse -> capability/parameter validation
 Balanced must be convenient. Autonomous must feel autonomous. Neither profile
 means arbitrary shell access.
 
-## Windows 1.0 Foundation experience
+## Historical Windows 1.0 Foundation experience
 
 A successful foundation interaction is usable, not merely typed:
 
@@ -93,6 +104,11 @@ A successful foundation interaction is usable, not merely typed:
    bounded continuation plan.
 8. The user may stop or correct the objective.
 9. Morpheus presents artifacts and a concise outcome, and may speak it.
+
+Current task coordination permits independent objectives while conflicting
+resources serialize; see [task continuity](../architecture/MORPHEUS_TASK_CONTINUITY.md).
+The [Phase 7 acceptance gates](../releases/MORPHEUS_PHASE7_ACCEPTANCE.md), not the
+historical foundation checklist, define the next complete Windows candidate.
 
 ## Product quality rule
 

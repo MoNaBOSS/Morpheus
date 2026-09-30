@@ -3,6 +3,11 @@
 > Canonical. If any other document, comment, ticket or implementation contradicts
 > this file, this file wins until it is deliberately amended.
 
+2026-09-30 amendment: Morpheus's primary experience is the quiet desktop companion
+defined in the [assistant architecture](../architecture/MORPHEUS_ASSISTANT_ARCHITECTURE.md).
+The [Phase 7 plan](../roadmap/MORPHEUS_PHASE7_EXECUTION_PLAN.md) governs current
+delivery; older roadmap/UI snapshots are history, not current defaults.
+
 ## What Morpheus is
 
 **Morpheus is an AI execution platform and AI system builder.** It is not a chatbot,
@@ -37,7 +42,7 @@ contract, and each can be upgraded without rewriting the others:
 
 | Stage | Today | Future |
 | --- | --- | --- |
-| Intent interpretation | Deterministic phrase interpreter | OpenClaw or a provider-backed planner |
+| Intent interpretation | Deterministic direct routing and bounded provider-backed planning | Scoped agent/worker adapters under the same authority |
 | Execution plan | Typed, multi-step with dependencies | Richer conditions, retries and lineage |
 | Policy evaluation | Plan-level trust delta + profiles + scoped grants | Same engine, connected-service scopes |
 | Execution | Windows capability adapters | Linux, macOS, remote adapters |
@@ -50,10 +55,13 @@ policy engine, or the runtime.
 ## Chat is an interface, not the product
 
 Chat is one way to reach Morpheus. It is not what Morpheus *is*. Voice, Quick
-Command, Command Center and explicit Chat execution enter the same Morpheus Core.
-The Command Center — objective in, understanding/planning/execution observed — is
-the primary surface. Ordinary OpenClaw Chat remains fully functional and a
-first-class navigation destination, but it does not define the product.
+Command, the expanded workspace and explicit Chat execution enter the same Core.
+The quiet bottom-right orb, upward composer and compact conversation are the
+primary surfaces. Full expansion is explicit; conversation and useful results
+remain together. No everyday Ask/Auto/Act selector, plan-stage dashboard or
+provider/trust controls. Detailed work remains inspectable when requested.
+Ordinary OpenClaw Chat stays functional as an advanced destination, not a forced
+navigation whenever the user asks a normal question.
 
 ## What Morpheus is not
 

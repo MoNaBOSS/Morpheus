@@ -5,6 +5,12 @@
 
 <h1 align="center">Morpheus</h1>
 
+Phase 7 (2026-09-30): the current source audit and assistant architecture are ready
+for small implementation checkpoints, not a completed-release claim. Start with
+[the Sol handoff](SOL_START_HERE.md), [ordered work](docs/roadmap/MORPHEUS_PHASE7_EXECUTION_PLAN.md)
+and [Windows acceptance gates](docs/releases/MORPHEUS_PHASE7_ACCEPTANCE.md).
+The quiet bottom-right companion remains the primary experience. NerdGPT is later.
+
 Phase 6 account checkpoint: Settings now connects configurable Google/email sign-in,
 protected sessions and allowance status through Electron Main. The durable ledger
 and account-only service can run with deployment configuration. Live hosted login,

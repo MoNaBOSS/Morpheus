@@ -1,5 +1,11 @@
 # Morpheus — Architecture
 
+Current evolution contract (2026-09-30):
+[assistant architecture](MORPHEUS_ASSISTANT_ARCHITECTURE.md). This document retains
+the foundation module/boundary map. Its old single-plan diagram is not a claim
+that all objectives are sequential or that provider planning is still unbuilt.
+The current companion is primary; detailed execution remains inspectable.
+
 ## Runtime composition
 
 | Layer | Role |
@@ -21,8 +27,8 @@ Claude Code and Codex are development tools, not runtime components.
   │  Renderer  │─────────────────────────┐
   └────────────┘                         ▼
                               ┌────────────────────┐
-                              │ Intent interpreter │  deterministic today,
-                              └────────────────────┘  AI-backed later
+                              │ Intent interpreter │  direct routing or
+                              └────────────────────┘  bounded provider planner
                                          │ ExecutionPlan (typed)
                                          ▼
                               ┌────────────────────┐

@@ -10,7 +10,7 @@ as "the agent says it did X" or "Morpheus actually does X", build the second.
 
 | Rule | Enforced by |
 | --- | --- |
-| Every command produces a typed `ExecutionPlan` | `morpheus-execution-plan.test.ts` |
+| Every executable action uses a typed `ExecutionPlan`; conversation alone needs no fake task | `morpheus-execution-plan.test.ts` |
 | Every timeline entry comes from a real main-process event | `morpheus-runtime.test.ts` |
 
 Windows 1.0 extends this into an objective loop: planning is followed by
@@ -64,7 +64,8 @@ exception, so new platforms are additive.
 
 ## 7. One codebase, no edition forks
 
-Free and Unrestricted differ by configuration and entitlement, never by source tree.
+Basic/BYOK, Premium and future NerdGPT Unrestricted differ by centrally resolved
+configuration and entitlement, never by source tree or OS authority.
 See [Editions and platforms](EDITIONS_AND_PLATFORMS.md).
 
 ## 8. Replaceable providers

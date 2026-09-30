@@ -1,5 +1,11 @@
 # Morpheus Production Companion Architecture
 
+Historical foundation with later amendments: current surfaces/voice/worker design
+are in [the Phase 7 architecture](MORPHEUS_ASSISTANT_ARCHITECTURE.md). The old
+sequential-all-work and one-command follow-up descriptions below are historical;
+use [task continuity](MORPHEUS_TASK_CONTINUITY.md) and current shared voice constants.
+Historical hardware observations are not tests of today's candidate.
+
 ## Decision
 
 The production companion extends the existing Objective Core. Ambient voice,

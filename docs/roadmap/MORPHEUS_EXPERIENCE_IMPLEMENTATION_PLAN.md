@@ -1,11 +1,15 @@
 # Morpheus experience and implementation plan
 
+Current implementation handoff (2026-09-30): [Phase 7 execution plan](MORPHEUS_PHASE7_EXECUTION_PLAN.md).
+The 48 decisions below remain the requirements archive. Current checkpoint,
+remaining gates and Sol's next action are in that plan; do not restart discovery.
+
 **September 29 update:** bottom-right presence above the taskbar supersedes the
 older left/top-right corner choices below. The hover composer opens upward without
 stealing focus. See [the PC continuation handoff](../../PC_CODEX_START_HERE.md)
 for current implementation evidence and next steps; the use cases here remain.
 
-> Archive of the original plan, copied into Git for cross-device continuity on 2026-09-23. Phases 0–4 were subsequently authorised and implemented as an internal source checkpoint. The original task-local links and early status below are historical and may not resolve on Mac. For current status and approved UI, read [the Mac handoff](MORPHEUS_MAC_HANDOFF.md) first.
+> Archive of the original plan, copied into Git for cross-device continuity on 2026-09-23. Phases 0–4 were subsequently authorised and implemented as an internal source checkpoint. The original task-local links and early status below are historical and may not resolve on Mac. Read the Phase 7 plan above for current status; the [Mac handoff](MORPHEUS_MAC_HANDOFF.md) remains provenance.
 
 Planning snapshot: 2026-09-21. Prepared from the user's decisions in this conversation and a read-only review of the existing repository. No application implementation is authorised by this document alone; the user requested planning now and implementation in a fresh task after finalisation.
 

@@ -5,6 +5,11 @@
 
 <h1 align="center">Morpheus</h1>
 
+フェーズ 7（2026-09-30）：ソース監査とアシスタントの設計をまとめました。小さな単位で実装するための引き継ぎであり、製品の完成を意味しません。
+[Sol 引き継ぎ](SOL_START_HERE.md)、[実装順序](docs/roadmap/MORPHEUS_PHASE7_EXECUTION_PLAN.md)、
+[Windows 受け入れ基準](docs/releases/MORPHEUS_PHASE7_ACCEPTANCE.md) を参照してください。
+右下の静かなコンパニオンが主な操作画面です。NerdGPT は後の段階で開発します。
+
 フェーズ6のアカウント実装：設定画面から Electron Main 経由で、構成可能な
 Google／メール認証、保護されたセッション、利用枠表示に接続しました。
 永続台帳とアカウント専用サービスは構成後に起動できます。実サービスでの認証確認、

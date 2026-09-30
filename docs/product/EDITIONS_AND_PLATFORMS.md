@@ -2,12 +2,19 @@
 
 ## Editions
 
-One codebase supports two editions:
+Product decision updated 2026-09-30 from the approved experience plan. One
+codebase has three planned tiers; this is **not** a claim all tiers are live:
 
-1. **Morpheus Free**
-2. **Morpheus Unrestricted**
+1. **Basic / BYOK** — existing companion and desktop capabilities using the user's
+   provider accounts. Hosted sign-in is not required for local/BYOK use.
+2. **Premium** — managed tested model/voice routes, defined usage allowance and
+   explicit top-up or BYOK choice. Live identity, routes, operations and payment
+   acceptance are still required; never silently switch billing accounts.
+3. **Unrestricted (later)** — Premium-quality assistance with the owner's NerdGPT
+   spicy humor/provider experience and verified-activation animation. NerdGPT
+   renovation/integration is deferred; do not advertise this as available now.
 
-### Shared by both — no exceptions
+### Shared across tiers — no exceptions
 
 - User interface
 - Agents
@@ -27,7 +34,8 @@ Editions differ by **configuration and entitlement**, never by source tree.
 
 ### Morpheus Unrestricted and model providers
 
-Unrestricted may use **NerdGPT** or another configured model-output provider.
+Unrestricted is planned to use the owner's **NerdGPT**, not an assumed unrelated
+external vendor. Do not implement or substitute that dependency in Phase 7.
 
 Three constraints, none negotiable:
 
@@ -48,6 +56,10 @@ edition-independent.
 | Platform | Status |
 | --- | --- |
 | Windows (x64) | **Implemented** — Electron desktop shell, win32 capability adapters |
+
+Source implementation does not mean packaged/hardware acceptance. Current gates
+are in [Phase 7 acceptance](../releases/MORPHEUS_PHASE7_ACCEPTANCE.md); managed
+service status is in [Phase 6 readiness](../roadmap/MORPHEUS_PHASE6_READINESS.md).
 
 ### Architectural targets
 

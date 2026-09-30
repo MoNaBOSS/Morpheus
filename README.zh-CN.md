@@ -5,6 +5,11 @@
 
 <h1 align="center">Morpheus</h1>
 
+第 7 阶段（2026-09-30）：源码审查与助手架构方案已准备就绪，将按小步骤实施；这并不代表正式版本已完成。
+请从 [Sol 交接说明](SOL_START_HERE.md)、[实施顺序](docs/roadmap/MORPHEUS_PHASE7_EXECUTION_PLAN.md)
+和 [Windows 验收条件](docs/releases/MORPHEUS_PHASE7_ACCEPTANCE.md) 开始。
+右下角安静的桌面伴侣仍是主要交互界面；NerdGPT 留待后续开发。
+
 第六阶段账户检查点：设置页面已通过 Electron Main 接入可配置的 Google/邮箱登录、
 受保护的会话及额度状态。持久化账本和仅提供账户功能的服务可在配置后运行。
 真实托管登录尚未验收，托管模型/语音、首次试用及支付尚未接通。

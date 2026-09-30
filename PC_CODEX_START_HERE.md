@@ -1,5 +1,13 @@
 # PC Codex: continue Morpheus from the Mac checkpoint
 
+**Latest continuation, 2026-09-30:** the verified PC application baseline is
+`32badea9` on the same application branch. The Astra audit has prepared
+[SOL_START_HERE.md](SOL_START_HERE.md), the
+[Phase 7 execution plan](docs/roadmap/MORPHEUS_PHASE7_EXECUTION_PLAN.md), and
+[assistant architecture](docs/architecture/MORPHEUS_ASSISTANT_ARCHITECTURE.md).
+Read that handoff first for current work. The Mac pickup instructions below are
+historical provenance; do not repeat completed PC pickup or claim Phase 7 passed.
+
 PC continuation note (2026-09-29): the verified Windows pickup and first native
 hover implementation are recorded in
 [the Windows checkpoint](docs/roadmap/MORPHEUS_PC_CHECKPOINT_2026-09-29.md).

@@ -2,6 +2,11 @@
 
 Status: canonical product contract for the Windows private alpha.
 
+2026-09-30 amendment: this is a historical private-alpha contract. The approved
+companion experience and [Phase 7 architecture](../architecture/MORPHEUS_ASSISTANT_ARCHITECTURE.md)
+supersede its old visible Ask/Auto/Act, dashboard and placement descriptions.
+They do not remove Main authority, precise consent or audit requirements.
+
 2026-09-22 experience-reset amendment: fresh profiles now use Balanced, clear
 direct app/site requests run promptly, independent tasks can coexist, and
 restart recovery reconciles checkpoints without replaying uncertain effects.
