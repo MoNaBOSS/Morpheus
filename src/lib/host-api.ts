@@ -577,6 +577,9 @@ export const hostApi = {
     setVoiceSpeaking: (payload: { speaking: boolean }) => (
       invokeHost('morpheus', 'setVoiceSpeaking', payload)
     ),
+    updatePresentationLevel: (payload: { level: number }) => (
+      invokeHost('morpheus', 'updatePresentationLevel', payload)
+    ),
     runtimeControl: () => invokeHost('morpheus', 'runtimeControl'),
     setRuntimePaused: (paused: boolean) => (
       invokeHost('morpheus', 'setRuntimePaused', {

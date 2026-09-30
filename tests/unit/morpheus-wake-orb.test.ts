@@ -11,7 +11,7 @@ const mock = vi.hoisted(() => ({ windows: [] as Array<{
   setBounds: ReturnType<typeof vi.fn>;
   setShape: ReturnType<typeof vi.fn>;
   getBounds(): { x: number; y: number; width: number; height: number };
-  webContents: object;
+  webContents: { executeJavaScript: ReturnType<typeof vi.fn> };
 }> }));
 
 vi.mock('electron', async () => {
@@ -70,6 +70,24 @@ describe.skipIf(process.platform !== 'win32')('native orb visibility across dela
     mock.windows[0].finishLoad();
     expect(mock.windows[0].showInactive).toHaveBeenCalledOnce();
     expect(mock.windows[0].hide).not.toHaveBeenCalled();
+  });
+
+  it('projects Main-owned visibility because Electron hide may not change document.hidden', () => {
+    const orb = new MorpheusWakeOrb(vi.fn());
+    orb.show();
+    const window = mock.windows[0];
+    window.finishLoad();
+    expect(window.webContents.executeJavaScript.mock.calls.some(([script]) => (
+      script.includes("dataset.windowVisible = 'true'")
+    ))).toBe(true);
+    orb.hide();
+    expect(window.webContents.executeJavaScript.mock.calls.some(([script]) => (
+      script.includes("dataset.windowVisible = 'false'")
+    ))).toBe(true);
+    orb.show();
+    expect(window.webContents.executeJavaScript.mock.calls.filter(([script]) => (
+      script.includes("dataset.windowVisible = 'true'")
+    ))).toHaveLength(2);
   });
 
   it('exposes only the current orb webContents and clears it on disposal', () => {
@@ -161,5 +179,61 @@ describe.skipIf(process.platform !== 'win32')('native orb visibility across dela
     orb.reposition();
     expect(mock.windows[0].setBounds).toHaveBeenLastCalledWith(wakeOrbBounds(workArea));
     expect(mock.windows[0].showInactive).toHaveBeenCalledOnce();
+  });
+
+  it('forwards only bounded active audio level and clears it outside listening/speaking', () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000);
+    try {
+    const orb = new MorpheusWakeOrb(vi.fn());
+    orb.show();
+    const window = mock.windows[0];
+    window.finishLoad();
+    const scripts = window.webContents.executeJavaScript;
+    const before = scripts.mock.calls.length;
+    orb.updateLevel(0.6); // No microphone or playback while idle.
+    orb.updateLevel(Number.NaN);
+    expect(scripts).toHaveBeenCalledTimes(before);
+
+    orb.updatePresence({ v: 4, state: 'listening', ambientEnabled: true });
+    orb.updateLevel(0.6);
+    expect(scripts.mock.lastCall?.[0]).toContain("'0.600'");
+    const activeCount = scripts.mock.calls.length;
+    orb.updateLevel(0.8); // Coalesced positive update inside 50ms.
+    expect(scripts).toHaveBeenCalledTimes(activeCount);
+    orb.updatePresence({ v: 4, state: 'working', ambientEnabled: true });
+    expect(scripts.mock.calls.slice(activeCount).some(([script]) => script.includes("'0.000'"))).toBe(true);
+    const stoppedCount = scripts.mock.calls.length;
+    orb.updateLevel(0.7);
+    expect(scripts).toHaveBeenCalledTimes(stoppedCount);
+    } finally {
+      now.mockRestore();
+    }
+  });
+
+  it('flushes the latest coalesced level and ignores repeated zero requests', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-30T00:00:00Z'));
+    try {
+      const orb = new MorpheusWakeOrb(vi.fn());
+      orb.show();
+      const window = mock.windows[0];
+      window.finishLoad();
+      orb.updatePresence({ v: 4, state: 'speaking', ambientEnabled: false });
+      const scripts = window.webContents.executeJavaScript;
+      orb.updateLevel(0.2);
+      const immediateCount = scripts.mock.calls.length;
+      orb.updateLevel(0.4);
+      orb.updateLevel(0.8);
+      expect(scripts).toHaveBeenCalledTimes(immediateCount);
+      vi.advanceTimersByTime(50);
+      expect(scripts.mock.lastCall?.[0]).toContain("'0.800'");
+      orb.updateLevel(0);
+      const stoppedCount = scripts.mock.calls.length;
+      for (let index = 0; index < 100; index += 1) orb.updateLevel(0);
+      expect(scripts).toHaveBeenCalledTimes(stoppedCount);
+      orb.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

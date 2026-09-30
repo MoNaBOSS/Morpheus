@@ -287,6 +287,7 @@ export type CreateMorpheusApiOptions = {
     dismiss(): MorpheusCompanionSurfaceStatus;
     expand(): MorpheusCompanionSurfaceStatus;
   };
+  onPresentationLevel?: (level: number) => void;
   voice: MorpheusVoiceService;
   runtimeControl: MorpheusRuntimeControlService;
   workspaces: MorpheusWorkspaceStore;
@@ -1068,6 +1069,16 @@ export function validateVoiceSpeakingPayload(payload: unknown): { speaking: bool
   return { speaking: record.speaking };
 }
 
+export function validatePresentationLevelPayload(payload: unknown): { level: number } {
+  const record = requireRecord(payload, 'updatePresentationLevel payload');
+  assertNoUnknownKeys(record, ['level'], 'updatePresentationLevel payload');
+  if (typeof record.level !== 'number' || !Number.isFinite(record.level)
+    || record.level < 0 || record.level > 1) {
+    throw new MorpheusValidationError('level must be a finite number between 0 and 1');
+  }
+  return { level: record.level };
+}
+
 export function validateRuntimePausedPayload(payload: unknown): SetMorpheusRuntimePausedPayload {
   const record = requireRecord(payload, 'setRuntimePaused payload');
   assertNoUnknownKeys(record, ['paused'], 'setRuntimePaused payload');
@@ -1595,6 +1606,10 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     ),
     transcribeAmbientAudio: (payload) => voice.transcribeAmbient(validateTranscribeAudioPayload(payload)),
     setVoiceSpeaking: (payload) => voice.setSpeaking(validateVoiceSpeakingPayload(payload).speaking),
+    updatePresentationLevel: (payload) => {
+      const { level } = validatePresentationLevelPayload(payload);
+      options.onPresentationLevel?.(level);
+    },
     runtimeControl: () => runtimeControl.snapshot(),
     setRuntimePaused: async (payload) => {
       const paused = validateRuntimePausedPayload(payload).paused;

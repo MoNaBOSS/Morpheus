@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="en" data-state="armed" data-hover="false">
+<html lang="en" data-state="armed" data-hover="false" data-window-visible="false">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Morpheus presence</title>
+  <link rel="stylesheet" href="motion.css">
   <link rel="stylesheet" href="orb.css">
 </head>
 <body>
@@ -14,9 +15,13 @@
     <button class="hover-composer-send" type="submit" aria-label="Send" title="Send" disabled>↗</button>
     <button class="hover-composer-expand" type="button" aria-label="Open compact conversation" title="Open compact conversation">⤢</button>
   </form>
-  <button class="orb" type="button" aria-label="Ask Morpheus" title="Ask Morpheus">
-    <img src="orb.png" alt="" draggable="false">
+  <button class="orb morpheus-motion" data-motion-state="idle" type="button" aria-label="Ask Morpheus" title="Ask Morpheus">
+    <span class="morpheus-motion__aurora" aria-hidden="true"></span>
+    <span class="morpheus-motion__halo" aria-hidden="true"></span>
+    <img class="morpheus-motion__artwork" src="orb.png" alt="" draggable="false">
+    <span class="morpheus-motion__cue" aria-hidden="true"></span>
   </button>
+  <div id="orb-presence-status" class="sr-only" role="status" aria-live="polite"></div>
   <div id="orb-status" class="sr-only" role="status" aria-live="polite"></div>
   <script src="orb.js" defer></script>
 </body>

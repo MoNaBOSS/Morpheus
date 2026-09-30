@@ -4,17 +4,7 @@ button, input { font: inherit; }
 button { cursor: pointer; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .orb { position: absolute; right: 0; bottom: 0; display: block; width: 100px; height: 100px; padding: 0; border: 0; background: transparent; border-radius: 50%; }
-.orb::before { content: ''; position: absolute; inset: 4px; border-radius: 46% 54% 59% 41% / 53% 42% 58% 47%; background: conic-gradient(from 40deg, transparent 7%, rgba(83,237,180,.32) 27%, transparent 52%, rgba(44,170,110,.25) 78%, transparent 96%); filter: blur(11px); animation: fluid 6.4s ease-in-out infinite alternate; pointer-events: none; }
-.orb img { position: absolute; width: 145px; height: 145px; left: -22.5px; top: -22.5px; clip-path: circle(50px at center); user-select: none; }
-.orb::after { content: ''; position: absolute; inset: 6px; border-radius: 50%; border: 1px solid transparent; pointer-events: none; }
-html[data-state="listening"] .orb::after, html[data-state="transcribing"] .orb::after { border-color: #7affbb; animation: breathe 1.3s ease-in-out infinite; }
-html[data-state="speaking"] .orb::after, html[data-state="preparing-speech"] .orb::after { border-color: #b4ffd1; animation: breathe .72s ease-in-out infinite; }
-html[data-state="working"] .orb::after, html[data-state="understanding"] .orb::after { border-color: #4be39f; animation: breathe 2.2s ease-in-out infinite; }
-html[data-state="error"] .orb::after { border-color: #e9ab76; }
-html[data-state="speaking"] .orb::before, html[data-state="preparing-speech"] .orb::before { animation-duration: 1.4s; }
-html[data-state="working"] .orb::before, html[data-state="understanding"] .orb::before { animation-duration: 3.4s; }
-html[data-state="error"] .orb::before { background: rgba(225,148,92,.3); }
-.orb:focus-visible::after { border-color: #eafff1; box-shadow: 0 0 0 2px #0b1610; }
+.orb:focus-visible { outline: 2px solid #eafff1; outline-offset: -3px; }
 .hover-composer { position: absolute; right: 8px; bottom: 108px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; width: min(344px, calc(100% - 16px)); height: 55px; padding: 0 8px 0 16px; border: 1px solid #88d9aa54; border-radius: 17px; background: linear-gradient(120deg, #10231bf2, #07170ef7); box-shadow: 0 14px 40px #0008, 0 1px 0 #d6ffe511 inset; color: #d8eadf; font: 14px "Segoe UI Variable", "Segoe UI", sans-serif; opacity: 0; pointer-events: none; transform: translateY(8px) scale(.98); transition: opacity 180ms ease, transform 180ms ease; }
 html[data-hover="true"] .hover-composer { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
 .hover-composer input { min-width: 0; flex: 1; height: 38px; padding: 0; border: 0; outline: 0; background: transparent; color: #eaffef; font-size: 14px; }
@@ -26,6 +16,4 @@ html[data-hover="true"] .hover-composer { opacity: 1; pointer-events: auto; tran
 .hover-composer:focus-within { border-color: #c1fbd5; box-shadow: 0 0 0 2px #a6e8bf44, 0 14px 40px #0008; }
 .hover-composer button:focus-visible, .orb:focus-visible { outline: 2px solid #ddffe8; outline-offset: 2px; }
 html[data-draft-conflict="true"] .hover-composer { border-color: #e9ab76; }
-@keyframes breathe { 50% { transform: scale(1.1); opacity: .5; } }
-@keyframes fluid { from { transform: rotate(-15deg) scale(.92); opacity: .48; } to { transform: rotate(21deg) scale(1.12); opacity: .94; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

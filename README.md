@@ -30,7 +30,7 @@ surfaces include task selection, separate speech/task stop controls, remembered
 exact approvals and conservative restart recovery. New profiles use Balanced;
 existing preferences are preserved. See [task continuity and acceptance limits](docs/architecture/MORPHEUS_TASK_CONTINUITY.md).
 
-Windows presence refinement: local wake shows the orb without taking focus. Hover reveals an upward composer; clicking it opens focused compact chat above the same bottom-right corner, within the display work area. Pointer exit collapses the preview, monitor/work-area changes reposition the orb, and full expansion restores the previous window. The native preview is an entry to typing in compact chat, not a separate task or input field. Windows hardware acceptance remains pending.
+Windows companion source checkpoint (7A.1–7A.3): local wake shows the orb without taking focus. Hover reveals an editable upward composer; a click focuses its real text input. Pointer exit or Escape preserves the Main-owned draft. Enter admits one correlated turn, and ordinary replies stay in compact conversation without automatic Chat navigation. Explicit full expansion keeps the same conversation and draft; display/work-area changes retain the bottom-right anchor. Fresh-build Windows Electron automation covered these source flows. Packaged, hardware and live-provider acceptance remain pending.
 
 > **1.1.2 unified presence candidate:** cinematic first-run and returning greetings,
 > a state-driven luminous Signal, compact background Presence, speech auto-end,

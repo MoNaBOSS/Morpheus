@@ -209,7 +209,47 @@ Append implementation records here or link a compact per-candidate evidence file
   motion controls, then 7B.1 protected provider-secret migration. The original PC
   checkout and user profile/provider settings were not modified.
 
-Documentation checkpoint validation: Phase 7 spec validation and dry-run passed;
+### 7A.4 shared motion source/native-automation checkpoint — 2026-09-30
+
+- Starting source: `416b47a5` in the isolated Windows worktree. One local M/orb
+  artwork and CSS motion recipe now serve native and React presence. Idle uses a
+  quiet halo; working/listening/speaking use restrained green motion; attention
+  and error add a visible `?`/`!` cue and accessible state labels. The Main-owned
+  typed bridge accepts only a finite 0–1 visual scalar, never audio or transcript.
+  Main coalesces positive updates to at most 20 Hz, flushes the latest value,
+  rejects duplicate zeros, and clears level when speech/capture ends. Capture
+  and neural playback feed real RMS; if `captureStream()` is unavailable or the
+  Windows speechSynthesis fallback is used, the level remains zero rather than
+  rerouting audible output or fabricating a waveform.
+- Hidden native and Main windows receive explicit visibility signals because
+  Electron can leave `document.hidden` false. React orb, legacy Signal and Matrix
+  rain pause visual work while hidden; optional background audio ownership is
+  independent. Reduced motion removes flowing/pulsing animation and audio-driven
+  opacity flicker. The narrow [shared orb motion task](../../harness/specs/tasks/morpheus-phase7-shared-orb-motion.md)
+  validated against the exact diff; its dry-run passed rule checks but did not
+  execute application tests. A separate review found and the source addressed
+  trailing-level, duplicate-zero, audio-route and hidden/reduced-motion defects.
+- Fresh Vite/Electron source build, Node/Web/managed typecheck, communications
+  replay/compare and lint passed (0 errors, 12 existing Fast Refresh warnings).
+  Focused unit tests passed **70/70**; full Vitest passed **284 files, 2,882 tests,
+  2 skipped**. Harness CI passed **18/18**. Fourteen selected Windows Electron
+  journeys passed after rebuilding, including native/React shared CSS/artwork,
+  keyboard focus, scalar bridge reset, reduced motion, hidden Main/native pause,
+  guarded Main-hide-to-orb handoff, compact replies and related Signal/arrival
+  regressions. Earlier failed exploratory runs identified hidden-visibility and
+  CSS-specificity/test-order bugs; the final fresh-build reruns are green.
+- Native source-build screenshots reviewed under the parent workspace
+  `phase7-evidence/shared-motion-native-idle.png`,
+  `shared-motion-native-attention.png`, `shared-motion-native-level-fixture.png`
+  and `shared-motion-react-compact.png`. The scalar screenshot uses a test input,
+  **not** a recorded microphone or speech sample. No short motion recording,
+  real microphone/monitor audition, actual tray-hardware transfer, packaged
+  installer/resource validation, frame-rate measurement, paid call or live model
+  result was obtained. UX-06, VO and PK gates remain open. No user profile or
+  provider setting was changed. Next: 7B.1 secret migration and crash fixtures
+  before any paid live-path test.
+
+Earlier Astra documentation checkpoint validation: Phase 7 spec validation and dry-run passed;
 18 harness unit tests passed across 2 files. All 21 relative Markdown links in the
 7 new documents resolved. All 9 referenced harness rules exist. Git whitespace
 check passed. Dry-run intentionally skipped application build/type/lint/tests;

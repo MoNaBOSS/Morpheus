@@ -88,6 +88,7 @@ import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
 type MorpheusCompanionSurfaceControls = {
   wake?(): void;
   presence?(presence: MorpheusVoicePresence): void;
+  level?(level: number): void;
   status(): MorpheusCompanionSurfaceStatus;
   dismiss(): MorpheusCompanionSurfaceStatus;
   expand(): MorpheusCompanionSurfaceStatus;
@@ -237,6 +238,7 @@ function registerTypedHostHandlers(
   });
   const morpheusApi = createMorpheusApi({
     assistantSession,
+    onPresentationLevel: (level) => companionSurface.level?.(level),
     getLocale: () => getSetting('language'),
     runtime: morpheusService.runtime,
     grants: morpheusService.grants,

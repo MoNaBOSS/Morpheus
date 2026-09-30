@@ -366,6 +366,16 @@ function focusMainWindow(): void {
 function createMainWindow(): BrowserWindow {
   const win = createWindow();
 
+  const syncPresentationVisibility = () => {
+    if (win.isDestroyed() || win.webContents.isDestroyed() || win.webContents.isLoading()) return;
+    // Electron can keep document.hidden false after BrowserWindow.hide().
+    void win.webContents.executeJavaScript(
+      `document.documentElement.dataset.morpheusWindowVisible = '${String(win.isVisible())}'`,
+      true,
+    ).catch(() => undefined);
+  };
+  win.webContents.on('did-finish-load', syncPresentationVisibility);
+
   win.once('ready-to-show', () => {
     if (mainWindow !== win) {
       return;
@@ -402,8 +412,12 @@ function createMainWindow(): BrowserWindow {
     }
   });
 
-  win.on('show', () => wakeOrb.hide());
+  win.on('show', () => {
+    syncPresentationVisibility();
+    wakeOrb.hide();
+  });
   win.on('hide', () => {
+    syncPresentationVisibility();
     if (!isQuitting() && (!isE2EMode || process.argv.includes('--morpheus-test-wake-orb'))) {
       wakeOrb.show();
     }
@@ -506,6 +520,7 @@ async function initialize(): Promise<void> {
       dismiss: () => companionSurfaceController.dismiss(window),
       expand: () => companionSurfaceController.expand(window),
       presence: (presence) => wakeOrb.updatePresence(presence),
+      level: (level) => wakeOrb.updateLevel(level),
       wake: () => {
         if (!window.isVisible() || window.isMinimized()) {
           wakeOrb.show();

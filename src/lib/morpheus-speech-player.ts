@@ -1,4 +1,5 @@
 import { hostApi } from './host-api';
+import { meterMorpheusPlayback } from './morpheus-audio-level';
 import { createMorpheusSpeechStream } from './morpheus-speech-stream';
 import { resolveMorpheusWindowsVoice } from './morpheus-windows-voice';
 
@@ -16,6 +17,7 @@ let cancelPlayback: (() => void) | null = null;
 let cancelRequest: (() => void) | null = null;
 let activeCallback: SpeechOptions['onSpeakingChange'];
 let disposeStream: (() => void) | null = null;
+let stopPlaybackMeter: (() => void) | null = null;
 
 function setSpeaking(speaking: boolean, callback = activeCallback): void {
   callback?.(speaking);
@@ -23,6 +25,8 @@ function setSpeaking(speaking: boolean, callback = activeCallback): void {
 }
 
 function releaseAudio(): void {
+  stopPlaybackMeter?.();
+  stopPlaybackMeter = null;
   disposeStream?.();
   disposeStream = null;
   if (activeAudio) {
@@ -35,6 +39,11 @@ function releaseAudio(): void {
   }
   if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
   activeObjectUrl = null;
+}
+
+function startPlaybackMeter(audio: HTMLAudioElement, id: number): void {
+  if (id !== generation || stopPlaybackMeter) return;
+  stopPlaybackMeter = meterMorpheusPlayback(audio);
 }
 
 export function stopMorpheusSpeech(callback?: SpeechOptions['onSpeakingChange']): void {
@@ -72,8 +81,19 @@ async function playNeuralSpeech(text: string, id: number): Promise<void> {
     const audio = new Audio(stream.url);
     activeAudio = audio;
     cancelPlayback = done;
-    audio.onplaying = () => { if (id === generation) setSpeaking(true); };
-    audio.onended = done;
+    audio.onplaying = () => {
+      if (id !== generation) return;
+      setSpeaking(true);
+      startPlaybackMeter(audio, id);
+    };
+    audio.onended = () => {
+      if (id === generation) {
+        stopPlaybackMeter?.();
+        stopPlaybackMeter = null;
+        setSpeaking(false);
+      }
+      done();
+    };
     audio.onerror = () => fail(new Error('Streaming speech playback failed.'));
     const timeout = window.setTimeout(() => fail(new Error('Speech playback timed out.')), 90_000);
     try {
@@ -96,6 +116,7 @@ async function playNeuralSpeech(text: string, id: number): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     cancelPlayback = resolve;
     audio.onplay = () => { if (id === generation) setSpeaking(true); };
+    audio.onplaying = () => startPlaybackMeter(audio, id);
     audio.onended = () => {
       if (id === generation) {
         setSpeaking(false);

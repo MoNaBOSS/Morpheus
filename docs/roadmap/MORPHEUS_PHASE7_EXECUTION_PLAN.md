@@ -67,7 +67,7 @@ Only record what the evidence supports. All rows below start TODO.
 | 7A.1 IMPLEMENTED | Main assistant session/turn projection. Duplicate request returns same admission; two rapid turns neither overwrite nor cross conversations; stale events rejected. Focused source tests pass; packaged/live continuity remains open. | Baseline |
 | 7A.2 AUTOMATED | Native real upward composer. Windows Electron source-build test covers inactive hover, explicit focus/type, Escape draft, one admission, screen anchor and compact handoff. Packaged hardware/accessibility acceptance remains open. | A.1 |
 | 7A.3 AUTOMATED | Compact/full project the same ACP conversation and Main draft; fixture reply stays in a native compact window with no `/chat` redirect, and expansion/dismiss preserves draft. Live provider and packaged acceptance remain open. | A.1–2 |
-| 7A.4 TODO | Shared orb motion + actual mic/playback level. Native/React fidelity, reduced motion, keyboard access, hidden animation pause and tray transition recorded. | A.2–3 |
+| 7A.4 AUTOMATED | Shared native/React M-orb motion and bounded scalar from actual mic/neural playback paths. Source-build Electron tests cover reduced motion, keyboard focus, hidden Main/native animation pause and the guarded Main-hide/tray handoff. Hardware audio, true tray, motion recording and packaged acceptance remain open. | A.2–3 |
 | 7B.1 TODO | Protected provider secret migration across consumers. Crash fixtures preserve keys/settings; no migrated plaintext copies; unavailable protection fails safely. | Baseline; before paid live tests |
 | 7C.1 TODO | Real wake/capture lifecycle. Same-breath wake+command captured once, mic mute/lock respected, unplug/replug and missing input produce usable recovery. | A.1–2, B.1 |
 | 7C.2 TODO | Natural output, barge-in and follow-ups. Three true voice auditions; interruption kills old audio/generation; speech stop does not cancel work; no-speech costs zero. | C.1 |
@@ -95,6 +95,12 @@ Use Sol for these implementation checkpoints as the user requested. Astra has
 settled the cross-cutting decisions in this pack; do not automatically invoke
 another expensive model for each file or repeat the entire audit each turn.
 No runtime provider/model decision is implied by the development-model choice.
+
+The linked worktree currently contains an uncommitted 7A.4 source implementation.
+The row remains TODO until the focused tests, communication checks, fresh-build
+native behavior and visual evidence have been reviewed. Its narrow harness task
+is [shared orb motion](../../harness/specs/tasks/morpheus-phase7-shared-orb-motion.md).
+This checkpoint cannot close packaged, hardware or live-provider gates.
 
 ### Order and non-blocking work
 
@@ -185,14 +191,16 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
 ### Current checkpoint (replace, do not append another contradictory “latest”)
 
 - Completed in the isolated Windows source worktree: 7A.1 Main assistant session,
-  7A.2 editable native upward composer and 7A.3 compact conversation continuity.
+  7A.2 editable native upward composer, 7A.3 compact conversation continuity,
+  and 7A.4 shared native/React motion with a transient level-only bridge.
   The old forced Chat redirect is no longer used for normal Morpheus turns.
   Native source-build Electron journeys, full unit suite, typecheck, lint,
   communications replay/compare and harness checks are recorded in the ledger.
   No second executor or conversation history store was introduced.
-- Next executable checkpoint: **7A.4 — shared fluid motion and actual ephemeral
-  mic/playback amplitude**, with reduced-motion/hidden-window validation. Then
-  proceed to 7B.1 protected provider-secret migration before paid live testing.
+- Next executable checkpoint: **7B.1 — protected provider-secret migration**
+  before paid live testing. Audit every app-owned and OpenClaw runtime consumer,
+  preserve existing keys/settings through crash fixtures, and distinguish static
+  API keys from upstream-managed OAuth tokens before changing storage.
 - The Windows worktree is separate from the original PC checkout. Profiles and
   provider settings have not been changed. Commit/push continuity is recorded
   in the ledger; source-build tests do not certify an installer.

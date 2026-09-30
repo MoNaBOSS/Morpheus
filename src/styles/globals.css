@@ -987,7 +987,8 @@
   opacity: 0.85;
   transition: opacity 240ms ease, transform 160ms ease-out;
 }
-.morpheus-signal[data-signal-state='listening'] .morpheus-signal-sphere {
+.morpheus-signal[data-signal-state='listening'] .morpheus-signal-sphere,
+.morpheus-signal[data-signal-state='speaking'] .morpheus-signal-sphere {
   transform: scale(calc(1 + var(--morpheus-audio-level, 0) * 0.12));
 }
 .morpheus-signal[data-signal-state='asleep'] .morpheus-signal-sphere { opacity: 0.15; }
@@ -1005,11 +1006,13 @@
   transform: scale(0.85);
   transition: transform 100ms ease-out, opacity 100ms ease-out;
 }
-.morpheus-signal[data-signal-state='listening'] .morpheus-signal-audio-glow {
+.morpheus-signal[data-signal-state='listening'] .morpheus-signal-audio-glow,
+.morpheus-signal[data-signal-state='speaking'] .morpheus-signal-audio-glow {
   opacity: calc(0.18 + var(--morpheus-audio-level, 0) * 0.72);
   transform: scale(calc(0.85 + var(--morpheus-audio-level, 0) * 1.1));
 }
-.morpheus-signal[data-signal-state='listening'] .morpheus-signal-wave {
+.morpheus-signal[data-signal-state='listening'] .morpheus-signal-wave,
+.morpheus-signal[data-signal-state='speaking'] .morpheus-signal-wave {
   animation: none;
   transform-origin: center;
   transform: scaleY(calc(0.25 + var(--morpheus-audio-level, 0) * 1.5));
@@ -1017,10 +1020,17 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .morpheus-signal[data-signal-state='listening'] .morpheus-signal-sphere,
+  .morpheus-signal[data-signal-state='speaking'] .morpheus-signal-sphere,
   .morpheus-signal[data-signal-state='listening'] .morpheus-signal-audio-glow,
-  .morpheus-signal[data-signal-state='listening'] .morpheus-signal-wave {
+  .morpheus-signal[data-signal-state='speaking'] .morpheus-signal-audio-glow,
+  .morpheus-signal[data-signal-state='listening'] .morpheus-signal-wave,
+  .morpheus-signal[data-signal-state='speaking'] .morpheus-signal-wave {
     transform: none;
     transition: none;
+  }
+  .morpheus-signal[data-signal-state='listening'] .morpheus-signal-audio-glow,
+  .morpheus-signal[data-signal-state='speaking'] .morpheus-signal-audio-glow {
+    opacity: 0.35;
   }
 }
 
@@ -1033,11 +1043,6 @@
 .morpheus-signal[data-signal-state='speaking'] .morpheus-signal-wave {
   opacity: 0.92;
 }
-.morpheus-signal[data-signal-state='speaking'] .morpheus-signal-wave {
-  /* Playback state decoration, not a synthetic microphone meter. */
-  animation: morpheus-signal-wave 1.8s ease-in-out infinite;
-}
-
 .morpheus-signal[data-signal-state='understanding'] .morpheus-signal-mark,
 .morpheus-signal[data-signal-state='planning'] .morpheus-signal-mark {
   animation: morpheus-signal-resolve 1.35s ease-in-out infinite;
@@ -1316,63 +1321,7 @@
 }
 
 .morpheus-fluid-orb {
-  position: relative;
-  isolation: isolate;
-  border-radius: 50%;
   flex: none;
-}
-
-.morpheus-fluid-orb::before {
-  position: absolute;
-  z-index: -2;
-  inset: -8%;
-  border-radius: 46% 54% 59% 41% / 53% 42% 58% 47%;
-  background: conic-gradient(from 40deg, transparent 7%, rgb(83 237 180 / 0.32) 27%, transparent 52%, rgb(44 170 110 / 0.25) 78%, transparent 96%);
-  content: '';
-  filter: blur(12px);
-  animation: morpheus-fluid-drift 6.4s ease-in-out infinite alternate;
-}
-
-.morpheus-fluid-orb-light {
-  position: absolute;
-  z-index: -1;
-  inset: 8%;
-  border-radius: 50%;
-  box-shadow: 0 0 22px rgb(83 237 180 / 0.22);
-  transition: transform 180ms ease, box-shadow 180ms ease;
-}
-
-.morpheus-fluid-orb img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: contain;
-  user-select: none;
-}
-
-.morpheus-fluid-orb[data-signal-state='listening'] .morpheus-fluid-orb-light {
-  transform: scale(calc(1 + var(--morpheus-audio-level, 0) * 0.18));
-  box-shadow: 0 0 30px rgb(110 255 190 / 0.55);
-}
-
-.morpheus-fluid-orb[data-signal-state='speaking']::before {
-  animation-duration: 1.4s;
-}
-
-.morpheus-fluid-orb[data-signal-state='executing']::before,
-.morpheus-fluid-orb[data-signal-state='planning']::before {
-  animation-duration: 3.4s;
-}
-
-.morpheus-fluid-orb[data-signal-state='failed']::before,
-.morpheus-fluid-orb[data-signal-state='trust']::before {
-  background: rgb(225 148 92 / 0.3);
-}
-
-@keyframes morpheus-fluid-drift {
-  from { transform: rotate(-15deg) scale(0.92); opacity: 0.48; }
-  to { transform: rotate(21deg) scale(1.12); opacity: 0.94; }
 }
 
 @media (max-width: 850px) {
@@ -1398,7 +1347,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .morpheus-fluid-orb::before { animation: none; }
   .morpheus-workspace-icon-button { transition: none; }
 }
 

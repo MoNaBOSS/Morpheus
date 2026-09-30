@@ -17,6 +17,7 @@ import {
   validateWorkspaceIdPayload,
   validateWorkflowDraft,
   validateVoiceSettingsPatch,
+  validatePresentationLevelPayload,
   validateRuntimePausedPayload,
   validateMissionIdPayload,
   validateProjectDraft,
@@ -706,6 +707,7 @@ describe('createMorpheusApi', () => {
       'transcribeAudio',
       'updateAssistantDraft',
       'updateCompanionProfile',
+      'updatePresentationLevel',
       'updateProactiveSettings',
       'updateVoiceSettings',
       'updateWorkspace',
@@ -733,6 +735,22 @@ describe('createMorpheusApi', () => {
     expect((await api.assistantSnapshot({})).pendingTurns).toMatchObject([{ turnId: admitted.turnId, text: 'Hello' }]);
     await api.ackAssistantTurn({ conversationId: admitted.conversationId, turnId: admitted.turnId });
     expect((await api.assistantSnapshot({})).pendingTurns).toEqual([]);
+  });
+
+  it('accepts only an ephemeral normalized visual level and forwards the scalar', () => {
+    const onPresentationLevel = vi.fn();
+    const api = createMorpheusApi({ ...stubOptions(), onPresentationLevel });
+    expect(api.updatePresentationLevel({ level: 0.45 })).toBeUndefined();
+    expect(onPresentationLevel).toHaveBeenCalledExactlyOnceWith(0.45);
+    for (const payload of [
+      {}, { level: -0.1 }, { level: 1.1 }, { level: Number.NaN },
+      { level: Number.POSITIVE_INFINITY }, { level: '0.5' },
+      { level: 0.5, audioBase64: 'forbidden' },
+    ]) {
+      expect(() => validatePresentationLevelPayload(payload)).toThrow(MorpheusValidationError);
+      expect(() => api.updatePresentationLevel(payload as { level: number })).toThrow(MorpheusValidationError);
+    }
+    expect(onPresentationLevel).toHaveBeenCalledTimes(1);
   });
 
   it('forwards validated payloads to the runtime', async () => {

@@ -1,9 +1,9 @@
 # Sol: continue Phase 7 implementation
 
 Prepared by the Astra architecture pass on 2026-09-30 and updated after the Sol
-7A.1–7A.3 source checkpoint. NerdGPT is deferred. **Phase 7 is not complete or
-packaged/live accepted.** The next row is 7A.4; read the current checkpoint and
-evidence ledger for actual test scope before extending it.
+7A.1–7A.4 source checkpoints. NerdGPT is deferred. **Phase 7 is not complete or
+packaged/live accepted.** Read the current checkpoint and evidence ledger for the
+actual test scope before extending it.
 
 ## Verify source, preserve work
 
@@ -36,13 +36,14 @@ conversation or redesign a logo to start implementation.
 
 ## Next work
 
-7A.1 Main session, 7A.2 editable native upward composer and 7A.3 compact
-conversation continuity are implemented in source and pass focused Windows
-Electron automation. They are not installer/hardware/live-provider acceptance.
-Next implement **7A.4 shared fluid motion and actual ephemeral mic/playback level**
-with reduced-motion, hidden-window and keyboard behavior. Then continue 7B.1
-protected provider-secret migration before paid live-path testing. Preserve the
-same assistant/conversation/task owner; no second engine or dashboard.
+7A.1 Main session, 7A.2 editable native upward composer, 7A.3 compact
+conversation continuity and 7A.4 shared orb motion/ephemeral visual audio level
+pass focused Windows Electron source automation. They are not installer/hardware/
+live-provider acceptance. Next implement **7B.1 protected provider-secret migration**
+before paid live-path testing. Audit app-owned plaintext duplication and pinned
+OpenClaw runtime credential consumers first; do not destroy real keys or claim
+OAuth plaintext elimination without a supported upstream path. Preserve the same
+assistant/conversation/task owner; no second engine or dashboard.
 
 Use [the Phase 7 harness spec](harness/specs/tasks/morpheus-phase7-assistant.md)
 as the umbrella and create a narrowly scoped task spec per communication change.
@@ -76,7 +77,7 @@ User-ready resume prompt:
 
 > Continue Morpheus Phase 7 on Sol from SOL_START_HERE.md on
 > codex/morpheus-phase6-managed-layer. Verify the checkout and preserve all work.
-> Read the current checkpoint, then implement 7A.1 and continue in the documented
-> small checkpoints. Keep the approved bottom-right Siri-style Morpheus companion,
+> Read the current checkpoint, then continue at 7B.1 in
+> the documented small checkpoints. Keep the approved bottom-right Siri-style Morpheus companion,
 > not a dashboard. NerdGPT later. Update tests, evidence and handoff as you go;
 > distinguish source implementation from packaged/live acceptance.

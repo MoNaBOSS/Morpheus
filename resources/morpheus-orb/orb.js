@@ -6,6 +6,53 @@ const input = document.querySelector('#orb-input');
 const send = document.querySelector('.hover-composer-send');
 const expand = document.querySelector('.hover-composer-expand');
 const status = document.querySelector('#orb-status');
+const presenceStatus = document.querySelector('#orb-presence-status');
+const motionCue = document.querySelector('.morpheus-motion__cue');
+const root = document.documentElement;
+let language = 'en';
+
+const motionLabels = {
+  en: { asleep: 'Ask Morpheus, quiet', armed: 'Ask Morpheus, ready', listening: 'Morpheus listening', transcribing: 'Morpheus transcribing', understanding: 'Morpheus understanding', 'waiting-for-approval': 'Morpheus needs approval', working: 'Morpheus working', 'preparing-speech': 'Morpheus preparing speech', speaking: 'Morpheus speaking', error: 'Morpheus needs attention' },
+  zh: { asleep: '询问 Morpheus，安静', armed: '询问 Morpheus，已就绪', listening: 'Morpheus 正在聆听', transcribing: 'Morpheus 正在转写', understanding: 'Morpheus 正在理解', 'waiting-for-approval': 'Morpheus 需要批准', working: 'Morpheus 正在处理', 'preparing-speech': 'Morpheus 正在准备语音', speaking: 'Morpheus 正在说话', error: 'Morpheus 需要注意' },
+  ja: { asleep: 'Morpheus に質問、静音', armed: 'Morpheus に質問、準備完了', listening: 'Morpheus が聞き取り中', transcribing: 'Morpheus が文字起こし中', understanding: 'Morpheus が理解中', 'waiting-for-approval': 'Morpheus に承認が必要です', working: 'Morpheus が作業中', 'preparing-speech': 'Morpheus が音声を準備中', speaking: 'Morpheus が発話中', error: 'Morpheus に対応が必要です' },
+  ru: { asleep: 'Спросить Morpheus, тихий режим', armed: 'Спросить Morpheus, готов', listening: 'Morpheus слушает', transcribing: 'Morpheus распознаёт речь', understanding: 'Morpheus обрабатывает запрос', 'waiting-for-approval': 'Morpheus ждёт разрешения', working: 'Morpheus работает', 'preparing-speech': 'Morpheus готовит ответ', speaking: 'Morpheus говорит', error: 'Morpheus требует внимания' },
+};
+
+const motionStates = {
+  asleep: 'quiet',
+  armed: 'idle',
+  listening: 'listening',
+  transcribing: 'working',
+  understanding: 'working',
+  'waiting-for-approval': 'attention',
+  working: 'working',
+  'preparing-speech': 'working',
+  speaking: 'speaking',
+  error: 'attention',
+};
+
+function syncMotionState() {
+  const state = root.dataset.state || 'armed';
+  orb.dataset.motionState = motionStates[state] || 'idle';
+  orb.dataset.motionTone = state === 'error' ? 'error' : 'normal';
+  motionCue.textContent = state === 'error' ? '!' : state === 'waiting-for-approval' ? '?' : '';
+  const label = motionLabels[language][state] || motionLabels[language].armed;
+  orb.ariaLabel = label;
+  orb.title = label;
+  presenceStatus.textContent = state === 'error' || state === 'waiting-for-approval' ? label : '';
+}
+
+function syncMotionVisibility() {
+  const hidden = document.hidden || root.dataset.windowVisible === 'false';
+  orb.dataset.motionPaused = String(hidden);
+  if (hidden) orb.style.setProperty('--morpheus-audio-level', '0');
+}
+
+new MutationObserver(syncMotionState).observe(root, { attributes: true, attributeFilter: ['data-state'] });
+new MutationObserver(syncMotionVisibility).observe(root, { attributes: true, attributeFilter: ['data-window-visible'] });
+document.addEventListener('visibilitychange', syncMotionVisibility);
+syncMotionState();
+syncMotionVisibility();
 
 let conversationId = '';
 let revision = 0;
@@ -18,7 +65,6 @@ let composing = false;
 let pendingRequestId = '';
 let hoverTimer;
 let collapseTimer;
-let language = 'en';
 
 const notices = {
   en: { conflict: 'The draft changed in another window. Send this text here or copy it before closing.', failed: 'Morpheus could not save that yet. Try again.', sending: 'Sending to Morpheus.' },
@@ -47,6 +93,7 @@ async function snapshot({ preserveLocal = false } = {}) {
   revision = result.draft.revision;
   language = result.presentation?.language in notices ? result.presentation.language : 'en';
   document.documentElement.lang = language;
+  syncMotionState();
   input.placeholder = result.presentation?.placeholder || 'Ask Morpheus…';
   send.ariaLabel = result.presentation?.submit || 'Send';
   send.title = send.ariaLabel;

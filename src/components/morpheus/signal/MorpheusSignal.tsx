@@ -2,6 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 
 import { cn } from '@/lib/utils';
 import { subscribeMorpheusAudioLevel } from '@/lib/morpheus-audio-level';
+import { isMorpheusPresentationVisible, observeMorpheusPresentationVisibility } from '@/lib/morpheus-presentation-visibility';
 import type { MorpheusSignalState } from './signal-state';
 
 type MorpheusSignalProps = {
@@ -34,22 +35,29 @@ export function MorpheusSignal({ state, className, label, compact = false }: Mor
   const gradientId = useId().replaceAll(':', '');
   const element = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (state !== 'listening') {
-      element.current?.style.setProperty('--morpheus-audio-level', '0');
-      return;
-    }
-    return subscribeMorpheusAudioLevel((level) => {
-      if (!document.hidden) element.current?.style.setProperty('--morpheus-audio-level', level.toFixed(3));
-    });
-  }, [state]);
-  useEffect(() => {
-    const update = (): void => {
-      element.current?.toggleAttribute('data-paused', document.hidden);
+    const node = element.current;
+    if (!node) return;
+    let unsubscribe: (() => void) | undefined;
+    const syncVisibility = (): void => {
+      unsubscribe?.();
+      unsubscribe = undefined;
+      const visible = isMorpheusPresentationVisible();
+      node.toggleAttribute('data-paused', !visible);
+      node.style.setProperty('--morpheus-audio-level', '0');
+      if (visible && (state === 'listening' || state === 'speaking')) {
+        unsubscribe = subscribeMorpheusAudioLevel((level) => {
+          if (isMorpheusPresentationVisible()) node.style.setProperty('--morpheus-audio-level', level.toFixed(3));
+        });
+      }
     };
-    update();
-    document.addEventListener('visibilitychange', update);
-    return () => document.removeEventListener('visibilitychange', update);
-  }, []);
+    syncVisibility();
+    const stopObserving = observeMorpheusPresentationVisibility(syncVisibility);
+    return () => {
+      stopObserving();
+      unsubscribe?.();
+      node.style.setProperty('--morpheus-audio-level', '0');
+    };
+  }, [state]);
 
   return (
     <div

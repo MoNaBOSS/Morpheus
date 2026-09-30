@@ -4,22 +4,35 @@ const mocks = vi.hoisted(() => ({
   synthesizeSpeech: vi.fn(),
   setVoiceSpeaking: vi.fn(),
   cancelSpeech: vi.fn(),
+  meterPlayback: vi.fn(),
+  stopMeter: vi.fn(),
+  createStream: vi.fn(),
 }));
 
 vi.mock('@/lib/host-api', () => ({
   hostApi: { morpheus: mocks },
 }));
+vi.mock('@/lib/morpheus-audio-level', () => ({
+  meterMorpheusPlayback: mocks.meterPlayback,
+}));
+vi.mock('@/lib/morpheus-speech-stream', () => ({
+  createMorpheusSpeechStream: mocks.createStream,
+}));
 
 import { playMorpheusSpeech, stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
 
 class FakeAudio {
+  static latest: FakeAudio;
   onplay: (() => void) | null = null;
+  onplaying: (() => void) | null = null;
   onended: (() => void) | null = null;
   onerror: (() => void) | null = null;
   pause = vi.fn();
+  constructor() { FakeAudio.latest = this; }
 
   play(): Promise<void> {
     this.onplay?.();
+    this.onplaying?.();
     queueMicrotask(() => this.onended?.());
     return Promise.resolve();
   }
@@ -35,6 +48,8 @@ class FakeUtterance {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.meterPlayback.mockReturnValue(mocks.stopMeter);
+  mocks.createStream.mockReturnValue({ url: 'blob:morpheus-stream', finish: vi.fn(), dispose: vi.fn() });
   mocks.synthesizeSpeech.mockResolvedValue({
     audioBase64: window.btoa('mp3-bytes'), mimeType: 'audio/mpeg',
     providerAccountId: 'openai', modelId: 'gpt-4o-mini-tts', voice: 'onyx', providerLatencyMs: 20,
@@ -44,7 +59,7 @@ beforeEach(() => {
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:morpheus-speech');
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
 });
-afterEach(() => { stopMorpheusSpeech(); vi.restoreAllMocks(); });
+afterEach(() => { stopMorpheusSpeech(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe('Morpheus speech player', () => {
   it('settles immediately on stop and ignores late provider audio', async () => {
@@ -81,10 +96,14 @@ describe('Morpheus speech player', () => {
     const state = vi.fn();
     const pending = playMorpheusSpeech('Long response', { neuralAvailable: true, onSpeakingChange: state });
     await vi.waitFor(() => expect(state).toHaveBeenCalledWith(true));
+    expect(mocks.meterPlayback).not.toHaveBeenCalled();
+    FakeAudio.latest.onplaying?.();
+    expect(mocks.meterPlayback).toHaveBeenCalledWith(FakeAudio.latest);
     stopMorpheusSpeech();
     await expect(pending).resolves.toBe('cancelled');
     expect(state).toHaveBeenLastCalledWith(false);
     expect(URL.revokeObjectURL).toHaveBeenCalledOnce();
+    expect(mocks.stopMeter).toHaveBeenCalledOnce();
   });
 
   it('a newer greeting supersedes a pending older greeting', async () => {
@@ -104,6 +123,28 @@ describe('Morpheus speech player', () => {
     expect(mocks.setVoiceSpeaking).toHaveBeenCalledWith({ speaking: true });
     expect(mocks.setVoiceSpeaking).toHaveBeenLastCalledWith({ speaking: false });
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:morpheus-speech');
+    expect(mocks.meterPlayback).toHaveBeenCalledOnce();
+    expect(mocks.stopMeter).toHaveBeenCalledOnce();
+  });
+
+  it('meters streaming speech from actual playback and releases its meter', async () => {
+    vi.stubGlobal('MediaSource', { isTypeSupported: vi.fn(() => true) });
+    await expect(playMorpheusSpeech('Streamed response.', { neuralAvailable: true })).resolves.toBe('neural');
+    expect(mocks.createStream).toHaveBeenCalledOnce();
+    expect(mocks.meterPlayback).toHaveBeenCalledWith(FakeAudio.latest);
+    expect(mocks.stopMeter).toHaveBeenCalledOnce();
+    expect(mocks.createStream.mock.results[0].value.dispose).toHaveBeenCalledOnce();
+  });
+
+  it('clears streaming playback level when audio ends before the provider settles', async () => {
+    vi.stubGlobal('MediaSource', { isTypeSupported: vi.fn(() => true) });
+    let deliver!: (value: unknown) => void;
+    mocks.synthesizeSpeech.mockReturnValueOnce(new Promise((resolve) => { deliver = resolve; }));
+    const pending = playMorpheusSpeech('Short stream.', { neuralAvailable: true });
+    await vi.waitFor(() => expect(mocks.stopMeter).toHaveBeenCalledOnce());
+    expect(mocks.setVoiceSpeaking).toHaveBeenLastCalledWith({ speaking: false });
+    deliver({ audioBase64: window.btoa('tail'), mimeType: 'audio/mpeg' });
+    await expect(pending).resolves.toBe('neural');
   });
 
   it('does not request provider speech when neural output is unavailable', async () => {

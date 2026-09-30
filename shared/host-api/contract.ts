@@ -1270,6 +1270,8 @@ export type HostApiContract = {
     setAmbientVoiceListening: (payload: MorpheusAmbientListeningPayload) => MorpheusVoicePresence;
     transcribeAmbientAudio: (payload: MorpheusTranscribeAudioPayload) => MorpheusTranscriptionResult;
     setVoiceSpeaking: (payload: { speaking: boolean }) => MorpheusVoicePresence;
+    /** Ephemeral normalized visual level; never audio, transcript or persisted data. */
+    updatePresentationLevel: (payload: { level: number }) => void;
     runtimeControl: () => MorpheusRuntimeControlSnapshot;
     setRuntimePaused: (payload: SetMorpheusRuntimePausedPayload) => MorpheusRuntimeControlSnapshot;
     permissionCenter: () => PermissionCenterSnapshot;

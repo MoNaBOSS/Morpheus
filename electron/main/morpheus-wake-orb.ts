@@ -10,6 +10,9 @@ export class MorpheusWakeOrb {
   private wantsVisible = false;
   private ready = false;
   private hovered = false;
+  private presentationLevel = 0;
+  private lastLevelAt = Number.NEGATIVE_INFINITY;
+  private pendingLevelTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private readonly onOpen: () => void,
@@ -27,7 +30,9 @@ export class MorpheusWakeOrb {
     if (existing && !existing.isDestroyed()) {
       this.hovered = false;
       this.reposition();
+      this.applyVisibility();
       this.applyHover();
+      this.applyLevel();
       if (this.ready) existing.showInactive();
       return;
     }
@@ -59,6 +64,8 @@ export class MorpheusWakeOrb {
       if (window.isDestroyed() || this.window !== window) return;
       this.ready = true;
       this.applyPresence();
+      this.applyVisibility();
+      this.applyLevel();
       this.applyHover();
       if (this.wantsVisible) {
         this.shapeWindow();
@@ -81,8 +88,38 @@ export class MorpheusWakeOrb {
 
   updatePresence(presence: MorpheusVoicePresence): void {
     this.presence = presence.state;
+    if (this.presence !== 'listening' && this.presence !== 'speaking') this.updateLevel(0);
     // Ambient microphone availability is independent of the typed companion.
     this.applyPresence();
+  }
+
+  /** A normalized visual signal only; Main coalesces positive updates to 20/s. */
+  updateLevel(level: number): void {
+    if (!Number.isFinite(level) || level < 0 || level > 1) return;
+    if (level > 0 && this.presence !== 'listening' && this.presence !== 'speaking') return;
+    if (level === this.presentationLevel && !this.pendingLevelTimer) return;
+    this.presentationLevel = level;
+    if (level === 0) {
+      if (this.pendingLevelTimer) clearTimeout(this.pendingLevelTimer);
+      this.pendingLevelTimer = null;
+      this.lastLevelAt = Number.NEGATIVE_INFINITY;
+      this.applyLevel();
+      return;
+    }
+    const now = Date.now();
+    const waitMs = 50 - (now - this.lastLevelAt);
+    if (waitMs <= 0) {
+      if (this.pendingLevelTimer) clearTimeout(this.pendingLevelTimer);
+      this.pendingLevelTimer = null;
+      this.lastLevelAt = now;
+      this.applyLevel();
+    } else if (!this.pendingLevelTimer) {
+      this.pendingLevelTimer = setTimeout(() => {
+        this.pendingLevelTimer = null;
+        this.lastLevelAt = Date.now();
+        this.applyLevel();
+      }, waitMs);
+    }
   }
 
   present(action: 'hover' | 'collapse' | 'open' | 'focus'): void {
@@ -113,7 +150,9 @@ export class MorpheusWakeOrb {
   hide(): void {
     this.wantsVisible = false;
     this.hovered = false;
+    this.updateLevel(0);
     if (this.window && !this.window.isDestroyed()) {
+      this.applyVisibility();
       this.window.hide();
       this.window.setBounds(wakeOrbBounds(this.getWorkArea()));
       this.shapeWindow();
@@ -133,6 +172,8 @@ export class MorpheusWakeOrb {
     this.wantsVisible = false;
     this.ready = false;
     this.hovered = false;
+    if (this.pendingLevelTimer) clearTimeout(this.pendingLevelTimer);
+    this.pendingLevelTimer = null;
     if (this.window && !this.window.isDestroyed()) this.window.close();
     this.window = null;
   }
@@ -151,6 +192,26 @@ export class MorpheusWakeOrb {
     if (!window || window.isDestroyed() || window.webContents.isLoading()) return;
     void window.webContents.executeJavaScript(
       `document.documentElement.dataset.hover = ${JSON.stringify(String(this.hovered))}; document.querySelector('.hover-composer').inert = ${!this.hovered}`,
+      true,
+    ).catch(() => undefined);
+  }
+
+  private applyVisibility(): void {
+    const window = this.window;
+    if (!window || window.isDestroyed() || window.webContents.isLoading()) return;
+    // BrowserWindow.hide() does not always update document.hidden in Electron.
+    void window.webContents.executeJavaScript(
+      `document.documentElement.dataset.windowVisible = '${String(this.wantsVisible)}'`,
+      true,
+    ).catch(() => undefined);
+  }
+
+  private applyLevel(): void {
+    const window = this.window;
+    if (!this.wantsVisible || !window || window.isDestroyed() || window.webContents.isLoading()) return;
+    const level = this.presentationLevel.toFixed(3);
+    void window.webContents.executeJavaScript(
+      `document.querySelector('.orb')?.style.setProperty('--morpheus-audio-level', '${level}')`,
       true,
     ).catch(() => undefined);
   }

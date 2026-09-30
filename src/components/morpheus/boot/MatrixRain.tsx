@@ -7,6 +7,7 @@
  *  - `prefers-reduced-motion` renders a single static frame and stops.
  */
 import { useEffect, useRef } from 'react';
+import { isMorpheusPresentationVisible, observeMorpheusPresentationVisibility } from '@/lib/morpheus-presentation-visibility';
 
 const GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎ0123456789';
 const FONT_SIZE = 15;
@@ -90,14 +91,14 @@ export function MatrixRain() {
     }
 
     const loop = (timestamp: number) => {
-      if (document.hidden) { frameId = 0; return; }
+      if (!isMorpheusPresentationVisible()) { frameId = 0; return; }
       frameId = window.requestAnimationFrame(loop);
       if (timestamp - lastFrame < FRAME_MS) return;
       lastFrame = timestamp;
       drawFrame();
     };
     const onVisibility = () => {
-      if (document.hidden) {
+      if (!isMorpheusPresentationVisible()) {
         window.cancelAnimationFrame(frameId);
         frameId = 0;
       } else if (!frameId) {
@@ -105,12 +106,12 @@ export function MatrixRain() {
         frameId = window.requestAnimationFrame(loop);
       }
     };
-    document.addEventListener('visibilitychange', onVisibility);
+    const stopVisibility = observeMorpheusPresentationVisibility(onVisibility);
     onVisibility();
 
     return () => {
       window.cancelAnimationFrame(frameId);
-      document.removeEventListener('visibilitychange', onVisibility);
+      stopVisibility();
       stopObserving();
     };
   }, []);

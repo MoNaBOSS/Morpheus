@@ -1,5 +1,7 @@
 /** Keeps Morpheus runtime observation alive on every route, including Chat. */
 import { useEffect } from 'react';
+import { hostApi } from '@/lib/host-api';
+import { subscribeMorpheusAudioLevel } from '@/lib/morpheus-audio-level';
 
 import { useMorpheusActionsStore } from '@/stores/morpheus-actions';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
@@ -36,6 +38,12 @@ export function MorpheusGlobalRuntime() {
   const ensureAmbient = useMorpheusVoiceStore((state) => state.ensureAmbient);
   const loadIntelligence = useMorpheusIntelligenceStore((state) => state.load);
   const refreshToday = useMorpheusIntelligenceStore((state) => state.refreshToday);
+
+  useEffect(() => {
+    return subscribeMorpheusAudioLevel((level) => {
+      void hostApi.morpheus.updatePresentationLevel({ level }).catch(() => undefined);
+    });
+  }, []);
 
   useEffect(() => {
     return startConversation();
