@@ -23,3 +23,8 @@ Each real phase transition is persisted to the append-only audit log before the 
 Execution timelines are populated only by real Main-process events. Simulated, seeded, replayed, or Renderer-fabricated phase transitions are not permitted.
 
 The Morpheus action runtime must remain independent of the agent runtime that ships alongside it. Its modules must not import Gateway or ACP service code, so provider integrations stay replaceable.
+
+Starter-profile upgrades require complete equality with a known released default,
+not a built-in id or capability subset. Retain customized planners, instructions,
+memory and permission narrowing. Reading profiles must not reset disk contents or
+create grants. Unknown profile variants fail closed to their stored choices.

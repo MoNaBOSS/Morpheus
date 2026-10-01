@@ -511,3 +511,12 @@ Treat this intermittent mount as a final-package reliability watchpoint, not a
 universally clean combined campaign. Desktop/narrow screenshots were inspected.
 No live model/publication/profile or newly built installer acceptance is claimed.
 See [E2 details and limits](phase7-e2-interactive-sites.md). Next: E3, F2, G/H/I.
+
+### Existing-agent continuity follow-up — 2026-10-02
+
+After E2 `ebe8e537`, complete known historical starter definitions are upgraded
+in memory; customized permissions, planner choices and unknown variants remain
+unchanged. Loading does not rewrite disk or issue grants. This corrects the old
+unconditional offline-to-auto override for built-in ids. Ten focused profile/Core
+tests and Node typecheck pass. See [scope/evidence](phase7-profile-continuity.md).
+Owner profiles remain untouched; final copied-profile/package acceptance is open.

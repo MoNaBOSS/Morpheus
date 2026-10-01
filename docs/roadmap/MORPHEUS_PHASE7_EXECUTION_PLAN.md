@@ -231,8 +231,10 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
   skips. Five fresh interactive journeys pass; one static-preview timeout passed
   isolated recheck and remains a packaging reliability watchpoint.
 - Next executable source row: **7E.3 authorized publication**, then F.2, G/H/I.
-  Check untouched starter-profile upgrade before packaging; never reset customized
-  profiles. Do not redo C.4/E.1 discovery or rerun entire old campaigns.
+  Untouched starter-profile upgrade now has exact historical matching and focused
+  preservation tests; copied-profile/package acceptance is still required. See
+  `docs/releases/phase7-profile-continuity.md`. Never reset customized profiles.
+  Do not redo C.4/E.1 discovery or rerun entire old campaigns.
   The fresh internal installer does not mean these later rows or physical/live
   gates are complete. No paid test is inferred.
 - The Windows worktree is separate from the original PC checkout. Profiles and

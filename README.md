@@ -23,6 +23,8 @@ explicit safe external citations; live research quality remains to be accepted.
 Interactive client sites now use a pinned template through the same task engine,
 with real filters/local form validation and a separate isolated preview. No server,
 form delivery or public deployment is implied; existing static sites are unchanged.
+Existing customized agents keep their planner and permission choices; only exact
+untouched historical starter profiles receive default capability upgrades.
 
 Phase 7 (2026-09-30): the current source audit and assistant architecture are ready
 for small implementation checkpoints, not a completed-release claim. Start with

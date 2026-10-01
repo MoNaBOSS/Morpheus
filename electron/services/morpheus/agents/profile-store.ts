@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { upgradeUntouchedStarter } from './starter-upgrade';
 
 import {
   MORPHEUS_STARTER_AGENT_PROFILES,
@@ -83,16 +84,10 @@ export function createMorpheusAgentProfileStore(options: { userDataDir: string }
   for (const stored of loaded?.profiles ?? []) {
     const starter = MORPHEUS_STARTER_AGENT_PROFILES.find((item) => item.profileId === stored.profileId);
     byId.set(stored.profileId, {
-      ...copyProfile(stored),
+      ...copyProfile(starter ? upgradeUntouchedStarter(stored, starter) : stored),
       // A profile cannot turn itself from built-in into an unrelated object.
       builtIn: Boolean(starter),
       createdAt: starter?.createdAt ?? stored.createdAt,
-      // 0.5 built-ins were read-only and all persisted as deterministic. Move
-      // those inherited records to the 1.0 auto binding; custom profiles keep
-      // the exact planner the user selected.
-      planner: starter && stored.planner.kind === 'deterministic'
-        ? copyProfile(starter).planner
-        : stored.planner,
     });
   }
 

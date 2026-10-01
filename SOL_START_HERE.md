@@ -63,8 +63,10 @@ real file saving and readable source/report previews. Read
 `docs/releases/phase7-d3-research.md` for evidence and live boundaries.
 E2 now connects pinned client-interactive site creation and isolated preview to
 Core and the existing result surface. Read `docs/releases/phase7-e2-interactive-sites.md`.
-Next is E3 authorized publication; untouched historical starter profiles need a
-precise upgrade check before packaging, without expanding customized boundaries.
+Untouched historical starter upgrade now uses complete known-profile equality;
+customized planner/capability choices are preserved and loading never rewrites
+the profile file. See `docs/releases/phase7-profile-continuity.md`.
+Next is E3 authorized publication, then F2/G/H/I; package acceptance remains open.
 Read the
 narrow source evidence in `docs/releases/` and the current checkpoint in the
 roadmap. Exact installer identity/checks appear in the acceptance ledger when
