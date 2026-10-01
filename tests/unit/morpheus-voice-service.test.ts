@@ -11,6 +11,8 @@ import {
 } from '../../electron/services/morpheus/voice/voice-service';
 import type { ProviderAccount } from '../../electron/shared/providers/types';
 import * as voiceStorage from '../../electron/services/morpheus/storage/atomic-json';
+import { composeMorpheusPersonaContext } from '@shared/morpheus/persona-context';
+import { DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES } from '@shared/morpheus/onboarding-types';
 
 const ACCOUNT: ProviderAccount = {
   id: 'voice-openai',
@@ -58,6 +60,7 @@ function createHarness(options?: {
   transcriptionTimeoutMs?: number;
   speechTimeoutMs?: number;
   personality?: 'adaptive' | 'witty' | 'warm' | 'concise';
+  getPersonaContext?: Parameters<typeof createMorpheusVoiceService>[0]['getPersonaContext'];
   startLocalWake?: Parameters<typeof createMorpheusVoiceService>[0]['startLocalWake'];
   emitSpeechChunk?: Parameters<typeof createMorpheusVoiceService>[0]['emitSpeechChunk'];
 }) {
@@ -88,6 +91,7 @@ function createHarness(options?: {
     transcriptionTimeoutMs: options?.transcriptionTimeoutMs,
     speechTimeoutMs: options?.speechTimeoutMs,
     getPersonality: () => options?.personality ?? 'adaptive',
+    getPersonaContext: options?.getPersonaContext,
     startLocalWake: options?.startLocalWake,
     emitSpeechChunk: options?.emitSpeechChunk,
     emitPresence: (presence) => {
@@ -524,6 +528,23 @@ describe('Morpheus voice service', () => {
     await expect(harness.service.synthesize({ text: 'Do not disclose me.' })).rejects.toThrow(/Audit is unavailable/);
     expect(harness.fetchImpl).not.toHaveBeenCalled();
     expect(harness.recordControl).not.toHaveBeenCalled();
+  });
+
+  it('uses current saved persona for delivery while preserving text and one request per utterance', async () => {
+    let humorStyle = 'gentle' as 'gentle' | 'cheeky';
+    const fetchImpl = vi.fn(async () => new Response(Buffer.from('audio'), { headers: { 'content-type': 'audio/mpeg' } })) as typeof fetch;
+    const h = createHarness({ fetchImpl, getPersonaContext: () => composeMorpheusPersonaContext({
+      ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES, preferredName: 'Ada', humorStyle,
+    }) });
+    await h.service.synthesize({ text: 'The report is ready.' });
+    humorStyle = 'cheeky';
+    await h.service.synthesize({ text: 'The report is ready.' });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    const bodies = (fetchImpl as ReturnType<typeof vi.fn>).mock.calls.map(([, init]) => JSON.parse(String(init.body)));
+    expect(bodies.map((body) => body.input)).toEqual(['The report is ready.', 'The report is ready.']);
+    expect(bodies[0].instructions).toContain('avoid teasing');
+    expect(bodies[1].instructions).toContain('Allow playful humor');
+    expect(bodies[1].instructions).toContain('do not rewrite the supplied summary');
   });
 
   it.each([

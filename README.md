@@ -5,6 +5,11 @@
 
 <h1 align="center">Morpheus</h1>
 
+The current Phase 7 source uses the bottom-right companion with an upward composer.
+Returning greetings respect quiet settings and saved daily history; companion chat
+and neural speech share saved personality preferences. Full Phase 7 acceptance is
+still in progress; see [the current checkpoint](SOL_START_HERE.md).
+
 Phase 7 (2026-09-30): the current source audit and assistant architecture are ready
 for small implementation checkpoints, not a completed-release claim. Start with
 [the Sol handoff](SOL_START_HERE.md), [ordered work](docs/roadmap/MORPHEUS_PHASE7_EXECUTION_PLAN.md)

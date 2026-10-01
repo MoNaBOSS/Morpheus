@@ -915,7 +915,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
         }
         if (review.outcome === 'clarify') {
           options.store.setActivePlan(objectiveRunId, null);
-          await transition(objectiveRunId, 'needs-clarification', { clarification: review.question });
+          await transition(objectiveRunId, 'needs-clarification', { clarification: review.question, clarificationChoices: review.choices });
           finishActive(objectiveRunId);
           return;
         }
@@ -1154,6 +1154,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
       await transition(payload.objectiveRunId, 'understanding', {
         corrections: [...run.corrections, { text: correction, createdAt: timestamp }],
         clarification: undefined,
+        clarificationChoices: undefined,
         error: undefined,
         completedAt: undefined,
       });

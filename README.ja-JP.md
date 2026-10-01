@@ -5,6 +5,10 @@
 
 <h1 align="center">Morpheus</h1>
 
+現在の Phase 7 ソースは、右下のコンパニオンと上に開く入力欄を使用します。
+再訪時の挨拶は静音設定と保存された日次履歴に従い、会話とニューラル音声は同じ個性設定を使います。
+全体の検証は進行中です。[現在の進捗](SOL_START_HERE.md)を参照してください。
+
 フェーズ 7（2026-09-30）：ソース監査とアシスタントの設計をまとめました。小さな単位で実装するための引き継ぎであり、製品の完成を意味しません。
 [Sol 引き継ぎ](SOL_START_HERE.md)、[実装順序](docs/roadmap/MORPHEUS_PHASE7_EXECUTION_PLAN.md)、
 [Windows 受け入れ基準](docs/releases/MORPHEUS_PHASE7_ACCEPTANCE.md) を参照してください。

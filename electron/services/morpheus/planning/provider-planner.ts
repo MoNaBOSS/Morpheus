@@ -194,7 +194,8 @@ function reviewPrompt(request: MorpheusPlannerReviewRequest): string {
   return `Review whether the objective is complete using only the structured observation below.\n`
     + `Return JSON only as one of:\n`
     + `{"outcome":"complete","summary":"concise user-facing result"}\n`
-    + `{"outcome":"clarify","question":"one necessary question"}\n`
+    + `{"outcome":"clarify","question":"one necessary question","choices":["first valid answer","second valid answer"]}\n`
+    + 'Choices are optional: supply two to four distinct short answers only when they actually resolve the question. Never invent available resources or treat an answer as permission.\n'
     + `{"outcome":"continue","reason":"why another plan is needed","steps":[...same strict step shape...]}\n`
     + `A continuation may use only the supplied capabilities and must not repeat completed work.\n\n`
     + `COMMUNICATION PREFERENCES: ${communicationPreferences || 'Be concise, natural, and truthful.'}\n`

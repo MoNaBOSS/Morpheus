@@ -5,6 +5,8 @@ import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HOST_EVENT_CHANNELS } from '@shared/host-events/contract';
+import { composeMorpheusPersonaContext } from '@shared/morpheus/persona-context';
+import { DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES } from '@shared/morpheus/onboarding-types';
 
 const acpSdkMock = vi.hoisted(() => {
   const state = { connectionForSpawn: undefined as unknown };
@@ -78,7 +80,7 @@ function createPassthroughAccessRegistry() {
   };
 }
 
-async function createService(connection = createConnection(), accessRegistry = createPassthroughAccessRegistry()) {
+async function createService(connection = createConnection(), accessRegistry = createPassthroughAccessRegistry(), getPersona?: ConstructorParameters<typeof import('../../electron/services/acp-chat-service').AcpChatService>[4]) {
   const send = vi.fn();
   const { AcpChatService } = await import('../../electron/services/acp-chat-service');
   const service = new AcpChatService(
@@ -86,6 +88,7 @@ async function createService(connection = createConnection(), accessRegistry = c
     accessRegistry as never,
     connection as never,
     undefined,
+    getPersona,
   );
   return { service, connection, send, accessRegistry };
 }
@@ -249,6 +252,17 @@ describe('AcpChatService', () => {
       _meta: { sessionKey: 'agent:pi:session-123', prefixCwd: true },
     });
     expect(connection.loadSession).not.toHaveBeenCalled();
+  });
+
+  it('adds Main-selected persona only to the admitted companion prompt without another model call', async () => {
+    const persona = composeMorpheusPersonaContext({ ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES, preferredName: 'Ada', humorStyle: 'gentle' });
+    const { service, connection } = await createService(undefined, undefined, (payload) => payload.messageId === 'admitted-turn' ? persona : undefined);
+    await service.loadSession({ sessionKey: 'agent:pi:session-123', workspaceRoot: '/repo', cwd: '/repo', createIfMissing: true });
+    await service.sendPrompt({ sessionKey: 'agent:pi:session-123', cwd: '/repo', message: 'hello', messageId: 'admitted-turn' });
+    expect(connection.prompt.mock.calls[0][0].prompt).toEqual([{ type: 'text', text: persona.instructions }, { type: 'text', text: 'hello' }]);
+    expect(connection.prompt).toHaveBeenCalledOnce();
+    await service.sendPrompt({ sessionKey: 'agent:pi:session-123', cwd: '/repo', message: 'ordinary chat', messageId: 'other' });
+    expect(connection.prompt.mock.calls[1][0].prompt).toEqual([{ type: 'text', text: 'ordinary chat' }]);
   });
 
   it('routes fresh-session prompts through the ACP session id returned by session/new', async () => {

@@ -71,10 +71,8 @@ test.describe('Morpheus companion and persistent Missions', () => {
       });
       expect(saved).toMatchObject({ completed: true, preferences: { interests: 'One Piece', preferredName: 'Larry' } });
       await page.reload();
-      await expect(page.getByTestId('morpheus-boot')).toHaveAttribute('data-arrival-mode', 'returning');
-      await expect(page.getByTestId('morpheus-boot')).toContainText('Larry');
-      await captureVisualEvidence(page, 'arrival-returning-1280x800.png');
       await expect(page.getByTestId('morpheus-boot')).toHaveCount(0);
+      await expect(page.getByTestId('morpheus-arrival-greeting')).toHaveCount(0);
       await expect(page.getByTestId('morpheus-activation')).toHaveCount(0);
       await expect(page.getByTestId('morpheus-welcome')).toHaveCount(0);
     } finally {

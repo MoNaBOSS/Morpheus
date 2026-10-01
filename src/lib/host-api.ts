@@ -517,6 +517,7 @@ export const hostApi = {
     saveMemory: (payload: MorpheusMemoryDraft) => invokeHost('morpheus', 'saveMemory', payload),
     removeMemory: (memoryId: string) => invokeHost('morpheus', 'removeMemory', { memoryId }),
     onboardingStatus: () => invokeHost('morpheus', 'onboardingStatus'),
+    admitArrivalGreeting: () => invokeHost('morpheus', 'admitArrivalGreeting'),
     completeOnboarding: (payload: CompleteMorpheusOnboardingPayload) => (
       invokeHost('morpheus', 'completeOnboarding', payload)
     ),

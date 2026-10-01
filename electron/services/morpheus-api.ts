@@ -8,6 +8,7 @@
  * instead of being silently dropped.
  */
 import { randomUUID } from 'node:crypto';
+import { composeMorpheusPersonaContext } from '@shared/morpheus/persona-context';
 
 import {
   MORPHEUS_MAX_AUDIT_PAGE,
@@ -138,6 +139,8 @@ import {
   type MorpheusAssistantSnapshotPayload,
 } from '@shared/morpheus/assistant-session-types';
 import { MorpheusAssistantSession } from './morpheus-assistant-session';
+import { isInsideMorpheusQuietHours } from './morpheus/proactive/proactive-service';
+import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
 import {
   isMorpheusGoalId,
   type MorpheusGoalDraft,
@@ -1321,10 +1324,15 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
       locale: await withLocale(),
     }),
     updateAssistantDraft: (payload) => assistantSession.updateDraft(validateAssistantDraftPayload(payload)),
-    admitAssistantTurn: (payload) => assistantSession.admitTurn(validateAssistantAdmitTurnPayload(payload)),
+    admitAssistantTurn: (payload) => {
+      const input = validateAssistantAdmitTurnPayload(payload);
+      onboarding.noteInteraction();
+      return assistantSession.admitTurn(input);
+    },
     ackAssistantTurn: (payload) => assistantSession.ackTurn(validateAssistantAckTurnPayload(payload)),
     routeInteraction: async (payload) => {
       const input = validateRouteInteractionPayload(payload);
+      onboarding.noteInteraction();
       const control = await handleMorpheusTaskControl(input.text, {
         objectives, runtime, stopSpeech: () => voice.cancelSpeech(),
       });
@@ -1356,7 +1364,11 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
       runtime.respondPlanPermission(validatePlanDecisionsPayload(payload))
     ),
 
-    submitObjective: (payload) => objectives.submit(validateSubmitObjectivePayload(payload)),
+    submitObjective: (payload) => {
+      const input = validateSubmitObjectivePayload(payload);
+      onboarding.noteInteraction();
+      return objectives.submit(input);
+    },
     objectiveSnapshot: () => {
       return {
         ...objectives.snapshot(),
@@ -1440,6 +1452,16 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
       return { memory: memory.remove(memoryId) };
     },
     onboardingStatus: () => onboarding.status(),
+    admitArrivalGreeting: async (payload?: unknown) => {
+      if (payload !== undefined) throw new MorpheusValidationError('admitArrivalGreeting accepts no payload');
+      const settings = proactive.snapshot().settings;
+      const activeWork = Object.values(objectives.snapshot().runsById).some((run) => !isObjectiveTerminalState(run.state));
+      const pendingConversation = assistantSession.snapshot({}).pendingTurns.length > 0;
+      const admission = onboarding.admitGreeting(Boolean(settings.doNotDisturb || !settings.enabled
+        || isInsideMorpheusQuietHours(settings, now()) || activeWork || pendingConversation));
+      if (admission.admitted) await audit.recordControl({ category: 'onboarding', event: 'arrival-greeting-admitted', details: {}, appVersion });
+      return admission;
+    },
     completeOnboarding: async (payload) => {
       const preferences = validateCompleteOnboardingPayload(payload);
       await audit.recordControl({
@@ -1500,21 +1522,10 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
         details: { kind: 'preference', source: 'user' },
         appVersion,
       });
-      const personalityText = {
-        adaptive: 'Adapt communication detail, tone, and pace to the objective.',
-        concise: 'Communicate briefly and directly without unnecessary narration.',
-        warm: 'Communicate naturally and warmly, with light humor when appropriate.',
-        witty: 'Communicate confidently and concisely, with subtle human wit when appropriate.',
-      }[preferences.personality];
-      const humorText = {
-        gentle: 'Use gentle humor sparingly. Avoid teasing.',
-        cheeky: 'Use playful humor and occasional cultural references when appropriate, adapting to the user. Keep serious tasks direct.',
-        unfiltered: 'The user enjoys bold, candid humor and roasts when invited. Adapt to their reactions; never let humor obscure an important task result.',
-      }[preferences.humorStyle ?? 'cheeky'];
       memory.save({
         memoryId: personalityMemoryId,
         title: 'Companion communication style',
-        text: `${personalityText} ${humorText}`,
+        text: composeMorpheusPersonaContext(preferences).communicationStyle,
         kind: 'preference',
         sensitivity: 'normal',
         providerUse: 'allowed',
@@ -1546,12 +1557,8 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
         const candidate = patch.interests ? extractMorpheusMemoryCandidate(`remember ${patch.interests}`) : null;
         await syncMemory('onboarding-interests', 'Interests', candidate?.kind === 'candidate' ? `The user is interested in ${patch.interests}.` : '');
       }
-      if (patch.humorStyle !== undefined) {
-        const style = {
-          gentle: 'Communicate warmly. Use gentle humor sparingly and avoid teasing.',
-          cheeky: 'Communicate naturally with playful humor and occasional cultural references when appropriate. Keep serious tasks direct.',
-          unfiltered: 'The user enjoys bold, candid humor and roasts when invited. Adapt to their reactions; never obscure important task results.',
-        }[patch.humorStyle];
+      if (patch.humorStyle !== undefined || patch.proactivityLevel !== undefined) {
+        const style = composeMorpheusPersonaContext({ ...onboarding.status().preferences, ...patch }).communicationStyle;
         await syncMemory('onboarding-personality', 'Companion communication style', style);
       }
       if (patch.proactivityLevel !== undefined) await proactive.updateSettings({ enabled: patch.proactivityLevel !== 'quiet' });

@@ -15,6 +15,9 @@ describe('social check-in interruption', () => {
     const view = render(<MorpheusSocialCheckIn activeCount={0} />);
     act(() => vi.advanceTimersByTime(10 * 60_000));
     expect(screen.getByTestId('morpheus-social-check-in')).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(8_000));
+    expect(screen.queryByTestId('social-answer-good')).toBeNull();
+    expect(screen.queryByTestId('social-answer-rough')).toBeNull();
     view.rerender(<MorpheusSocialCheckIn activeCount={1} />);
     expect(screen.queryByTestId('morpheus-social-check-in')).toBeNull();
     view.rerender(<MorpheusSocialCheckIn activeCount={0} />);

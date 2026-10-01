@@ -116,6 +116,8 @@ function stubOptions(runtime = stubRuntime()) {
       complete: vi.fn(),
       updateProfile: vi.fn(),
       reset: vi.fn(),
+      noteInteraction: vi.fn(),
+      admitGreeting: vi.fn(() => ({ admitted: false, preferredName: '' })),
     } as never,
     systems: {
       list: vi.fn(() => ({ systems: [] })),
@@ -621,6 +623,7 @@ describe('createMorpheusApi', () => {
       'actOnAttention',
       'activateSystem',
       'addWorkspace',
+      'admitArrivalGreeting',
       'admitAssistantTurn',
       'agentProfile',
       'agentProfiles',

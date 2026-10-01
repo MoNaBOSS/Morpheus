@@ -381,6 +381,27 @@ or speaker-echo/barge-in result. Those exact packaged/live gates remain open.
 The final package build must include the new locale samples. No paid calls or
 owner-profile changes occurred; Phase 7 remains incomplete.
 
+### Internal package and C3 source checkpoint — 2026-10-01
+
+Internal installer source `6e19fadc49b94dd014c1b9f22cc6e717bf748a3a`, version
+1.1.2, built with `package:win --publish never` in the isolated E: checkout.
+Installer: `E:\Morpheus-builds\phase7-20261001-prepare-0120\candidate\release\Morpheus-1.1.2-win-x64.exe`.
+SHA256: `70D4584E2CDCC15B0A847DCCF5C65F01CA32524C02864AF39A18471A743C119B`.
+Windows Authenticode result is `NotSigned`. Final source suite at that revision
+passed 2,966 tests, two skipped. Packaged payload smoke used reduced E2E startup,
+isolated synthetic profiles, actual Main provider routes and Windows protected
+storage; restart/delete passed. This does not prove a real NSIS installation,
+owner-profile upgrade, physical voice or normal full Gateway startup. C3 is
+excluded from this installer; a final updated installer remains required.
+
+C3 subsequent source verification: 177 focused unit passes, all three typechecks,
+lint zero errors/12 existing warnings, fresh build and seven Windows journeys
+(returning DND/daily, task answer continuity, full setup/profile/quick restart,
+four locale name-skip/reduced-motion journeys). Communications replay/compare,
+diff-aware harness validation/dry-run passed. Details and source limits:
+[C3 checkpoint](phase7-c3-source-checkpoint.md). Next C4 → D–I. No paid API calls
+or owner-profile changes. Phase 7 remains incomplete.
+
 Earlier Astra documentation checkpoint validation: Phase 7 spec validation and dry-run passed;
 18 harness unit tests passed across 2 files. All 21 relative Markdown links in the
 7 new documents resolved. All 9 referenced harness rules exist. Git whitespace

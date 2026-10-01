@@ -317,7 +317,14 @@ function registerTypedHostHandlers(
     }),
     media: createMediaApi({ attachmentAccess, gatewayManager }),
     sessions: createSessionsApi(),
-    chat: createChatApi({ gatewayManager, mainWindow, acpSessionAccessRegistry }),
+    chat: createChatApi({ gatewayManager, mainWindow, acpSessionAccessRegistry,
+      getCompanionPersona: (payload) => {
+        const pending = assistantSession.snapshot().pendingTurns
+          .find((turn) => turn.conversationId === payload.sessionKey
+            && turn.turnId === payload.messageId && turn.text === payload.message);
+        return pending ? morpheusService.getPersonaContext() : undefined;
+      },
+    }),
     cron: createCronApi({ gatewayManager }),
     skills: createSkillsApi({ clawHubService, gatewayManager }),
     usage: createUsageApi(),

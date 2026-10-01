@@ -47,7 +47,9 @@ Upstream OAuth, unprovenanced old image keys and transient upgrade snapshots
 retain documented plaintext limits; B.1 packaged/real-profile/live gates remain
 open. Do not reopen its source discovery or destroy those existing credentials.
 
-Current source checkpoints are C.1 wake/capture (`05499670`) and C.2 output verification. Read their
+Current source checkpoint is C.3 persona/arrival, verified on 2026-10-01 with
+177 focused units and seven fresh Windows journeys, four locales and reduced
+motion included. Next is C.4 memory and proactivity. Read their
 narrow source evidence in `docs/releases/` and the current checkpoint in the
 roadmap. Exact installer identity/checks appear in the acceptance ledger when
 built; a source build or packaged-payload smoke is not hardware/live acceptance.
@@ -71,8 +73,9 @@ plaintext limits. C.1 passed 59 focused units and six fresh-build Electron voice
 journeys; C.2 passed 21 focused units and a real-Chromium synthetic silence
 journey with zero provider/task requests. Neural auditions now include a greeting,
 joke and explicitly prepared update in one request. Hardware/live voice remains
-open. Next: final source/package checks, then C.3 persona/onboarding/returning
-behavior. Do not redo B.1/C.1 discovery or call the whole Phase 7 complete.
+open. C.3 is now verified in source; see `docs/releases/phase7-c3-source-checkpoint.md`.
+Continue C.4 then the existing D–I sequence. Do not redo B.1/C.1 discovery or
+call the whole Phase 7 complete.
 
 ## Operating rules for continuity and cost
 
@@ -101,13 +104,14 @@ User-ready resume prompt:
 
 > Continue Morpheus Phase 7 on Sol from SOL_START_HERE.md on
 > codex/morpheus-phase6-managed-layer. Verify the checkout and preserve all work.
-> Read the current checkpoint, then finish 7B.1 integration and verification in
+> Read the current checkpoint, then continue 7C.4 memory/proactivity and 7D.1 worker integration in
 > the documented small checkpoints. Keep the approved bottom-right Siri-style Morpheus companion,
 > not a dashboard. NerdGPT later. Update tests, evidence and handoff as you go;
 > distinguish source implementation from packaged/live acceptance.
 
-Windows `.exe` delivery is still owed. `pnpm run package:win` creates an
-unsigned local NSIS installer with `--publish never`; it has **not** been run
-for this checkpoint. C: had only about 2.1 GiB free on 2026-10-01; D:/E: had
-space. Build on a spacious isolated checkout when the package candidate is
-ready, then provide the exact installer path and verify that fresh binary.
+An internal Windows installer was built from immutable source `6e19fadc` at
+`E:\Morpheus-builds\phase7-20261001-prepare-0120\candidate\release\Morpheus-1.1.2-win-x64.exe`.
+Its packaged isolated synthetic provider lifecycle passed. It excludes C.3 and
+later work and is not the completed version. SHA256/signature/evidence are in
+the acceptance ledger. Build the final candidate on E: after the remaining
+source work; C: has only about 2 GiB free. Never test an old installer as current.

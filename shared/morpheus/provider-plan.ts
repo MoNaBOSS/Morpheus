@@ -207,8 +207,18 @@ export function createReviewFromProviderText(
     return { outcome, summary: requireBoundedString(record.summary, 'review.summary', 1_000) };
   }
   if (outcome === 'clarify') {
-    rejectUnknownKeys(record, ['outcome', 'question'], 'review');
-    return { outcome, question: requireBoundedString(record.question, 'review.question', 1_000) };
+    rejectUnknownKeys(record, ['outcome', 'question', 'choices'], 'review');
+    let choices: string[] | undefined;
+    if (record.choices !== undefined) {
+      if (!Array.isArray(record.choices) || record.choices.length < 2 || record.choices.length > 4) {
+        throw new MorpheusProviderPlanError('invalid-shape', 'review.choices must contain two to four answers');
+      }
+      choices = record.choices.map((choice) => requireBoundedString(choice, 'review.choices[]', 160));
+      if (new Set(choices).size !== choices.length) {
+        throw new MorpheusProviderPlanError('invalid-shape', 'review.choices must be distinct');
+      }
+    }
+    return { outcome, question: requireBoundedString(record.question, 'review.question', 1_000), ...(choices ? { choices } : {}) };
   }
   if (outcome === 'continue') {
     rejectUnknownKeys(record, ['outcome', 'reason', 'steps'], 'review');

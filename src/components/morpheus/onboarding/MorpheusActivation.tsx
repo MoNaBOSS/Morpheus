@@ -98,7 +98,8 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     // Never mislabel the Windows fallback as a natural voice. The text-only
     // first run remains usable until a real speech provider is configured.
     if (voice?.neuralSpeechAvailable && speakResponses) {
-      void playMorpheusSpeech(t('morpheus.activationV2.welcome', { name: name.trim() || t('morpheus.activationV2.friend') }), { neuralAvailable: true, allowWindowsFallback: false, onSpeakingChange: setSpeaking })
+      const question = `${t('morpheus.activationV2.welcome', { name: name.trim() || t('morpheus.activationV2.friend') })} ${t('morpheus.activationV2.firstQuestion')}`;
+      void playMorpheusSpeech(question, { neuralAvailable: true, allowWindowsFallback: false, onSpeakingChange: setSpeaking })
         .then(armSuggestions).catch(armSuggestions);
     } else armSuggestions();
     return () => { speechGeneration.current += 1; cancelSilence(); stopMorpheusSpeech(); };
@@ -129,7 +130,6 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     setSaving(false);
     if (!completed) { setError(true); return false; }
     cancelSilence(); stopMorpheusSpeech();
-    window.localStorage.setItem('morpheus-last-welcome-at', String(Date.now()));
     setDismissed(true); navigate('/');
     if (!firstRequest.trim()) return true;
     const text = firstRequest.trim();

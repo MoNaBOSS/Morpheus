@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { morpheusUsageCounts } from '@shared/morpheus/usage-evidence';
+import { composeMorpheusPersonaContext, type MorpheusPersonaContext } from '@shared/morpheus/persona-context';
+import { DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES } from '@shared/morpheus/onboarding-types';
 
 import type { ProviderAccount } from '../../../shared/providers/types';
 import type { ProviderService } from '../../providers/provider-service';
@@ -171,14 +173,11 @@ function providerEndpoint(account: ProviderAccount, suffix: '/audio/transcriptio
   return url;
 }
 
-function speechInstructions(personality: 'adaptive' | 'concise' | 'warm' | 'witty'): string {
+function speechInstructions(persona: MorpheusPersonaContext): string {
   const delivery = 'Speak to one person in a natural conversational voice, not a narrator or announcer. '
     + 'Use relaxed pacing, short meaningful pauses and varied intonation. Avoid a robotic cadence, '
     + 'exaggerated enthusiasm or theatrical whispering. Read only the supplied text; do not add words. ';
-  if (personality === 'concise') return delivery + 'Be clear and direct, with a brisk but unhurried delivery.';
-  if (personality === 'warm') return delivery + 'Sound warmly attentive, like a trusted capable companion.';
-  if (personality === 'witty') return delivery + 'Use subtle dry wit when the words are playful; keep serious results matter-of-fact.';
-  return delivery + 'Match the seriousness of the words; allow warmth and a light smile when appropriate.';
+  return delivery + 'Apply the companion context to delivery only; do not rewrite the supplied summary or add greetings, names, jokes or follow-up questions.\n' + persona.instructions;
 }
 
 async function readBoundedAudio(response: Response, maxBytes = MORPHEUS_SPEECH_MAX_AUDIO_BYTES, label = 'Speech', onChunk?: (bytes: Buffer) => void): Promise<Buffer> {
@@ -263,6 +262,7 @@ export function createMorpheusVoiceService(options: {
   transcriptionTimeoutMs?: number;
   speechTimeoutMs?: number;
   getPersonality?: () => 'adaptive' | 'concise' | 'warm' | 'witty';
+  getPersonaContext?: () => MorpheusPersonaContext;
   now?: () => Date;
   emitPresence?: (presence: MorpheusVoicePresence) => void;
   emitSpeechChunk?: (chunk: MorpheusSpeechChunk) => void;
@@ -579,7 +579,10 @@ export function createMorpheusVoiceService(options: {
             voice,
             response_format: 'mp3',
             ...(modelId.startsWith('gpt-4o')
-              ? { instructions: speechInstructions(options.getPersonality?.() ?? 'adaptive') }
+              ? { instructions: speechInstructions(options.getPersonaContext?.() ?? composeMorpheusPersonaContext({
+                ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES,
+                personality: options.getPersonality?.() ?? 'adaptive', humorStyle: undefined,
+              })) }
               : {}),
           }),
           signal: controller.signal,

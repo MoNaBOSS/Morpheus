@@ -1232,6 +1232,7 @@ export type HostApiContract = {
     saveMemory: (payload: MorpheusMemoryDraft) => MorpheusMemoryResult;
     removeMemory: (payload: MorpheusMemoryIdPayload) => MorpheusMemoryResult;
     onboardingStatus: () => MorpheusOnboardingStatus;
+    admitArrivalGreeting: () => import('../morpheus/onboarding-types').MorpheusGreetingAdmission;
     completeOnboarding: (payload: CompleteMorpheusOnboardingPayload) => MorpheusOnboardingStatus;
     updateCompanionProfile: (payload: MorpheusCompanionProfilePatch) => MorpheusOnboardingStatus;
     resetOnboarding: () => MorpheusOnboardingStatus;

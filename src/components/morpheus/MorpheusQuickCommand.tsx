@@ -18,6 +18,7 @@ import { useMorpheusConversationStore } from '@/stores/morpheus-conversation';
 import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
 import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
 import { resolveMorpheusSignalState } from './signal/signal-state';
+import { MorpheusQuestionAnswers } from './MorpheusQuestionAnswers';
 
 /** A compact conversation attached to the orb; expanding keeps the same task and draft. */
 export function MorpheusQuickCommand() {
@@ -38,6 +39,7 @@ export function MorpheusQuickCommand() {
   const blockedTurnId = useMorpheusConversationStore((s) => s.blockedTurnId);
   const retryConversation = useMorpheusConversationStore((s) => s.retryPending);
   const runObjective = useMorpheusCommandStore((s) => s.runObjective);
+  const correctObjective = useMorpheusCommandStore((s) => s.correctObjective);
   const submitting = useMorpheusCommandStore((s) => s.submitting);
   const unsupported = useMorpheusCommandStore((s) => s.unsupported);
   const objectiveRun = useMorpheusCommandStore((s) => s.objectiveRun);
@@ -50,6 +52,7 @@ export function MorpheusQuickCommand() {
   const clarification = useMorpheusOperatorStore((s) => s.clarification);
   const clearClarification = useMorpheusOperatorStore((s) => s.clearClarification);
   const [showTasks, setShowTasks] = useState(false);
+  const [answerFor, setAnswerFor] = useState<string | null>(null);
   const voiceBusy = ['requesting', 'listening', 'transcribing'].includes(voicePhase);
   const objectiveActive = Boolean(objectiveRun && !isObjectiveTerminalState(objectiveRun.state));
   const busy = submitting || conversationSubmitting || voiceBusy;
@@ -90,6 +93,11 @@ export function MorpheusQuickCommand() {
   const submit = async (): Promise<void> => {
     const text = objective.trim();
     if (!text || busy) return;
+    if (answerFor && objectiveRun?.objectiveRunId === answerFor && objectiveRun.state === 'needs-clarification') {
+      await correctObjective(text);
+      setAnswerFor(null); setObjective('');
+      return;
+    }
     const decision = await route(text, 'quick-command');
     if (decision.route === 'objective') {
       if (await runObjective(decision.text, 'quick-command')) setObjective('');
@@ -120,6 +128,11 @@ export function MorpheusQuickCommand() {
           {recentRuns.map((run) => <div key={run.objectiveRunId} className="space-y-3"><div className="ml-6 rounded-xl bg-[#14231a] p-3 text-sm text-[#edf5ef]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.workspace.you')}</span>{run.objective}</div><div className="text-sm leading-relaxed text-[#d8e7dd]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.title')}</span>{run.clarification ?? run.error?.message ?? run.summary ?? t('morpheus.workspace.working')}</div></div>)}
           {conversationError ? <div role="alert" className="rounded-xl border border-red-500/30 bg-red-950/30 p-3 text-sm text-red-200">{conversationError}{blockedTurnId ? <button type="button" onClick={retryConversation} className="ml-2 underline">{t('morpheus.conversation.retry')}</button> : null}</div> : null}
           {clarification ? <p className="rounded-xl border border-[#345341] bg-[#0e1b15] p-3 text-sm text-[#edf5ef]">{clarification}</p> : null}
+          {open && objectiveRun?.state === 'needs-clarification' ? <MorpheusQuestionAnswers
+            key={`${objectiveRun.objectiveRunId}:${objectiveRun.iteration}`}
+            choices={objectiveRun.clarificationChoices}
+            question={objectiveRun.clarification ?? null} speechPending={voicePresence === 'speaking' || voicePresence === 'preparing-speech'}
+            inputActive={Boolean(objective.trim()) || voiceBusy} onAnswer={(answer) => { setAnswerFor(objectiveRun.objectiveRunId); setObjective(answer); inputRef.current?.focus(); }} /> : null}
           {unsupported ? <p className="text-xs text-amber-200">{t('morpheus.quickCommand.unsupported')}</p> : null}
         </div>
         <p data-testid="quick-command-objective-state" className="sr-only">{objectiveRun ? `${objectiveRun.objective} ${t(`morpheus.objective.states.${objectiveRun.state}`)}` : ''}</p>

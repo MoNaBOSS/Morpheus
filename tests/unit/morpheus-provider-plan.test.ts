@@ -138,4 +138,12 @@ describe('provider plan validation', () => {
     expect(() => createReviewFromProviderText('{"outcome":"complete","summary":"ok","shell":"cmd"}', CONTEXT))
       .toThrowError(expect.objectContaining({ code: 'unknown-field' }));
   });
+
+  it('carries bounded genuine answer choices and rejects malformed answers', () => {
+    const result = createReviewFromProviderText(JSON.stringify({ outcome: 'clarify', question: 'Which report format?', choices: ['Markdown', 'Text'] }), CONTEXT);
+    expect(result).toEqual({ outcome: 'clarify', question: 'Which report format?', choices: ['Markdown', 'Text'] });
+    for (const choices of [['Only'], ['Same', 'Same'], ['a', 'b', 'c', 'd', 'e'], ['a', 2], ['a', 'b'.repeat(161)]]) {
+      expect(() => createReviewFromProviderText(JSON.stringify({ outcome: 'clarify', question: 'Which?', choices }), CONTEXT)).toThrow(MorpheusProviderPlanError);
+    }
+  });
 });

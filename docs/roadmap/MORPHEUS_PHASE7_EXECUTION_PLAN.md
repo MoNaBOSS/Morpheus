@@ -71,7 +71,7 @@ Only record what the evidence supports. All rows below start TODO.
 | 7B.1 IN PROGRESS | Protected app-owned static-key store, runtime SecretRefs, exact-match pre-commit/pre-spawn reconciliation and synthetic Windows same-user restart passed source checks. Copied existing-profile upgrade, packaged/live and upstream OAuth limits remain open. | Baseline; before paid live tests |
 | 7C.1 AUTOMATED (source fixtures) | Same-breath command dispatch once without second STT, cancelled mic acquisition and localized missing-device recovery pass 59 focused units and six fresh-build Electron journeys. Actual System.Speech accuracy, mute/lock/device hardware and exact packaged acceptance remain open. | A.1–2, B.1 |
 | 7C.2 AUTOMATED (source fixtures) | Three neural preview choices use one bounded greeting/joke/example-update audition with no OS fallback. Speech generation/cancellation/follow-up units and a silent real-Chromium fixture pass; silence makes zero provider/task requests. Human neural auditions, speaker echo, hardware interruption and exact package/live voice remain open. | C.1 |
-| 7C.3 TODO | Unified persona, short onboarding and returning behavior. Name/skip/Matrix welcome, existing-profile preservation, 8-second genuine-question fallback, daily greeting and DND cases pass. | A.3, C.2 |
+| 7C.3 AUTOMATED (source fixtures) | Unified bounded persona for admitted companion conversation and neural delivery; saved daily/quiet arrival; first-run name/skip/Matrix welcome; structured genuine-question answers correct the original task. 177 focused units and seven Windows journeys pass, including four locales/reduced motion. Human voice/persona and final packaged acceptance remain open. | A.3, C.2 |
 | 7C.4 TODO | Useful bounded memory/proactivity. Correct/delete/export memory; ignored check-in backs off; no inferred emotions or paid polling; existing chat retention preserved. | C.3 |
 | 7D.1 TODO | Core worker port and one existing runtime adapter. Owned ids, scoped tools, leases, cancellation, artifacts, usage and unknown-effect recovery verified with fixtures. | A.1, B.1 |
 | 7D.2 TODO | Real browser navigation/interaction. Named sites, DOM actions, account scope, redirects/downloads, keyboard fallback and cancel; no policy bypass through agent tools. | D.1 |
@@ -205,8 +205,11 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
   journeys cover addressed command dispatch once and localized mic recovery.
   C.2 adds bounded neural auditions and real-Chromium synthetic silence with zero
   provider/task requests; its focused source checks are in the linked ledger.
-- Next executable source row after the internal package checkpoint: **7C.3 persona,
-  short onboarding and returning behavior**, then C.4 → D → E → F → G → H.
+- C.3 source is verified: one bounded persona, quiet persisted daily greeting,
+  first-run preservation and structured answer assistance. 177 focused units,
+  seven fresh Windows journeys, all typechecks/lint/comms and harness checks pass.
+  See `docs/releases/phase7-c3-source-checkpoint.md`.
+- Next executable source row: **7C.4 memory and proactivity**, then D → E → F → G → H.
   The fresh internal installer does not mean these later rows or physical/live
   gates are complete. No paid test is inferred.
 - The Windows worktree is separate from the original PC checkout. Profiles and

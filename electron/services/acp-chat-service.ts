@@ -31,6 +31,7 @@ import { logger } from '../utils/logger';
 import { recordAcpTrace } from './acp-trace';
 import { AcpSessionAccessRegistry, type AcpSessionAccessContext } from './acp-session-access-registry';
 import { expandPath } from '../utils/paths';
+import type { MorpheusPersonaContext } from '@shared/morpheus/persona-context';
 
 type AcpConnection = Pick<ClientSideConnection, 'initialize' | 'newSession' | 'loadSession' | 'prompt' | 'cancel'>;
 type MainWindowLike = {
@@ -152,6 +153,7 @@ export class AcpChatService {
     private readonly accessRegistry: AcpSessionAccessRegistry,
     injectedConnection?: AcpConnection,
     private readonly gateway?: GatewayPairingRpcClient,
+    private readonly getCompanionPersona?: (payload: AcpChatPromptPayload) => MorpheusPersonaContext | undefined,
   ) {
     this.connection = injectedConnection ?? null;
     this.client = {
@@ -719,6 +721,8 @@ export class AcpChatService {
 
   private async buildPromptBlocks(payload: AcpChatPromptPayload): Promise<ContentBlock[]> {
     const blocks: ContentBlock[] = [];
+    const persona = this.getCompanionPersona?.(payload);
+    if (persona) blocks.push({ type: 'text', text: persona.instructions });
     const text = payload.message?.trim();
     if (text) blocks.push({ type: 'text', text });
 
@@ -766,6 +770,7 @@ export function createAcpChatService(
   mainWindow: MainWindowLike,
   accessRegistry: AcpSessionAccessRegistry,
   gateway?: GatewayPairingRpcClient,
+  getCompanionPersona?: (payload: AcpChatPromptPayload) => MorpheusPersonaContext | undefined,
 ): AcpChatService {
-  return new AcpChatService(mainWindow, accessRegistry, undefined, gateway);
+  return new AcpChatService(mainWindow, accessRegistry, undefined, gateway, getCompanionPersona);
 }

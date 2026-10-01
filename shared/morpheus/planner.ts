@@ -63,7 +63,7 @@ export type MorpheusPlannerReviewRequest = {
 
 export type MorpheusPlannerReviewResult =
   | { outcome: 'complete'; summary: string }
-  | { outcome: 'clarify'; question: string }
+  | { outcome: 'clarify'; question: string; choices?: readonly string[] }
   | { outcome: 'continue'; reason: string; plan: ExecutionPlan };
 
 export interface MorpheusPlanner {

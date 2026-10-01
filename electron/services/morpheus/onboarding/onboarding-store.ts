@@ -22,6 +22,8 @@ export interface MorpheusOnboardingStore {
   complete(payload: CompleteMorpheusOnboardingPayload): MorpheusOnboardingStatus;
   updateProfile(patch: MorpheusCompanionProfilePatch): MorpheusOnboardingStatus;
   reset(): MorpheusOnboardingStatus;
+  noteInteraction(): void;
+  admitGreeting(quiet: boolean): { admitted: boolean; preferredName: string };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -44,6 +46,10 @@ function validateStatus(value: unknown): MorpheusOnboardingStatus | null {
         ...structuredClone(DEFAULT_STATUS.preferences),
         speakResponses: value.preferences.speakResponses,
         personality: value.preferences.personality as 'adaptive' | 'concise' | 'warm',
+        // Optional modern choices were never made on v1. Keep legacy tone
+        // authoritative until the user explicitly edits these preferences.
+        humorStyle: undefined,
+        proactivityLevel: undefined,
         // Preserve the legacy behavior instead of silently increasing an
         // existing user's authority during schema migration.
         permissionProfile: 'balanced',
@@ -52,6 +58,11 @@ function validateStatus(value: unknown): MorpheusOnboardingStatus | null {
   }
 
   const preferences = value.preferences;
+  if (value.arrival !== undefined && (!isRecord(value.arrival)
+    || Object.keys(value.arrival).some((key) => !['lastInteractionAt', 'lastGreetingAt', 'lastGreetingDay'].includes(key))
+    || ['lastInteractionAt', 'lastGreetingAt'].some((key) => value.arrival && isRecord(value.arrival)
+      && value.arrival[key] !== undefined && (typeof value.arrival[key] !== 'string' || !Number.isFinite(Date.parse(value.arrival[key] as string))))
+    || (value.arrival.lastGreetingDay !== undefined && (typeof value.arrival.lastGreetingDay !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.arrival.lastGreetingDay))))) return null;
   if (typeof preferences.preferredName !== 'string' || preferences.preferredName.length > 80
     || !['ask', 'auto', 'act'].includes(String(preferences.interactionMode))
     || typeof preferences.launchAtStartup !== 'boolean'
@@ -65,7 +76,9 @@ function validateStatus(value: unknown): MorpheusOnboardingStatus | null {
     || (preferences.proactivityLevel !== undefined && !['quiet', 'balanced', 'talkative'].includes(String(preferences.proactivityLevel)))) return null;
   return {
     ...structuredClone(value) as MorpheusOnboardingStatus,
-    preferences: { ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES, ...preferences } as MorpheusOnboardingStatus['preferences'],
+    preferences: { ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES, ...preferences,
+      humorStyle: preferences.humorStyle, proactivityLevel: preferences.proactivityLevel,
+    } as MorpheusOnboardingStatus['preferences'],
   };
 }
 
@@ -80,6 +93,26 @@ export function createMorpheusOnboardingStore(options: {
 
   return {
     status: () => structuredClone(current),
+    noteInteraction() {
+      const previous = current;
+      current = { ...current, arrival: { ...current.arrival, lastInteractionAt: now().toISOString() } };
+      try { save(); } catch (error) { current = previous; throw error; }
+    },
+    admitGreeting(quiet) {
+      const stamp = now();
+      const day = `${stamp.getFullYear()}-${String(stamp.getMonth() + 1).padStart(2, '0')}-${String(stamp.getDate()).padStart(2, '0')}`;
+      const lastInteraction = Date.parse(current.arrival?.lastInteractionAt ?? current.completedAt ?? '');
+      const lastGreeting = Date.parse(current.arrival?.lastGreetingAt ?? '');
+      const result = { admitted: false, preferredName: current.preferences.preferredName };
+      if (!current.completed || quiet || current.preferences.proactivityLevel === 'quiet'
+        || !current.preferences.proactiveCheckIns || current.arrival?.lastGreetingDay === day
+        || (Number.isFinite(lastInteraction) && stamp.getTime() - lastInteraction < 2 * 60 * 60_000)
+        || (Number.isFinite(lastGreeting) && stamp.getTime() - lastGreeting < 2 * 60 * 60_000)) return result;
+      const previous = current;
+      current = { ...current, arrival: { ...current.arrival, lastGreetingDay: day, lastGreetingAt: stamp.toISOString() } };
+      try { save(); } catch (error) { current = previous; throw error; }
+      return { ...result, admitted: true };
+    },
     complete(payload) {
       if (!validateStatus({
         v: MORPHEUS_ONBOARDING_VERSION,

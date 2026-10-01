@@ -148,6 +148,8 @@ export type MorpheusObjectiveRun = {
     | { status: 'saved'; memoryId: string; title: string }
     | { status: 'rejected'; reason: 'sensitive-content' };
   clarification?: string;
+  /** Validated answers to the current question, never inferred from prose. */
+  clarificationChoices?: readonly string[];
   error?: { code: string; message: string };
   recovery?: { status: 'resuming' | 'needs-review'; attempt: number };
 };

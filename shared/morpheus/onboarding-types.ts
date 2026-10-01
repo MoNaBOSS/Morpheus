@@ -45,7 +45,11 @@ export type MorpheusOnboardingStatus = {
   completed: boolean;
   completedAt?: string;
   preferences: MorpheusOnboardingPreferences;
+  /** Main-owned content-free greeting history. Missing on existing profiles. */
+  arrival?: { lastInteractionAt?: string; lastGreetingAt?: string; lastGreetingDay?: string };
 };
+
+export type MorpheusGreetingAdmission = { admitted: boolean; preferredName: string };
 
 export type CompleteMorpheusOnboardingPayload = MorpheusOnboardingPreferences;
 export type MorpheusCompanionProfilePatch = Partial<Pick<MorpheusOnboardingPreferences,

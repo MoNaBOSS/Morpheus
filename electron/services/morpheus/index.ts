@@ -6,6 +6,7 @@
  * `harness/reference/morpheus-execution-architecture.md`.
  */
 import { join } from 'node:path';
+import { composeSavedMorpheusPersona } from './persona-context';
 
 import type { MorpheusActionEvent } from '@shared/morpheus/action-types';
 import type { MorpheusPlanConsentEvent } from '@shared/host-events/contract';
@@ -94,6 +95,7 @@ export type MorpheusService = {
   projects: MorpheusProjectStore;
   memory: MorpheusMemoryStore;
   onboarding: MorpheusOnboardingStore;
+  getPersonaContext: () => ReturnType<typeof composeSavedMorpheusPersona>;
   goalStore: MorpheusGoalStore;
   goals: MorpheusGoalService;
   proactiveStore: MorpheusProactiveStore;
@@ -213,7 +215,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     providerService,
     audit,
     appVersion: options.appVersion,
-    getPersonality: () => onboarding.status().preferences.personality,
+    getPersonaContext: () => composeSavedMorpheusPersona(onboarding.status().preferences, memory.list().memories),
     emitPresence: options.emitVoicePresence,
     emitSpeechChunk: options.emitSpeechChunk,
   });
@@ -295,6 +297,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     projects,
     memory,
     onboarding,
+    getPersonaContext: () => composeSavedMorpheusPersona(onboarding.status().preferences, memory.list().memories),
     goalStore,
     goals,
     proactiveStore,

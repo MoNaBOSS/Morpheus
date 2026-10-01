@@ -9,6 +9,7 @@ import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { MorpheusSignal } from '../signal/MorpheusSignal';
 import { playMorpheusSpeech, stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
 import { MorpheusTrayChoice } from './MorpheusTrayChoice';
+import { useMorpheusIntelligenceStore } from '@/stores/morpheus-intelligence';
 
 /** A returning arrival, not a repeated setup wizard or an execution readiness claim. */
 export function MorpheusWelcome() {
@@ -18,6 +19,7 @@ export function MorpheusWelcome() {
   const close = useMorpheusArrivalStore((s) => s.closeWelcome);
   const onboarding = useMorpheusCompanionStore((s) => s.onboarding);
   const voice = useMorpheusVoiceStore((s) => s.status);
+  const dnd = useMorpheusIntelligenceStore((s) => s.proactive.settings.doNotDisturb);
   const presence = useMorpheusVoiceStore((s) => s.presence);
   const preparingSpeech = useMorpheusVoiceStore((s) => s.presence?.state === 'preparing-speech');
   const loadVoice = useMorpheusVoiceStore((s) => s.loadStatus);
@@ -36,12 +38,13 @@ export function MorpheusWelcome() {
   useEffect(() => {
     if (!open || !voice || !onboarding || greeted.current) return;
     greeted.current = true;
-    if (!onboarding.preferences.speakResponses || !voice.settings.speakResponses) return;
+    if (dnd || !onboarding.preferences.speakResponses || !voice.settings.speakResponses) return;
     void playMorpheusSpeech(greeting, {
       neuralAvailable: voice.neuralSpeechAvailable,
       onSpeakingChange: setSpeaking,
     }).catch(() => undefined);
-  }, [open, voice, onboarding, greeting]);
+    return () => { stopMorpheusSpeech(); };
+  }, [open, voice, onboarding, greeting, dnd]);
 
   const finish = (route?: string) => {
     stopMorpheusSpeech();

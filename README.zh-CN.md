@@ -5,6 +5,9 @@
 
 <h1 align="center">Morpheus</h1>
 
+当前 Phase 7 源码采用右下角助手和向上展开的输入框。返回问候遵守安静设置和已保存的每日记录；
+助手对话与神经语音共用已保存的个性偏好。完整验收仍在进行，参见[当前进度](SOL_START_HERE.md)。
+
 第 7 阶段（2026-09-30）：源码审查与助手架构方案已准备就绪，将按小步骤实施；这并不代表正式版本已完成。
 请从 [Sol 交接说明](SOL_START_HERE.md)、[实施顺序](docs/roadmap/MORPHEUS_PHASE7_EXECUTION_PLAN.md)
 和 [Windows 验收条件](docs/releases/MORPHEUS_PHASE7_ACCEPTANCE.md) 开始。
