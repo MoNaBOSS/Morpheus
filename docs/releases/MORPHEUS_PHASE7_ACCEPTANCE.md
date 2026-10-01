@@ -531,3 +531,16 @@ write, lost-response reconciliation, previous-version rollback bytes, public HTT
 digests/MIME and token diagnostic isolation are covered. This is NOT app-integrated:
 E3.2 protected connection, approval UI and durable receipts remain next. See
 [E3 scope/continuation](phase7-e3-publication.md). No new EXE acceptance claim.
+
+### E3.2 publication integration — 2026-10-02
+
+Existing interactive artifacts now join Main-owned protected connection, exact
+five-minute user approval, flushed write-ahead receipts, non-force update,
+read-only recovery and reviewed rollback. Full source regression: **3,217 passed,
+two inherited skips, 311 files**. All typechecks, scoped lint, build, communications
+and diff-aware E3 harness checks pass. Four fresh-build locale journeys use actual
+Main/Windows protection/persistence with injected network bytes; restart after a
+lost response does not republish. Opaque desktop/compact dialog screenshots checked.
+No real repository/account/paid call or final package was exercised. E3 source is
+automated; live deployment and final installer acceptance remain open. See
+[exact scope, recovery and evidence](phase7-e3-publication.md). Next is F2, G/H/I.

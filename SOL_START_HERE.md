@@ -66,11 +66,12 @@ Core and the existing result surface. Read `docs/releases/phase7-e2-interactive-
 Untouched historical starter upgrade now uses complete known-profile equality;
 customized planner/capability choices are preserved and loading never rewrites
 the profile file. See `docs/releases/phase7-profile-continuity.md`.
-E3.1 now has a fixture-tested exact-target GitHub Pages adapter, non-force writes,
-read-only reconciliation and exact public HTTP verification. It is NOT exposed
-in the app yet. Next is E3.2 protected connection + exact user approval + durable
-receipts + typed UI; read `docs/releases/phase7-e3-publication.md` before wiring.
-Then F2/G/H/I; package/live acceptance remains open.
+E3 now joins exact-target GitHub Pages publication to the existing site result:
+protected connection, explicit exact-file approval, flushed write-ahead receipts,
+read-only restart recovery and reviewed rollback. Four native locale journeys use
+the actual Main owner/vault/adapter with injected network bytes, not a real account.
+Read `docs/releases/phase7-e3-publication.md`. Next is F2 typed desktop controls,
+then G/H/I. Package, authenticated-browser and live-service acceptance remain open.
 Read the
 narrow source evidence in `docs/releases/` and the current checkpoint in the
 roadmap. Exact installer identity/checks appear in the acceptance ledger when
@@ -96,7 +97,7 @@ journeys; C.2 passed 21 focused units and a real-Chromium synthetic silence
 journey with zero provider/task requests. Neural auditions now include a greeting,
 joke and explicitly prepared update in one request. Hardware/live voice remains
 open. C.3 is now verified in source; see `docs/releases/phase7-c3-source-checkpoint.md`.
-Continue E.3, F.2 then the existing G–I sequence; D2 account/live gates stay open. Do not redo B.1/C.1 discovery or
+Continue F.2 then the existing G–I sequence; D2 account/live gates stay open. Do not redo B.1/C.1 discovery or
 call the whole Phase 7 complete.
 
 ## Operating rules for continuity and cost
@@ -126,7 +127,7 @@ User-ready resume prompt:
 
 > Continue Morpheus Phase 7 on Sol from SOL_START_HERE.md on
 > codex/morpheus-phase6-managed-layer. Verify the checkout and preserve all work.
-> Read the current checkpoint, then continue 7E.2 interactive client-site creation in
+> Read the current checkpoint, then continue 7F.2 typed desktop controls in
 > the documented small checkpoints. Keep the approved bottom-right Siri-style Morpheus companion,
 > not a dashboard. NerdGPT later. Update tests, evidence and handoff as you go;
 > distinguish source implementation from packaged/live acceptance.

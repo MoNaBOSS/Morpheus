@@ -25,8 +25,10 @@ with real filters/local form validation and a separate isolated preview. No serv
 form delivery or public deployment is implied; existing static sites are unchanged.
 Existing customized agents keep their planner and permission choices; only exact
 untouched historical starter profiles receive default capability upgrades.
-GitHub publication has a tested adapter foundation, but protected connection,
-approval and durable receipt integration are still pending; no live Publish claim.
+Interactive-site results now offer exact-file GitHub Pages publication approval,
+protected credentials, durable receipts, read-only recovery and reviewed rollback.
+Windows fixture journeys pass; a real approved repository and final package are
+still required for live publication acceptance. Existing sites are not auto-published.
 
 Phase 7 (2026-09-30): the current source audit and assistant architecture are ready
 for small implementation checkpoints, not a completed-release claim. Start with

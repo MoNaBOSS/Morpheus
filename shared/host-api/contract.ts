@@ -7,6 +7,7 @@ import type {
 } from '../acp-chat/types';
 import type { RawMessage } from '../chat/types';
 import type { ManagedAccountSnapshot, ManagedAuthResult } from '../morpheus/managed-types';
+import type { MorpheusPublicationConnectionInput, MorpheusPublicationPreview, MorpheusPublicationReceipt, MorpheusPublicationResult, MorpheusPublicationSource, MorpheusPublicationState } from '../morpheus/publication-types';
 import type { AgentsSnapshot } from '../types/agent';
 import type { CronJob, CronJobCreateInput, CronJobUpdateInput } from '../types/cron';
 import type { GatewayHealth, GatewayStatus } from '../types/gateway';
@@ -1290,6 +1291,13 @@ export type HostApiContract = {
     /** Opens the approved folder via a typed capability, not renderer shell access. */
     openFilesRoot: () => PermissionAcknowledgement;
     previewInteractiveSite: (payload: { workspaceRoot: string; relativeEntryPath: string; revision: string }) => PermissionAcknowledgement;
+    publicationStatus: () => MorpheusPublicationResult<MorpheusPublicationState>;
+    publicationConnect: (payload: MorpheusPublicationConnectionInput) => MorpheusPublicationResult<MorpheusPublicationState>;
+    publicationDisconnect: () => MorpheusPublicationResult<{ disconnected: true }>;
+    publicationPrepare: (payload: MorpheusPublicationSource) => MorpheusPublicationResult<MorpheusPublicationPreview>;
+    publicationPrepareRollback: (payload: { receiptId: string }) => MorpheusPublicationResult<MorpheusPublicationPreview>;
+    publicationConfirm: (payload: { approvalId: string }) => MorpheusPublicationResult<MorpheusPublicationReceipt>;
+    publicationCheck: (payload: { receiptId: string }) => MorpheusPublicationResult<MorpheusPublicationReceipt>;
     workspaces: () => MorpheusWorkspacesSnapshot;
     /** The directory itself comes only from Main's native folder picker. */
     addWorkspace: (payload: AddMorpheusWorkspacePayload) => MorpheusWorkspaceResult;

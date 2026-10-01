@@ -59,6 +59,7 @@ import { createAgentsApi } from '../services/agents-api';
 import { createChatApi } from '../services/chat-api';
 import { createMorpheusService } from '../services/morpheus';
 import { createMorpheusApi } from '../services/morpheus-api';
+import { createPublicationOwner } from '../services/site-publication/owner';
 import { MorpheusAssistantSession } from '../services/morpheus-assistant-session';
 import { createManagedAccountApi } from '../services/managed-account-api';
 import { HOST_EVENT_CHANNELS } from '@shared/host-events/contract';
@@ -242,6 +243,7 @@ function registerTypedHostHandlers(
     },
   });
   const morpheusApi = createMorpheusApi({
+    publication: createPublicationOwner({ userDataDir: app.getPath('userData'), workspaces: morpheusService.workspaces, audit: morpheusService.audit, appVersion: app.getVersion() }),
     assistantSession,
     onPresentationLevel: (level) => companionSurface.level?.(level),
     getLocale: () => getSetting('language'),

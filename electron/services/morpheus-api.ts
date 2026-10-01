@@ -9,6 +9,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { createInteractivePreviewController } from './interactive-site/preview-controller';
+import type { PublicationService } from './site-publication/service';
 import { composeMorpheusPersonaContext } from '@shared/morpheus/persona-context';
 import enDashboard from '@shared/i18n/locales/en/dashboard.json';
 import zhDashboard from '@shared/i18n/locales/zh/dashboard.json';
@@ -277,6 +278,7 @@ export function validateAuditRecentPayload(payload: unknown): MorpheusAuditRecen
 }
 
 export type CreateMorpheusApiOptions = {
+  publication?: PublicationService;
   runtime: MorpheusRuntime;
   grants: MorpheusGrantStore;
   agentProfiles: MorpheusAgentProfileStore;
@@ -1774,6 +1776,13 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
 
     filesRoot: () => ({ path: filesRoot }),
     previewInteractiveSite,
+    publicationStatus: () => options.publication?.status() ?? { ok: false, code: 'unavailable' },
+    publicationConnect: (payload) => options.publication?.connect(payload) ?? { ok: false, code: 'unavailable' },
+    publicationDisconnect: () => options.publication?.disconnect() ?? { ok: false, code: 'unavailable' },
+    publicationPrepare: (payload) => options.publication?.prepare(payload) ?? { ok: false, code: 'unavailable' },
+    publicationPrepareRollback: (payload) => options.publication?.prepareRollback(payload) ?? { ok: false, code: 'unavailable' },
+    publicationConfirm: (payload) => options.publication?.confirm(payload) ?? { ok: false, code: 'unavailable' },
+    publicationCheck: (payload) => options.publication?.check(payload) ?? { ok: false, code: 'unavailable' },
 
     /**
      * Opens the approved folder through a typed, Main-owned capability. The

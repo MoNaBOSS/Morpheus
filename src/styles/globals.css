@@ -1462,6 +1462,11 @@
 .morpheus-welcome-voice-status > * + * { margin-top: 4px; }
 .morpheus-welcome[data-state='closed'] .morpheus-welcome-body { animation: none; }
 .morpheus-hero-signal { width: clamp(280px, 34vw, 520px); height: clamp(280px, 34vw, 520px); }
+.morpheus-publication-dialog {
+  --primary: var(--foreground);
+  --primary-foreground: var(--background);
+}
+
 .morpheus-fluid-button {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
   min-height: 46px; padding: 12px 20px; border-radius: 14px;

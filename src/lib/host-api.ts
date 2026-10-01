@@ -601,6 +601,13 @@ export const hostApi = {
     filesRoot: () => invokeHost('morpheus', 'filesRoot'),
     openFilesRoot: () => invokeHost('morpheus', 'openFilesRoot'),
     previewInteractiveSite: (payload: { workspaceRoot: string; relativeEntryPath: string; revision: string }) => invokeHost('morpheus', 'previewInteractiveSite', payload),
+    publicationStatus: () => invokeHost('morpheus', 'publicationStatus'),
+    publicationConnect: (payload: import('@shared/morpheus/publication-types').MorpheusPublicationConnectionInput) => invokeHost('morpheus', 'publicationConnect', payload),
+    publicationDisconnect: () => invokeHost('morpheus', 'publicationDisconnect'),
+    publicationPrepare: (payload: import('@shared/morpheus/publication-types').MorpheusPublicationSource) => invokeHost('morpheus', 'publicationPrepare', payload),
+    publicationPrepareRollback: (payload: { receiptId: string }) => invokeHost('morpheus', 'publicationPrepareRollback', payload),
+    publicationConfirm: (payload: { approvalId: string }) => invokeHost('morpheus', 'publicationConfirm', payload),
+    publicationCheck: (payload: { receiptId: string }) => invokeHost('morpheus', 'publicationCheck', payload),
     workspaces: () => invokeHost('morpheus', 'workspaces'),
     addWorkspace: (payload: AddMorpheusWorkspacePayload = {}) => (
       invokeHost('morpheus', 'addWorkspace', payload)

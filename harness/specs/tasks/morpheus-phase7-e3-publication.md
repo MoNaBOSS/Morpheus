@@ -7,6 +7,18 @@ intent: Publish only explicitly approved public static bytes to an exact configu
 touchedAreas:
   - electron/services/site-publication/**
   - shared/morpheus/publication-types.ts
+  - shared/host-api/contract.ts
+  - electron/services/morpheus-api.ts
+  - electron/main/ipc-handlers.ts
+  - electron/services/morpheus/index.ts
+  - src/lib/host-api.ts
+  - src/components/morpheus/**
+  - src/pages/Morpheus/**
+  - src/pages/CommandCenter/**
+  - src/styles/globals.css
+  - shared/i18n/locales/*/dashboard.json
+  - tests/unit/morpheus-api.test.ts
+  - tests/e2e/morpheus-publication.spec.ts
   - tests/unit/morpheus-publication*.test.ts
   - harness/specs/tasks/morpheus-phase7-e3-publication.md
   - harness/specs/rules/morpheus-bounded-worker.md
@@ -45,3 +57,8 @@ E3.1 builds the bounded GitHub adapter and public-byte snapshot/reconciliation
 contracts. E3.2 joins protected connection, exact user confirmation and durable
 receipts to the existing application. Do not call an unjoined adapter a shipped
 publication feature. Never publish to the application/design repository implicitly.
+
+E3.2 flow: an interactive-site result opens publication details, the user connects
+a dedicated repository, reviews exact public files and confirms once. Main owns
+the short-lived approval, protected token, write-ahead journal and read-only
+reconciliation. Recheck/rollback are explicit actions, not background polling.

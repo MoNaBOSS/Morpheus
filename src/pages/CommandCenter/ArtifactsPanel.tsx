@@ -7,7 +7,9 @@
 import { useState } from 'react';
 import { hostApi } from '@/lib/host-api';
 import { useTranslation } from 'react-i18next';
-import { CalendarClock, Eye, FileText, FolderOpen, Globe2, MonitorPlay, ScrollText } from 'lucide-react';
+import { CalendarClock, Eye, FileText, FolderOpen, Globe2, MonitorPlay, ScrollText, Upload } from 'lucide-react';
+import { PublicationDialog } from './PublicationDialog';
+import type { MorpheusPublicationSource } from '@shared/morpheus/publication-types';
 
 import { Button } from '@/components/ui/button';
 import { buildPreviewTarget, buildWorkspacePreviewTarget } from '@/components/file-preview/build-preview-target';
@@ -30,6 +32,7 @@ export function ArtifactsPanel({ limit, items, showRoot = true }: { limit?: numb
   const [previewFile, setPreviewFile] = useState<FilePreviewTarget | null>(null);
   const [interactiveOpening, setInteractiveOpening] = useState(false);
   const [interactiveError, setInteractiveError] = useState(false);
+  const [publicationSource, setPublicationSource] = useState<MorpheusPublicationSource | null>(null);
   const previewInteractive = async (artifact: Extract<ExecutionArtifact, { kind: 'website' }>) => {
     setInteractiveOpening(true);
     setInteractiveError(false);
@@ -125,6 +128,11 @@ export function ArtifactsPanel({ limit, items, showRoot = true }: { limit?: numb
                   <Eye className="h-3.5 w-3.5" aria-hidden />
                 </Button>
               ) : null}
+              {artifact.kind === 'website' && artifact.interactiveTemplate && artifact.revision ? <Button type="button" size="icon" variant="ghost" className="h-7 w-7 shrink-0"
+                data-testid="morpheus-publish-website" aria-label={t('morpheus.publication.title')} title={t('morpheus.publication.title')}
+                onClick={() => setPublicationSource({ workspaceRoot: artifact.workspaceRoot, relativeEntryPath: artifact.relativeEntryPath, revision: artifact.revision! })}>
+                <Upload className="h-3.5 w-3.5" aria-hidden />
+              </Button> : null}
             </li>
           ))}
         </ul>
@@ -135,6 +143,7 @@ export function ArtifactsPanel({ limit, items, showRoot = true }: { limit?: numb
         </p>
       ) : null}
       <FilePreviewOverlay file={previewFile} readOnly allowPublicCitations onClose={() => setPreviewFile(null)} />
+      {publicationSource ? <PublicationDialog source={publicationSource} onClose={() => setPublicationSource(null)} /> : null}
       {interactiveError ? <p role="alert" className="text-tiny text-destructive">{t('morpheus.artifacts.interactivePreviewError')}</p> : null}
     </div>
   );
