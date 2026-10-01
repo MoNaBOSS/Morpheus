@@ -14,8 +14,9 @@ generation, bounded frames, final receipts and cancellation. Explicit persisted
 BYOK/managed choice is distinct from login; the bridge getter returns null only
 for BYOK. Invalid/corrupt managed configuration fails closed at this bridge.
 
-IMPORTANT: planner, conversation-history owner and voice-service composition do
-not yet consume this getter. Renderer capture/playback needs bounded PCM/WAV
+Update 2026-10-02: the planner now consumes this getter; read
+[runtime joins](phase7-g2-runtime-joins.md). Conversation-history owner and
+voice-service composition do not yet consume it. Renderer capture/playback needs bounded PCM/WAV
 integration. Do not claim application-wide no-fallback enforcement before these
 joins and their negative tests exist. Service-mode UI must remain unavailable
 for normal use until runtime wiring is complete. Existing Basic/BYOK stays intact.

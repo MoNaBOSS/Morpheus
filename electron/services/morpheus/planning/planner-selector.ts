@@ -3,6 +3,8 @@ import { createDeterministicMorpheusPlanner } from '@shared/morpheus/interpreter
 import type { MorpheusPlanner } from '@shared/morpheus/planner';
 import type { ProviderAccount } from '../../../shared/providers/types';
 import type { ProviderService } from '../../providers/provider-service';
+import type { ManagedRuntimeBridge } from '../managed/runtime-bridge';
+import { createMorpheusManagedPlanner } from './managed-planner';
 
 import {
   createMorpheusProviderPlanner,
@@ -64,6 +66,7 @@ async function providerSelection(
 
 export function createMorpheusPlannerSelector(options: {
   providerService: ProviderService;
+  getManagedRuntime?: () => ManagedRuntimeBridge | null;
   deterministic?: MorpheusPlanner;
   recordUsage?: (accountId: string, modelId: string | undefined, usage: MorpheusPlannerUsage) => Promise<void>;
 }): MorpheusPlannerSelector {
@@ -74,6 +77,10 @@ export function createMorpheusPlannerSelector(options: {
       if (agent.planner.kind === 'openclaw') {
         return { ok: false, reason: 'This Agent Profile requests the OpenClaw planner adapter, which is not configured for Morpheus Core.' };
       }
+
+      const managed = options.getManagedRuntime?.();
+      if (managed) return { ok: true, planner: createMorpheusManagedPlanner({ runtime: managed,
+        recordUsage: options.recordUsage ? (usage) => options.recordUsage!('managed', undefined, usage) : undefined }) };
 
       const accounts = (await options.providerService.listAccounts()).filter((account) => account.enabled);
       if (agent.planner.kind === 'provider') {

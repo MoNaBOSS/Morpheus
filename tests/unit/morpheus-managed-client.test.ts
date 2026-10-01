@@ -62,6 +62,22 @@ describe('managed Main client', () => {
   it('rejects insecure origins', () => {
     expect(() => createManagedClient({ sessions: sessions(), origin: 'http://managed.test' })).toThrow('Invalid managed service origin');
   });
+  it('aborts active text transport on invalidation and blocks session-resolution races before sending', async () => {
+    let resolveSession!: (value: ManagedSession) => void;
+    const delayed = new Promise<ManagedSession>((resolve) => { resolveSession = resolve; });
+    const fetcher = vi.fn<typeof fetch>();
+    const client = createManagedClient({ origin: 'https://managed.test', sessions: { ...sessions(), get: () => delayed }, fetch: fetcher, now: () => 1000 });
+    const result = client.execute({ requestId: 'race', route: 'planning', input: {} });
+    client.invalidate(); resolveSession(session);
+    await expect(result).rejects.toThrow('Managed session changed'); expect(fetcher).not.toHaveBeenCalled();
+    const activeFetch = vi.fn<typeof fetch>((_url, init) => new Promise((_resolve, reject) => {
+      init!.signal!.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+    }));
+    const active = createManagedClient({ origin: 'https://managed.test', sessions: sessions(), fetch: activeFetch, now: () => 1000 });
+    const pending = active.execute({ requestId: 'active', route: 'planning', input: {} });
+    const assertion = expect(pending).rejects.toThrow('aborted');
+    await vi.waitFor(() => expect(activeFetch).toHaveBeenCalledOnce()); active.invalidate(); await assertion;
+  });
 });
 
 describe('protected managed session persistence', () => {

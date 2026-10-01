@@ -561,3 +561,16 @@ cross-drive log path guard. Initial failures and final evidence are recorded in
 [F2 details](phase7-f2-desktop-controls.md). Real media effects, installed-app,
 hardware/performance and newly packaged acceptance remain open. Next: G1/G2
 runtime joins and usage; H/I. No full-version or new-EXE acceptance is claimed.
+
+### G2.1 managed planner join — 2026-10-02
+
+After F2 `068dc9c2`, Main injects the managed getter into Core selection.
+Managed and BYOK share typed plan/review validation; managed selection resolves
+before BYOK keys, binds objective/generation/budgets and records correlated
+receipt amounts. Invalidation aborts text/STT dispatch and session-resolution
+races. **47 focused units**, three typechecks, scoped lint (zero errors), comms
+and diff-aware harness checks pass. Three fresh-build account regression journeys
+pass in **10.7 seconds**. Provider replies/auth are fixtures, not live services.
+The last full suite was F2 (3,258 + two skips); it has not been rerun for this
+checkpoint. See [G2 joins](phase7-g2-runtime-joins.md). Voice/conversation joins
+remain next and activation is still disabled, not silently routed to personal keys.

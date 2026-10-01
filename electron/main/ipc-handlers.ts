@@ -195,7 +195,20 @@ function registerTypedHostHandlers(
   // channel; the window guard mirrors `sendMainWindowEvent` in main/index.ts so
   // a closed window cannot throw out of the runtime.
   let presentedWake = 0;
+  const managedAccount = createManagedAccountApi({
+    userDataDir: app.getPath('userData'), env: process.env,
+    protection: {
+      isEncryptionAvailable: () => safeStorage.isEncryptionAvailable(),
+      encryptString: (value) => safeStorage.encryptString(value),
+      decryptString: (value) => safeStorage.decryptString(value),
+      ...(process.platform === 'linux' ? { getSelectedStorageBackend: () => safeStorage.getSelectedStorageBackend() } : {}),
+    },
+    openExternal: (url) => shell.openExternal(url),
+    // Keep activation guarded until conversation and voice also consume this owner.
+    runtimeReady: false,
+  });
   const morpheusService = createMorpheusService({
+    getManagedRuntime: managedAccount.getRuntime,
     userDataDir: app.getPath('userData'),
     appVersion: app.getVersion(),
     emit: (event) => {
@@ -223,16 +236,6 @@ function registerTypedHostHandlers(
     emitSpeechChunk: (chunk) => {
       if (!mainWindow.isDestroyed()) mainWindow.webContents.send(HOST_EVENT_CHANNELS.morpheus.speechChunk, chunk);
     },
-  });
-  const managedAccount = createManagedAccountApi({
-    userDataDir: app.getPath('userData'), env: process.env,
-    protection: {
-      isEncryptionAvailable: () => safeStorage.isEncryptionAvailable(),
-      encryptString: (value) => safeStorage.encryptString(value),
-      decryptString: (value) => safeStorage.decryptString(value),
-      ...(process.platform === 'linux' ? { getSelectedStorageBackend: () => safeStorage.getSelectedStorageBackend() } : {}),
-    },
-    openExternal: (url) => shell.openExternal(url),
   });
   app.once('before-quit', managedAccount.dispose);
   const assistantSession = new MorpheusAssistantSession({

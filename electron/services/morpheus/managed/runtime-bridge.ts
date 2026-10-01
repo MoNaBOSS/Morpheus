@@ -34,6 +34,7 @@ export function encodeManagedPcmWav(pcm: Uint8Array, sampleRate: 16_000 | 24_000
  * Routes are logical fixed ids; the server owns credentials/models/rates. */
 export function createManagedRuntimeBridge(client: ManagedClient) {
   return {
+    getGeneration: client.getGeneration,
     status: client.status,
     capabilities: client.capabilities,
     receipt: client.receipt,

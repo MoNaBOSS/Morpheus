@@ -34,7 +34,14 @@ export type MorpheusPlannerUsage = Partial<MorpheusUsageCounts> & {
   modelId: string;
   durationMs?: number;
   httpStatus?: number;
-  costStatus: 'unknown';
+  costStatus: 'unknown' | 'known';
+  chargedMicroUsd?: number;
+  reservedMicroUsd?: number;
+  assessedCostMicroUsd?: number;
+  costEvidence?: string;
+  rateVersion?: string;
+  receiptState?: string;
+  serviceRoute?: string;
   requestNumber: number;
   inputChars: number;
   outputTokenLimit: number;
@@ -404,8 +411,22 @@ export function createMorpheusProviderPlanner(options: MorpheusProviderPlannerOp
     }
   };
 
+  return createTypedMorpheusPlanner({ plannerId: `provider:${options.account.id}`, invoke, now, createId });
+}
+
+/** Managed and BYOK transports share exactly the same context, schemas,
+ * capability restriction and research review. Neither transport executes tools. */
+export function createTypedMorpheusPlanner(options: {
+  plannerId: string;
+  invoke(system: string, user: string, objective: string, signal?: AbortSignal, objectiveRunId?: string): Promise<string>;
+  now?: () => Date;
+  createId?: () => string;
+}): MorpheusPlanner {
+  const now = options.now ?? (() => new Date());
+  const createId = options.createId ?? randomUUID;
+  const invoke = options.invoke;
   return {
-    plannerId: `provider:${options.account.id}`,
+    plannerId: options.plannerId,
     plannedBy: 'provider',
     async plan(request) {
       const capabilities = request.capabilities ?? [];

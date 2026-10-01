@@ -41,40 +41,48 @@ export function createManagedClient(options: {
   async function call(path: string, body?: unknown, signal?: AbortSignal) {
     const startedGeneration = generation;
     if (!origin) throw new Error('Managed service not configured');
-    const session = await options.sessions.get();
-    if (!session || session.expiresAt <= now()) throw new Error('Managed session unavailable');
-    const response = await transport(new URL(path, origin), {
-      method: body === undefined ? 'GET' : 'POST',
-      headers: { Authorization: `Bearer ${session.accessToken}`, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
-      body: body === undefined ? undefined : JSON.stringify(body), redirect: 'error',
-      signal: AbortSignal.any([AbortSignal.timeout(35_000), ...(signal ? [signal] : [])]),
-    });
-    // Never return a raw upstream body/error to a renderer or local log.
-    if (!response.ok) {
-      await response.body?.cancel();
-      throw new Error(`Managed request failed (${response.status})`);
-    }
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error('Invalid managed response');
-    const chunks: Uint8Array[] = [];
-    let size = 0;
+    const controller = new AbortController(); active.add(controller);
+    const combined = AbortSignal.any([controller.signal, AbortSignal.timeout(35_000), ...(signal ? [signal] : [])]);
+    let releaseReader: (() => Promise<void>) | undefined;
+    const current = () => { if (startedGeneration !== generation) throw new Error('Managed session changed'); combined.throwIfAborted(); };
     try {
+      current();
+      const session = await options.sessions.get(); current();
+      if (!session || session.expiresAt <= now()) throw new Error('Managed session unavailable');
+      const response = await transport(new URL(path, origin), {
+        method: body === undefined ? 'GET' : 'POST',
+        headers: { Authorization: `Bearer ${session.accessToken}`, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+        body: body === undefined ? undefined : JSON.stringify(body), redirect: 'error',
+        signal: combined,
+      });
+      // Never return a raw upstream body/error to a renderer or local log.
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new Error(`Managed request failed (${response.status})`);
+      }
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('Invalid managed response');
+      releaseReader = async () => { await reader.cancel().catch(() => undefined); reader.releaseLock(); };
+      const chunks: Uint8Array[] = [];
+      let size = 0;
+      current();
       while (true) {
-        const part = await reader.read();
+        current(); const part = await reader.read(); current();
         if (part.done) break;
         size += part.value.byteLength;
         if (size > 2 * 1024 * 1024) throw new Error('Managed response too large');
         chunks.push(part.value);
       }
-      const currentSession = await options.sessions.get();
+      const currentSession = await options.sessions.get(); current();
       if (startedGeneration !== generation || currentSession?.accountId !== session.accountId
         || currentSession.accessToken !== session.accessToken || currentSession.expiresAt <= now()) {
         throw new Error('Managed session changed');
       }
       return { data: JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown, accountId: session.accountId };
-    } finally { await reader.cancel().catch(() => undefined); reader.releaseLock(); }
+    } finally { controller.abort(); active.delete(controller); await releaseReader?.(); }
   }
   return {
+    getGeneration: () => generation,
     invalidate,
     async status(): Promise<ManagedClientStatus> {
       if (!origin) return { state: 'not-configured', account: null };
@@ -117,6 +125,7 @@ export function createManagedClient(options: {
       };
       let releaseReader: (() => Promise<void>) | undefined;
       try {
+        await current();
         const response = await transport(new URL('/v1/execute-stream', origin), { method: 'POST',
           headers: { Authorization: `Bearer ${session.accessToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(request), redirect: 'error', signal: combined });

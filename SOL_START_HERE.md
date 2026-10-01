@@ -74,7 +74,10 @@ Read `docs/releases/phase7-e3-publication.md`. F2 typed window, Spotify and outp
 volume controls are implemented through the original Core; four native locale
 window journeys and read-only audio discovery pass. See
 `docs/releases/phase7-f2-desktop-controls.md`. Next is G1/G2 actual runtime
-joins and usage, then H/I. Package, authenticated-browser and live-service
+joins and usage, then H/I. G2.1 now joins the planner with shared validators,
+generation/cancellation and correlated receipt usage; read
+`docs/releases/phase7-g2-runtime-joins.md`. Next: G2.2 voice and G2.3 original
+conversation owner. Managed activation remains guarded. Package, authenticated-browser and live-service
 acceptance remain open. Test scratch/builds use E: because C: is nearly full.
 Read the
 narrow source evidence in `docs/releases/` and the current checkpoint in the

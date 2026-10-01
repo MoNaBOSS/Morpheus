@@ -77,6 +77,7 @@ import { createMorpheusSystemStore, type MorpheusSystemStore } from './systems/s
 import { createMorpheusSystemService, type MorpheusSystemService } from './systems/system-service';
 
 export type CreateMorpheusServiceOptions = {
+  getManagedRuntime?: () => import('./managed/runtime-bridge').ManagedRuntimeBridge | null;
   userDataDir: string;
   appVersion: string;
   emit: (event: MorpheusActionEvent) => void;
@@ -218,6 +219,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   const providerService = options.providerService ?? getProviderService();
   const plannerSelector = createMorpheusPlannerSelector({
     providerService,
+    getManagedRuntime: options.getManagedRuntime,
     recordUsage: async (accountId, modelId, usage) => {
       await audit.recordControl({
         category: 'objective', event: 'provider-usage', subjectId: accountId,
