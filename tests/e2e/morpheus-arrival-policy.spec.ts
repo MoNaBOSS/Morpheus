@@ -14,7 +14,7 @@ test('Main persists one quiet returning greeting, preserves profile, and honors 
       quietHoursEnabled: false, quietHoursStart: '22:00', quietHoursEnd: '08:00',
       categories: { mission: true, goal: true, schedule: true, routine: true, reminder: true } },
   }));
-  const app = await launchElectronApp({ skipSetup: true, additionalArgs: ['--morpheus-boot=on', '--morpheus-onboarding=on'] });
+  const app = await launchElectronApp({ additionalArgs: ['--morpheus-boot=on', '--morpheus-onboarding=on'] });
   try {
     const page = await getStableWindow(app);
     await expect(page.getByTestId('command-center-page')).toBeVisible();
@@ -72,7 +72,7 @@ test('compact unanswered choices correct the same task and never approve permiss
 
 for (const locale of ['en', 'zh', 'ja', 'ru']) {
   test(`name skip and reduced-motion setup stay usable in ${locale}`, async ({ launchElectronApp }, testInfo) => {
-    const app = await launchElectronApp({ skipSetup: true, additionalArgs: ['--morpheus-onboarding=on'] });
+    const app = await launchElectronApp({ additionalArgs: ['--morpheus-onboarding=on'] });
     try {
       const page = await getStableWindow(app);
       await page.evaluate(async (language) => {

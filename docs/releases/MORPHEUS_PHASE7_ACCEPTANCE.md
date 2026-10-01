@@ -618,3 +618,13 @@ are unit-harness output, not a measured app-leak result.
 Version is now `1.2.0-preview.1` to distinguish the new candidate from the old 1.1.2.
 Fresh EXE/hash, compiled NSIS/normal startup, hardware/load/idle/soak and live gates
 are not yet accepted. Next exact action is build/inspect the reviewed source on E:.
+
+### Genuine first launch — 2026-10-02
+
+Removed the old setup-wizard prerequisite from normal Morpheus arrival. Main's
+saved profile remains the completion authority; keyboard focus is contained.
+Ten fresh/returning four-locale native journeys pass in 51.0s, including real
+system-information completion and profile-preserving relaunch after renderer
+storage removal. See [H first-run evidence](phase7-h-native-readiness.md).
+The preview.1 NSIS build from d5954e6c succeeded, but predates this correction.
+`1.2.0-preview.2` is the next candidate; packaged/runtime/hardware gates stay open.

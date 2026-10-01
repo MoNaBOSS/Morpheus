@@ -14,6 +14,10 @@ Native click/Escape/reload recovery now has repeated Windows checks and a record
 warm interaction baseline. Upgrade preparation preserves recoverable installation
 backups and no longer kills other instances or erases user profiles. These are
 source/helper results; a fresh packaged candidate is still under qualification.
+Fresh profiles now enter the approved name/welcome scene directly, with trapped
+keyboard focus. Returning profiles do not repeat the legacy setup wizard when
+renderer storage is missing. Ten fresh/returning Windows journeys pass; the
+installer containing this correction is `1.2.0-preview.2`, pending qualification.
 
 New source checkpoints add inspectable/exportable local memory, quiet orb check-ins,
 bounded public-page retrieval, recoverable static-site revisions and restored site

@@ -42,3 +42,8 @@ Native presentation acknowledgement follows the applied editable state, not just
 queued DOM work. Escape cannot reopen from stationary-pointer resize events.
 Installer upgrades target validated dedicated folders, preserve exact recoverable
 backups, and never terminate globally named processes or erase other users' data.
+
+First-run qualification must launch without the skip-setup fixture flag. The
+Main-owned onboarding profile, not the old renderer setup flag, controls the
+approved arrival. Clearing renderer storage cannot force returning users through
+the legacy setup wizard. Modal first-run controls contain keyboard focus.

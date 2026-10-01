@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import * as Dialog from '@radix-ui/react-dialog';
 import { ArrowRight, Mic, Volume2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MatrixRain } from '@/components/morpheus/boot/MatrixRain';
@@ -55,6 +56,7 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const silenceTimer = useRef<number | null>(null);
   const speechGeneration = useRef(0);
   const wasListening = useRef(false);
+  const introInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -160,19 +162,28 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
   const listening = voiceSource === 'onboarding' && voicePhase === 'listening';
   const signalState = listening ? 'listening' : speaking ? 'speaking' : 'ready';
 
-  return <div data-morpheus data-testid="morpheus-activation" data-stage={stage} className="morpheus-first-launch fixed inset-0 z-[9997] flex flex-col overflow-hidden bg-[#040907] text-[#edf5ef]" role="dialog" aria-modal="true" aria-label={t('morpheus.title')}>
+  return <Dialog.Root open onOpenChange={(open) => { if (!open) void finish(); }}><Dialog.Portal><Dialog.Content data-morpheus data-testid="morpheus-activation" data-stage={stage} className="morpheus-first-launch fixed inset-0 z-[9997] flex flex-col overflow-hidden bg-[#040907] text-[#edf5ef]" aria-describedby={undefined} onOpenAutoFocus={(event) => { event.preventDefault(); introInput.current?.focus(); }}>
+    <Dialog.Title className="sr-only">{t('morpheus.title')}</Dialog.Title>
     <div aria-hidden className="morpheus-first-launch-rain"><MatrixRain /></div>
     <header className="relative z-10 flex h-12 shrink-0 items-center justify-between border-b border-white/10 px-5"><span className="text-sm font-semibold text-[#53edb4]">M <span className="ml-2 text-xs font-normal text-[#edf5ef]">{t('morpheus.title')}</span></span><button type="button" aria-label={t('morpheus.activationV2.close')} onClick={() => void finish()} className="rounded p-2 text-[#a0b6aa] hover:text-white"><X size={16} /></button></header>
     <main className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-6 text-center">
       <MorpheusFluidOrb state={signalState} className="h-32 w-32 max-[600px]:h-24 max-[600px]:w-24" label={t('morpheus.title')} />
       {stage === 'name' ? <div data-testid="morpheus-activation-intro" className="mt-4 w-full max-w-[580px]">
         <p className="text-sm text-[#a0b6aa]">{t('morpheus.activationV2.hello')}</p><h1 className="mt-3 text-[clamp(28px,4vw,38px)] font-semibold tracking-tight">{t('morpheus.activationV2.nameQuestion')}</h1>
-        <form className="morpheus-setup-composer mt-6 flex items-center gap-2" onSubmit={(event) => { event.preventDefault(); setStage('welcome'); }}><button type="button" data-testid="activation-voice-start" disabled={!voice?.transcriptionAvailable} onClick={() => listening ? stopListening() : void startListening('onboarding')} aria-label={t('morpheus.activationV2.speak')} className="p-2 text-[#a0b6aa] disabled:opacity-40"><Mic size={17} /></button><input data-testid="activation-intro-name" autoFocus autoComplete="name" maxLength={80} value={name} onChange={(event) => setName(event.target.value)} placeholder={t('morpheus.activationV2.inputPlaceholder')} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#809b8b]" /><button data-testid="morpheus-activation-begin" type="submit" aria-label={t('morpheus.activationV2.continue')} className="p-2 text-[#53edb4]"><ArrowRight size={18} /></button></form>
+        <form className="morpheus-setup-composer mt-6 flex items-center gap-2" onSubmit={(event) => { event.preventDefault(); setStage('welcome'); }}>
+          <button type="button" data-testid="activation-voice-start" disabled={!voice?.transcriptionAvailable} onClick={() => listening ? stopListening() : void startListening('onboarding')} aria-label={t('morpheus.activationV2.speak')} className="p-2 text-[#a0b6aa] disabled:opacity-40"><Mic size={17} /></button>
+          <input ref={introInput} data-testid="activation-intro-name" autoFocus autoComplete="name" aria-label={t('morpheus.activationV2.nameQuestion')} maxLength={80} value={name} onChange={(event) => setName(event.target.value)} placeholder={t('morpheus.activationV2.inputPlaceholder')} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#809b8b]" />
+          <button data-testid="morpheus-activation-begin" type="submit" aria-label={t('morpheus.activationV2.continue')} className="p-2 text-[#53edb4]"><ArrowRight size={18} /></button>
+        </form>
         <button type="button" data-testid="morpheus-activation-skip" onClick={() => setStage('welcome')} className="mt-8 text-xs text-[#a0b6aa] hover:text-white">{t('morpheus.activationV2.skipName')}</button>
       </div> : null}
       {stage === 'welcome' ? <div data-testid="morpheus-activation-welcome" className="mt-5 w-full max-w-[640px]">
         <p className="text-sm text-[#a0b6aa]">{t('morpheus.activationV2.welcome', { name: name.trim() || t('morpheus.activationV2.friend') })}</p><h1 className="mt-3 text-[clamp(27px,4vw,38px)] font-semibold tracking-tight">{t('morpheus.activationV2.firstQuestion')}</h1>
-        <form className="morpheus-setup-composer mt-6 flex items-center gap-2" onSubmit={(event) => { event.preventDefault(); if (request.trim()) void finish(request); }}><button type="button" disabled={!voice?.transcriptionAvailable} onClick={() => listening ? stopListening() : void startListening('onboarding')} aria-label={t('morpheus.activationV2.speak')} className="p-2 text-[#a0b6aa] disabled:opacity-40"><Mic size={17} /></button><input data-testid="activation-first-request" value={request} onChange={(event) => setRequest(event.target.value)} placeholder={t('morpheus.activationV2.inputPlaceholder')} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#809b8b]" /><button type="submit" disabled={!request.trim()} className="p-2 text-[#53edb4] disabled:opacity-40" aria-label={t('morpheus.activationV2.send')}><ArrowRight size={18} /></button></form>
+        <form className="morpheus-setup-composer mt-6 flex items-center gap-2" onSubmit={(event) => { event.preventDefault(); if (request.trim()) void finish(request); }}>
+          <button type="button" disabled={!voice?.transcriptionAvailable} onClick={() => listening ? stopListening() : void startListening('onboarding')} aria-label={t('morpheus.activationV2.speak')} className="p-2 text-[#a0b6aa] disabled:opacity-40"><Mic size={17} /></button>
+          <input data-testid="activation-first-request" autoFocus aria-label={t('morpheus.activationV2.firstQuestion')} value={request} onChange={(event) => setRequest(event.target.value)} placeholder={t('morpheus.activationV2.inputPlaceholder')} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#809b8b]" />
+          <button type="submit" disabled={saving || !request.trim()} className="p-2 text-[#53edb4] disabled:opacity-40" aria-label={t('morpheus.activationV2.send')}><ArrowRight size={18} /></button>
+        </form>
         {suggestions && !request.trim() ? <div data-testid="activation-suggestions" className="mt-4 flex flex-wrap justify-center gap-2">{(['openYouTube', 'research', 'helpMe'] as const).map((key) => <button key={key} type="button" onClick={() => { setRequest(t(`morpheus.activationV2.suggestions.${key}`)); setSuggestions(false); }} className="rounded-full border border-[#34684d] bg-[#102018] px-3 py-1.5 text-xs text-[#c8e7d2] hover:border-[#53edb4]">{t(`morpheus.activationV2.suggestions.${key}`)}</button>)}</div> : null}
         <button type="button" data-testid="morpheus-activation-personalize" onClick={() => { cancelSilence(); setStage('personalize'); }} className="mt-7 text-xs text-[#a0b6aa] underline-offset-4 hover:text-white hover:underline">{t('morpheus.activationV2.personalize')}</button>
       </div> : null}
@@ -192,5 +203,5 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
       {error ? <p role="alert" className="mt-4 text-xs text-red-300">{t('morpheus.activationV2.error')}</p> : null}
     </main>
     <footer className="relative z-10 flex h-10 shrink-0 items-center justify-between border-t border-white/10 px-5 text-[11px] text-[#a0b6aa]"><span>{t('morpheus.activationV2.footer')}</span><span>{t('morpheus.activationV2.typeAlways')}</span></footer>
-  </div>;
+  </Dialog.Content></Dialog.Portal></Dialog.Root>;
 }

@@ -36,6 +36,14 @@ conversation or redesign a logo to start implementation.
 
 ## Next work
 
+Latest first-run correction: App no longer routes a new Morpheus profile through
+the legacy installer wizard. Main-persisted arrival owns completion and keyboard
+focus is contained. Ten fresh/returning locale journeys pass, including real local
+task execution and relaunch; read H evidence. The d5954e6c preview.1 installer
+compiled but excludes this fix. Next: rebuild **1.2.0-preview.2** from this reviewed
+checkpoint, qualify normal packaged startup and exact-payload companion/provider
+lifecycle. Preserve the completed source coverage; do not rerun discovery.
+
 Latest 2026-10-02 H/I preparation: native click acknowledgement, Escape suppression
 and reload recovery are fixed. Six final native companion journeys and five
 corrected device journeys pass; warm 30-sample click p95 is 12.2ms on this PC.

@@ -163,12 +163,14 @@ function App() {
     initProviders();
   }, [initProviders]);
 
-  // Redirect to setup wizard if not complete
+  // Morpheus arrival owns first run through its Main-persisted profile. The
+  // legacy renderer-only flag must not put the old installer wizard in front
+  // of it (or repeat setup after renderer storage is cleared).
   useEffect(() => {
-    if (!setupComplete && !skipSetupForE2E && !location.pathname.startsWith('/setup')) {
+    if (!morpheusOnboardingEnabled && !setupComplete && !skipSetupForE2E && !location.pathname.startsWith('/setup')) {
       navigate('/setup');
     }
-  }, [setupComplete, skipSetupForE2E, location.pathname, navigate]);
+  }, [morpheusOnboardingEnabled, setupComplete, skipSetupForE2E, location.pathname, navigate]);
 
   // Listen for navigation events from main process
   useEffect(() => {
@@ -222,7 +224,7 @@ function App() {
     <ErrorBoundary>
       <TooltipProvider delayDuration={300}>
         <Routes>
-          {/* Setup wizard (shown on first launch) */}
+          {/* Legacy setup remains available explicitly for recovery. */}
           <Route path="/setup/*" element={<Setup />} />
 
           {/* Main application routes */}
@@ -259,12 +261,12 @@ function App() {
 
         {/*
           Boot overlay. A sibling of <Routes> rather than a route, so routing,
-          store initialisation and the setup redirect all proceed underneath it.
+          store initialisation proceed underneath it.
           Kept below the Toaster's z-index.
         */}
         <MorpheusArrival
           bootEnabled={morpheusBootEnabled}
-          onboardingEnabled={morpheusOnboardingEnabled && (Boolean(setupComplete) || skipSetupForE2E)}
+          onboardingEnabled={morpheusOnboardingEnabled && !location.pathname.startsWith('/setup')}
         />
 
         {/* Global toast notifications */}

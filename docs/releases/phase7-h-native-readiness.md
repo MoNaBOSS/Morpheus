@@ -48,3 +48,27 @@ Device rerun: `phase7-h1-final-evidence-20261002-0243`. Logs under
 Next: installer recovery qualification and fresh E: candidate, then packaged
 normal-startup/hardware/live acceptance. G2.3 hosted conversation and G3/G4 are not
 completed by native tests.
+
+## First-run gap closed
+
+The old App redirect required a renderer-local setup flag before the approved
+arrival could appear. Existing arrival tests all skipped that prerequisite. A
+normal new profile therefore entered the obsolete four-step installer wizard.
+Morpheus arrival now owns first run directly through its existing Main profile;
+the legacy `/setup` route stays explicitly available for recovery. The Radix
+modal contains keyboard focus, labels inputs and focuses the first request after
+the name. No second completion store or provider/runtime readiness claim is added.
+
+Ten fresh Windows Electron journeys pass in 51.0s: four genuinely empty profiles
+(no skip-setup flag), keyboard/reduced-motion screenshots, persisted name, real
+local system-information task, renderer-state removal and full app relaunch;
+four name-skip/personalization flows, quiet-return/DND and compact clarification.
+Initial four new test failures inspected the active-run pointer after a task had
+already completed; the corrected test checks the persisted matching task result.
+No production behavior was weakened to pass it. Evidence:
+`E:\Morpheus-builds\phase7-first-launch-final-evidence-20261002` and matching
+`phase7-first-launch-final-report-20261002`. English screenshot inspected.
+The d5954e6c preview.1 installer compiled, but does not include this fix. Rebuild
+as preview.2 before handing off an installer as the current UX.
+All three typechecks, scoped ESLint (zero errors/warnings), four onboarding units,
+comms replay/compare, and the narrow diff-aware harness validate/dry-run pass.
