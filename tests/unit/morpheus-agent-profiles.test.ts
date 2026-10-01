@@ -24,7 +24,7 @@ describe('Morpheus Agent Profiles', () => {
   it.each(MORPHEUS_STARTER_AGENT_PROFILES.map((profile) => [profile.profileId, profile] as const))('upgrades exact historical %s defaults without rewriting disk', (_id, starter) => {
     const root = temporaryRoot();
     const previous: MorpheusAgentProfile = { ...structuredClone(starter), permissionBoundary: { ...starter.permissionBoundary,
-      capabilityIds: starter.permissionBoundary.capabilityIds.filter((id) => !['web.readPage', 'browser.inspect', 'browser.interact', 'site.revise', 'site.rollback', 'site.createInteractive'].includes(id)) } };
+      capabilityIds: starter.permissionBoundary.capabilityIds.filter((id) => !['app.controlWindow', 'media.control', 'audio.setVolume', 'web.readPage', 'browser.inspect', 'browser.interact', 'site.revise', 'site.rollback', 'site.createInteractive'].includes(id)) } };
     mkdirSync(join(root, 'morpheus'), { recursive: true });
     const file = join(root, 'morpheus', 'agent-profiles.json');
     const original = JSON.stringify({ v: 1, profiles: [previous] }); writeFileSync(file, original);
@@ -37,7 +37,7 @@ describe('Morpheus Agent Profiles', () => {
   it('upgrades the original deterministic default but preserves a deliberate offline planner', () => {
     const starter = MORPHEUS_STARTER_AGENT_PROFILES[0];
     const original: MorpheusAgentProfile = { ...structuredClone(starter), planner: { kind: 'deterministic' }, permissionBoundary: { ...starter.permissionBoundary,
-      capabilityIds: starter.permissionBoundary.capabilityIds.filter((id) => !['system.processes', 'file.create', 'reminder.schedule', 'site.verify', 'web.readPage', 'browser.inspect', 'browser.interact', 'site.revise', 'site.rollback', 'site.createInteractive'].includes(id)) } };
+      capabilityIds: starter.permissionBoundary.capabilityIds.filter((id) => !['app.controlWindow', 'media.control', 'audio.setVolume', 'system.processes', 'file.create', 'reminder.schedule', 'site.verify', 'web.readPage', 'browser.inspect', 'browser.interact', 'site.revise', 'site.rollback', 'site.createInteractive'].includes(id)) } };
     expect(upgradeUntouchedStarter(original, starter)).toEqual(starter);
     const customized = { ...original, updatedAt: '2026-10-01T00:00:00.000Z' };
     const root = temporaryRoot(); mkdirSync(join(root, 'morpheus'), { recursive: true });

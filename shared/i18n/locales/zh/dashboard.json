@@ -248,6 +248,7 @@
       "contentPlaceholder": "要写入的文本",
       "applicationLabel": "应用程序"
     },
+    "controlResults": {"focus":"{{application}} 已置于前台。","minimize":"{{application}} 已最小化。","restore":"{{application}} 已恢复。","play":"{{application}} 正在播放。","pause":"{{application}} 已暂停。","volume":"输出音量为 {{level}}%。"},
     "applications": {
       "spotify": "Spotify",
       "notepad": "记事本",
@@ -258,12 +259,15 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
+      "mediaControl": {"label":"控制 Spotify 播放","description":"播放或暂停已观察到的单个 Spotify 会话，不使用全局媒体按键。"},
+      "audioVolume": {"label":"设置系统输出音量","description":"将默认输出音量设为指定百分比，不更改麦克风。"},
       "siteCreateInteractive": {"label":"创建交互网站","description":"使用经过审核的模板创建新的客户端网站，提供筛选和本地表单验证。不会发送消息。"},
       "browserInspect": { "label": "查看公开页面", "description": "在隔离的浏览器中查看页面控件，不使用您的浏览器账户。" },
       "browserInteract": { "label": "操作公开页面控件", "description": "使用此任务刚刚观察到的页面控件。账户操作与下载需要单独授权。" },
       "siteRevise": {"label":"修改网站","description":"仅基于已验证的网站版本进行修改，保留无关的手动编辑。"},
       "siteRollback": {"label":"回退网站","description":"仅在当前版本已验证时恢复已记录的网站版本，保留手动编辑。"},
       "webReadPage": { "label": "读取网页", "description": "读取公开 HTTPS 网页并保留实际获取的来源证据。" },
+      "appControlWindow": {"label":"控制应用窗口","description":"聚焦、最小化或恢复确切的运行中应用，并验证结果。"},
       "appLaunch": {
         "label": "启动已批准的应用程序",
         "description": "从内置批准列表中启动一个应用程序。"
@@ -588,6 +592,12 @@
     },
     "plan": {
       "steps": {
+        "mediaPlay": "播放 Spotify",
+        "mediaPause": "暂停 Spotify",
+        "audioVolume": "将输出音量设为 {{level}}%",
+        "windowFocus": "聚焦 {{application}}",
+        "windowMinimize": "最小化 {{application}}",
+        "windowRestore": "恢复 {{application}}",
         "systemReport": "收集不涉及隐私的系统信息",
         "fileCreateText": "在已批准的文件夹中创建 {{fileName}}",
         "fileCreate": "在已批准的工作区中创建 {{path}}",

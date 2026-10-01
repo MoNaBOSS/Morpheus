@@ -47,3 +47,12 @@ never force a branch or silently replace remote manual edits. Lost responses are
 unknown until read-only reconciliation; successful Git writes still require actual
 HTTP content verification. API credentials stay on the fixed API origin and never
 enter public files, planner context, exception diagnostics or content retrieval.
+
+Native desktop controls use fixed application keys and operation enums, not raw
+handles, processes, scripts or global media keys. Resolve an exact installed image
+and window identity; recheck desktop lock, foreground snapshot and PID/start-time
+before effects. Named Spotify sessions cannot fall back to another active player.
+Explicit volume changes affect only the observed default output, never a mic.
+Success requires observed state; Windows focus refusal remains a failed outcome.
+Cancellation or timeout is not evidence that an effect did not happen: do not retry
+blindly. Window and audio leases remain independent from public network workers.

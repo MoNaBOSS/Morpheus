@@ -70,8 +70,12 @@ E3 now joins exact-target GitHub Pages publication to the existing site result:
 protected connection, explicit exact-file approval, flushed write-ahead receipts,
 read-only restart recovery and reviewed rollback. Four native locale journeys use
 the actual Main owner/vault/adapter with injected network bytes, not a real account.
-Read `docs/releases/phase7-e3-publication.md`. Next is F2 typed desktop controls,
-then G/H/I. Package, authenticated-browser and live-service acceptance remain open.
+Read `docs/releases/phase7-e3-publication.md`. F2 typed window, Spotify and output
+volume controls are implemented through the original Core; four native locale
+window journeys and read-only audio discovery pass. See
+`docs/releases/phase7-f2-desktop-controls.md`. Next is G1/G2 actual runtime
+joins and usage, then H/I. Package, authenticated-browser and live-service
+acceptance remain open. Test scratch/builds use E: because C: is nearly full.
 Read the
 narrow source evidence in `docs/releases/` and the current checkpoint in the
 roadmap. Exact installer identity/checks appear in the acceptance ledger when
@@ -97,7 +101,7 @@ journeys; C.2 passed 21 focused units and a real-Chromium synthetic silence
 journey with zero provider/task requests. Neural auditions now include a greeting,
 joke and explicitly prepared update in one request. Hardware/live voice remains
 open. C.3 is now verified in source; see `docs/releases/phase7-c3-source-checkpoint.md`.
-Continue F.2 then the existing G–I sequence; D2 account/live gates stay open. Do not redo B.1/C.1 discovery or
+Continue G1/G2 then the existing H–I sequence; D2 account/live gates stay open. Do not redo B.1/C.1 discovery or
 call the whole Phase 7 complete.
 
 ## Operating rules for continuity and cost

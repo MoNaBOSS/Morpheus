@@ -197,6 +197,8 @@ export type MorpheusScheduledReminderResult = MorpheusReminderResult & {
 };
 
 export type MorpheusActionResult =
+  | { kind: 'audio-control'; level: number; observed: true }
+  | { kind: 'desktop-control'; applicationKey: MorpheusApplicationKey; operation: string; observed: true }
   | { kind: 'browser'; snapshot: MorpheusBrowserSnapshot; workerRunId: string }
   | { kind: 'source'; source: MorpheusSourceObservation; workerRunId: string; usage: MorpheusWorkerUsage }
   | MorpheusScheduledReminderResult
@@ -222,6 +224,8 @@ export type MorpheusActionResult =
  * an action ran and must never become durable audit content.
  */
 export type MorpheusAuditOutcome =
+  | { kind: 'audio-control'; level: number; observed: true }
+  | { kind: 'desktop-control'; applicationKey: MorpheusApplicationKey; operation: string; observed: true }
   | { kind: 'browser'; origin: string; contentSha256: string; workerRunId: string; controls: number }
   | { kind: 'source'; origin: string; bytes: number; contentSha256: string; workerRunId: string; usageStatus: 'known' | 'unknown' }
   | MorpheusLaunchResult

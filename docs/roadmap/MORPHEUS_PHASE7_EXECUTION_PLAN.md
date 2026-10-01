@@ -80,7 +80,7 @@ Only record what the evidence supports. All rows below start TODO.
 | 7E.2 AUTOMATED (source fixtures) | Pinned data-only client template uses existing Core permissions/audit and creates real files. Separate isolated preview, real filters/FAQ/local form, four localized result/recovery journeys. No arbitrary builds, server/form delivery or live publication claimed. | E.1 |
 | 7E.3 AUTOMATED (source fixtures) | Existing interactive-site result joins protected GitHub credentials, exact-byte approval, non-force publication, flushed receipts, read-only recovery and reviewed rollback. Four native locale journeys with actual Main owner/vault and injected network pass. Real target/public HTTP and package acceptance remain open. | E.1–2, B.1 |
 | 7F.1 IMPLEMENTED (source regression) | Approved app discovery checks known directories and bounded App Paths; 92 focused native-capability/runtime regressions pass. Real installed-app and packaged acceptance remain. | D.1 |
-| 7F.2 TODO | Typed window/media controls for named apps. Focus/minimize/restore and supported play/pause/volume observed on real targets; scope/foreground locks and unsupported outcomes. | F.1 |
+| 7F.2 IMPLEMENTED (native + source fixtures) | Typed named window, Spotify and output-volume controls use Core permissions/leases/audit and deterministic commands. Four locale native window journeys and read-only audio discovery pass; actual Spotify/volume effects, sleep and packaged acceptance remain open. | F.1 |
 | 7G.1 TODO | Usage coverage and economy qualification. All paid paths correlated; bounded attempts and task owner; matched strong/economy results record success, latency and cost per success. | C.2, D.3, E.3 |
 | 7G.2 IN PROGRESS | Server routes and Main bridge/receipts tested; actual planner/conversation/voice joins still missing. Main/UI block managed activation until composition is ready. No live Premium claim. | B.1, D.1, G.1 |
 | 7G.3 TODO | Live account → eligible trial → real task → voice → receipt. Issuer/configured service, protected restart/login/logout/deletion and limits validated; needs deployment inputs. | G.2, C.3 |
@@ -230,10 +230,10 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
   `docs/releases/phase7-e2-interactive-sites.md`; 3,174 units pass, two inherited
   skips. Five fresh interactive journeys pass; one static-preview timeout passed
   isolated recheck and remains a packaging reliability watchpoint.
-- Next executable source row: **7E.3.2 publication integration**, then F.2, G/H/I.
-  Read `docs/releases/phase7-e3-publication.md`: E3.1 has 21 focused adapter tests,
-  not app connection or live publication acceptance. Do not expose it before
-  protected connection, exact approval and durable write-ahead receipts are joined.
+- E3 protected connection/approval/durable recovery is source-verified and pushed
+  as `95167aeb`. Read `docs/releases/phase7-e3-publication.md`; live targets remain open.
+- F2 typed desktop controls are implemented; read `docs/releases/phase7-f2-desktop-controls.md`.
+  Next source work is **G1/G2 runtime joins and usage**, then H/I.
   Untouched starter-profile upgrade now has exact historical matching and focused
   preservation tests; copied-profile/package acceptance is still required. See
   `docs/releases/phase7-profile-continuity.md`. Never reset customized profiles.

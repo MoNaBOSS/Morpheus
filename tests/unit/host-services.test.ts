@@ -1343,6 +1343,14 @@ describe('host services', () => {
     );
   });
 
+  it.runIf(process.platform === 'win32')('rejects log paths on another drive or UNC share before opening them', async () => {
+    listLogFilesMock.mockResolvedValue([]);
+    const { createLogsApi } = await import('@electron/services/logs-api');
+    for (const path of ['Z:\\unrelated-private.log', '\\\\server\\share\\private.log']) {
+      await expect(createLogsApi().readFile({ path })).rejects.toThrow('Invalid log file path');
+    }
+  });
+
   it('registers exactly the four ACP chat actions', async () => {
     const { createChatApi } = await import('@electron/services/chat-api');
 

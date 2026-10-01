@@ -70,6 +70,9 @@ import { collectResearchEvidence, compileResearchReport, failedResearchSources }
 import type { MorpheusResearchEvidence } from '@shared/morpheus/research-types';
 
 const CAPABILITY_DESCRIPTIONS: Record<MorpheusActionId, string> = {
+  'media.control': 'Play or pause exactly one Windows-reported Spotify media session. Requires applicationKey spotify and operation play or pause; no global toggle or other-player fallback.',
+  'audio.setVolume': 'Set the default system output volume to an explicit whole percentage from 0 to 100. Preserves mute and microphone settings; not per-app volume.',
+  'app.controlWindow': 'Focus, minimize or restore one exact running approved Windows app; never closes it, types into it or bypasses Windows focus protection.',
   'site.createInteractive': 'Create a NEW client-interactive website folder from bounded studio-v1 JSON content. Includes real filters, FAQ disclosure and local brief validation, not form delivery or server features. Never executes generated JS or package scripts. Preserves existing projects.',
   'app.launch': 'Launch one compiled-in approved Windows application by logical key.',
   'file.createText': 'Create a new text file without overwrite inside the approved workspace.',

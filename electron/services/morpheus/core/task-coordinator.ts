@@ -17,10 +17,11 @@ export function actionResources(actionId: MorpheusActionId, root: string): TaskR
   if (descriptor.rootKey || actionId === 'site.verify' || actionId === 'dev.launchProject') {
     resources.push({ key: `files:${resolve(root).replace(/[\\/]+$/, '').toLowerCase()}`, access: 'write' });
   }
-  if (['app.launch', 'web.openUrl', 'dev.launchProject', 'screen.capture'].includes(actionId)) {
+  if (['app.launch', 'app.controlWindow', 'web.openUrl', 'dev.launchProject', 'screen.capture'].includes(actionId)) {
     resources.push({ key: 'desktop', access: 'write' });
   }
   if (actionId.startsWith('clipboard.')) resources.push({ key: 'clipboard', access: 'write' });
+  if (actionId === 'media.control' || actionId === 'audio.setVolume') resources.push({ key: 'desktop-audio', access: 'write' });
   if (actionId === 'reminder.schedule') resources.push({ key: 'reminders', access: 'write' });
   return resources;
 }

@@ -11,7 +11,7 @@ const GENERAL_CAPABILITIES = Object.freeze([
   'system.report', 'system.storage', 'system.processes', 'system.notify', 'reminder.schedule',
   'file.createText', 'file.create', 'file.readText', 'file.appendText', 'file.list', 'file.search',
   'file.move', 'file.copy', 'folder.create',
-  'app.launch', 'clipboard.readText', 'clipboard.writeText', 'screen.capture',
+  'app.launch', 'app.controlWindow', 'media.control', 'audio.setVolume', 'clipboard.readText', 'clipboard.writeText', 'screen.capture',
   'web.openUrl', 'web.readPage', 'browser.inspect', 'browser.interact', 'site.verify', 'site.revise', 'site.rollback', 'site.createInteractive',
 ] satisfies readonly MorpheusActionId[]);
 
@@ -25,7 +25,7 @@ const DEVELOPER_CAPABILITIES = Object.freeze([
   'system.report', 'system.storage', 'system.processes', 'system.notify', 'reminder.schedule',
   'file.createText', 'file.create', 'file.readText', 'file.appendText', 'file.list', 'file.search',
   'file.move', 'file.copy', 'folder.create',
-  'app.launch', 'clipboard.readText', 'clipboard.writeText', 'screen.capture',
+  'app.launch', 'app.controlWindow', 'media.control', 'audio.setVolume', 'clipboard.readText', 'clipboard.writeText', 'screen.capture',
   'web.openUrl', 'web.readPage', 'browser.inspect', 'browser.interact', 'site.verify', 'site.revise', 'site.rollback', 'site.createInteractive', 'dev.launchProject',
 ] satisfies readonly MorpheusActionId[]);
 

@@ -9,6 +9,7 @@ import { stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
 import { CommandBar } from './CommandBar';
 import { ArtifactsPanel } from './ArtifactsPanel';
 import { ResearchSource } from './ResearchSource';
+import { DesktopControlResult } from './DesktopControlResult';
 import { MatrixRain } from '@/components/morpheus/boot/MatrixRain';
 import { MorpheusFluidOrb } from '@/components/morpheus/MorpheusFluidOrb';
 import { MorpheusConversationThread } from '@/components/morpheus/MorpheusConversationThread';
@@ -121,7 +122,7 @@ export function CommandCenter() {
             {objectiveRun ? <><p data-testid="command-center-objective-state" className="mt-2 text-xs text-[#a0b6aa]">{t(`morpheus.objective.states.${objectiveRun.state}`)}</p>
             <p className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-[#d8e7dd]">{objectiveRun.clarification ?? objectiveRun.error?.message ?? objectiveRun.summary ?? t('morpheus.workspace.working')}</p></> : null}
             {resultArtifacts.length ? <ul className="mt-6 space-y-3 border-t border-white/10 pt-4">{resultArtifacts.filter((artifact) => artifact.kind === 'report').map((artifact) => <li key={artifact.artifactId} data-testid="morpheus-artifact" data-kind={artifact.kind} className="break-all text-xs leading-relaxed text-[#a0b6aa]">
-              {artifact.data.sourceType === 'public-https' ? <ResearchSource data={artifact.data} /> : typeof artifact.data.browserSnapshot === 'string' ? <article data-testid="browser-observation-result" className="space-y-3 break-words">
+              {artifact.data.controlKind ? <DesktopControlResult data={artifact.data} /> : artifact.data.sourceType === 'public-https' ? <ResearchSource data={artifact.data} /> : typeof artifact.data.browserSnapshot === 'string' ? <article data-testid="browser-observation-result" className="space-y-3 break-words">
                 <h4 className="text-base font-semibold text-[#edf5ef]">{artifact.data.title}</h4>
                 <p className="text-xs text-[#a0b6aa]">{artifact.data.url}</p>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#d8e7dd]">{artifact.data.excerpt}</p>

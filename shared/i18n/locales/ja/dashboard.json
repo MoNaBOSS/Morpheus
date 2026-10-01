@@ -248,6 +248,7 @@
       "contentPlaceholder": "書き込むテキスト",
       "applicationLabel": "アプリケーション"
     },
+    "controlResults": {"focus":"{{application}} を前面に表示しました。","minimize":"{{application}} を最小化しました。","restore":"{{application}} を復元しました。","play":"{{application}} は再生中です。","pause":"{{application}} は一時停止中です。","volume":"出力音量は {{level}}% です。"},
     "applications": {
       "spotify": "Spotify",
       "notepad": "メモ帳",
@@ -258,12 +259,15 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
+      "mediaControl": {"label":"Spotify の再生操作","description":"確認済みの Spotify セッションを再生または一時停止します。グローバルメディアキーは使いません。"},
+      "audioVolume": {"label":"システム出力音量を設定","description":"マイクを変更せず、既定の出力音量を指定した割合に設定します。"},
       "siteCreateInteractive": {"label":"対話型サイトを作成","description":"確認済みテンプレートから、絞り込みとローカルフォーム検証を備えた新しいサイトを作成します。メッセージは送信しません。"},
       "browserInspect": { "label": "公開ページを確認", "description": "ブラウザーのアカウントを使わず、分離されたページの操作項目を確認します。" },
       "browserInteract": { "label": "公開ページを操作", "description": "このタスクで直前に確認した操作項目を使います。アカウント操作やダウンロードは別の許可が必要です。" },
       "siteRevise": {"label":"ウェブサイトを修正","description":"検証済みのリビジョンからのみ修正し、無関係な手動編集を保持します。"},
       "siteRollback": {"label":"ウェブサイトを戻す","description":"現在のリビジョンを検証してから記録済みの版を復元し、手動編集を保持します。"},
       "webReadPage": { "label": "ウェブページを読む", "description": "公開 HTTPS ページを読み、取得した情報源の証拠を保存します。" },
+      "appControlWindow": {"label":"アプリのウィンドウを操作","description":"対象アプリにフォーカス、最小化、復元を行い、結果を確認します。"},
       "appLaunch": {
         "label": "承認済みアプリケーションを起動",
         "description": "組み込みの承認済みリストからアプリケーションを起動します。"
@@ -588,6 +592,12 @@
     },
     "plan": {
       "steps": {
+        "mediaPlay": "Spotify を再生",
+        "mediaPause": "Spotify を一時停止",
+        "audioVolume": "出力音量を {{level}}% に設定",
+        "windowFocus": "{{application}} にフォーカス",
+        "windowMinimize": "{{application}} を最小化",
+        "windowRestore": "{{application}} を復元",
         "systemReport": "プライバシーに配慮したシステム情報を収集",
         "fileCreateText": "承認済みフォルダに {{fileName}} を作成",
         "fileCreate": "承認済みワークスペースに {{path}} を作成",

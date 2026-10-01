@@ -683,6 +683,26 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
     };
   }
 
+  const mediaRequest = /^(?:please\s+)?(play|pause)\s+spotify(?:\s+please)?[.!]?$/i.exec(text.trim());
+  if (mediaRequest) {
+    const operation = mediaRequest[1].toLowerCase();
+    return { ok: true, plan: basePlan([makeStep('step-1', 'media.control', { applicationKey: 'spotify', operation },
+      buildPermission('media.control', platform, 'runtime'), operation === 'play' ? 'morpheus.plan.steps.mediaPlay' : 'morpheus.plan.steps.mediaPause')]) };
+  }
+  const volumeRequest = /^(?:please\s+)?set\s+(?:system\s+)?volume\s+to\s+(\d{1,3})\s*(?:%|percent)(?:\s+please)?[.!]?$/i.exec(text.trim());
+  if (volumeRequest && Number(volumeRequest[1]) <= 100) {
+    const level = Number(volumeRequest[1]);
+    return { ok: true, plan: basePlan([makeStep('step-1', 'audio.setVolume', { level },
+      buildPermission('audio.setVolume', platform, 'runtime'), 'morpheus.plan.steps.audioVolume', { level })]) };
+  }
+  const windowRequest = /^(?:please\s+)?(focus|switch to|minimi[sz]e|restore)\s+(notepad|calculator|paint|spotify)(?:\s+please)?[.!]?$/i.exec(text.trim());
+  if (windowRequest) {
+    const operation = windowRequest[1].toLowerCase().startsWith('minimi') ? 'minimize' : windowRequest[1].toLowerCase() === 'restore' ? 'restore' : 'focus';
+    const application = windowRequest[2].toLowerCase();
+    return { ok: true, plan: basePlan([makeStep('step-1', 'app.controlWindow', { applicationKey: application, operation },
+      buildPermission('app.controlWindow', platform, application), `morpheus.plan.steps.window${operation[0].toUpperCase()}${operation.slice(1)}`, { application })]) };
+  }
+
   const application = SIMPLE_APP_REQUEST.test(text)
     ? APP_LAUNCH_ALIASES.find(([pattern]) => pattern.test(text))?.[1]
     : undefined;

@@ -45,6 +45,9 @@ export const PARAM_LIMITS = {
 export type MorpheusParamKind =
   /** Key into the compiled-in approved-application record. */
   | 'applicationKey'
+  | 'windowOperation'
+  | 'playbackOperation'
+  | 'percentage'
   /** Single filename ending in .txt, no separators. */
   | 'textFileName'
   /** Single filename with a permitted extension, no separators. */
@@ -154,6 +157,8 @@ function utf8Bytes(value: string): number {
  * problem in a payload instead of surfacing only the first.
  */
 export function validateParam(kind: MorpheusParamKind, raw: unknown): ParamValidationResult {
+  if (kind === 'percentage') return typeof raw === 'number' && Number.isInteger(raw) && raw >= 0 && raw <= 100
+    ? { ok: true, value: raw } : { ok: false, reason: 'must be a whole percentage from 0 to 100' };
   if (kind === 'flag') {
     if (typeof raw !== 'boolean') return { ok: false, reason: 'must be true or false' };
     return { ok: true, value: raw };
@@ -171,6 +176,10 @@ export function validateParam(kind: MorpheusParamKind, raw: unknown): ParamValid
   const value = raw;
 
   switch (kind) {
+    case 'playbackOperation':
+      return ['play', 'pause'].includes(value) ? { ok: true, value } : { ok: false, reason: 'must be play or pause' };
+    case 'windowOperation':
+      return ['focus', 'minimize', 'restore'].includes(value) ? { ok: true, value } : { ok: false, reason: 'must be focus, minimize or restore' };
     case 'applicationKey':
     case 'rootKey':
     case 'devTemplateKey':
@@ -271,7 +280,7 @@ export function validateParam(kind: MorpheusParamKind, raw: unknown): ParamValid
 
 /** The concrete value a kind produces once validated. */
 export type ParamValueOfKind<K extends MorpheusParamKind> =
-  K extends 'count' ? number
+  K extends 'count' | 'percentage' ? number
     : K extends 'flag' ? boolean
       : string;
 

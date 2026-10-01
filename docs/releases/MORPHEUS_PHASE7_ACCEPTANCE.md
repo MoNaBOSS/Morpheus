@@ -544,3 +544,20 @@ lost response does not republish. Opaque desktop/compact dialog screenshots chec
 No real repository/account/paid call or final package was exercised. E3 source is
 automated; live deployment and final installer acceptance remain open. See
 [exact scope, recovery and evidence](phase7-e3-publication.md). Next is F2, G/H/I.
+
+### F2 Windows controls — 2026-10-02
+
+Source after E3 `95167aeb`: typed named window/Spotify/default-output controls,
+deterministic no-model commands, exact target/state checks and localized short
+confirmations. Final suite: **3,258 passed, two inherited skips, 313 files** in
+61.40 seconds. Three typechecks, scoped lint (zero errors, one inherited warning),
+communication replay/compare and diff-aware F2 harness validation/dry-run pass.
+Four fresh-build native journeys pass in **29.4 seconds**, with real owned-window
+effects and read-only Windows audio discovery. 1280×800/430×740/reduced-motion
+screenshots inspected. No user applications/documents/playback/volume were altered.
+
+C: scratch exhaustion required E: scratch; that exposed and fixed a pre-existing
+cross-drive log path guard. Initial failures and final evidence are recorded in
+[F2 details](phase7-f2-desktop-controls.md). Real media effects, installed-app,
+hardware/performance and newly packaged acceptance remain open. Next: G1/G2
+runtime joins and usage; H/I. No full-version or new-EXE acceptance is claimed.

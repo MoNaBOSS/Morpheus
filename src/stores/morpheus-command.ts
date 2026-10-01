@@ -177,6 +177,9 @@ function objectiveStatePatch(
 export function artifactFromRun(run: MorpheusRun): ExecutionArtifact | null {
   if (run.phase !== 'succeeded' || !run.result) return null;
   const createdAt = run.updatedAt;
+  if (run.result.kind === 'audio-control') return { kind: 'report', artifactId: run.runId, createdAt, data: { controlKind: 'volume', level: run.result.level, observed: 1 } };
+  if (run.result.kind === 'desktop-control') return { kind: 'report', artifactId: run.runId, createdAt,
+    data: { controlKind: 'app', applicationKey: run.result.applicationKey, operation: run.result.operation, observed: 1 } };
 
   if (run.result.kind === 'file') {
     return {
@@ -315,6 +318,10 @@ export function artifactFromAuditEntry(entry: MorpheusAuditEntry): ExecutionArti
   const createdAt = entry.ts;
 
   switch (outcome.kind) {
+    case 'audio-control':
+      return { kind: 'report', artifactId: entry.runId, createdAt, data: { controlKind: 'volume', level: outcome.level, observed: 1 } };
+    case 'desktop-control':
+      return { kind: 'report', artifactId: entry.runId, createdAt, data: { controlKind: 'app', applicationKey: outcome.applicationKey, operation: outcome.operation, observed: 1 } };
     case 'browser':
       return { kind: 'report', artifactId: entry.runId, createdAt, data: { origin: outcome.origin, digest: outcome.contentSha256, controls: outcome.controls } };
     case 'source':

@@ -340,6 +340,7 @@
       "contentPlaceholder": "Text to write",
       "applicationLabel": "Application"
     },
+    "controlResults": {"focus":"{{application}} is in front.","minimize":"{{application}} is minimized.","restore":"{{application}} is restored.","play":"{{application}} is playing.","pause":"{{application}} is paused.","volume":"Output volume is {{level}}%."},
     "applications": {
       "spotify": "Spotify",
       "notepad": "Notepad",
@@ -350,12 +351,15 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
+      "mediaControl": {"label":"Control Spotify playback","description":"Play or pause one observed Spotify session, without global media keys."},
+      "audioVolume": {"label":"Set system output volume","description":"Set the default output volume to an explicit percentage, without touching microphones."},
       "siteCreateInteractive": {"label":"Create interactive site","description":"Create a new client-only website from a reviewed template, with filters and local form validation. No messages are sent."},
       "browserInspect": { "label": "Inspect public page", "description": "Open an isolated public page and observe its current controls without using your browser accounts." },
       "browserInteract": { "label": "Use public page control", "description": "Use a recently observed control in this task’s public browser session. Account operations and downloads are separate." },
       "siteRevise": {"label":"Revise website","description":"Revise a website only from its verified revision, preserving unrelated manual edits."},
       "siteRollback": {"label":"Roll back website","description":"Restore a recorded website revision only when the current revision is verified, preserving manual edits."},
       "webReadPage": { "label": "Read web page", "description": "Read a public HTTPS page and retain its retrieved source evidence." },
+      "appControlWindow": {"label":"Control an app window","description":"Focus, minimize or restore an exact running app, with its resulting state verified."},
       "appLaunch": {
         "label": "Launch an approved application",
         "description": "Starts an application from the built-in approved list."
@@ -693,6 +697,12 @@
     },
     "plan": {
       "steps": {
+        "mediaPlay": "Play Spotify",
+        "mediaPause": "Pause Spotify",
+        "audioVolume": "Set output volume to {{level}}%",
+        "windowFocus": "Focus {{application}}",
+        "windowMinimize": "Minimize {{application}}",
+        "windowRestore": "Restore {{application}}",
         "systemReport": "Collect privacy-safe system information",
         "fileCreateText": "Create {{fileName}} in the approved folder",
         "fileCreate": "Create {{path}} in the approved workspace",

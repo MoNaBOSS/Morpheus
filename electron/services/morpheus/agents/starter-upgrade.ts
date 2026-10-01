@@ -10,12 +10,13 @@ export function upgradeUntouchedStarter(stored: MorpheusAgentProfile, starter: M
   const without = (profile: MorpheusAgentProfile, ids: readonly MorpheusActionId[]): MorpheusAgentProfile => ({
     ...profile, permissionBoundary: { ...profile.permissionBoundary, capabilityIds: profile.permissionBoundary.capabilityIds.filter((id) => !ids.includes(id)) },
   });
-  const preE2 = without(starter, ['site.createInteractive']);
+  const preF2 = without(starter, ['app.controlWindow', 'media.control', 'audio.setVolume']);
+  const preE2 = without(preF2, ['site.createInteractive']);
   const preD2 = without(preE2, ['browser.inspect', 'browser.interact']);
   const prePhase7 = without(preD2, ['web.readPage', 'site.revise', 'site.rollback']);
   const windowsFoundation = without(prePhase7, ['file.create', 'reminder.schedule', 'site.verify']);
   const firstAuto = starter.profileId === 'general' ? without(windowsFoundation, ['system.processes']) : windowsFoundation;
   const original: MorpheusAgentProfile = { ...firstAuto, planner: { kind: 'deterministic' } };
-  return [preE2, preD2, prePhase7, windowsFoundation, firstAuto, original].some((candidate) => isDeepStrictEqual(stored, candidate))
+  return [preF2, preE2, preD2, prePhase7, windowsFoundation, firstAuto, original].some((candidate) => isDeepStrictEqual(stored, candidate))
     ? structuredClone(starter) : stored;
 }

@@ -236,6 +236,10 @@ export function executionArtifactFromResult(
   createdAt: string,
 ): ExecutionArtifact | undefined {
   switch (result.kind) {
+    case 'audio-control':
+      return { kind: 'report', artifactId, createdAt, data: { controlKind: 'volume', level: result.level, observed: 1 } };
+    case 'desktop-control':
+      return { kind: 'report', artifactId, createdAt, data: { controlKind: 'app', applicationKey: result.applicationKey, operation: result.operation, observed: 1 } };
     case 'browser':
       return { kind: 'report', artifactId, createdAt, data: { title: result.snapshot.title, url: result.snapshot.url,
         excerpt: result.snapshot.text, browserSnapshot: JSON.stringify(result.snapshot), workerRunId: result.workerRunId } };

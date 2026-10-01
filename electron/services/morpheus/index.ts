@@ -25,6 +25,8 @@ import { createMorpheusPolicyEngine, type AuditHealth } from './policy/policy-en
 import { createMorpheusRootProvider } from './roots';
 import { createMorpheusRuntime, type MorpheusRuntime } from './runtime';
 import { win32AppLaunchCapability } from './capabilities/win32/app-launch';
+import { createWindowControlCapability } from './capabilities/win32/window-control';
+import { createMediaControlCapability, createVolumeControlCapability } from './capabilities/win32/media-control';
 import { win32CreateTextFileCapability } from './capabilities/win32/create-text-file';
 import { win32FilesystemCapabilities } from './capabilities/win32/filesystem';
 import {
@@ -119,6 +121,9 @@ export type MorpheusService = {
 export function createMorpheusService(options: CreateMorpheusServiceOptions): MorpheusService {
   const registry = createMorpheusCapabilityRegistry();
   registry.register(win32AppLaunchCapability);
+  registry.register(createWindowControlCapability());
+  registry.register(createMediaControlCapability());
+  registry.register(createVolumeControlCapability());
   registry.register(win32CreateTextFileCapability);
   registry.register(win32SystemReportCapability);
   for (const capability of win32FilesystemCapabilities) registry.register(capability);

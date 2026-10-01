@@ -29,6 +29,9 @@ Interactive-site results now offer exact-file GitHub Pages publication approval,
 protected credentials, durable receipts, read-only recovery and reviewed rollback.
 Windows fixture journeys pass; a real approved repository and final package are
 still required for live publication acceptance. Existing sites are not auto-published.
+Named Windows focus/minimize/restore, Spotify play/pause and explicit output-volume
+commands now use local typed controls and observed confirmations. Four native
+window journeys pass; real playback/volume and final-package acceptance remain open.
 
 Phase 7 (2026-09-30): the current source audit and assistant architecture are ready
 for small implementation checkpoints, not a completed-release claim. Start with

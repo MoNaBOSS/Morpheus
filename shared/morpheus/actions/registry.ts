@@ -68,6 +68,9 @@ export function requiresExplicitFirstApproval(tier: MorpheusRiskTier): boolean {
 
 export type MorpheusActionId =
   | 'app.launch'
+  | 'app.controlWindow'
+  | 'media.control'
+  | 'audio.setVolume'
   | 'system.report'
   | 'file.createText'
   | 'file.create'
@@ -108,6 +111,9 @@ export type MorpheusActionId =
 export const MORPHEUS_AUTONOMOUS_FIRST_USE_ACTIONS = Object.freeze([
   'site.createInteractive',
   'app.launch',
+  'app.controlWindow',
+  'media.control',
+  'audio.setVolume',
   'system.report',
   'file.createText',
   'file.create',
@@ -266,6 +272,31 @@ export const MORPHEUS_ACTIONS = Object.freeze({
     params: Object.freeze([
       Object.freeze({ key: 'applicationKey', kind: 'applicationKey', required: true } as const),
     ] as const),
+  } as const),
+  'app.controlWindow': Object.freeze({
+    id: 'app.controlWindow', kind: 'process', riskTier: 'medium', privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.appControlWindow.label',
+    descriptionKey: 'dashboard:morpheus.actions.appControlWindow.description',
+    platforms: Object.freeze(['win32'] as const),
+    params: Object.freeze([
+      Object.freeze({ key: 'applicationKey', kind: 'applicationKey', required: true } as const),
+      Object.freeze({ key: 'operation', kind: 'windowOperation', required: true } as const),
+    ] as const),
+  } as const),
+  'media.control': Object.freeze({
+    id: 'media.control', kind: 'process', riskTier: 'medium', privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.mediaControl.label', descriptionKey: 'dashboard:morpheus.actions.mediaControl.description',
+    platforms: Object.freeze(['win32'] as const),
+    params: Object.freeze([
+      Object.freeze({ key: 'applicationKey', kind: 'applicationKey', required: true } as const),
+      Object.freeze({ key: 'operation', kind: 'playbackOperation', required: true } as const),
+    ] as const),
+  } as const),
+  'audio.setVolume': Object.freeze({
+    id: 'audio.setVolume', kind: 'process', riskTier: 'medium', privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.audioVolume.label', descriptionKey: 'dashboard:morpheus.actions.audioVolume.description',
+    platforms: Object.freeze(['win32'] as const),
+    params: Object.freeze([Object.freeze({ key: 'level', kind: 'percentage', required: true } as const)] as const),
   } as const),
   'file.createText': Object.freeze({
     id: 'file.createText',

@@ -44,3 +44,10 @@ and revision. Changing account, remote head or files invalidates preparation. A
 lost publication response is reconciled without repeating the write; exact HTTP
 bytes, not a returned URL, are evidence of deployment. Keep previous-version
 evidence for an explicitly approved non-force rollback.
+
+Local named app controls execute without a planner call. Native Windows fixtures
+observe minimize/restore/focus on an owned no-document window, never the user's
+applications. Spotify play/pause and output percentage are typed and lease-bound;
+no active-player guessing, global keys or microphone writes. Unsupported, locked,
+ambiguous or changed targets report failure rather than an invented success.
+Keep human-readable localized confirmations; native identifiers stay internal.
