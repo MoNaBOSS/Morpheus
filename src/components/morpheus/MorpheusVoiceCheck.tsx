@@ -31,6 +31,7 @@ export function MorpheusVoiceCheck({ status }: { status: MorpheusVoiceStatus }) 
     try {
       const result = await playMorpheusSpeech(t('morpheus.voice.check.sample'), {
         neuralAvailable: status.neuralSpeechAvailable,
+        format: status.speechFormat,
       });
       if (id === generation.current) setPreview(result === 'cancelled' ? 'idle' : result);
     } catch { if (id === generation.current) setPreview('failed'); }

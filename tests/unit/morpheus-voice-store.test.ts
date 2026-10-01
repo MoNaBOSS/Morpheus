@@ -112,6 +112,22 @@ beforeEach(() => {
 });
 
 describe('Morpheus renderer voice controller', () => {
+  it('service invalidation releases capture and discards late status/transcription without submitting', async () => {
+    const unsubscribe = useMorpheusVoiceStore.getState().subscribePresence();
+    await useMorpheusVoiceStore.getState().startListening();
+    expect(useMorpheusVoiceStore.getState().phase).toBe('listening');
+    let status!: (value: unknown) => void;
+    mocks.voiceStatus.mockReturnValueOnce(new Promise((resolve) => { status = resolve; }));
+    const stale = useMorpheusVoiceStore.getState().loadStatus();
+    mocks.voiceStatus.mockResolvedValue({ presence: { state: 'asleep', ambientEnabled: false, authorityRevision: 1 },
+      settings: { enabled: true, ambientEnabled: false }, transcriptionAvailable: false, providers: [] });
+    mocks.voicePresenceHandler?.({ v: 4, state: 'asleep', ambientEnabled: false, authorityRevision: 1 });
+    status({ transcriptionAvailable: true, presence: { authorityRevision: 0 } }); await stale; await Promise.resolve();
+    expect(useMorpheusVoiceStore.getState().phase).toBe('idle');
+    expect(useMorpheusVoiceStore.getState().status?.transcriptionAvailable).toBe(false);
+    expect(track.stop).toHaveBeenCalled(); expect(mocks.transcribeAudio).not.toHaveBeenCalled(); expect(mocks.submitObjective).not.toHaveBeenCalled();
+    unsubscribe();
+  });
   it('classifies disconnected and missing microphone errors for localized recovery', () => {
     expect(classifyMorpheusVoiceError(new Error('Microphone disconnected. Reconnect it and restart ambient voice.'))).toBe('device');
     expect(classifyMorpheusVoiceError(new DOMException('Requested device not found', 'NotFoundError'))).toBe('device');

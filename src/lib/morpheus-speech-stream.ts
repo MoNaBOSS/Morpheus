@@ -32,7 +32,7 @@ export function createMorpheusSpeechStream(streamId: string, onError: (error: Er
   media.addEventListener('sourceopen', opened);
   const unsubscribe = hostEvents.onMorpheusSpeechChunk((chunk) => {
     if (disposed || chunk.streamId !== streamId) return;
-    if (chunk.sequence !== sequence++ || chunk.audioBase64.length > 65536) { failed(); return; }
+    if (chunk.mimeType && chunk.mimeType !== 'audio/mpeg' || chunk.sequence !== sequence++ || chunk.audioBase64.length > 65536) { failed(); return; }
     try {
       const text = window.atob(chunk.audioBase64);
       received += text.length;

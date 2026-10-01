@@ -76,8 +76,10 @@ window journeys and read-only audio discovery pass. See
 `docs/releases/phase7-f2-desktop-controls.md`. Next is G1/G2 actual runtime
 joins and usage, then H/I. G2.1 now joins the planner with shared validators,
 generation/cancellation and correlated receipt usage; read
-`docs/releases/phase7-g2-runtime-joins.md`. Next: G2.2 voice and G2.3 original
-conversation owner. Managed activation remains guarded. Package, authenticated-browser and live-service
+`docs/releases/phase7-g2-runtime-joins.md`. G2.2 voice is now joined and source-tested:
+3,292 unit passes plus two inherited skips; seven native account/voice fixture
+journeys. Next: G2.3 original ACP conversation owner and G1 usage, then H/I.
+Managed activation remains guarded. Package, authenticated-browser and live-service
 acceptance remain open. Test scratch/builds use E: because C: is nearly full.
 Read the
 narrow source evidence in `docs/releases/` and the current checkpoint in the
@@ -134,7 +136,7 @@ User-ready resume prompt:
 
 > Continue Morpheus Phase 7 on Sol from SOL_START_HERE.md on
 > codex/morpheus-phase6-managed-layer. Verify the checkout and preserve all work.
-> Read the current checkpoint, then continue 7F.2 typed desktop controls in
+> Read the current checkpoint, then continue G2.3 original managed conversation in
 > the documented small checkpoints. Keep the approved bottom-right Siri-style Morpheus companion,
 > not a dashboard. NerdGPT later. Update tests, evidence and handoff as you go;
 > distinguish source implementation from packaged/live acceptance.

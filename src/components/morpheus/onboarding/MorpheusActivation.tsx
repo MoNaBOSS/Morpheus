@@ -99,11 +99,11 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
     // first run remains usable until a real speech provider is configured.
     if (voice?.neuralSpeechAvailable && speakResponses) {
       const question = `${t('morpheus.activationV2.welcome', { name: name.trim() || t('morpheus.activationV2.friend') })} ${t('morpheus.activationV2.firstQuestion')}`;
-      void playMorpheusSpeech(question, { neuralAvailable: true, allowWindowsFallback: false, onSpeakingChange: setSpeaking })
+      void playMorpheusSpeech(question, { neuralAvailable: true, format: voice.speechFormat, allowWindowsFallback: false, onSpeakingChange: setSpeaking })
         .then(armSuggestions).catch(armSuggestions);
     } else armSuggestions();
     return () => { speechGeneration.current += 1; cancelSilence(); stopMorpheusSpeech(); };
-  }, [stage, voice?.neuralSpeechAvailable, speakResponses, name, t, cancelSilence]);
+  }, [stage, voice?.neuralSpeechAvailable, voice?.speechFormat, speakResponses, name, t, cancelSilence]);
   useEffect(() => { if (request.trim() || voicePhase === 'listening') cancelSilence(); }, [request, voicePhase, cancelSilence]);
   useEffect(() => {
     if (stage === 'welcome' && wasListening.current && voicePhase !== 'listening' && !request.trim()) {
@@ -153,7 +153,7 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
       await updateVoice({ speechVoice: selected as MorpheusSpeechVoice });
       // One bounded prepared audition covers greeting, humor and an explicitly
       // labeled example task update. No personality-model rewrite or OS voice.
-      await playMorpheusSpeech(t('morpheus.activationV2.voiceSample'), { neuralAvailable: true, allowWindowsFallback: false, onSpeakingChange: setSpeaking });
+      await playMorpheusSpeech(t('morpheus.activationV2.voiceSample'), { neuralAvailable: true, format: voice.speechFormat, allowWindowsFallback: false, onSpeakingChange: setSpeaking });
     } catch { setError(true); }
   };
   if (!enabled || dismissed || onboarding?.completed || stage === 'loading') return null;

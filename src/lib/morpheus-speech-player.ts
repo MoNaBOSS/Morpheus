@@ -1,9 +1,12 @@
 import { hostApi } from './host-api';
 import { meterMorpheusPlayback } from './morpheus-audio-level';
 import { createMorpheusSpeechStream } from './morpheus-speech-stream';
+import { createMorpheusPcmPlayback } from './morpheus-pcm-playback';
+import { hostEvents } from './host-events';
 import { resolveMorpheusWindowsVoice } from './morpheus-windows-voice';
 
 type SpeechOptions = {
+  format?: 'pcm24';
   neuralAvailable: boolean;
   /** Setup previews should not surprise the user with a robotic fallback. */
   allowWindowsFallback?: boolean;
@@ -70,7 +73,42 @@ function decodeBase64(value: string): ArrayBuffer {
   return buffer;
 }
 
-async function playNeuralSpeech(text: string, id: number): Promise<void> {
+async function playNeuralSpeech(text: string, id: number, format?: 'pcm24'): Promise<void> {
+  if (format === 'pcm24') {
+    const streamId = crypto.randomUUID();
+    const player = createMorpheusPcmPlayback((speaking) => { if (id === generation) setSpeaking(speaking); });
+    let sequence = 0, received = 0;
+    let streamError: Error | undefined;
+    let rejectStream!: (error: Error) => void;
+    const failed = new Promise<never>((_resolve, reject) => { rejectStream = reject; });
+    void failed.catch(() => undefined);
+    const unsubscribe = hostEvents.onMorpheusSpeechChunk((chunk) => {
+      if (id !== generation || chunk.streamId !== streamId) return;
+      try {
+        if (chunk.mimeType !== 'audio/pcm' || chunk.sequence !== sequence++ || chunk.audioBase64.length > 65536) throw new Error('Invalid PCM speech sequence.');
+        const bytes = new Uint8Array(decodeBase64(chunk.audioBase64)); received += bytes.length; player.push(bytes);
+      } catch { streamError = new Error('Managed speech stream is invalid.'); rejectStream(streamError); player.dispose(); }
+    });
+    let settleCancel!: () => void;
+    const cancelled = new Promise<void>((resolve) => { settleCancel = resolve; });
+    disposeStream = () => { unsubscribe(); player.dispose(); };
+    cancelPlayback = () => { player.dispose(); settleCancel(); };
+    const timer = window.setTimeout(() => { rejectStream(new Error('Speech playback timed out.')); player.dispose(); }, 180_000);
+    try {
+      const request = hostApi.morpheus.synthesizeSpeech({ text, streamId }).then(async (result) => {
+        if (id !== generation) return;
+        if (streamError) throw streamError;
+        if (result.mimeType !== 'audio/pcm') throw new Error('Speech format changed.');
+        if (!received) player.push(new Uint8Array(decodeBase64(result.audioBase64)));
+        await player.finish();
+      });
+      await Promise.race([Promise.all([request, player.completed]), failed, cancelled]);
+    } finally {
+      window.clearTimeout(timer); unsubscribe(); player.dispose();
+      if (id === generation) { releaseAudio(); cancelPlayback = null; }
+    }
+    return;
+  }
   if (typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported('audio/mpeg')) {
     const streamId = crypto.randomUUID();
     let fail!: (error: Error) => void;
@@ -82,7 +120,9 @@ async function playNeuralSpeech(text: string, id: number): Promise<void> {
     disposeStream = stream.dispose;
     const audio = new Audio(stream.url);
     activeAudio = audio;
-    cancelPlayback = done;
+    let settleCancel!: () => void;
+    const cancelled = new Promise<void>((resolve) => { settleCancel = resolve; });
+    cancelPlayback = () => { done(); settleCancel(); };
     audio.onplaying = () => {
       if (id !== generation) return;
       setSpeaking(true);
@@ -101,9 +141,10 @@ async function playNeuralSpeech(text: string, id: number): Promise<void> {
     try {
       void audio.play().catch(fail);
       const request = hostApi.morpheus.synthesizeSpeech({ text, streamId }).then((result) => {
+        if (result.mimeType !== 'audio/mpeg') throw new Error('Speech format changed.');
         if (id === generation) stream.finish(result.audioBase64);
       });
-      await Promise.all([request, playback]);
+      await Promise.race([Promise.all([request, playback]), cancelled]);
     } finally {
       window.clearTimeout(timeout);
       if (id === generation) { setSpeaking(false); releaseAudio(); cancelPlayback = null; }
@@ -112,6 +153,7 @@ async function playNeuralSpeech(text: string, id: number): Promise<void> {
   }
   const result = await hostApi.morpheus.synthesizeSpeech({ text });
   if (id !== generation) return;
+  if (result.mimeType !== 'audio/mpeg') throw new Error('Speech format changed.');
   activeObjectUrl = URL.createObjectURL(new Blob([decodeBase64(result.audioBase64)], { type: result.mimeType }));
   const audio = new Audio(activeObjectUrl);
   activeAudio = audio;
@@ -176,7 +218,7 @@ export async function playMorpheusSpeech(text: string, options: SpeechOptions): 
   const play = async (): Promise<SpeechResult> => {
     if (options.neuralAvailable) {
       try {
-        await playNeuralSpeech(text, id);
+        await playNeuralSpeech(text, id, options.format);
         return id === generation ? 'neural' : 'cancelled';
       } catch {
         if (id !== generation) return 'cancelled';
@@ -186,11 +228,11 @@ export async function playMorpheusSpeech(text: string, options: SpeechOptions): 
         releaseAudio();
         cancelPlayback = null;
         setSpeaking(false);
-        if (options.allowWindowsFallback === false) throw new Error('Natural speech is unavailable.');
+        if (options.allowWindowsFallback === false || options.format === 'pcm24') throw new Error('Natural speech is unavailable.');
       }
     }
     if (id !== generation) return 'cancelled';
-    if (options.allowWindowsFallback === false) throw new Error('Natural speech is unavailable.');
+    if (options.allowWindowsFallback === false || options.format === 'pcm24') throw new Error('Natural speech is unavailable.');
     await playWindowsSpeech(text, id);
     return id === generation ? 'windows' : 'cancelled';
   };

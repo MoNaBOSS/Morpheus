@@ -37,7 +37,8 @@ describe('managed account host integration', () => {
       throw new Error('Unexpected endpoint');
     });
     const env = { MORPHEUS_MANAGED_ORIGIN: 'https://managed.test', MORPHEUS_AUTH_ORIGIN: 'https://auth.test', MORPHEUS_AUTH_PUBLISHABLE_KEY: 'public' };
-    const create = (deployment = env) => createManagedAccountApi({ env: deployment, userDataDir: directory, protection, fetch: fetcher, openExternal: vi.fn() });
+    const onInvalidated = vi.fn();
+    const create = (deployment = env) => createManagedAccountApi({ env: deployment, userDataDir: directory, protection, fetch: fetcher, openExternal: vi.fn(), onInvalidated });
     try {
       const service = create();
       expect(await service.api.status()).toMatchObject({ signedIn: false });
@@ -51,6 +52,7 @@ describe('managed account host integration', () => {
       const changedDeployment = create({ ...env, MORPHEUS_MANAGED_ORIGIN: 'https://other.test' });
       expect(await changedDeployment.api.status()).toMatchObject({ signedIn: false });
       expect(await restarted.api.signOut()).toEqual({ success: true });
+      expect(onInvalidated).toHaveBeenCalledTimes(2); // request sign-in, then sign-out; rejected mode did not mutate.
       expect(await restarted.api.status()).toMatchObject({ signedIn: false });
       service.dispose(); restarted.dispose(); changedDeployment.dispose();
     } finally { await rm(directory, { recursive: true, force: true }); }

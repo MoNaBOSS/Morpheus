@@ -33,3 +33,10 @@ Record started usage before dispatch and actual receipt/model metadata afterward
 an unknown receipt is not zero cost. Logout/mode changes abort transport, including
 pending session-resolution races. Do not enable runtimeReady before all consumers
 are joined and tested. A planner-only join is not end-to-end managed readiness.
+
+Voice uses canonical sample-derived PCM duration at both Main and service boundaries.
+Never trust compressed duration claims for managed billing. Account/route invalidation
+must stop renderer-buffered output as well as Main transport; pending capture and
+ambient startup must not resurrect. Status must not resolve personal keys in managed
+mode. Preserve BYOK preferences and suppress nonfunctional model/provider controls.
+No audio/transcript content in usage audit; cancelled/uncertain spend is not free.

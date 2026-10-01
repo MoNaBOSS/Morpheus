@@ -1,6 +1,7 @@
 import { z } from 'zod';
+import { inspectMorpheusPcmWav } from '../../shared/morpheus/pcm-wav';
 import {
-  MANAGED_AUDIO_CHUNK_BYTES, MANAGED_MAX_AUDIO_RESPONSE_BYTES, MANAGED_MAX_PCM_BYTES,
+  MANAGED_AUDIO_CHUNK_BYTES, MANAGED_MAX_AUDIO_RESPONSE_BYTES,
   managedSpeechInputSchema, managedTextInputSchema, managedTranscriptionInputSchema,
 } from '../../shared/morpheus/managed-model-types';
 import type { ManagedRoute } from './gateway';
@@ -48,18 +49,7 @@ function base64Bytes(value: string): Buffer {
 
 /** Canonical mono PCM16 avoids trusting a client-supplied compressed duration. */
 export function inspectManagedPcmWav(audio: Buffer): { durationMs: number; sampleRate: number } {
-  if (audio.length < 46 || audio.length > MANAGED_MAX_PCM_BYTES + 44
-    || audio.toString('ascii', 0, 4) !== 'RIFF' || audio.readUInt32LE(4) !== audio.length - 8
-    || audio.toString('ascii', 8, 12) !== 'WAVE' || audio.toString('ascii', 12, 16) !== 'fmt '
-    || audio.readUInt32LE(16) !== 16 || audio.readUInt16LE(20) !== 1 || audio.readUInt16LE(22) !== 1
-    || audio.readUInt16LE(32) !== 2 || audio.readUInt16LE(34) !== 16
-    || audio.toString('ascii', 36, 40) !== 'data' || audio.readUInt32LE(40) !== audio.length - 44
-    || (audio.length - 44) % 2 !== 0) throw new ManagedError('invalid_pcm_audio');
-  const sampleRate = audio.readUInt32LE(24);
-  if (![16_000, 24_000, 48_000].includes(sampleRate) || audio.readUInt32LE(28) !== sampleRate * 2) throw new ManagedError('invalid_pcm_audio');
-  const durationMs = Math.ceil((audio.length - 44) / (sampleRate * 2) * 1_000);
-  if (durationMs < 100 || durationMs > 120_000) throw new ManagedError('invalid_pcm_audio');
-  return { durationMs, sampleRate };
+  try { return inspectMorpheusPcmWav(audio); } catch { throw new ManagedError('invalid_pcm_audio'); }
 }
 
 /** One established OpenAI-compatible protocol; models, rates and keys are

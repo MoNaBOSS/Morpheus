@@ -24,6 +24,7 @@ export const MORPHEUS_VOICE_MIME_TYPES = Object.freeze([
   'audio/ogg',
   'audio/ogg;codecs=opus',
   'audio/mp4',
+  'audio/wav',
 ] as const);
 
 export type MorpheusVoiceMimeType = typeof MORPHEUS_VOICE_MIME_TYPES[number];
@@ -64,6 +65,8 @@ export type MorpheusVoicePresenceState =
   | 'error';
 
 export type MorpheusVoicePresence = {
+  /** Invalidates capture and buffered playback when service authority changes. */
+  authorityRevision?: number;
   v: typeof MORPHEUS_VOICE_VERSION;
   state: MorpheusVoicePresenceState;
   ambientEnabled: boolean;
@@ -91,6 +94,10 @@ export type MorpheusVoiceProviderOption = {
 };
 
 export type MorpheusVoiceStatus = {
+  /** Managed service requires canonical WAV input and streams mono PCM output. */
+  captureFormat?: 'pcm16-wav';
+  speechFormat?: 'pcm24';
+  availableSpeechVoices?: readonly MorpheusSpeechVoice[];
   settings: MorpheusVoiceSettings;
   presence: MorpheusVoicePresence;
   transcriptionAvailable: boolean;
@@ -146,11 +153,11 @@ export type MorpheusSynthesizeSpeechPayload = {
   streamId?: string;
 };
 
-export type MorpheusSpeechChunk = { streamId: string; sequence: number; audioBase64: string };
+export type MorpheusSpeechChunk = { streamId: string; sequence: number; audioBase64: string; mimeType?: 'audio/mpeg' | 'audio/pcm' };
 
 export type MorpheusSynthesizeSpeechResult = {
   audioBase64: string;
-  mimeType: 'audio/mpeg';
+  mimeType: 'audio/mpeg' | 'audio/pcm';
   providerAccountId: string;
   modelId: string;
   voice: MorpheusSpeechVoice;

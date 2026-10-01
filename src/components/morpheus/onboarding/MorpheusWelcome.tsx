@@ -40,6 +40,7 @@ export function MorpheusWelcome() {
     greeted.current = true;
     if (dnd || !onboarding.preferences.speakResponses || !voice.settings.speakResponses) return;
     void playMorpheusSpeech(greeting, {
+      format: voice?.speechFormat,
       neuralAvailable: voice.neuralSpeechAvailable,
       onSpeakingChange: setSpeaking,
     }).catch(() => undefined);
@@ -80,7 +81,7 @@ export function MorpheusWelcome() {
                 <button type="button" data-testid="morpheus-welcome-voice-settings" onClick={() => finish('/settings?section=voice')} className="morpheus-fluid-link">{t('morpheus.arrival.voiceSettings')}</button>
                 <button type="button" data-testid="morpheus-welcome-speech" onClick={() => {
                   if (audible || preparingSpeech) stopMorpheusSpeech();
-                  else void playMorpheusSpeech(greeting, { neuralAvailable: Boolean(voice?.neuralSpeechAvailable), onSpeakingChange: setSpeaking }).catch(() => undefined);
+                  else void playMorpheusSpeech(greeting, { neuralAvailable: Boolean(voice?.neuralSpeechAvailable), format: voice?.speechFormat, onSpeakingChange: setSpeaking }).catch(() => undefined);
                 }} className="morpheus-fluid-link inline-flex items-center gap-2" disabled={!voice?.settings.speakResponses}>
                   {audible || preparingSpeech ? <VolumeX size={14} /> : <Volume2 size={14} />}{t(audible || preparingSpeech ? 'morpheus.arrival.mute' : 'morpheus.arrival.hear')}
                 </button>

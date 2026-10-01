@@ -8,6 +8,7 @@ import {
   MorpheusAmbientVoiceCapture,
 } from '@/lib/morpheus-ambient-voice';
 import { meterMorpheusMicrophone } from '@/lib/morpheus-audio-level';
+import { morpheusManagedRecording } from '@/lib/morpheus-managed-audio';
 import { MorpheusVoiceDialogue } from '@/lib/morpheus-voice-dialogue';
 import { playMorpheusWakeCue, stopMorpheusWakeCue } from '@/lib/morpheus-wake-cue';
 import { useMorpheusCommandStore } from './morpheus-command';
@@ -59,7 +60,7 @@ export function classifyMorpheusVoiceError(error: unknown): MorpheusVoiceErrorKi
   if (message.includes('timed out') || message.includes('network') || message.includes('could not be reached')) {
     return 'network';
   }
-  if (message.includes('provider') || message.includes('api key') || message.includes('endpoint')
+  if (message.includes('managed') || message.includes('provider') || message.includes('api key') || message.includes('endpoint')
     || message.includes('http ') || message.includes('transcription is not configured')) {
     return 'configuration';
   }
@@ -227,11 +228,13 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
     try {
       const durationMs = Math.min(MORPHEUS_VOICE_MAX_DURATION_MS, Math.max(100, Date.now() - startedAt));
       const blob = new Blob(audioChunks, { type: mimeType });
-      const result = await hostApi.morpheus.transcribeAudio({
+      const payload = get().status?.captureFormat === 'pcm16-wav' ? await morpheusManagedRecording(blob) : {
         audioBase64: await blobToBase64(blob),
         mimeType,
         durationMs,
-      });
+      };
+      if (generation !== operationGeneration) return;
+      const result = await hostApi.morpheus.transcribeAudio(payload);
       if (generation !== operationGeneration) return;
       const status = get().status;
       const source = get().source;
@@ -299,9 +302,11 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
         },
         async onUtterance(blob, mimeType, durationMs) {
           const inputGeneration = operationGeneration;
-          const result = await hostApi.morpheus.transcribeAmbientAudio({
+          const payload = status.captureFormat === 'pcm16-wav' ? await morpheusManagedRecording(blob) : {
             audioBase64: await morpheusBlobToBase64(blob), mimeType, durationMs,
-          });
+          };
+          if (sessionGeneration !== ambientGeneration || inputGeneration !== operationGeneration) return;
+          const result = await hostApi.morpheus.transcribeAmbientAudio(payload);
           if (sessionGeneration !== ambientGeneration || inputGeneration !== operationGeneration) return;
           const address = capturedFollowUp && result.transcript.trim()
             ? { kind: 'command' as const, text: result.transcript.trim() }
@@ -393,15 +398,18 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
     },
 
     async loadStatus() {
+      const generation = operationGeneration;
       try {
         const previousStatus = get().status;
         const status = await hostApi.morpheus.voiceStatus();
+        if (generation !== operationGeneration) return get().status;
         if (status.transcriptionAvailable && previousStatus?.transcriptionAvailable !== true) {
           ambientAutoStartBlocked = false;
         }
         set({ status, presence: status.presence, error: null, errorKind: null });
         return status;
       } catch (error) {
+        if (generation !== operationGeneration) return get().status;
         set({
           status: null,
           error: error instanceof Error ? error.message : String(error),
@@ -413,6 +421,15 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
 
     subscribePresence() {
       return hostEvents.onMorpheusVoicePresence((presence) => {
+        const previousAuthority = get().presence?.authorityRevision ?? 0;
+        if ((presence.authorityRevision ?? 0) !== previousAuthority) {
+          get().cancel();
+          stopAmbientLocal();
+          ambientAutoStartBlocked = true;
+          set({ status: null, presence });
+          void get().loadStatus();
+          return;
+        }
         const previousWake = get().presence?.wakeSequence ?? 0;
         set((state) => ({
           presence,

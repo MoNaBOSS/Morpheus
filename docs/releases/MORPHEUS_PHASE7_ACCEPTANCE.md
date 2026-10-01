@@ -574,3 +574,17 @@ pass in **10.7 seconds**. Provider replies/auth are fixtures, not live services.
 The last full suite was F2 (3,258 + two skips); it has not been rerun for this
 checkpoint. See [G2 joins](phase7-g2-runtime-joins.md). Voice/conversation joins
 remain next and activation is still disabled, not silently routed to personal keys.
+
+### G2.2 managed voice join — 2026-10-02
+
+Existing capture, Main voice and playback owners now consume managed routes with
+canonical sample-derived input, bounded streamed output, shared persona delivery,
+correlated receipt usage and account-generation cancellation. Personal settings
+are preserved, and managed failures never fall back to personal keys/robot speech.
+**3,292 units passed + two inherited skips (318 files)**; all typechecks, zero-error/
+warning scoped lint, comms and fresh build pass. Seven native fixture journeys pass
+in **32.1s**, including four locale voice capture/playback/invalidation paths with
+synthetic input and muted output. Actual gateway/client/voice code runs with
+injected upstream responses. Hardware/taste/live service/package are not established.
+Read [the scope, initial failures and evidence](phase7-g2-runtime-joins.md).
+G2.3 original conversation join is next; activation remains guarded. No new EXE yet.

@@ -37,11 +37,12 @@ export function MorpheusVoiceSettings() {
   }
 
   const settings = status.settings;
+  const managed = status.speechFormat === 'pcm24';
   const selectedProvider = settings.providerAccountId ?? '';
   const openRouterProvider = status.providers.find((provider) => (
     provider.vendorId === 'openrouter' && provider.configured
   ));
-  const recommendedVoices = speechVoicesForModel(settings.speechModelId);
+  const recommendedVoices = managed ? status.availableSpeechVoices ?? [] : speechVoicesForModel(settings.speechModelId);
   const speechVoices = recommendedVoices.includes(settings.speechVoice)
     ? recommendedVoices
     : [settings.speechVoice, ...recommendedVoices];
@@ -80,7 +81,7 @@ export function MorpheusVoiceSettings() {
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             {status.transcriptionAvailable
               ? t('morpheus.voice.settings.ready', { provider: status.providerLabel })
-              : status.reason ?? t('morpheus.voice.settings.unavailable')}
+              : managed ? t('morpheus.voice.settings.unavailable') : status.reason ?? t('morpheus.voice.settings.unavailable')}
           </p>
         </div>
       </div>
@@ -90,7 +91,7 @@ export function MorpheusVoiceSettings() {
           settings.providerAccountId, settings.modelId, settings.speechProviderAccountId,
           settings.speechModelId, settings.speechVoice,
         ])} />
-        <div
+        {!managed ? <div
           data-testid="morpheus-openrouter-voice-presets"
           className="rounded-lg border border-[hsl(var(--morpheus-accent-dim))]/35 bg-[hsl(var(--morpheus-accent))]/[0.045] p-3.5"
         >
@@ -129,7 +130,7 @@ export function MorpheusVoiceSettings() {
               </div>
             </div>
           </div>
-        </div>
+        </div> : null}
         <SettingToggle
           label={t('morpheus.voice.settings.enabled')}
           description={t('morpheus.voice.settings.enabledDescription')}
@@ -193,7 +194,7 @@ export function MorpheusVoiceSettings() {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        {!managed ? <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="morpheus-voice-provider" className="text-xs text-foreground/80">
               {t('morpheus.voice.settings.provider')}
@@ -232,7 +233,7 @@ export function MorpheusVoiceSettings() {
               className="h-10 rounded-lg bg-surface-input font-mono text-sm"
             />
           </div>
-        </div>
+        </div> : null}
 
         <SettingToggle
           label={t('morpheus.voice.settings.autoSubmit')}
@@ -263,7 +264,7 @@ export function MorpheusVoiceSettings() {
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   {status.neuralSpeechAvailable
                     ? t('morpheus.voice.settings.neuralSpeechReady', { provider: status.speechProviderLabel })
-                    : t('morpheus.voice.settings.neuralSpeechFallback')}
+                    : t(managed ? 'morpheus.voice.settings.unavailable' : 'morpheus.voice.settings.neuralSpeechFallback')}
                 </p>
               </div>
               <StatusDot tone={speechFailure || !status.neuralSpeechAvailable ? 'warn' : 'idle'} />
@@ -275,7 +276,7 @@ export function MorpheusVoiceSettings() {
               </p>
             ) : null}
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="space-y-2">
+              {!managed ? <div className="space-y-2">
                 <Label htmlFor="morpheus-speech-provider" className="text-xs text-foreground/80">
                   {t('morpheus.voice.settings.speechProvider')}
                 </Label>
@@ -293,8 +294,8 @@ export function MorpheusVoiceSettings() {
                     </option>
                   ))}
                 </select>
-              </div>
-              <div className="space-y-2">
+              </div> : null}
+              {!managed ? <div className="space-y-2">
                 <Label htmlFor="morpheus-speech-model" className="text-xs text-foreground/80">
                   {t('morpheus.voice.settings.speechModel')}
                 </Label>
@@ -310,7 +311,7 @@ export function MorpheusVoiceSettings() {
                   }}
                   className="h-10 rounded-lg bg-surface-input font-mono text-sm"
                 />
-              </div>
+              </div> : null}
               <div className="space-y-2">
                 <Label htmlFor="morpheus-speech-voice" className="text-xs text-foreground/80">
                   {t('morpheus.voice.settings.speechVoice')}
@@ -319,6 +320,7 @@ export function MorpheusVoiceSettings() {
                   id="morpheus-speech-voice"
                   data-testid="morpheus-speech-voice"
                   value={settings.speechVoice}
+                  disabled={managed && recommendedVoices.length === 0}
                   onChange={(event) => void updateSettings({ speechVoice: event.target.value as typeof settings.speechVoice })}
                   className="h-10 w-full rounded-lg border border-border bg-surface-input px-3 text-sm text-foreground outline-none focus:border-[hsl(var(--morpheus-accent-dim))]"
                 >

@@ -55,7 +55,7 @@ function SocialCheckIn({ level }: { level: 'balanced' | 'talkative' }) {
         if (result.text && preferences?.speakResponses && voice?.settings.speakResponses && voice.neuralSpeechAvailable) {
           const controller = new AbortController();
           speakingInvitation.current = controller;
-          void playMorpheusSpeech(result.text, { neuralAvailable: true, allowWindowsFallback: false, signal: controller.signal })
+          void playMorpheusSpeech(result.text, { neuralAvailable: true, format: voice.speechFormat, allowWindowsFallback: false, signal: controller.signal })
             .catch(() => undefined).finally(() => {
               if (speakingInvitation.current === controller) speakingInvitation.current = null;
             });

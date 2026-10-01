@@ -206,6 +206,7 @@ function registerTypedHostHandlers(
     openExternal: (url) => shell.openExternal(url),
     // Keep activation guarded until conversation and voice also consume this owner.
     runtimeReady: false,
+    onInvalidated: () => morpheusService.voice.invalidateService?.(),
   });
   const morpheusService = createMorpheusService({
     getManagedRuntime: managedAccount.getRuntime,

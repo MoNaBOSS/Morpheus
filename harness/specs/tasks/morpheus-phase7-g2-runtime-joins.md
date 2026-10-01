@@ -13,6 +13,9 @@ touchedAreas:
   - shared/morpheus/**
   - src/lib/morpheus*.ts
   - src/stores/morpheus*.ts
+  - src/components/morpheus/**
+  - electron/services/morpheus-api.ts
+  - services/managed/provider-routes.ts
   - tests/unit/morpheus*.test.ts
   - tests/unit/managed*.test.ts
   - tests/e2e/morpheus-managed*.spec.ts

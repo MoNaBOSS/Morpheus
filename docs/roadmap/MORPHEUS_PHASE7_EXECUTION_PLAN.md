@@ -233,7 +233,11 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
 - E3 protected connection/approval/durable recovery is source-verified and pushed
   as `95167aeb`. Read `docs/releases/phase7-e3-publication.md`; live targets remain open.
 - F2 typed desktop controls are implemented; read `docs/releases/phase7-f2-desktop-controls.md`.
-  Next source work is **G1/G2 runtime joins and usage**, then H/I.
+  G2.1 planner and G2.2 voice now reuse the original owners; full source suite is
+  3,292 passes + two inherited skips. Seven native account/voice fixture journeys
+  pass. See `docs/releases/phase7-g2-runtime-joins.md`. Next source work is
+  **G2.3 original ACP conversation join and G1 usage**, then H/I. Hosted activation
+  remains guarded; no hardware, live-provider or newly packaged acceptance is inferred.
   Untouched starter-profile upgrade now has exact historical matching and focused
   preservation tests; copied-profile/package acceptance is still required. See
   `docs/releases/phase7-profile-continuity.md`. Never reset customized profiles.

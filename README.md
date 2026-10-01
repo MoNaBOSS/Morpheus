@@ -13,8 +13,9 @@ still in progress; see [the current checkpoint](SOL_START_HERE.md).
 New source checkpoints add inspectable/exportable local memory, quiet orb check-ins,
 bounded public-page retrieval, recoverable static-site revisions and restored site
 previews. Approved app discovery is broader without shell access. Managed model/voice
-adapters now include the Core planner join; conversation/voice composition remains
-unfinished and hosted mode is not yet available as live Premium.
+adapters now include the original Core planner and voice owners: bounded local
+audio conversion, streamed playback and account-change cancellation preserve BYOK
+settings. Conversation composition remains unfinished; live Premium is not available.
 Isolated public browsing now uses the existing task engine, permissions and observed
 controls, verified with real Chromium fixtures. Authenticated operations and live-site
 acceptance remain open; this does not promise arbitrary website automation.

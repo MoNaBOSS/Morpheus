@@ -605,7 +605,7 @@ describe('voice payload validation', () => {
       audioBase64: 'dm9pY2U=', mimeType: 'audio/wav', durationMs: 1_000, path: 'C:\\audio.wav',
     })).toThrow(/unsupported key/);
     expect(() => validateTranscribeAudioPayload({
-      audioBase64: 'dm9pY2U=', mimeType: 'audio/wav', durationMs: 1_000,
+      audioBase64: 'dm9pY2U=', mimeType: 'audio/flac', durationMs: 1_000,
     })).toThrow(/unsupported voice mimeType/);
   });
 });

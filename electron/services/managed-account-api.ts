@@ -23,6 +23,7 @@ export function createManagedAccountApi(options: {
   fetch?: typeof fetch;
   /** Enable only after planner/conversation/voice composition is installed. */
   runtimeReady?: boolean;
+  onInvalidated?: () => void;
 }): { api: ManagedAccountApi; readonly runtime: ManagedRuntimeBridge | null; getRuntime(): ManagedRuntimeBridge | null; dispose(): void } {
   const mode = createManagedServiceModeStore(join(options.userDataDir, 'morpheus', 'managed-service-mode.json'));
   const failureRuntime = createManagedRuntimeBridge(createManagedClient({ sessions: {
@@ -39,7 +40,7 @@ export function createManagedAccountApi(options: {
   const disabledRuntime = () => mode.get() === 'managed' ? failureRuntime : null;
   const disabled = { api: { status: empty, googleSignIn: unavailable, requestEmailCode: unavailable,
     verifyEmailCode: unavailable, cancelSignIn: empty, signOut: unavailable,
-    setMode: async (payload: { mode: ManagedServiceMode }) => { selectMode(payload); failureRuntime.invalidate(); return empty(); } },
+    setMode: async (payload: { mode: ManagedServiceMode }) => { selectMode(payload); failureRuntime.invalidate(); options.onInvalidated?.(); return empty(); } },
     get runtime() { return disabledRuntime(); }, getRuntime: disabledRuntime, dispose() { failureRuntime.invalidate(); } };
   const serviceOrigin = options.env.MORPHEUS_MANAGED_ORIGIN?.trim();
   const authOrigin = options.env.MORPHEUS_AUTH_ORIGIN?.trim();
@@ -58,6 +59,7 @@ export function createManagedAccountApi(options: {
       callback: () => createManagedAuthCallback(port) });
     const client = createManagedClient({ origin: serviceOrigin, sessions: { ...sessions, get: () => auth.session() }, fetch: options.fetch });
     const runtime = createManagedRuntimeBridge(client);
+    const invalidate = () => { client.invalidate(); failureRuntime.invalidate(); options.onInvalidated?.(); };
     const getRuntime = () => mode.get() === 'byok' ? null : mode.available() ? runtime : failureRuntime;
     const status = async (): Promise<ManagedAccountSnapshot> => {
       const access = await client.status();
@@ -67,12 +69,12 @@ export function createManagedAccountApi(options: {
     };
     return { api: {
       status,
-      googleSignIn: () => { client.invalidate(); return auth.google(); },
-      requestEmailCode: (payload) => { client.invalidate(); return auth.requestEmail(payload); },
+      googleSignIn: () => { invalidate(); return auth.google(); },
+      requestEmailCode: (payload) => { invalidate(); return auth.requestEmail(payload); },
       verifyEmailCode: (payload) => auth.verifyEmail(payload),
       cancelSignIn: async () => { auth.cancel(); return status(); },
-      signOut: () => { client.invalidate(); return auth.signOut(); },
-      setMode: async (payload) => { selectMode(payload); client.invalidate(); return status(); },
+      signOut: () => { invalidate(); return auth.signOut(); },
+      setMode: async (payload) => { selectMode(payload); invalidate(); return status(); },
     }, get runtime() { return getRuntime(); }, getRuntime, dispose: () => { client.invalidate(); auth.cancel(); } };
   } catch { return disabled; }
 }

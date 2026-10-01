@@ -60,10 +60,10 @@ export function MorpheusArrival({ bootEnabled, onboardingEnabled }: MorpheusArri
     if (!greeting) return;
     const timer = window.setTimeout(() => setGreeting(null), dnd ? 0 : 8_000);
     if (!dnd && voice?.neuralSpeechAvailable && voice.settings.speakResponses && onboarding?.preferences.speakResponses) {
-      void playMorpheusSpeech(greeting, { neuralAvailable: true, allowWindowsFallback: false }).catch(() => undefined);
+      void playMorpheusSpeech(greeting, { neuralAvailable: true, format: voice?.speechFormat, allowWindowsFallback: false }).catch(() => undefined);
     }
     return () => { window.clearTimeout(timer); stopMorpheusSpeech(); };
-  }, [greeting, dnd, voice?.neuralSpeechAvailable, voice?.settings.speakResponses, onboarding?.preferences.speakResponses]);
+  }, [greeting, dnd, voice?.neuralSpeechAvailable, voice?.speechFormat, voice?.settings.speakResponses, onboarding?.preferences.speakResponses]);
 
   const finishBoot = useCallback(() => setBootDone(true), []);
 

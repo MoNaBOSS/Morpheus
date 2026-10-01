@@ -228,6 +228,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     },
   });
   const voice = createMorpheusVoiceService({
+    getManagedRuntime: options.getManagedRuntime,
     userDataDir: options.userDataDir,
     providerService,
     audit,

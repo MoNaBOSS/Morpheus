@@ -65,6 +65,7 @@ export function MorpheusVoiceRuntime() {
       return;
     }
     void playMorpheusSpeech(message, {
+      format: status?.speechFormat,
       neuralAvailable: status.neuralSpeechAvailable,
     }).then((result) => {
       if (result !== 'cancelled') void continueAfterResponse();
@@ -74,7 +75,7 @@ export function MorpheusVoiceRuntime() {
     return () => {
       stopMorpheusSpeech();
     };
-  }, [continueAfterResponse, voiceOrigin, message, stateKey, status?.neuralSpeechAvailable, status?.settings.speakResponses]);
+  }, [continueAfterResponse, voiceOrigin, message, stateKey, status?.neuralSpeechAvailable, status?.speechFormat, status?.settings.speakResponses]);
 
   const ambientActive = Boolean(presence?.ambientEnabled && presence.state !== 'asleep');
   // Arrival has its own live speech label, fallback disclosure and Stop control.
