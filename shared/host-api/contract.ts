@@ -1289,6 +1289,7 @@ export type HostApiContract = {
     filesRoot: () => MorpheusFilesRootResult;
     /** Opens the approved folder via a typed capability, not renderer shell access. */
     openFilesRoot: () => PermissionAcknowledgement;
+    previewInteractiveSite: (payload: { workspaceRoot: string; relativeEntryPath: string; revision: string }) => PermissionAcknowledgement;
     workspaces: () => MorpheusWorkspacesSnapshot;
     /** The directory itself comes only from Main's native folder picker. */
     addWorkspace: (payload: AddMorpheusWorkspacePayload) => MorpheusWorkspaceResult;

@@ -77,7 +77,7 @@ Only record what the evidence supports. All rows below start TODO.
 | 7D.2 IN PROGRESS | Public inspect/interact now use Core permissions, worker scheduling, audit and bounded observed-control review. 118 focused units and seven Windows journeys pass. Account scope and broader live-site acceptance remain open. | D.1 |
 | 7D.3 AUTOMATED (source fixtures) | Retrieved sources feed bounded synthesis and a real cited Markdown save through Core permissions. Safe external citations, unavailable labels and independent app task verified; four localized native source/preview journeys pass. Live quality/search/provider/package acceptance remains open. | D.2, A.3 |
 | 7E.1 AUTOMATED (source fixtures) | Recoverable static revisions/rollback preserve manual edits; original static verifier intact; restored result preview. Four locale native journeys inspect real revised HTML at desktop/narrow widths; restored-artifact regression also passes. | D.1, A.3 |
-| 7E.2 TODO | Interactive client-site worker. Pinned template build, constrained execution and isolated script-capable preview; real button/form behavior tested; no arbitrary package scripts/secret access. | E.1 |
+| 7E.2 AUTOMATED (source fixtures) | Pinned data-only client template uses existing Core permissions/audit and creates real files. Separate isolated preview, real filters/FAQ/local form, four localized result/recovery journeys. No arbitrary builds, server/form delivery or live publication claimed. | E.1 |
 | 7E.3 TODO | Authorized publication adapter. Exact target/revision preview; publish one supported static build; HTTP verification/receipt; timeout reconciliation and tested revision/rollback. | E.1–2, B.1 |
 | 7F.1 IMPLEMENTED (source regression) | Approved app discovery checks known directories and bounded App Paths; 92 focused native-capability/runtime regressions pass. Real installed-app and packaged acceptance remain. | D.1 |
 | 7F.2 TODO | Typed window/media controls for named apps. Focus/minimize/restore and supported play/pause/volume observed on real targets; scope/foreground locks and unsupported outcomes. | F.1 |
@@ -226,8 +226,13 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
 - D3 source-grounded reports are verified in source: strict citation ids, real
   permission-gated save, independent app task and four localized report-preview
   journeys. See `docs/releases/phase7-d3-research.md`; no live provider claim.
-- Next executable source row: **7E.2 interactive client-site worker**, then
-  E.3, F.2, G/H/I. Do not redo C.4/E.1 discovery or rerun entire old campaigns.
+- E2 client-interactive creation/preview is verified in source. See
+  `docs/releases/phase7-e2-interactive-sites.md`; 3,174 units pass, two inherited
+  skips. Five fresh interactive journeys pass; one static-preview timeout passed
+  isolated recheck and remains a packaging reliability watchpoint.
+- Next executable source row: **7E.3 authorized publication**, then F.2, G/H/I.
+  Check untouched starter-profile upgrade before packaging; never reset customized
+  profiles. Do not redo C.4/E.1 discovery or rerun entire old campaigns.
   The fresh internal installer does not mean these later rows or physical/live
   gates are complete. No paid test is inferred.
 - The Windows worktree is separate from the original PC checkout. Profiles and

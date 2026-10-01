@@ -666,6 +666,7 @@ describe('createMorpheusApi', () => {
       'openWorkspace',
       'pauseSystem',
       'permissionCenter',
+      'previewInteractiveSite',
       'proactiveSnapshot',
       'project',
       'projects',

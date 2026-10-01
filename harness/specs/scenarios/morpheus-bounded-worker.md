@@ -33,3 +33,8 @@ Research retrieval feeds the existing bounded review; only observed source ids
 can become citations. A real saved Markdown artifact is required for report
 completion. Retrieved source links open via the safe external shell route, never
 inside the local HTML preview. Failed/blocked sources are not cited as read.
+
+Pinned interactive client projects use the same Core permission/audit owner.
+Generated content cannot supply scripts or package configuration. Exact revision
+verification precedes a separate network-isolated script-capable preview. Existing
+project files/manual edits are preserved and unsupported server behavior is labeled.

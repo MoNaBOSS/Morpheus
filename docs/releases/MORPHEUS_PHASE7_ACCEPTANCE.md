@@ -490,3 +490,24 @@ Full regression: **3,145 passed, two inherited skips, 307 files**. All typecheck
 scoped lint, build, communication checks and diff-aware harness validate/dry-run
 passed. See [D3 evidence and limitations](phase7-d3-research.md). The existing EXE
 still excludes these changes. Next: E2 interactive client-site creation/preview.
+
+### E2 client-interactive website checkpoint — 2026-10-02
+
+The existing Core/provider/workspace policy creates a real six-file pinned client
+project; no generated code or package hooks execute. Separate ephemeral preview
+checks the approved workspace, disk revision and audit before serving verified
+memory assets with no host privileges or external network. Real filters, FAQ and
+local-only form validation work; UI labels do not imply delivery or publication.
+Artifacts restore their interactive identity from real audit history. Static
+verification/revision/local HTML preview is not weakened.
+
+Full regression: **3,174 passed, two inherited skips, 309 files**. All three
+typechecks and changed-file lint pass (one existing SupportedActions fast-refresh
+warning). Fresh build and communications replay/compare pass. Five new Electron
+journeys pass, including four locale create/preview/reload/edit-conflict paths.
+Combined run: eight passed, one older Russian static-preview mount timed out;
+that exact scenario passed in a subsequent isolated run without source changes.
+Treat this intermittent mount as a final-package reliability watchpoint, not a
+universally clean combined campaign. Desktop/narrow screenshots were inspected.
+No live model/publication/profile or newly built installer acceptance is claimed.
+See [E2 details and limits](phase7-e2-interactive-sites.md). Next: E3, F2, G/H/I.

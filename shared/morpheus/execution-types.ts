@@ -168,6 +168,7 @@ export type ExecutionArtifact =
     workspaceRoot: string;
     entryPath: string;
     relativeEntryPath: string;
+    interactiveTemplate?: 'studio-v1';
     fileCount: number;
     totalBytes: number;
     revision?: string;

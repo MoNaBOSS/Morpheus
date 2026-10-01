@@ -86,4 +86,12 @@ describe('Morpheus durable artifact projection', () => {
     });
     expect(JSON.stringify(artifact)).not.toContain('message');
   });
+
+  it('keeps interactive revision identity after restoring an audited website', () => {
+    const artifact = artifactFromAuditEntry({ ...BASE_AUDIT, actionId: 'site.createInteractive', outcome: {
+      kind: 'website', projectPath: 'C:\\files\\studio', workspaceRoot: 'C:\\files', entryPath: 'C:\\files\\studio\\index.html',
+      relativeEntryPath: 'studio/index.html', fileCount: 6, totalBytes: 12000, verified: true, interactiveTemplate: 'studio-v1', revision: 'a'.repeat(64),
+    } });
+    expect(artifact).toMatchObject({ kind: 'website', interactiveTemplate: 'studio-v1', revision: 'a'.repeat(64) });
+  });
 });

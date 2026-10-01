@@ -20,6 +20,9 @@ acceptance remain open; this does not promise arbitrary website automation.
 Research now synthesizes actually retrieved sources into a cited Markdown report
 saved through workspace permissions. Source cards and saved-file previews support
 explicit safe external citations; live research quality remains to be accepted.
+Interactive client sites now use a pinned template through the same task engine,
+with real filters/local form validation and a separate isolated preview. No server,
+form delivery or public deployment is implied; existing static sites are unchanged.
 
 Phase 7 (2026-09-30): the current source audit and assistant architecture are ready
 for small implementation checkpoints, not a completed-release claim. Start with

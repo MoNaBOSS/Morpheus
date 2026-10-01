@@ -32,3 +32,11 @@ unavailable. Main compiles bounded plain Markdown and saves through the existing
 file permission/audit/no-overwrite path; a generated answer is not a saved file.
 Citation provenance does not certify semantic claim support. Keep that distinction
 and preserve the existing provider request/iteration budgets.
+
+Client-interactive sites accept bounded data for an app-owned versioned template,
+not generated build scripts/plugins. The deterministic small compiler runs under
+existing Core workspace authority, never a project-provided command. Preview
+requires current registered workspace/revision verification and serves immutable
+memory bytes in an isolated ephemeral guest; no Node/preload/external network or
+credential access. Static verification and the local HTML viewer remain separate.
+Client-only form feedback must never claim an enquiry was sent or a site published.

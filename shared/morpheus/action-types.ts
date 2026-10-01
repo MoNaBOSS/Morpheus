@@ -245,6 +245,7 @@ export type MorpheusAuditOutcome =
     fileCount: number;
     totalBytes: number;
     verified: true;
+    interactiveTemplate?: 'studio-v1';
     revision?: string;
     revisionId?: string;
   };

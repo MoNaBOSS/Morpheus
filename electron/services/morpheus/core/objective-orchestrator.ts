@@ -70,6 +70,7 @@ import { collectResearchEvidence, compileResearchReport, failedResearchSources }
 import type { MorpheusResearchEvidence } from '@shared/morpheus/research-types';
 
 const CAPABILITY_DESCRIPTIONS: Record<MorpheusActionId, string> = {
+  'site.createInteractive': 'Create a NEW client-interactive website folder from bounded studio-v1 JSON content. Includes real filters, FAQ disclosure and local brief validation, not form delivery or server features. Never executes generated JS or package scripts. Preserves existing projects.',
   'app.launch': 'Launch one compiled-in approved Windows application by logical key.',
   'file.createText': 'Create a new text file without overwrite inside the approved workspace.',
   'file.create': 'Create a new bounded text, HTML, CSS, JSON, or Markdown file at a workspace-relative path without overwrite.',

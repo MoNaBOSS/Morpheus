@@ -92,6 +92,7 @@ export type MorpheusActionId =
   | 'browser.interact'
   | 'site.verify'
   | 'site.revise'
+  | 'site.createInteractive'
   | 'site.rollback'
   | 'dev.launchProject';
 
@@ -105,6 +106,7 @@ export type MorpheusActionId =
  * deliberately not expressible here without a reviewed registry change.
  */
 export const MORPHEUS_AUTONOMOUS_FIRST_USE_ACTIONS = Object.freeze([
+  'site.createInteractive',
   'app.launch',
   'system.report',
   'file.createText',
@@ -136,6 +138,7 @@ export function allowsAutonomousFirstUse(actionId: MorpheusActionId): boolean {
 
 /** Actions that create, change, or remove durable state inside a workspace. */
 export const MORPHEUS_WORKSPACE_WRITE_ACTIONS = Object.freeze([
+  'site.createInteractive',
   'site.revise',
   'site.rollback',
   'file.createText',
@@ -181,7 +184,7 @@ export const MORPHEUS_CAPABILITY_GROUPS: Readonly<Record<MorpheusCapabilityGroup
     ] as const),
     /** Additive and reversible changes inside an approved workspace. */
     'workspace.write': Object.freeze([
-      'file.createText', 'file.create', 'file.appendText', 'file.move', 'file.copy', 'folder.create', 'site.revise', 'site.rollback',
+      'file.createText', 'file.create', 'file.appendText', 'file.move', 'file.copy', 'folder.create', 'site.revise', 'site.rollback', 'site.createInteractive',
     ] as const),
   } as const);
 
@@ -569,6 +572,16 @@ export const MORPHEUS_ACTIONS = Object.freeze({
       Object.freeze({ key: 'expectedRevision', kind: 'shortText', required: true } as const),
       // JSON {files:[{path,content}]} is parsed and bounded again in Main.
       Object.freeze({ key: 'patch', kind: 'textContent', required: true } as const),
+    ] as const),
+  } as const),
+  'site.createInteractive': Object.freeze({
+    id: 'site.createInteractive', kind: 'filesystem', riskTier: 'medium', privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.siteCreateInteractive.label',
+    descriptionKey: 'dashboard:morpheus.actions.siteCreateInteractive.description',
+    platforms: Object.freeze(['win32'] as const), rootKey: 'morpheusFiles', group: 'workspace.write',
+    params: Object.freeze([
+      Object.freeze({ key: 'path', kind: 'relativePath', required: true } as const),
+      Object.freeze({ key: 'specification', kind: 'textContent', required: true } as const),
     ] as const),
   } as const),
   'site.rollback': Object.freeze({

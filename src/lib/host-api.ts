@@ -600,6 +600,7 @@ export const hostApi = {
     resetPermissionPolicy: () => invokeHost('morpheus', 'resetPermissionPolicy'),
     filesRoot: () => invokeHost('morpheus', 'filesRoot'),
     openFilesRoot: () => invokeHost('morpheus', 'openFilesRoot'),
+    previewInteractiveSite: (payload: { workspaceRoot: string; relativeEntryPath: string; revision: string }) => invokeHost('morpheus', 'previewInteractiveSite', payload),
     workspaces: () => invokeHost('morpheus', 'workspaces'),
     addWorkspace: (payload: AddMorpheusWorkspacePayload = {}) => (
       invokeHost('morpheus', 'addWorkspace', payload)

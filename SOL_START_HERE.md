@@ -61,8 +61,10 @@ planner review, with task-owned cleanup. 3,112 units passed (two inherited skips
 live-site acceptance remain open. D3 now connects observed-source synthesis to
 real file saving and readable source/report previews. Read
 `docs/releases/phase7-d3-research.md` for evidence and live boundaries.
-Next is E.2 pinned interactive client-site creation and isolated preview;
-read `docs/releases/phase7-d2-browser.md`.
+E2 now connects pinned client-interactive site creation and isolated preview to
+Core and the existing result surface. Read `docs/releases/phase7-e2-interactive-sites.md`.
+Next is E3 authorized publication; untouched historical starter profiles need a
+precise upgrade check before packaging, without expanding customized boundaries.
 Read the
 narrow source evidence in `docs/releases/` and the current checkpoint in the
 roadmap. Exact installer identity/checks appear in the acceptance ledger when
@@ -88,7 +90,7 @@ journeys; C.2 passed 21 focused units and a real-Chromium synthetic silence
 journey with zero provider/task requests. Neural auditions now include a greeting,
 joke and explicitly prepared update in one request. Hardware/live voice remains
 open. C.3 is now verified in source; see `docs/releases/phase7-c3-source-checkpoint.md`.
-Continue E.2/E.3, F.2 then the existing G–I sequence; D2 account/live gates stay open. Do not redo B.1/C.1 discovery or
+Continue E.3, F.2 then the existing G–I sequence; D2 account/live gates stay open. Do not redo B.1/C.1 discovery or
 call the whole Phase 7 complete.
 
 ## Operating rules for continuity and cost

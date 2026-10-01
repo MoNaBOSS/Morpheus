@@ -258,6 +258,7 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
+      "siteCreateInteractive": {"label":"対話型サイトを作成","description":"確認済みテンプレートから、絞り込みとローカルフォーム検証を備えた新しいサイトを作成します。メッセージは送信しません。"},
       "browserInspect": { "label": "公開ページを確認", "description": "ブラウザーのアカウントを使わず、分離されたページの操作項目を確認します。" },
       "browserInteract": { "label": "公開ページを操作", "description": "このタスクで直前に確認した操作項目を使います。アカウント操作やダウンロードは別の許可が必要です。" },
       "siteRevise": {"label":"ウェブサイトを修正","description":"検証済みのリビジョンからのみ修正し、無関係な手動編集を保持します。"},
@@ -525,6 +526,8 @@
     },
     "artifacts": {
       "previewFile": "保存したファイルをプレビュー",
+      "interactiveWebsite": "クライアント側の対話型サイト · フォーム送信なし",
+      "interactivePreviewError": "プレビューできません。ワークスペースの切断、またはプロジェクトの変更が考えられます。ファイルは保持されています。",
       "title": "成果物",
       "latest": "最新の成果物",
       "rootLabel": "承認済みファイルの場所",

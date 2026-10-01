@@ -8,6 +8,7 @@
  * instead of being silently dropped.
  */
 import { randomUUID } from 'node:crypto';
+import { createInteractivePreviewController } from './interactive-site/preview-controller';
 import { composeMorpheusPersonaContext } from '@shared/morpheus/persona-context';
 import enDashboard from '@shared/i18n/locales/en/dashboard.json';
 import zhDashboard from '@shared/i18n/locales/zh/dashboard.json';
@@ -1317,6 +1318,7 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     missions, projects, memory, onboarding, goals, proactive, systems, companionSurface, workspaces, audit, filesRoot, appVersion, auditHealth,
   } = options;
   const now = options.now ?? (() => new Date());
+  const previewInteractiveSite = createInteractivePreviewController({ workspaces, audit, appVersion });
   const planner = options.planner ?? createDeterministicMorpheusPlanner();
   const assistantSession = options.assistantSession ?? new MorpheusAssistantSession();
   const withLocale = async () => {
@@ -1771,6 +1773,7 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     },
 
     filesRoot: () => ({ path: filesRoot }),
+    previewInteractiveSite,
 
     /**
      * Opens the approved folder through a typed, Main-owned capability. The

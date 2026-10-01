@@ -51,7 +51,7 @@ describe('launcher example commands', () => {
   it('covers every capability', () => {
     for (const actionId of listMorpheusActionIds()) {
       expect(Object.hasOwn(EXAMPLE_COMMAND, actionId), actionId).toBe(true);
-      if (!EXAMPLE_COMMAND[actionId]) expect(['site.revise', 'site.rollback', 'browser.inspect', 'browser.interact']).toContain(actionId);
+      if (!EXAMPLE_COMMAND[actionId]) expect(['site.revise', 'site.rollback', 'site.createInteractive', 'browser.inspect', 'browser.interact']).toContain(actionId);
     }
   });
 

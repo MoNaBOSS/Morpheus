@@ -8,6 +8,7 @@
 import { join } from 'node:path';
 import { composeSavedMorpheusPersona } from './persona-context';
 import { createBrowserWorkerAdapter } from '../task-browser/worker-adapter';
+import { interactiveSiteCapability } from '../interactive-site/capability';
 import { createMorpheusWorkerPort } from './workers/worker-port';
 import { createMorpheusWorkerCheckpoints } from './workers/worker-checkpoints';
 
@@ -129,6 +130,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   registry.register(win32SystemProcessesCapability);
   registry.register(win32OpenUrlCapability);
   registry.register(win32VerifySiteCapability);
+  registry.register(interactiveSiteCapability);
   for (const capability of createMorpheusSiteCapabilities(options.userDataDir)) registry.register(capability);
   registry.register(win32LaunchProjectCapability);
 

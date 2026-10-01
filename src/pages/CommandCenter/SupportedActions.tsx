@@ -48,6 +48,7 @@ export const EXAMPLE_COMMAND: Record<string, string | null> = {
   // These need an observed revision and real patch/receipt. Never invent one
   // merely to make an example runnable; the task planner supplies this context.
   'site.revise': null,
+  'site.createInteractive': null, // Needs the user's bounded site content, not a fake one-click example.
   'site.rollback': null,
   'dev.launchProject': 'Open project named project',
 };

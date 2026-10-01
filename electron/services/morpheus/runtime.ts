@@ -306,6 +306,7 @@ export function executionArtifactFromResult(
         workspaceRoot: result.manifest.workspaceRoot,
         entryPath: result.manifest.entryPath,
         relativeEntryPath: result.manifest.relativeEntryPath,
+        ...(result.manifest.interactiveTemplate ? { interactiveTemplate: result.manifest.interactiveTemplate } : {}),
         fileCount: result.manifest.fileCount,
         totalBytes: result.manifest.totalBytes,
         ...(result.manifest.revision !== undefined ? { revision: result.manifest.revision } : {}),

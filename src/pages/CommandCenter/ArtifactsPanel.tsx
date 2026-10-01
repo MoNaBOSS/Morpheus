@@ -5,6 +5,7 @@
  * never gets shell access to an arbitrary path.
  */
 import { useState } from 'react';
+import { hostApi } from '@/lib/host-api';
 import { useTranslation } from 'react-i18next';
 import { CalendarClock, Eye, FileText, FolderOpen, Globe2, MonitorPlay, ScrollText } from 'lucide-react';
 
@@ -27,6 +28,17 @@ function reportSummary(data: Record<string, string | number>): string {
 export function ArtifactsPanel({ limit, items, showRoot = true }: { limit?: number; items?: ExecutionArtifact[]; showRoot?: boolean }) {
   const { t } = useTranslation('dashboard');
   const [previewFile, setPreviewFile] = useState<FilePreviewTarget | null>(null);
+  const [interactiveOpening, setInteractiveOpening] = useState(false);
+  const [interactiveError, setInteractiveError] = useState(false);
+  const previewInteractive = async (artifact: Extract<ExecutionArtifact, { kind: 'website' }>) => {
+    setInteractiveOpening(true);
+    setInteractiveError(false);
+    try {
+      if (!artifact.revision) throw new Error('Missing revision');
+      await hostApi.morpheus.previewInteractiveSite({ workspaceRoot: artifact.workspaceRoot, relativeEntryPath: artifact.relativeEntryPath, revision: artifact.revision });
+    } catch { setInteractiveError(true); }
+    finally { setInteractiveOpening(false); }
+  };
   const recentArtifacts = useMorpheusCommandStore((state) => state.artifacts);
   const artifacts = items ?? recentArtifacts;
   const filesRoot = useMorpheusCommandStore((state) => state.filesRoot);
@@ -86,7 +98,7 @@ export function ArtifactsPanel({ limit, items, showRoot = true }: { limit?: numb
                 <p className="text-2xs text-muted-foreground">
                   {new Date(artifact.createdAt).toLocaleTimeString()}
                   {artifact.kind === 'file' ? ` · ${artifact.bytes} B` : ''}
-                  {artifact.kind === 'website' ? ` · ${t('morpheus.artifacts.websiteVerified', { count: artifact.fileCount })}` : ''}
+                  {artifact.kind === 'website' ? ` · ${t(artifact.interactiveTemplate ? 'morpheus.artifacts.interactiveWebsite' : 'morpheus.artifacts.websiteVerified', { count: artifact.fileCount })}` : ''}
                   {artifact.kind === 'schedule' ? ` · ${t('morpheus.artifacts.reminderScheduled', { trigger: artifact.triggerType })}` : ''}
                 </p>
               </div>
@@ -102,9 +114,10 @@ export function ArtifactsPanel({ limit, items, showRoot = true }: { limit?: numb
                   variant="ghost"
                   className="h-7 w-7 shrink-0"
                   data-testid="morpheus-preview-website"
+                  disabled={artifact.interactiveTemplate ? interactiveOpening : false}
                   aria-label={t('morpheus.artifacts.previewWebsite')}
                   title={t('morpheus.artifacts.previewWebsite')}
-                  onClick={() => setPreviewFile(buildWorkspacePreviewTarget({
+                  onClick={() => artifact.interactiveTemplate ? void previewInteractive(artifact) : setPreviewFile(buildWorkspacePreviewTarget({
                     workspaceRoot: artifact.workspaceRoot,
                     relativePath: artifact.relativeEntryPath,
                   }, { size: artifact.totalBytes }))}
@@ -122,6 +135,7 @@ export function ArtifactsPanel({ limit, items, showRoot = true }: { limit?: numb
         </p>
       ) : null}
       <FilePreviewOverlay file={previewFile} readOnly allowPublicCitations onClose={() => setPreviewFile(null)} />
+      {interactiveError ? <p role="alert" className="text-tiny text-destructive">{t('morpheus.artifacts.interactivePreviewError')}</p> : null}
     </div>
   );
 }

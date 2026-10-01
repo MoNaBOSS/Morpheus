@@ -350,6 +350,7 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
+      "siteCreateInteractive": {"label":"Create interactive site","description":"Create a new client-only website from a reviewed template, with filters and local form validation. No messages are sent."},
       "browserInspect": { "label": "Inspect public page", "description": "Open an isolated public page and observe its current controls without using your browser accounts." },
       "browserInteract": { "label": "Use public page control", "description": "Use a recently observed control in this task’s public browser session. Account operations and downloads are separate." },
       "siteRevise": {"label":"Revise website","description":"Revise a website only from its verified revision, preserving unrelated manual edits."},
@@ -636,6 +637,8 @@
       "open": "Open",
       "previewWebsite": "Preview verified website",
       "previewFile": "Preview saved file",
+      "interactiveWebsite": "Interactive client site · no form delivery",
+      "interactivePreviewError": "Preview unavailable. The workspace may be disconnected or the project may have changed. Your files were preserved.",
       "websiteVerified": "{{count}} files verified",
       "reminderScheduled": "{{trigger}} reminder scheduled",
       "empty": "No artifacts yet. Completed actions appear here.",

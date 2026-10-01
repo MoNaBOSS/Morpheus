@@ -38,7 +38,13 @@ export type MorpheusWebsiteProjectManifest = {
   relativeEntryPath: string;
   fileCount: number;
   totalBytes: number;
-  checks: MorpheusWebsiteVerification;
+  checks: MorpheusWebsiteVerification | {
+    pinnedTemplate: true;
+    boundedContent: true;
+    isolatedClientPreview: true;
+    formDelivery: false;
+  };
+  interactiveTemplate?: 'studio-v1';
   verifiedAt: string;
   /** Digest of the files actually inspected, usable as a revision precondition. */
   revision?: string;

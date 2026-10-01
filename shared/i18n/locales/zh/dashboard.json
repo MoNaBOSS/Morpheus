@@ -258,6 +258,7 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
+      "siteCreateInteractive": {"label":"创建交互网站","description":"使用经过审核的模板创建新的客户端网站，提供筛选和本地表单验证。不会发送消息。"},
       "browserInspect": { "label": "查看公开页面", "description": "在隔离的浏览器中查看页面控件，不使用您的浏览器账户。" },
       "browserInteract": { "label": "操作公开页面控件", "description": "使用此任务刚刚观察到的页面控件。账户操作与下载需要单独授权。" },
       "siteRevise": {"label":"修改网站","description":"仅基于已验证的网站版本进行修改，保留无关的手动编辑。"},
@@ -525,6 +526,8 @@
     },
     "artifacts": {
       "previewFile": "预览已保存文件",
+      "interactiveWebsite": "客户端交互网站 · 不发送表单",
+      "interactivePreviewError": "预览不可用。工作区可能已断开，或项目已更改。您的文件已保留。",
       "title": "产物",
       "latest": "最新产物",
       "rootLabel": "已批准的文件位置",

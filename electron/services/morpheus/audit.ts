@@ -159,6 +159,7 @@ export function sanitizeAuditOutcome(
         fileCount: outcome.manifest.fileCount,
         totalBytes: outcome.manifest.totalBytes,
         verified: true,
+        ...(outcome.manifest.interactiveTemplate ? { interactiveTemplate: outcome.manifest.interactiveTemplate } : {}),
         ...(outcome.manifest.revision ? { revision: outcome.manifest.revision } : {}),
         ...(outcome.manifest.revisionId ? { revisionId: outcome.manifest.revisionId } : {}),
       };
