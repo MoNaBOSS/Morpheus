@@ -113,3 +113,30 @@ repository Electron Playwright used. Page identity/content, no framework overlay
 zero captured page/console errors and screenshots checked. English compact and
 desktop-overlay screenshots inspected. Evidence: `phase7-history-evidence-20261002`
 under E: builds. Normal packaged follow-through is still required after rebuilding.
+
+### 50437715 packaged follow-through and visual catch
+
+Normal packaged Gateway, approved welcome/local task, protected provider selection,
+real ACP compact reply, renderer reload and full quiet relaunch passed. One local
+streaming request total; reload/relaunch caused zero additional inference. Profile
+and provider survived restart. This is not a paid/live-quality claim. Evidence:
+`E:\Morpheus-builds\phase7-20261002-0403\normal-runtime-evidence.json`.
+Cold copied-payload Gateway readiness was 56.4s; a subsequent isolated-profile
+run was 7.8s, with returning quiet window 2.53s / Gateway 7.44s. Single observations,
+not a stable latency distribution or a closed cold-start performance gate.
+The full source suite at this checkpoint passes **3,312 tests + two skips**.
+
+Screenshot inspection caught internal persona text in the restored user bubble.
+The preview.3 NSIS compiled but is not the final handoff. New source tags only
+Main-generated persona blocks in the existing ACP ledger. User-role display omits
+only bounded recognized tagged content; raw prompt matching and model context are
+preserved. Untagged historic text, quoted user text, assistant and tool content are
+not stripped heuristically. This is presentation metadata, never authorization.
+Preview.4 must pass normal restart plus screenshot inspection before compression.
+
+Persona display source validation: **92 focused units**, all three typechecks,
+scoped lint, comms replay/compare and narrow diff-aware harness checks pass.
+Six fresh-build Electron journeys pass (21.5s), including four-locale tagged
+history with the actual user question visible and internal context absent.
+Page/console errors and overlay checks pass; English screenshot inspected.
+Evidence: `E:\Morpheus-builds\phase7-persona-display-evidence-20261002`.

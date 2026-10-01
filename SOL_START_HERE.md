@@ -13,14 +13,15 @@ Verify remote, current commit and dirty files before editing. Never reset, clean
 overwrite or automatically stash work/profiles/providers. Fetch only the verified
 origin. Reviewed checkpoints are pushed to the authorized branch without force.
 
-Latest source: **3fe59e0c**, after e7636b70, 1fbea5b9, 208eff4d and 37095e95.
+Latest committed source: **50437715**, after 3fe59e0c, e7636b70, 1fbea5b9,
+208eff4d and 37095e95. The current follow-up corrects persona display metadata.
 Those changes fix the real welcome, quiet returning startup/tray separation,
 Electron Gateway environment and original ACP endpoint/authentication. A normal
 packaged smoke exposed bugs that simplified UI fixtures missed. In particular,
 OpenClaw ignores env credentials with CLI `--url`; both owner URL and token now
 travel in the child environment. Forty-four focused tests include the actual
 pinned bootstrap, not just a mocked fork. Node types/lint/comms/harness pass.
-Prior full suite: 3,301 passes plus two inherited skips before the ACP changes.
+Full suite at 50437715: **3,312 passes plus two inherited skips** (67.82s).
 
 The 3fe59e0c normal smoke now proves real Gateway → protected local provider →
 original ACP compact reply. It exposed one further gap: no history replay after
@@ -28,13 +29,20 @@ renderer reload once pending admissions had been acknowledged. The current sourc
 restores existing sessions through the same ACP owner, with single-flight loads
 and no duplicate prompt. Six native/four-locale journeys and 97 related units pass.
 
-**Next exact action:** commit/rebuild this history correction and repeat the normal
-smoke before compressing the EXE. The preceding unpacked smoke is from
-`E:\Morpheus-builds\phase7-20261002-0351`, source 3fe59e0c,
-version **1.2.0-preview.3**. Its build and test logs are in that directory.
+The 50437715 normal package passed compact reply, renderer reload and full quiet
+relaunch, with only one local provider call. Screenshot review then found internal
+persona instructions rendered as a user message. New source tags the generated
+ACP block and suppresses only that annotated display part; original ledger/prompt
+matching remain intact. Untagged user/legacy text is not guessed at or rewritten.
+
+**Next exact action:** qualify this persona display correction, commit, build
+**1.2.0-preview.4** unpacked and rerun the normal/relaunch smoke. Inspect screenshots
+and reject internal context in visible messages BEFORE NSIS compression.
+Preceding evidence: `E:\Morpheus-builds\phase7-20261002-0403`, source 50437715,
+preview.3 (compiled, but not the final handoff due to that display flaw).
 The reusable script is
 `E:\Morpheus-builds\phase7-20261002-0253\normal-runtime-smoke.mjs`;
-arguments: the new base directory and `--companion`. It uses an isolated home,
+arguments: the new base directory and `--companion --relaunch`. It uses an isolated home,
 real Gateway/ACP and a free local provider, not E2E-mode or an owner's account.
 Qualify welcome → local task → compact reply → reload before compressing the EXE.
 If another real failure appears, preserve evidence, fix its owner and add a

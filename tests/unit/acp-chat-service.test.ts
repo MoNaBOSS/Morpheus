@@ -5,7 +5,7 @@ import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HOST_EVENT_CHANNELS } from '@shared/host-events/contract';
-import { composeMorpheusPersonaContext } from '@shared/morpheus/persona-context';
+import { composeMorpheusPersonaContext, MORPHEUS_PERSONA_CONTENT_META } from '@shared/morpheus/persona-context';
 import { DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES } from '@shared/morpheus/onboarding-types';
 
 const acpSdkMock = vi.hoisted(() => {
@@ -298,7 +298,7 @@ describe('AcpChatService', () => {
     const { service, connection } = await createService(undefined, undefined, (payload) => payload.messageId === 'admitted-turn' ? persona : undefined);
     await service.loadSession({ sessionKey: 'agent:pi:session-123', workspaceRoot: '/repo', cwd: '/repo', createIfMissing: true });
     await service.sendPrompt({ sessionKey: 'agent:pi:session-123', cwd: '/repo', message: 'hello', messageId: 'admitted-turn' });
-    expect(connection.prompt.mock.calls[0][0].prompt).toEqual([{ type: 'text', text: persona.instructions }, { type: 'text', text: 'hello' }]);
+    expect(connection.prompt.mock.calls[0][0].prompt).toEqual([{ type: 'text', text: persona.instructions, _meta: MORPHEUS_PERSONA_CONTENT_META }, { type: 'text', text: 'hello' }]);
     expect(connection.prompt).toHaveBeenCalledOnce();
     await service.sendPrompt({ sessionKey: 'agent:pi:session-123', cwd: '/repo', message: 'ordinary chat', messageId: 'other' });
     expect(connection.prompt.mock.calls[1][0].prompt).toEqual([{ type: 'text', text: 'ordinary chat' }]);

@@ -670,3 +670,10 @@ without paid calls, but loses its visible timeline on renderer reload. Source no
 loads existing ACP history without another prompt or a second store. Six native/
 four-locale journeys and 97 related units pass; I evidence records boundaries.
 Rebuild before claiming the exact package passes reload/recovery.
+
+50437715 preview.3 subsequently passed normal local-provider reply, reload and
+full quiet relaunch with preserved provider/history and only one local inference.
+3,312 units pass + two skips. Visual review found generated persona text in the
+restored user bubble; therefore it is not the final handoff despite those passes.
+Preview.4 adds explicit display metadata without rewriting history or stripping
+untagged user content. See I evidence for timings and exact scope.

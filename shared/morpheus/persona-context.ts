@@ -2,6 +2,17 @@ import type { MorpheusCompanionPersonality, MorpheusHumorStyle, MorpheusOnboardi
 
 export const MORPHEUS_PERSONA_CONTEXT_VERSION = 1 as const;
 export const MORPHEUS_PERSONA_CONTEXT_MAX_CHARS = 2_400;
+export const MORPHEUS_PERSONA_CONTENT_META = { morpheus: { kind: 'presentation-context', version: 1 } } as const;
+
+/** Display annotation, not authorization. Only Main adds it to generated blocks.
+ * Leave untagged historic/user text untouched rather than guessing by prefix. */
+export function isMorpheusPersonaContent(block: { type?: unknown; text?: unknown; _meta?: unknown }): boolean {
+  if (block.type !== 'text' || typeof block.text !== 'string'
+    || block.text.length > MORPHEUS_PERSONA_CONTEXT_MAX_CHARS
+    || !block.text.startsWith(`Morpheus companion presentation context v${MORPHEUS_PERSONA_CONTEXT_VERSION}.\n`)) return false;
+  const meta = block._meta as { morpheus?: { kind?: unknown; version?: unknown } } | undefined;
+  return meta?.morpheus?.kind === 'presentation-context' && meta.morpheus.version === 1;
+}
 
 export type MorpheusPersonaContext = {
   version: typeof MORPHEUS_PERSONA_CONTEXT_VERSION;

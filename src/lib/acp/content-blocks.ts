@@ -1,6 +1,7 @@
 import type { ContentBlock, ToolCallContent } from '@agentclientprotocol/sdk';
 import { createPendingAttachment } from './attachments';
 import type { RenderPart } from './timeline-types';
+import { isMorpheusPersonaContent } from '@shared/morpheus/persona-context';
 
 export type ContentBlockRenderContext = {
   role: 'user' | 'assistant';
@@ -86,6 +87,7 @@ function attachmentPart(input: {
 }
 
 export function contentBlockToRenderPart(block: ContentBlock, context: ContentBlockRenderContext): RenderPart {
+  if (context.role === 'user' && isMorpheusPersonaContent(block)) return { kind: 'markdown', text: '' };
   switch (block.type) {
     case 'text':
       return { kind: 'markdown', text: block.text };

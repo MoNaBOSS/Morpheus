@@ -32,7 +32,7 @@ import { recordAcpTrace } from './acp-trace';
 import { AcpSessionAccessRegistry, type AcpSessionAccessContext } from './acp-session-access-registry';
 import { expandPath } from '../utils/paths';
 import { getSetting } from '../utils/store';
-import type { MorpheusPersonaContext } from '@shared/morpheus/persona-context';
+import { MORPHEUS_PERSONA_CONTENT_META, type MorpheusPersonaContext } from '@shared/morpheus/persona-context';
 
 type AcpConnection = Pick<ClientSideConnection, 'initialize' | 'newSession' | 'loadSession' | 'prompt' | 'cancel'>;
 type MainWindowLike = {
@@ -741,7 +741,7 @@ export class AcpChatService {
   private async buildPromptBlocks(payload: AcpChatPromptPayload): Promise<ContentBlock[]> {
     const blocks: ContentBlock[] = [];
     const persona = this.getCompanionPersona?.(payload);
-    if (persona) blocks.push({ type: 'text', text: persona.instructions });
+    if (persona) blocks.push({ type: 'text', text: persona.instructions, _meta: MORPHEUS_PERSONA_CONTENT_META });
     const text = payload.message?.trim();
     if (text) blocks.push({ type: 'text', text });
 

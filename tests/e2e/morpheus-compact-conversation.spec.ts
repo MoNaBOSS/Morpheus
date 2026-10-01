@@ -1,5 +1,7 @@
 import { join } from 'node:path';
 import { writeFile } from 'node:fs/promises';
+import { composeMorpheusPersonaContext, MORPHEUS_PERSONA_CONTENT_META } from '../../shared/morpheus/persona-context';
+import { DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES } from '../../shared/morpheus/onboarding-types';
 import {
   closeElectronApp,
   expect,
@@ -121,6 +123,13 @@ for (const language of ['en', 'zh', 'ja', 'ru']) {
         sessions: [{ key: SESSION_KEY, title: 'Saved conversation' }],
       });
       await fixture.setSessionReplay(SESSION_KEY, [{
+        sessionUpdate: 'user_message_chunk', messageId: 'saved-user',
+        content: { type: 'text', text: composeMorpheusPersonaContext(DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES).instructions,
+          _meta: MORPHEUS_PERSONA_CONTENT_META },
+      }, {
+        sessionUpdate: 'user_message_chunk', messageId: 'saved-user',
+        content: { type: 'text', text: 'How are you today?' },
+      }, {
         sessionUpdate: 'agent_message_chunk', messageId: 'saved-answer',
         content: { type: 'text', text: 'Your original saved reply is still here.' },
       }]);
@@ -134,6 +143,8 @@ for (const language of ['en', 'zh', 'ja', 'ru']) {
       await expect(page.getByTestId('workspace-conversation')).toContainText('Your original saved reply is still here.');
       await page.getByTestId('signal-nav-presence').click();
       await expect(page.getByTestId('quick-command-conversation')).toContainText('Your original saved reply is still here.');
+      await expect(page.getByTestId('quick-command-conversation')).toContainText('How are you today?');
+      await expect(page.getByTestId('quick-command-conversation')).not.toContainText('Morpheus companion presentation context');
       await expect(page.locator('vite-error-overlay')).toHaveCount(0);
       expect(page.url()).not.toContain('#/chat');
       await page.screenshot({ path: testInfo.outputPath(`restored-${language}.png`), animations: 'disabled' });

@@ -29,7 +29,9 @@ environment authentication with a CLI URL). The real bootstrap is regression-tes
 Preview.3 contains these source fixes; packaged conversation qualification
 is separate from the passing unit checks.
 Compact/full reload now restores the original saved ACP history without repeating
-the request. A normal packaged reply has passed; the rebuilt reload gate is pending.
+the request. Normal packaged reply/reload/relaunch pass. Preview.4 also keeps
+annotated personality context out of restored user bubbles; untagged history is
+preserved. Exact rebuilt visual qualification remains required.
 
 New source checkpoints add inspectable/exportable local memory, quiet orb check-ins,
 bounded public-page retrieval, recoverable static-site revisions and restored site

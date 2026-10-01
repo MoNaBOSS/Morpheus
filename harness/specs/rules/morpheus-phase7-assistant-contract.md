@@ -69,3 +69,7 @@ Companion restoration must replay the original ACP history even after every
 admission has been acknowledged. It must not send inference, create empty sessions
 on quiet first run, duplicate compact/full loads or overwrite a newly selected
 conversation with stale failure state.
+Generated persona input is model context, not the user's displayed utterance.
+Tag it in the existing ACP ledger and suppress only the recognized user-role
+display part. Preserve raw matching/provenance and all untagged user text. Visual
+inspection must precede packaging; text-presence assertions alone are insufficient.
