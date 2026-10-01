@@ -299,6 +299,8 @@ export function artifactFromRun(run: MorpheusRun): ExecutionArtifact | null {
       relativeEntryPath: run.result.manifest.relativeEntryPath,
       fileCount: run.result.manifest.fileCount,
       totalBytes: run.result.manifest.totalBytes,
+      ...(run.result.manifest.revision ? { revision: run.result.manifest.revision } : {}),
+      ...(run.result.manifest.revisionId ? { revisionId: run.result.manifest.revisionId } : {}),
     };
   }
 
@@ -312,6 +314,9 @@ export function artifactFromAuditEntry(entry: MorpheusAuditEntry): ExecutionArti
   const createdAt = entry.ts;
 
   switch (outcome.kind) {
+    case 'source':
+      // Audit deliberately omits source content/queries. It cannot reconstruct a citation.
+      return { kind: 'report', artifactId: entry.runId, createdAt, data: { origin: outcome.origin, bytes: outcome.bytes, digest: outcome.contentSha256, usageStatus: outcome.usageStatus } };
     case 'file':
       return {
         kind: 'file', artifactId: entry.runId, path: outcome.path,
@@ -387,6 +392,8 @@ export function artifactFromAuditEntry(entry: MorpheusAuditEntry): ExecutionArti
         relativeEntryPath: outcome.relativeEntryPath,
         fileCount: outcome.fileCount,
         totalBytes: outcome.totalBytes,
+        ...(outcome.revision ? { revision: outcome.revision } : {}),
+        ...(outcome.revisionId ? { revisionId: outcome.revisionId } : {}),
       };
   }
 }

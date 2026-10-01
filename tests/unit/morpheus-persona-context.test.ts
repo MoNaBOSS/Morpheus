@@ -39,7 +39,8 @@ describe('bounded companion persona context', () => {
       providerUse: 'allowed', source: 'user', enabled: true, createdAt: '2026-01-01', updatedAt: '2026-01-01', ...patch,
     });
     const memories = [memory('allowed'), memory('local', { providerUse: 'local-only' }), memory('sensitive', { sensitivity: 'sensitive' }),
-      memory('disabled', { enabled: false }), memory('mission', { source: 'mission' }), memory('onboarding', { sourceId: 'onboarding-personality' })];
+      memory('disabled', { enabled: false }), memory('mission', { source: 'mission' }), memory('onboarding', { sourceId: 'onboarding-personality' }),
+      memory('unrelated-project', { projectId: 'project-other' })];
     const persona = composeSavedMorpheusPersona({ ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES }, memories);
     expect(persona.instructions).toContain('Avoid teasing allowed');
     for (const excluded of memories.slice(1)) expect(persona.instructions).not.toContain(excluded.text);

@@ -20,7 +20,7 @@ import { morpheusActionLabelKey } from '@/components/morpheus/morpheus-phase';
  * make a listed capability look broken. `morpheus-supported-actions.test.ts`
  * asserts exactly that.
  */
-export const EXAMPLE_COMMAND: Record<string, string> = {
+export const EXAMPLE_COMMAND: Record<string, string | null> = {
   'system.report': 'Show system information',
   'app.launch': 'Open Notepad',
   'file.createText': 'Create a text file named notes.txt',
@@ -41,7 +41,12 @@ export const EXAMPLE_COMMAND: Record<string, string> = {
   'system.storage': 'Show disk space',
   'system.processes': 'Show running processes',
   'web.openUrl': 'Open https://example.com',
+  'web.readPage': 'Read https://example.com',
   'site.verify': 'Verify website project projects/sample',
+  // These need an observed revision and real patch/receipt. Never invent one
+  // merely to make an example runnable; the task planner supplies this context.
+  'site.revise': null,
+  'site.rollback': null,
   'dev.launchProject': 'Open project named project',
 };
 
@@ -89,7 +94,7 @@ export function SupportedActions({ limit }: { limit?: number }) {
             <Button
               size="sm"
               variant="ghost"
-              disabled={!available}
+              disabled={!available || !EXAMPLE_COMMAND[actionId]}
               data-testid={`morpheus-run-action-${actionId}`}
               onClick={() => run(actionId)}
               aria-label={t(morpheusActionLabelKey(actionId))}

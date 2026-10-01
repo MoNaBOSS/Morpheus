@@ -13,6 +13,9 @@ test.describe('Morpheus managed account', () => {
       await expect(section.getByTestId('managed-account-unconfigured')).toBeVisible();
       await expect(section.getByRole('button', { name: 'Continue with Google' })).toHaveCount(0);
       await expect(section).toContainText('your own AI providers');
+      await expect(section.getByRole('button', { name: 'Use Morpheus Premium', exact: true })).toBeDisabled();
+      const activation = await page.evaluate(() => window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'managedAccount', action: 'setMode', payload: { mode: 'managed' } }));
+      expect(activation.ok).toBe(false);
     } finally { await closeElectronApp(app); }
   });
 

@@ -13,6 +13,8 @@ export class MorpheusWakeOrb {
   private presentationLevel = 0;
   private lastLevelAt = Number.NEGATIVE_INFINITY;
   private pendingLevelTimer: ReturnType<typeof setTimeout> | null = null;
+  private caption: string | null = null;
+  private captionTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private readonly onOpen: () => void,
@@ -21,6 +23,24 @@ export class MorpheusWakeOrb {
 
   getWebContents(): WebContents | null {
     return this.window && !this.window.isDestroyed() ? this.window.webContents : null;
+  }
+
+  isAvailableForSocial(): boolean {
+    return this.wantsVisible && this.ready && !this.hovered
+      && ['idle', 'asleep', 'armed'].includes(this.presence)
+      && Boolean(this.window && !this.window.isDestroyed());
+  }
+
+  showCaption(text: string | null): void {
+    if (this.captionTimer) clearTimeout(this.captionTimer);
+    this.captionTimer = null;
+    this.caption = this.isAvailableForSocial() && text ? text.slice(0, 240) : null;
+    if (this.caption) this.captionTimer = setTimeout(() => this.showCaption(null), 45_000);
+    this.reposition();
+    const window = this.window;
+    if (window && !window.isDestroyed() && this.ready) {
+      void window.webContents.executeJavaScript(`document.querySelector('#orb-social-caption').textContent = ${JSON.stringify(this.caption ?? '')}; document.documentElement.dataset.social = ${JSON.stringify(String(Boolean(this.caption)))}`, true).catch(() => undefined);
+    }
   }
 
   show(): void {
@@ -88,6 +108,7 @@ export class MorpheusWakeOrb {
 
   updatePresence(presence: MorpheusVoicePresence): void {
     this.presence = presence.state;
+    if (this.caption && ['listening', 'working', 'error'].includes(this.presence)) this.showCaption(null);
     if (this.presence !== 'listening' && this.presence !== 'speaking') this.updateLevel(0);
     // Ambient microphone availability is independent of the typed companion.
     this.applyPresence();
@@ -123,6 +144,7 @@ export class MorpheusWakeOrb {
   }
 
   present(action: 'hover' | 'collapse' | 'open' | 'focus'): void {
+    this.showCaption(null);
     const window = this.window;
     if (!this.wantsVisible || !window || window.isDestroyed()) return;
     if (action === 'open') {
@@ -148,6 +170,7 @@ export class MorpheusWakeOrb {
   }
 
   hide(): void {
+    this.showCaption(null);
     this.wantsVisible = false;
     this.hovered = false;
     this.updateLevel(0);
@@ -164,11 +187,14 @@ export class MorpheusWakeOrb {
     const window = this.window;
     if (!this.wantsVisible || !window || window.isDestroyed()) return;
     const workArea = this.getWorkArea();
-    window.setBounds(this.hovered ? wakeOrbHoverBounds(workArea) : wakeOrbBounds(workArea));
+    window.setBounds(this.hovered || this.caption ? wakeOrbHoverBounds(workArea) : wakeOrbBounds(workArea));
     this.shapeWindow();
   }
 
   dispose(): void {
+    if (this.captionTimer) clearTimeout(this.captionTimer);
+    this.captionTimer = null;
+    this.caption = null;
     this.wantsVisible = false;
     this.ready = false;
     this.hovered = false;
@@ -231,7 +257,7 @@ export class MorpheusWakeOrb {
       strips.push({ x: orbX + Math.max(0, Math.floor(orbSize / 2 - half)), y: orbY + y,
         width: Math.min(orbSize, Math.ceil(half * 2)), height: Math.min(10, orbSize - y) });
     }
-    const shapes = this.hovered
+    const shapes = this.hovered || this.caption
       ? [{ x: Math.max(0, bounds.width - 352), y: Math.max(0, bounds.height - 163),
         width: Math.min(344, bounds.width), height: Math.min(55, bounds.height) }, ...strips]
       : strips;

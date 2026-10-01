@@ -43,6 +43,14 @@ export function MorpheusManagedAccount() {
     </div>
     {!snapshot && <p role="status">{t('managedAccount.loading')}</p>}
     {snapshot && !snapshot.configured && <p data-testid="managed-account-unconfigured" className="text-sm text-muted-foreground">{t('managedAccount.notConfigured')}</p>}
+    {snapshot && <div className="space-y-2" data-testid="managed-service-mode">
+      <p className="text-sm">{t('managedAccount.modeLabel')} {t(snapshot.serviceMode === 'managed' ? 'managedAccount.useManaged' : 'managedAccount.ownProviders')}</p>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" disabled={busy || snapshot.serviceMode !== 'managed'} onClick={() => void perform(async () => { setSnapshot(await hostApi.managedAccount.setMode('byok')); return { success: true }; })}>{t('managedAccount.ownProviders')}</Button>
+        <Button variant="outline" disabled={busy || !snapshot.runtimeReady || snapshot.serviceMode === 'managed' || !snapshot.configured || !snapshot.signedIn || !account?.enabled} onClick={() => void perform(async () => { setSnapshot(await hostApi.managedAccount.setMode('managed')); return { success: true }; })}>{t('managedAccount.useManaged')}</Button>
+      </div>
+      {snapshot.serviceMode === 'managed' && <p className="text-sm text-muted-foreground">{t('managedAccount.noSilentFallback')}</p>}
+    </div>}
     {snapshot?.configured && <>
       {snapshot.signedIn ? <div className="space-y-3">
         <p>{t('managedAccount.signedIn')}</p>

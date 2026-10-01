@@ -39,11 +39,17 @@ export type ManagedRequestReceipt = {
   assessedCostMicroUsd: number | null;
   costEvidence: 'rate-estimate' | 'provider-reported' | 'reconciled' | null;
   rateVersion: string;
+  turnId?: string;
+  workerRunId?: string;
+  speechId?: string;
 };
 
 export type ManagedRequest = {
   requestId: string;
   objectiveId?: string;
+  turnId?: string;
+  workerRunId?: string;
+  speechId?: string;
   route: string;
   input: unknown;
 };
@@ -54,6 +60,9 @@ export type ManagedClientStatus =
 
 export type ManagedAuthState = 'idle' | 'browser' | 'email-code' | 'signed-in' | 'error';
 export type ManagedAccountSnapshot = {
+  serviceMode?: 'byok' | 'managed';
+  /** Main composition confirms all application paid paths use the managed bridge. */
+  runtimeReady?: boolean;
   configured: boolean;
   signedIn: boolean;
   authState: ManagedAuthState;

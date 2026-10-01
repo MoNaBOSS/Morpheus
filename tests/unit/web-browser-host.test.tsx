@@ -180,4 +180,33 @@ describe('HTML preview host', () => {
     expect(webview()).not.toBe(failedGuest);
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
+
+  it('places modal previews inside their focus and stacking boundary', () => {
+    const overlay = document.createElement('div');
+    overlay.dataset.testid = 'file-preview-overlay';
+    document.body.append(overlay);
+    const anchor = makeAnchor(overlay);
+    useArtifactPanel.setState({ open: true, tab: 'preview', focusedFile: htmlFile(), htmlPreviewAnchor: anchor });
+    render(<WebBrowserHost />);
+    const host = screen.getByTestId('html-preview-host');
+    expect(anchor).toContainElement(host);
+    expect(host).toHaveStyle({ position: 'absolute', left: '0px', top: '0px', width: '100%', height: '100%' });
+    expect(host.closest('[aria-hidden="true"]')).toBeNull();
+  });
+
+  it('ignores a superseded guest navigation when moving into a modal anchor', async () => {
+    let rejectOld!: (error: Error) => void;
+    navigate.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectOld = reject; }));
+    useArtifactPanel.setState({ open: true, tab: 'preview', focusedFile: htmlFile(), htmlPreviewAnchor: makeAnchor() });
+    render(<WebBrowserHost />);
+    fireEvent(webview(), new Event('did-attach'));
+    const overlay = document.createElement('div');
+    overlay.dataset.testid = 'file-preview-overlay';
+    document.body.append(overlay);
+    act(() => useArtifactPanel.getState().setHtmlPreviewAnchor(makeAnchor(overlay)));
+    fireEvent(webview(), new Event('did-attach'));
+    await act(async () => rejectOld(new Error('Old guest destroyed')));
+    expect(toastError).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledTimes(2);
+  });
 });

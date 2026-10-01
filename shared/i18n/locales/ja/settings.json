@@ -278,6 +278,10 @@
     "faq": "よくある質問"
   },
   "managedAccount": {
+    "modeLabel": "AI サービス：",
+    "ownProviders": "自分のプロバイダーを使う",
+    "useManaged": "Morpheus Premium を使う",
+    "noSilentFallback": "Premium が失敗しても自分のプロバイダーへ自動で切り替えて課金しません。ここで切り替えられます。",
     "title": "Morpheus アカウント",
     "description": "管理サービスの利用権限と利用枠です。ご自身の AI プロバイダーのアカウントは別に保持されます。",
     "loading": "アカウントを読み込み中…",

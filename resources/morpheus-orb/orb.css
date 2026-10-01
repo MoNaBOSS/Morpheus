@@ -1,5 +1,7 @@
 html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
 body { position: relative; }
+.social-caption { position: absolute; right: 8px; bottom: 108px; box-sizing: border-box; display: none; align-items: center; width: min(344px, calc(100% - 16px)); height: 55px; padding: 9px 16px; border: 1px solid #88d9aa54; border-radius: 17px; background: #0b1c15f5; color: #eaffef; font: 14px/1.35 "Segoe UI", sans-serif; pointer-events: none; }
+html[data-social="true"][data-hover="false"] .social-caption { display: flex; }
 button, input { font: inherit; }
 button { cursor: pointer; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

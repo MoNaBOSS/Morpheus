@@ -170,6 +170,8 @@ export type ExecutionArtifact =
     relativeEntryPath: string;
     fileCount: number;
     totalBytes: number;
+    revision?: string;
+    revisionId?: string;
   }
   | {
     /** A real Morpheus-owned scheduled notification workflow. */

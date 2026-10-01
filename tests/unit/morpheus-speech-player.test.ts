@@ -62,6 +62,27 @@ beforeEach(() => {
 afterEach(() => { stopMorpheusSpeech(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe('Morpheus speech player', () => {
+  it('an aborted social utterance cannot cancel a newer task response', async () => {
+    const controller = new AbortController();
+    mocks.synthesizeSpeech.mockReturnValueOnce(new Promise(() => {}));
+    const social = playMorpheusSpeech('How is your day?', { neuralAvailable: true, signal: controller.signal });
+    const response = playMorpheusSpeech('Your work is ready.', { neuralAvailable: true });
+    controller.abort();
+    await expect(social).resolves.toBe('cancelled');
+    await expect(response).resolves.toBe('neural');
+    const calls = mocks.synthesizeSpeech.mock.calls.length;
+    await expect(playMorpheusSpeech('Stale', { neuralAvailable: true, signal: controller.signal })).resolves.toBe('cancelled');
+    expect(mocks.synthesizeSpeech).toHaveBeenCalledTimes(calls);
+  });
+
+  it('aborting the owned utterance settles a pending provider request', async () => {
+    const controller = new AbortController();
+    mocks.synthesizeSpeech.mockReturnValueOnce(new Promise(() => {}));
+    const social = playMorpheusSpeech('How is your day?', { neuralAvailable: true, signal: controller.signal });
+    controller.abort();
+    await expect(social).resolves.toBe('cancelled');
+    expect(mocks.cancelSpeech).toHaveBeenCalledTimes(2);
+  });
   it('settles immediately on stop and ignores late provider audio', async () => {
     let deliver!: (value: unknown) => void;
     mocks.synthesizeSpeech.mockReturnValue(new Promise((resolve) => { deliver = resolve; }));

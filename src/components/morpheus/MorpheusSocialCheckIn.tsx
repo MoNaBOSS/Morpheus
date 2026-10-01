@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { hostApi } from '@/lib/host-api';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { useMorpheusIntelligenceStore } from '@/stores/morpheus-intelligence';
+import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { playMorpheusSpeech } from '@/lib/morpheus-speech-player';
 
-const LAST_CHECK_IN = 'morpheus-last-social-check-in';
-const DAY_MS = 24 * 60 * 60_000;
+import { MORPHEUS_SOCIAL_INVITATION_LIFETIME_MS } from '@shared/morpheus/social-check-in-types';
 
 /** A local, non-modal check-in. Silence costs no provider call and backs off. */
 export function MorpheusSocialCheckIn({ activeCount }: { activeCount: number }) {
@@ -16,30 +18,71 @@ export function MorpheusSocialCheckIn({ activeCount }: { activeCount: number }) 
 
 function SocialCheckIn({ level }: { level: 'balanced' | 'talkative' }) {
   const { t } = useTranslation('dashboard');
-  const [visible, setVisible] = useState(false);
+  const [invitationId, setInvitationId] = useState<string | null>(null);
+  const [caption, setCaption] = useState('');
+  const invitation = useRef<string | null>(null);
+  const speakingInvitation = useRef<AbortController | null>(null);
+  const dismiss = (): void => {
+    const id = invitation.current;
+    invitation.current = null;
+    setInvitationId(null);
+    speakingInvitation.current?.abort();
+    speakingInvitation.current = null;
+    if (id) void hostApi.morpheus.dismissSocialCheckIn(id).catch(() => { /* Main expiry recovers missed dismissal. */ });
+  };
   useEffect(() => {
     let lastInput = Date.now();
-    const activity = () => { lastInput = Date.now(); };
+    let disposed = false;
+    let pending = false;
+    const activity = () => { lastInput = Date.now(); dismiss(); };
     window.addEventListener('pointerdown', activity, { passive: true });
     window.addEventListener('keydown', activity);
     const timer = window.setInterval(() => {
-      if (document.hidden || !document.hasFocus() || visible) return;
-      const previous = Number(window.localStorage.getItem(LAST_CHECK_IN) ?? 0);
       const idleMs = level === 'talkative' ? 10 * 60_000 : 30 * 60_000;
-      if (Date.now() - lastInput < idleMs || Date.now() - previous < DAY_MS) return;
-      window.localStorage.setItem(LAST_CHECK_IN, String(Date.now()));
-      setVisible(true);
+      if (invitation.current || pending || Date.now() - lastInput < idleMs) return;
+      pending = true;
+      void hostApi.morpheus.admitSocialCheckIn(true).then((result) => {
+        if (!result.admitted || !result.invitationId) return;
+        if (disposed || Date.now() - lastInput < idleMs) {
+          void hostApi.morpheus.dismissSocialCheckIn(result.invitationId).catch(() => {});
+          return;
+        }
+        invitation.current = result.invitationId;
+        setInvitationId(result.invitationId);
+        setCaption(result.text ?? '');
+        const voice = useMorpheusVoiceStore.getState().status;
+        const preferences = useMorpheusCompanionStore.getState().onboarding?.preferences;
+        if (result.text && preferences?.speakResponses && voice?.settings.speakResponses && voice.neuralSpeechAvailable) {
+          const controller = new AbortController();
+          speakingInvitation.current = controller;
+          void playMorpheusSpeech(result.text, { neuralAvailable: true, allowWindowsFallback: false, signal: controller.signal })
+            .catch(() => undefined).finally(() => {
+              if (speakingInvitation.current === controller) speakingInvitation.current = null;
+            });
+        }
+      }).catch(() => { /* No provider calls; next availability tick may retry. */ }).finally(() => { pending = false; });
     }, 60_000);
-    return () => { window.clearInterval(timer); window.removeEventListener('pointerdown', activity); window.removeEventListener('keydown', activity); };
-  }, [level, visible]);
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+      window.removeEventListener('pointerdown', activity);
+      window.removeEventListener('keydown', activity);
+      speakingInvitation.current?.abort();
+      speakingInvitation.current = null;
+      const id = invitation.current;
+      invitation.current = null;
+      if (id) void hostApi.morpheus.dismissSocialCheckIn(id).catch(() => {});
+    };
+  // Main rechecks quiet policy and native availability on each admission.
+  }, [level]);
   useEffect(() => {
-    if (!visible) return;
-    const dismissTimer = window.setTimeout(() => setVisible(false), 45_000);
+    if (!invitationId) return;
+    const dismissTimer = window.setTimeout(dismiss, MORPHEUS_SOCIAL_INVITATION_LIFETIME_MS);
     return () => { window.clearTimeout(dismissTimer); };
-  }, [visible]);
-  if (!visible) return null;
-  return <div data-testid="morpheus-social-check-in" className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#a0b6aa]" aria-live="polite">
-    <span>{t('morpheus.socialCheckIn.question')}</span>
-    <button type="button" onClick={() => setVisible(false)} aria-label={t('morpheus.socialCheckIn.dismiss')} className="text-[#a0b6aa] hover:text-white">×</button>
+  }, [invitationId]);
+  if (!invitationId) return null;
+  return <div data-testid="morpheus-social-check-in" className="fixed bottom-32 right-5 z-[9997] flex max-w-xs items-center gap-3 rounded-xl bg-surface-modal px-4 py-3 text-sm text-foreground shadow-lg" aria-live="polite">
+    <span>{caption || t('morpheus.socialCheckIn.question')}</span>
+    <button type="button" onClick={dismiss} aria-label={t('morpheus.socialCheckIn.dismiss')} className="text-muted-foreground hover:text-foreground">×</button>
   </div>;
 }

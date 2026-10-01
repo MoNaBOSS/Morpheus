@@ -9,10 +9,8 @@
  * See `harness/specs/rules/morpheus-native-action-safety.md`.
  */
 import { spawn } from 'node:child_process';
-import { isAbsolute, join } from 'node:path';
 
 import {
-  getMorpheusApplicationEntry,
   isMorpheusApplicationKey,
 } from '@shared/morpheus/actions/registry';
 import type { MorpheusActionResult } from '@shared/morpheus/action-types';
@@ -24,7 +22,8 @@ import {
   type MorpheusCapabilityContext,
   type MorpheusResolution,
 } from '../../capability-registry';
-import { assertRegularFileInside } from '../../../../utils/morpheus-path-guard';
+import { discoverApprovedWindowsApplication, revalidateDiscoveredWindowsApplication } from './application-discovery';
+export { resolveSystemRoot, resolveAppData } from './application-discovery';
 
 /** Bounded lifetime for the spawn attempt itself, not for the launched app. */
 const SPAWN_SETTLE_TIMEOUT_MS = 10_000;
@@ -33,25 +32,6 @@ const SPAWN_SETTLE_TIMEOUT_MS = 10_000;
  * Resolves the trusted base directory. Taken from the process environment, never
  * from a payload, and asserted to be an absolute drive-rooted path.
  */
-export function resolveSystemRoot(env: NodeJS.ProcessEnv): string {
-  const candidate = env.SystemRoot || env.systemroot || env.SYSTEMROOT || 'C:\\Windows';
-  if (typeof candidate !== 'string' || !candidate.trim()) {
-    throw new MorpheusCapabilityError('resolution-failed', 'SystemRoot is not set');
-  }
-  if (!isAbsolute(candidate) || !/^[A-Za-z]:[\\/]/.test(candidate)) {
-    throw new MorpheusCapabilityError('resolution-failed', 'SystemRoot is not an absolute drive-rooted path');
-  }
-  return candidate;
-}
-
-export function resolveAppData(env: NodeJS.ProcessEnv): string {
-  const candidate = env.APPDATA;
-  if (!candidate || !isAbsolute(candidate) || !/^[A-Za-z]:[\\/]/.test(candidate)) {
-    throw new MorpheusCapabilityError('resolution-failed', 'APPDATA is not an absolute drive-rooted path');
-  }
-  return candidate;
-}
-
 function launch(executablePath: string, args: readonly string[]): Promise<number | null> {
   return new Promise((resolvePromise, rejectPromise) => {
     let settled = false;
@@ -123,27 +103,16 @@ export const win32AppLaunchCapability: MorpheusCapability<'app.launch'> = {
       throw new MorpheusCapabilityError('invalid-params', 'Unknown application key');
     }
 
-    const entry = getMorpheusApplicationEntry(applicationKey);
-    if (entry.platform !== 'win32') {
-      throw new MorpheusCapabilityError('unsupported-platform', 'Application is not registered for this platform');
-    }
-
-    const base = entry.base === 'appData' ? resolveAppData(context.env) : resolveSystemRoot(context.env);
-    const expectedDir = join(base, entry.relativeDir);
-    const candidate = join(expectedDir, entry.fileName);
-
-    let executablePath: string;
-    try {
-      executablePath = assertRegularFileInside(expectedDir, candidate);
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : 'unknown';
-      throw new MorpheusCapabilityError('resolution-failed', `Application could not be verified: ${reason}`);
-    }
+    const application = await discoverApprovedWindowsApplication(applicationKey, context.env);
+    const executablePath = application.executablePath;
 
     return {
       target: { kind: 'executable', path: executablePath, applicationKey },
       execute: async (): Promise<MorpheusActionResult> => {
-        const pid = await launch(executablePath, entry.args);
+        let verifiedPath: string;
+        try { verifiedPath = revalidateDiscoveredWindowsApplication(application); }
+        catch { throw new MorpheusCapabilityError('resolution-failed', 'Application installation is no longer available'); }
+        const pid = await launch(verifiedPath, application.args);
         return { kind: 'launch', applicationKey, executablePath, pid };
       },
     };

@@ -2,7 +2,7 @@
  * IPC Handlers
  * Registers all IPC handlers for main-renderer communication
  */
-import { ipcMain, BrowserWindow, shell, dialog, app, safeStorage, type Session } from 'electron';
+import { ipcMain, BrowserWindow, shell, dialog, app, safeStorage, powerMonitor, type Session } from 'electron';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, extname, basename, resolve, sep, relative } from 'node:path';
@@ -86,11 +86,14 @@ import type { PermissionProfile } from '@shared/morpheus/permission-types';
 import type { MorpheusRuntimeControlSnapshot } from '@shared/morpheus/runtime-control-types';
 import type { MorpheusCompanionSurfaceStatus } from '@shared/morpheus/companion-types';
 import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
+import { writeMorpheusMemoryExport } from '../services/morpheus/memory/memory-export';
 
 type MorpheusCompanionSurfaceControls = {
   wake?(): void;
   presence?(presence: MorpheusVoicePresence): void;
   level?(level: number): void;
+  socialAvailable?(): boolean;
+  socialCaption?(text: string | null): void;
   status(): MorpheusCompanionSurfaceStatus;
   dismiss(): MorpheusCompanionSurfaceStatus;
   expand(): MorpheusCompanionSurfaceStatus;
@@ -268,6 +271,20 @@ function registerTypedHostHandlers(
         properties: ['openDirectory'],
       });
       return result.canceled ? null : result.filePaths[0] ?? null;
+    },
+    onSocialCaption: (text) => companionSurface.socialCaption?.(text),
+    localSocialAvailability: () => !mainWindow.isDestroyed() && powerMonitor.getSystemIdleState(120) !== 'locked'
+      && ((mainWindow.isVisible() && mainWindow.isFocused()) || (companionSurface.socialAvailable?.() === true && powerMonitor.getSystemIdleTime() < 120))
+      && ['idle', 'asleep', 'armed'].includes(morpheusService.voice.presence().state),
+    saveMemoryExport: async (document) => {
+      if (Buffer.byteLength(JSON.stringify(document), 'utf8') > 1_000_000) throw new Error('Memory export is too large');
+      const result = await dialog.showSaveDialog(mainWindow, {
+        defaultPath: 'morpheus-memory.json', filters: [{ name: 'JSON', extensions: ['json'] }],
+        properties: ['showOverwriteConfirmation'],
+      });
+      if (result.canceled || !result.filePath) return null;
+      await writeMorpheusMemoryExport(result.filePath, document);
+      return basename(result.filePath);
     },
     applyDesktopSetup: async ({ launchAtStartup }) => {
       await setSetting('launchAtStartup', launchAtStartup);

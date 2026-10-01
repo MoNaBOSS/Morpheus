@@ -23,7 +23,7 @@ export type TaskCheckpoint = {
 /** Only these read operations may be restarted after an uncertain interruption. */
 export function isReplaySafeRead(actionId: ExecutionStep['capabilityId']): boolean {
   return ['system.report', 'system.storage', 'system.processes', 'file.readText',
-    'file.list', 'file.search', 'site.verify'].includes(actionId);
+    'file.list', 'file.search', 'site.verify', 'web.readPage'].includes(actionId);
 }
 
 export function actionFingerprint(step: ExecutionStep): string {

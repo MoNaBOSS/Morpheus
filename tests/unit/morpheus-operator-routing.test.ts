@@ -39,6 +39,9 @@ describe('Morpheus Ask, Auto, and Act routing', () => {
       text: 'the website thing', mode: 'auto', surface: 'quick-command',
     })).toMatchObject({ route: 'clarification', reason: 'ambiguous-command', confidence: 'low' });
   });
+  it.each(['Hi Morpheus', 'I prefer short updates', "Don't roast me", 'Call me Larry', 'Remember that I like One Piece'])('keeps direct companion preferences conversational: %s', (text) => {
+    expect(routeMorpheusInteraction({ text, mode: 'auto', surface: 'quick-command' })).toMatchObject({ route: 'conversation', reason: 'conversational-intent' });
+  });
 
   it('fails ambiguous Chat text toward conversation', () => {
     expect(routeMorpheusInteraction({

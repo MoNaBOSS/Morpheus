@@ -88,7 +88,10 @@ const CAPABILITY_DESCRIPTIONS: Record<MorpheusActionId, string> = {
   'system.storage': 'Read privacy-safe storage capacity information.',
   'system.processes': 'List a bounded privacy-sensitive process snapshot.',
   'web.openUrl': 'Open an exact validated HTTP or HTTPS URL in the default browser.',
+  'web.readPage': 'Retrieve a public HTTPS text page with exact-origin redirect checks and observed source evidence; does not interact with a browser DOM.',
   'site.verify': 'Verify an existing self-contained responsive website project, its local stylesheet, and its analytics-ready manifest inside the approved workspace.',
+  'site.revise': 'Revise a verified static website using its observed expectedRevision and a JSON patch {files:[{path,content}]}; staged files are verified and original files retained for recovery. Never guess the revision digest.',
+  'site.rollback': 'Restore one recorded website revision using its observed revisionId and expectedRevision; rejects subsequent manual edits. Never guess these identifiers.',
   'dev.launchProject': 'Open an approved workspace path with a compiled-in developer application template.',
 };
 
@@ -820,6 +823,8 @@ export function createMorpheusObjectiveOrchestrator(options: {
           () => options.runtime.executePlan({ planId: plan.planId }, {
             signal: owner.controller.signal, completedSteps: owner.recoveredSteps,
             explicitRoutine: run.route?.kind === 'direct-capability',
+            workerOwner: { objectiveRunId, attemptId: `${objectiveRunId}:g${generation}:i${iteration}`,
+              cancellationGeneration: generation, workspaceId },
           }),
           { plannerId: planner.plannerId, planId: plan.planId },
         );

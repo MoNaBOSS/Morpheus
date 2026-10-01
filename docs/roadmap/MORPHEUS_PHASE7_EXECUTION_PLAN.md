@@ -72,17 +72,17 @@ Only record what the evidence supports. All rows below start TODO.
 | 7C.1 AUTOMATED (source fixtures) | Same-breath command dispatch once without second STT, cancelled mic acquisition and localized missing-device recovery pass 59 focused units and six fresh-build Electron journeys. Actual System.Speech accuracy, mute/lock/device hardware and exact packaged acceptance remain open. | A.1–2, B.1 |
 | 7C.2 AUTOMATED (source fixtures) | Three neural preview choices use one bounded greeting/joke/example-update audition with no OS fallback. Speech generation/cancellation/follow-up units and a silent real-Chromium fixture pass; silence makes zero provider/task requests. Human neural auditions, speaker echo, hardware interruption and exact package/live voice remain open. | C.1 |
 | 7C.3 AUTOMATED (source fixtures) | Unified bounded persona for admitted companion conversation and neural delivery; saved daily/quiet arrival; first-run name/skip/Matrix welcome; structured genuine-question answers correct the original task. 177 focused units and seven Windows journeys pass, including four locales/reduced motion. Human voice/persona and final packaged acceptance remain open. | A.3, C.2 |
-| 7C.4 TODO | Useful bounded memory/proactivity. Correct/delete/export memory; ignored check-in backs off; no inferred emotions or paid polling; existing chat retention preserved. | C.3 |
-| 7D.1 TODO | Core worker port and one existing runtime adapter. Owned ids, scoped tools, leases, cancellation, artifacts, usage and unknown-effect recovery verified with fixtures. | A.1, B.1 |
+| 7C.4 AUTOMATED (source fixtures) | Local memory correction/deletion/export and persisted ignore backoff; quiet native orb caption without focus theft and optional cancellable neural speech. Seven fresh Electron journeys pass; no inferred mood or paid polling. | C.3 |
+| 7D.1 AUTOMATED (source fixtures) | Core worker port and public HTTPS adapter: owned ids, scoped retrieval, independent leases, cancellation, source artifacts, known-zero usage and unknown-effect recovery. This is not full browser interaction. | A.1, B.1 |
 | 7D.2 TODO | Real browser navigation/interaction. Named sites, DOM actions, account scope, redirects/downloads, keyboard fallback and cancel; no policy bypass through agent tools. | D.1 |
 | 7D.3 TODO | Research → cited answer → saved report. Sources actually retrieved; citations open safely; unavailable sources labeled; launch another app during research without cancelling it. | D.2, A.3 |
-| 7E.1 TODO | Static website create/revise loop. Recoverable revisions preserve user edits; safe static verifier stays intact; preview and responsive checks inspect actual files. | D.1, A.3 |
+| 7E.1 AUTOMATED (source fixtures) | Recoverable static revisions/rollback preserve manual edits; original static verifier intact; restored result preview. Four locale native journeys inspect real revised HTML at desktop/narrow widths; restored-artifact regression also passes. | D.1, A.3 |
 | 7E.2 TODO | Interactive client-site worker. Pinned template build, constrained execution and isolated script-capable preview; real button/form behavior tested; no arbitrary package scripts/secret access. | E.1 |
 | 7E.3 TODO | Authorized publication adapter. Exact target/revision preview; publish one supported static build; HTTP verification/receipt; timeout reconciliation and tested revision/rollback. | E.1–2, B.1 |
-| 7F.1 TODO | Existing-use-case regression and app discovery. Files/reminders/clipboard/screenshots/workflows survive; approved installed app targets resolve without model shell commands. | D.1 |
+| 7F.1 IMPLEMENTED (source regression) | Approved app discovery checks known directories and bounded App Paths; 92 focused native-capability/runtime regressions pass. Real installed-app and packaged acceptance remain. | D.1 |
 | 7F.2 TODO | Typed window/media controls for named apps. Focus/minimize/restore and supported play/pause/volume observed on real targets; scope/foreground locks and unsupported outcomes. | F.1 |
 | 7G.1 TODO | Usage coverage and economy qualification. All paid paths correlated; bounded attempts and task owner; matched strong/economy results record success, latency and cost per success. | C.2, D.3, E.3 |
-| 7G.2 TODO | Managed inference/voice bridge in development. Same Core/chat/worker/STT/TTS authority with fake-server negative tests; no silent BYOK fallback; unknown usage stays held. | B.1, D.1, G.1 |
+| 7G.2 IN PROGRESS | Server routes and Main bridge/receipts tested; actual planner/conversation/voice joins still missing. Main/UI block managed activation until composition is ready. No live Premium claim. | B.1, D.1, G.1 |
 | 7G.3 TODO | Live account → eligible trial → real task → voice → receipt. Issuer/configured service, protected restart/login/logout/deletion and limits validated; needs deployment inputs. | G.2, C.3 |
 | 7G.4 TODO | Managed operations and billing. Renewal/top-up/refund/revocation with unordered/duplicate events; tenant/spend controls, backup/restore, kill switch, account deletion; needs eligible payment setup. | G.3 |
 | 7H.1 TODO | Failure/recovery gate. Concurrent work, provider/gateway outage, worker crash, restart, sleep, disk-full/audit failure, unknown publication outcome and cancellation leave truthful state. | A–F; G paths when enabled |
@@ -209,7 +209,19 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
   first-run preservation and structured answer assistance. 177 focused units,
   seven fresh Windows journeys, all typechecks/lint/comms and harness checks pass.
   See `docs/releases/phase7-c3-source-checkpoint.md`.
-- Next executable source row: **7C.4 memory and proactivity**, then D → E → F → G → H.
+- C.4, D.1 and E.1 source integration is verified; F.1 has focused source
+  regression. The combined unit suite passed 3,083 tests (two inherited skips).
+  Fresh native evidence includes seven memory/orb journeys, four localized site
+  revision/preview/rollback journeys, restored-site preview and account regression.
+  Read `docs/releases/phase7-{c4,d1,f1}-source-checkpoint.md` and
+  `docs/releases/phase7-e1-revisions.md` for actual boundaries.
+- G.2 adapters are preserved as a tested foundation, not completed application
+  wiring. Its UI/Main readiness guard prevents managed activation before the
+  planner/conversation/voice owners consume the bridge. Read the G2 foundation
+  note before enabling it. No server/domain/payment account exists yet; user chose
+  Stripe and crypto, payment country unspecified.
+- Next executable source row: **7D.2 task-owned browser interaction**, then D.3,
+  E.2/E.3, F.2, G/H/I. Do not redo C.4/E.1 discovery or rerun entire old campaigns.
   The fresh internal installer does not mean these later rows or physical/live
   gates are complete. No paid test is inferred.
 - The Windows worktree is separate from the original PC checkout. Profiles and

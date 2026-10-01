@@ -1,6 +1,7 @@
 /** Main-owned one-time companion activation state. */
 import type { MorpheusInteractionMode } from './operator-types';
 import type { PermissionProfile } from './permission-types';
+import type { MorpheusSocialCheckInHistory } from './social-check-in-types';
 
 export const MORPHEUS_ONBOARDING_VERSION = 2 as const;
 
@@ -47,6 +48,7 @@ export type MorpheusOnboardingStatus = {
   preferences: MorpheusOnboardingPreferences;
   /** Main-owned content-free greeting history. Missing on existing profiles. */
   arrival?: { lastInteractionAt?: string; lastGreetingAt?: string; lastGreetingDay?: string };
+  socialCheckIn?: MorpheusSocialCheckInHistory;
 };
 
 export type MorpheusGreetingAdmission = { admitted: boolean; preferredName: string };

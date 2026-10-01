@@ -17,6 +17,7 @@ type Row = {
   fingerprint: string; state: ManagedRequestState; reserved: number;
   charged: number | null; actual: number | null; rate_version: string;
   evidence: ManagedRequestReceipt['costEvidence'];
+  correlation: string | null;
 };
 
 /** Server-side only. One SQLite file on a persistent local volume, never NFS.
@@ -30,7 +31,7 @@ export class ManagedLedger {
     this.db = new DatabaseSync(path);
     this.db.exec('PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;');
     const version = this.db.prepare('PRAGMA user_version').get() as { user_version: number };
-    if (version.user_version > 1) {
+    if (version.user_version > 2) {
       this.db.close();
       throw new ManagedError('unsupported_ledger_version', 503);
     }
@@ -47,7 +48,7 @@ export class ManagedLedger {
         account_id TEXT NOT NULL REFERENCES accounts(id), request_id TEXT NOT NULL,
         objective_id TEXT, route TEXT NOT NULL, fingerprint TEXT NOT NULL,
         state TEXT NOT NULL, reserved INTEGER NOT NULL CHECK(reserved > 0),
-        charged INTEGER, actual INTEGER, evidence TEXT, rate_version TEXT NOT NULL,
+        charged INTEGER, actual INTEGER, evidence TEXT, rate_version TEXT NOT NULL, correlation TEXT,
         PRIMARY KEY(account_id, request_id)
       );
       CREATE TABLE IF NOT EXISTS events (
@@ -55,8 +56,10 @@ export class ManagedLedger {
         request_id TEXT, kind TEXT NOT NULL, recorded_at INTEGER NOT NULL,
         details TEXT NOT NULL
       );
-      PRAGMA user_version=1;
     `);
+    const columns = this.db.prepare('PRAGMA table_info(requests)').all() as Array<{ name: string }>;
+    if (!columns.some((column) => column.name === 'correlation')) this.db.exec('ALTER TABLE requests ADD COLUMN correlation TEXT;');
+    this.db.exec('PRAGMA user_version=2;');
   }
 
   close(): void { this.db.close(); }
@@ -132,12 +135,14 @@ export class ManagedLedger {
       requestId: row.request_id, objectiveId: row.objective_id, route: row.route,
       state: row.state, reservedMicroUsd: row.reserved, chargedMicroUsd: row.charged,
       assessedCostMicroUsd: row.actual, costEvidence: row.evidence, rateVersion: row.rate_version,
+      ...(row.correlation ? JSON.parse(row.correlation) as Pick<ManagedRequestReceipt, 'turnId' | 'workerRunId' | 'speechId'> : {}),
     } : null;
   }
 
-  reserve(input: { accountId: string; requestId: string; objectiveId?: string; route: string;
+  reserve(input: { accountId: string; requestId: string; objectiveId?: string; turnId?: string; workerRunId?: string; speechId?: string; route: string;
     fingerprint: string; feature: z.infer<typeof featuresSchema>[number]; maximumMicroUsd: number; rateVersion: string }): ManagedRequestReceipt {
     const value = z.object({ accountId: idSchema, requestId: idSchema, objectiveId: idSchema.optional(),
+      turnId: idSchema.optional(), workerRunId: idSchema.optional(), speechId: idSchema.optional(),
       route: idSchema, fingerprint: z.string().regex(/^[a-f0-9]{64}$/), feature: featuresSchema.element,
       maximumMicroUsd: moneySchema.positive(), rateVersion: idSchema }).strict().parse(input);
     return this.transaction(() => {
@@ -151,9 +156,11 @@ export class ManagedLedger {
       const account = this.status(value.accountId);
       if (!account.enabled || !account.features.includes(value.feature)) throw new ManagedError('not_entitled', 403);
       if (account.allowance.available < value.maximumMicroUsd) throw new ManagedError('allowance_exhausted', 402);
-      this.db.prepare(`INSERT INTO requests(account_id,request_id,objective_id,route,fingerprint,state,reserved,rate_version)
-        VALUES(?,?,?,?,?,'reserved',?,?)`).run(value.accountId, value.requestId, value.objectiveId ?? null,
-        value.route, value.fingerprint, value.maximumMicroUsd, value.rateVersion);
+      const correlation = canonicalJson({ ...(value.turnId ? { turnId: value.turnId } : {}),
+        ...(value.workerRunId ? { workerRunId: value.workerRunId } : {}), ...(value.speechId ? { speechId: value.speechId } : {}) });
+      this.db.prepare(`INSERT INTO requests(account_id,request_id,objective_id,route,fingerprint,state,reserved,rate_version,correlation)
+        VALUES(?,?,?,?,?,'reserved',?,?,?)`).run(value.accountId, value.requestId, value.objectiveId ?? null,
+        value.route, value.fingerprint, value.maximumMicroUsd, value.rateVersion, correlation);
       this.record(value.accountId, value.requestId, 'reserved', { maximumMicroUsd: value.maximumMicroUsd, rateVersion: value.rateVersion });
       return this.receipt(value.accountId, value.requestId)!;
     });

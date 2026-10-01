@@ -87,7 +87,10 @@ export type MorpheusActionId =
   | 'system.storage'
   | 'system.processes'
   | 'web.openUrl'
+  | 'web.readPage'
   | 'site.verify'
+  | 'site.revise'
+  | 'site.rollback'
   | 'dev.launchProject';
 
 /**
@@ -116,7 +119,10 @@ export const MORPHEUS_AUTONOMOUS_FIRST_USE_ACTIONS = Object.freeze([
   'reminder.schedule',
   'system.storage',
   'web.openUrl',
+  'web.readPage',
   'site.verify',
+  'site.revise',
+  'site.rollback',
   'dev.launchProject',
 ] as const satisfies readonly MorpheusActionId[]);
 
@@ -126,6 +132,8 @@ export function allowsAutonomousFirstUse(actionId: MorpheusActionId): boolean {
 
 /** Actions that create, change, or remove durable state inside a workspace. */
 export const MORPHEUS_WORKSPACE_WRITE_ACTIONS = Object.freeze([
+  'site.revise',
+  'site.rollback',
   'file.createText',
   'file.create',
   'file.appendText',
@@ -169,7 +177,7 @@ export const MORPHEUS_CAPABILITY_GROUPS: Readonly<Record<MorpheusCapabilityGroup
     ] as const),
     /** Additive and reversible changes inside an approved workspace. */
     'workspace.write': Object.freeze([
-      'file.createText', 'file.create', 'file.appendText', 'file.move', 'file.copy', 'folder.create',
+      'file.createText', 'file.create', 'file.appendText', 'file.move', 'file.copy', 'folder.create', 'site.revise', 'site.rollback',
     ] as const),
   } as const);
 
@@ -507,6 +515,16 @@ export const MORPHEUS_ACTIONS = Object.freeze({
       Object.freeze({ key: 'url', kind: 'httpUrl', required: true } as const),
     ] as const),
   } as const),
+  'web.readPage': Object.freeze({
+    id: 'web.readPage',
+    kind: 'introspection',
+    riskTier: 'low',
+    privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.webReadPage.label',
+    descriptionKey: 'dashboard:morpheus.actions.webReadPage.description',
+    platforms: Object.freeze(['win32', 'darwin', 'linux'] as const),
+    params: Object.freeze([Object.freeze({ key: 'url', kind: 'httpUrl', required: true } as const)] as const),
+  } as const),
   'site.verify': Object.freeze({
     id: 'site.verify',
     kind: 'introspection',
@@ -519,6 +537,29 @@ export const MORPHEUS_ACTIONS = Object.freeze({
     group: 'workspace.read',
     params: Object.freeze([
       Object.freeze({ key: 'path', kind: 'relativePath', required: true } as const),
+    ] as const),
+  } as const),
+  'site.revise': Object.freeze({
+    id: 'site.revise', kind: 'filesystem', riskTier: 'medium', privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.siteRevise.label',
+    descriptionKey: 'dashboard:morpheus.actions.siteRevise.description',
+    platforms: Object.freeze(['win32'] as const), rootKey: 'morpheusFiles', group: 'workspace.write',
+    params: Object.freeze([
+      Object.freeze({ key: 'path', kind: 'relativePath', required: true } as const),
+      Object.freeze({ key: 'expectedRevision', kind: 'shortText', required: true } as const),
+      // JSON {files:[{path,content}]} is parsed and bounded again in Main.
+      Object.freeze({ key: 'patch', kind: 'textContent', required: true } as const),
+    ] as const),
+  } as const),
+  'site.rollback': Object.freeze({
+    id: 'site.rollback', kind: 'filesystem', riskTier: 'medium', privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.siteRollback.label',
+    descriptionKey: 'dashboard:morpheus.actions.siteRollback.description',
+    platforms: Object.freeze(['win32'] as const), rootKey: 'morpheusFiles', group: 'workspace.write',
+    params: Object.freeze([
+      Object.freeze({ key: 'path', kind: 'relativePath', required: true } as const),
+      Object.freeze({ key: 'expectedRevision', kind: 'shortText', required: true } as const),
+      Object.freeze({ key: 'revisionId', kind: 'shortText', required: true } as const),
     ] as const),
   } as const),
   'dev.launchProject': Object.freeze({

@@ -134,6 +134,36 @@ describe.skipIf(process.platform !== 'win32')('native orb visibility across dela
     expect(window.focus).not.toHaveBeenCalled();
   });
 
+  it('shows a bounded social caption without focusing or opening the composer and clears on interaction/expiry', () => {
+    vi.useFakeTimers();
+    const orb = new MorpheusWakeOrb(vi.fn());
+    try {
+      orb.show();
+      const window = mock.windows[0];
+      expect(orb.isAvailableForSocial()).toBe(false);
+      window.finishLoad();
+      expect(orb.isAvailableForSocial()).toBe(true);
+      orb.showCaption('How has your day been?');
+      expect(window.getBounds().width).toBe(360);
+      expect(window.webContents.executeJavaScript.mock.lastCall?.[0]).toContain('textContent');
+      expect(window.focus).not.toHaveBeenCalled();
+      expect(window.show).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(45_000);
+      expect(window.getBounds().width).toBe(100);
+      orb.showCaption('A quiet check-in');
+      orb.present('hover');
+      expect(orb.isAvailableForSocial()).toBe(false);
+      expect(window.webContents.executeJavaScript.mock.calls.some(([script]) => script.includes('dataset.social = "false"'))).toBe(true);
+      orb.present('collapse');
+      orb.showCaption('Another check-in');
+      orb.updatePresence({ v: 4, state: 'listening', ambientEnabled: true });
+      expect(window.getBounds().width).toBe(100);
+      expect(orb.isAvailableForSocial()).toBe(false);
+      orb.showCaption('Must not interrupt');
+      expect(window.getBounds().width).toBe(100);
+    } finally { orb.dispose(); vi.useRealTimers(); }
+  });
+
   it('limits native hit testing to the orb and upward panel', () => {
     const orb = new MorpheusWakeOrb(vi.fn());
     orb.show();

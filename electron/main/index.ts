@@ -521,6 +521,8 @@ async function initialize(): Promise<void> {
       expand: () => companionSurfaceController.expand(window),
       presence: (presence) => wakeOrb.updatePresence(presence),
       level: (level) => wakeOrb.updateLevel(level),
+      socialAvailable: () => wakeOrb.isAvailableForSocial(),
+      socialCaption: (text) => wakeOrb.showCaption(text),
       wake: () => {
         if (!window.isVisible() || window.isMinimized()) {
           wakeOrb.show();

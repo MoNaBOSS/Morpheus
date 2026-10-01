@@ -7,6 +7,8 @@ type SpeechOptions = {
   neuralAvailable: boolean;
   /** Setup previews should not surprise the user with a robotic fallback. */
   allowWindowsFallback?: boolean;
+  /** Cancels only this utterance, never a newer reply that superseded it. */
+  signal?: AbortSignal;
   onSpeakingChange?: (speaking: boolean) => void;
 };
 type SpeechResult = 'neural' | 'windows' | 'cancelled';
@@ -164,8 +166,11 @@ async function playWindowsSpeech(text: string, id: number): Promise<void> {
 
 /** Stop settles immediately; stale provider results can never play or fall back. */
 export async function playMorpheusSpeech(text: string, options: SpeechOptions): Promise<SpeechResult> {
+  if (options.signal?.aborted) return 'cancelled';
   stopMorpheusSpeech();
   const id = generation;
+  const abort = () => { if (id === generation) stopMorpheusSpeech(); };
+  options.signal?.addEventListener('abort', abort, { once: true });
   activeCallback = options.onSpeakingChange;
   const cancelled = new Promise<SpeechResult>((resolve) => { cancelRequest = () => resolve('cancelled'); });
   const play = async (): Promise<SpeechResult> => {
@@ -192,6 +197,7 @@ export async function playMorpheusSpeech(text: string, options: SpeechOptions): 
   try {
     return await Promise.race([play(), cancelled]);
   } finally {
+    options.signal?.removeEventListener('abort', abort);
     if (id === generation) { cancelRequest = null; activeCallback = undefined; }
   }
 }

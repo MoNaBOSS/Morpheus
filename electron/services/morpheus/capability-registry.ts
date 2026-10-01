@@ -18,6 +18,7 @@ import type {
 } from '@shared/morpheus/action-types';
 
 import type { MorpheusRootProvider } from './roots';
+import type { MorpheusWorkerOwner } from '@shared/morpheus/worker-types';
 
 export class MorpheusCapabilityError extends Error {
   constructor(public readonly code: MorpheusFailureCode, message: string) {
@@ -32,6 +33,7 @@ export type MorpheusCapabilityContext = {
   env: NodeJS.ProcessEnv;
   /** Logical Main-owned binding for service capabilities such as reminders. */
   workspaceId?: string;
+  workerOwner?: MorpheusWorkerOwner;
 };
 
 /**
@@ -42,7 +44,7 @@ export type MorpheusCapabilityContext = {
  */
 export type MorpheusResolution = {
   target: MorpheusResolvedTarget;
-  execute: () => Promise<MorpheusActionResult>;
+  execute: (signal?: AbortSignal) => Promise<MorpheusActionResult>;
 };
 
 /**

@@ -97,6 +97,8 @@ import type {
   MorpheusMemoryIdPayload,
   MorpheusMemoryResult,
   MorpheusMemorySnapshot,
+  MorpheusMemoryExportPayload,
+  MorpheusMemoryExportResult,
 } from '../morpheus/memory-types';
 import type {
   CompleteMorpheusOnboardingPayload,
@@ -1175,6 +1177,7 @@ export type HostApiContract = {
   };
   managedAccount: {
     status: () => ManagedAccountSnapshot;
+    setMode: (payload: { mode: 'byok' | 'managed' }) => ManagedAccountSnapshot;
     googleSignIn: () => ManagedAuthResult;
     requestEmailCode: (payload: { email: string }) => ManagedAuthResult;
     verifyEmailCode: (payload: { code: string }) => ManagedAuthResult;
@@ -1231,8 +1234,11 @@ export type HostApiContract = {
     memories: () => MorpheusMemorySnapshot;
     saveMemory: (payload: MorpheusMemoryDraft) => MorpheusMemoryResult;
     removeMemory: (payload: MorpheusMemoryIdPayload) => MorpheusMemoryResult;
+    exportMemories: (payload?: MorpheusMemoryExportPayload) => MorpheusMemoryExportResult;
+    admitSocialCheckIn: (payload: import('../morpheus/social-check-in-types').MorpheusSocialCheckInPayload) => import('../morpheus/social-check-in-types').MorpheusSocialCheckInAdmission;
+    dismissSocialCheckIn: (payload: import('../morpheus/social-check-in-types').MorpheusSocialCheckInDismissPayload) => { dismissed: boolean };
     onboardingStatus: () => MorpheusOnboardingStatus;
-    admitArrivalGreeting: () => import('../morpheus/onboarding-types').MorpheusGreetingAdmission;
+    admitArrivalGreeting: (payload?: never) => import('../morpheus/onboarding-types').MorpheusGreetingAdmission;
     completeOnboarding: (payload: CompleteMorpheusOnboardingPayload) => MorpheusOnboardingStatus;
     updateCompanionProfile: (payload: MorpheusCompanionProfilePatch) => MorpheusOnboardingStatus;
     resetOnboarding: () => MorpheusOnboardingStatus;

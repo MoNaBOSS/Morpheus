@@ -8,6 +8,7 @@ import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { useMorpheusWorkspacesStore } from '@/stores/morpheus-workspaces';
 import type { MorpheusProjectDraft } from '@shared/morpheus/project-types';
 import type { MorpheusMemoryDraft, MorpheusMemoryKind } from '@shared/morpheus/memory-types';
+import { hostApi } from '@/lib/host-api';
 
 const EMPTY_PROJECT = (workspaceId: string): MorpheusProjectDraft => ({
   name: '', description: '', instructions: '', workspaceId, enabled: true,
@@ -46,6 +47,8 @@ export function Projects() {
   const [projectDraft, setProjectDraft] = useState<MorpheusProjectDraft>(() => EMPTY_PROJECT(selectedWorkspaceId));
   const [memoryDraft, setMemoryDraft] = useState<MorpheusMemoryDraft>(() => EMPTY_MEMORY('personal'));
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportStatus, setExportStatus] = useState<'saved' | 'cancelled' | 'error' | null>(null);
 
   useEffect(() => { void Promise.all([loadContext(), loadWorkspaces()]); }, [loadContext, loadWorkspaces]);
 
@@ -95,6 +98,13 @@ export function Projects() {
             <section data-testid="project-memory" className="border-l border-border/60 pl-8">
               <div className="flex items-center gap-2"><Brain className="h-4 w-4 text-[hsl(var(--morpheus-accent))]" /><h2 className="font-serif text-lg">{t('morpheus.memory.title')}</h2></div>
               <p className="mt-1 text-2xs leading-relaxed text-muted-foreground">{t('morpheus.memory.description')}</p>
+              <Button size="sm" variant="outline" data-testid="memory-export" disabled={exporting || !selected} className="mt-3" onClick={() => void (async () => {
+                setExporting(true); setExportStatus(null);
+                try { const result = await hostApi.morpheus.exportMemories({ projectId: selected!.projectId }); setExportStatus(result.status); }
+                catch { setExportStatus('error'); }
+                finally { setExporting(false); }
+              })()}>{t('morpheus.memory.export')}</Button>
+              {exportStatus ? <p role="status" data-testid="memory-export-status" className="mt-2 text-2xs text-muted-foreground">{t(`morpheus.memory.exportStatus.${exportStatus}`)}</p> : null}
               {!selected ? <EmptyState message={t('morpheus.memory.saveProjectFirst')} /> : (
                 <>
                   <div className="mt-4 space-y-2"><input data-testid="memory-title" value={memoryDraft.title} onChange={(event) => setMemoryDraft((draft) => ({ ...draft, title: event.target.value }))} placeholder={t('morpheus.memory.titlePlaceholder')} className="h-9 w-full rounded-lg border border-border bg-[hsl(var(--morpheus-surface-2))] px-3 text-tiny outline-none" /><textarea data-testid="memory-text" rows={4} value={memoryDraft.text} onChange={(event) => setMemoryDraft((draft) => ({ ...draft, text: event.target.value }))} placeholder={t('morpheus.memory.textPlaceholder')} className="w-full resize-none rounded-lg border border-border bg-[hsl(var(--morpheus-surface-2))] p-3 text-tiny outline-none" /><div className="grid grid-cols-2 gap-2"><select data-testid="memory-kind" value={memoryDraft.kind} onChange={(event) => setMemoryDraft((draft) => ({ ...draft, kind: event.target.value as MorpheusMemoryKind }))} className="h-9 rounded-lg border border-border bg-[hsl(var(--morpheus-surface-2))] px-2 text-2xs">{(['preference', 'project-context', 'routine', 'decision'] as const).map((kind) => <option key={kind} value={kind}>{t(`morpheus.memory.kinds.${kind}`)}</option>)}</select><select data-testid="memory-provider-use" value={memoryDraft.providerUse} onChange={(event) => setMemoryDraft((draft) => ({ ...draft, providerUse: event.target.value as 'allowed' | 'local-only' }))} className="h-9 rounded-lg border border-border bg-[hsl(var(--morpheus-surface-2))] px-2 text-2xs"><option value="allowed">{t('morpheus.memory.providerUse.allowed')}</option><option value="local-only">{t('morpheus.memory.providerUse.local-only')}</option></select></div><label className="flex items-center gap-2 text-2xs text-muted-foreground"><input type="checkbox" checked={memoryDraft.sensitivity === 'sensitive'} onChange={(event) => setMemoryDraft((draft) => ({ ...draft, sensitivity: event.target.checked ? 'sensitive' : 'normal', providerUse: event.target.checked ? 'local-only' : draft.providerUse }))} />{t('morpheus.memory.sensitive')}</label><Button size="sm" variant="outline" data-testid="memory-save" disabled={!memoryDraft.title.trim() || !memoryDraft.text.trim()} onClick={() => void (async () => { const saved = await saveMemory({ ...memoryDraft, projectId: memoryDraft.memoryId ? memoryDraft.projectId : selected.projectId }); if (saved) setMemoryDraft(EMPTY_MEMORY(selected.projectId)); })()} className="gap-2"><Plus className="h-3.5 w-3.5" />{t('morpheus.memory.add')}</Button></div>

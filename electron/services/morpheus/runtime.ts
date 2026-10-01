@@ -83,6 +83,8 @@ import { createMorpheusPlanStore, type MorpheusPlanStore } from './plan/plan-sto
 import type { MorpheusRootProvider } from './roots';
 import type { MorpheusWorkspaceStore } from './workspaces/workspace-store';
 import { MORPHEUS_DEFAULT_WORKSPACE_ID } from '@shared/morpheus/workspace-types';
+import type { MorpheusWorkerOwner } from '@shared/morpheus/worker-types';
+import type { MorpheusWorkerPort } from './workers/worker-port';
 import { collectMorpheusSystemInfo } from './capabilities/win32/system-report';
 
 export class MorpheusRequestError extends Error {
@@ -125,6 +127,8 @@ export type MorpheusRuntimeOptions = {
   /** Emits the batched consent request for a plan. */
   emitPlanConsent?: (request: MorpheusPlanConsentRequest) => void;
   checkpointStep?: (planId: string, result: ExecutionStepResult) => void | Promise<void>;
+  /** Injected Main composition seam; deterministic Core has no agent dependency. */
+  workerPort?: MorpheusWorkerPort;
   /** Objective-level observer. It may observe, but cannot alter plan authority. */
   onPlanLifecycle?: (event: {
     planId: string;
@@ -175,6 +179,7 @@ export interface MorpheusRuntime {
     completedSteps?: readonly ExecutionStepResult[];
     signal?: AbortSignal;
     explicitRoutine?: boolean;
+    workerOwner?: Omit<MorpheusWorkerOwner, 'planId' | 'stepId'>;
   }): Promise<MorpheusPlanExecutionResult>;
   pendingPlanConsents(): MorpheusPlanConsentRequest[];
   /** Answers a batched consent request. */
@@ -214,6 +219,10 @@ export function buildAuditParams(
       out[`${descriptor.key}Sha256`] = morpheusContentDigest(text);
       continue;
     }
+    if (actionId === 'web.readPage' && descriptor.kind === 'httpUrl') {
+      try { out[`${descriptor.key}Origin`] = new URL(String(value)).origin; } catch { out[`${descriptor.key}Origin`] = '[invalid-url]'; }
+      continue;
+    }
     out[descriptor.key] = value;
   }
   return out;
@@ -226,6 +235,13 @@ export function executionArtifactFromResult(
   createdAt: string,
 ): ExecutionArtifact | undefined {
   switch (result.kind) {
+    case 'source':
+      return { kind: 'report', artifactId, createdAt, data: {
+        sourceType: 'public-https', originalUrl: result.source.originalUrl, finalUrl: result.source.finalUrl,
+        title: result.source.title, retrievedAt: result.source.retrievedAt, excerpt: result.source.excerpt,
+        location: result.source.location, contentSha256: result.source.contentSha256, bytes: result.source.bytes,
+        truncated: result.source.truncated ? 1 : 0, workerRunId: result.workerRunId, usageStatus: result.usage.status,
+      } };
     case 'file':
       return {
         kind: 'file', artifactId, path: result.path, bytes: result.bytes,
@@ -288,6 +304,8 @@ export function executionArtifactFromResult(
         relativeEntryPath: result.manifest.relativeEntryPath,
         fileCount: result.manifest.fileCount,
         totalBytes: result.manifest.totalBytes,
+        ...(result.manifest.revision !== undefined ? { revision: result.manifest.revision } : {}),
+        ...(result.manifest.revisionId ? { revisionId: result.manifest.revisionId } : {}),
       };
   }
 }
@@ -376,6 +394,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
   const activePlanControllers = new Map<string, AbortController>();
   const coordinator = createMorpheusTaskCoordinator();
   let recentRequests: number[] = [];
+  let recentWorkerRequests: number[] = [];
   // Admission is shared across every entry point; resource leases coordinate
   // conflicts while each individual plan retains dependency ordering.
   let activePlans = 0;
@@ -477,10 +496,11 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
     }
   };
 
-  const withinRateLimit = (): boolean => {
+  const withinRateLimit = (worker = false): boolean => {
     const cutoff = now().getTime() - 60_000;
     recentRequests = recentRequests.filter((timestamp) => timestamp > cutoff);
-    return recentRequests.length < MORPHEUS_MAX_RUNS_PER_MINUTE;
+    recentWorkerRequests = recentWorkerRequests.filter((timestamp) => timestamp > cutoff);
+    return (worker ? recentWorkerRequests : recentRequests).length < MORPHEUS_MAX_RUNS_PER_MINUTE;
   };
 
   const inFlight = (): number => pending.size + executing.size + activePlans;
@@ -541,12 +561,16 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
     reason?: PermissionResolutionReason,
     grantId?: string,
     ownsLease = false,
+    signal?: AbortSignal,
   ): Promise<{ error: MorpheusError | null; result?: MorpheusActionResult }> => {
     executing.add(run.runId);
     let release: (() => void) | undefined;
     const queuedController = new AbortController();
+    const relay = () => queuedController.abort(signal?.reason);
+    signal?.addEventListener('abort', relay, { once: true });
+    if (signal?.aborted) relay();
     try {
-      if (!ownsLease) {
+      if (!ownsLease && run.actionId !== 'web.readPage') {
         queuedActions.set(run.runId, queuedController);
         release = await coordinator.acquire(
           actionResources(run.actionId, run.scope.resourceScope), taskPriority(run.scope.originType), queuedController.signal,
@@ -554,6 +578,8 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         queuedActions.delete(run.runId);
         if (queuedController.signal.aborted) throw queuedController.signal.reason;
       }
+      if (run.actionId === 'web.readPage') queuedActions.set(run.runId, queuedController);
+      queuedController.signal.throwIfAborted();
       const current = options.gate.evaluate({ scope: run.scope, auditHealth: (options.auditHealth ?? (() => 'healthy' as AuditHealth))() });
       if (current.outcome === 'deny' || (['session-grant', 'persistent-grant'].includes(reason ?? '') && current.outcome !== 'allow')) {
         const error: MorpheusError = { code: 'permission-denied', message: 'This action is no longer permitted.' };
@@ -573,13 +599,13 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
 
       let result: MorpheusActionResult;
       try {
-        result = await run.resolution.execute();
+        result = await run.resolution.execute(queuedController.signal);
       } catch (error) {
-        const failure = toError(error, 'execution-failed');
+        const failure = toError(error, queuedController.signal.aborted ? 'cancelled' : 'execution-failed');
         await transition({
           runId: run.runId,
           actionId: run.actionId,
-          phase: 'failed',
+          phase: queuedController.signal.aborted ? 'cancelled' : 'failed',
           auditParams: run.auditParams,
           target: run.target,
           error: failure,
@@ -606,6 +632,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       return { error: failure };
     } finally {
       queuedActions.delete(run.runId);
+      signal?.removeEventListener('abort', relay);
       release?.();
       executing.delete(run.runId);
     }
@@ -626,6 +653,8 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
     agentId?: string,
     workspaceId?: string,
     explicitRoutine = false,
+    workerOwner?: Omit<MorpheusWorkerOwner, 'planId' | 'stepId'>,
+    hasWorkers = false,
   ): PlanStepRunner => ({
     async prepare(step: ExecutionStep): Promise<PrepareResult> {
       const actionId = step.capabilityId;
@@ -633,7 +662,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         return { ok: false, error: { code: 'unknown-action', message: `Unknown action: ${String(actionId)}` } };
       }
       const capability = options.registry.resolve(actionId, platform);
-      if (!capability) {
+      if (!capability && !(actionId === 'web.readPage' && options.workerPort)) {
         return {
           ok: false,
           error: { code: 'unsupported-platform', message: `${actionId} is not available on ${platform}` },
@@ -645,7 +674,11 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
 
       let resolution: MorpheusResolution;
       try {
-        resolution = await capability.resolve(step.params as MorpheusParamsFor<MorpheusActionId>, {
+        resolution = actionId === 'web.readPage' && options.workerPort
+          ? await options.workerPort.resolve({ kind: 'web.readPage', url: String((step.params as MorpheusParamRecord).url) }, {
+            objectiveRunId: workerOwner?.objectiveRunId ?? planId, attemptId: workerOwner?.attemptId ?? `${planId}:1`,
+            cancellationGeneration: workerOwner?.cancellationGeneration ?? 1, workspaceId, planId, stepId: step.stepId,
+          }) : await capability!.resolve(step.params as MorpheusParamsFor<MorpheusActionId>, {
           roots: options.roots.forWorkspace(workspaceId),
           appVersion: options.appVersion,
           env,
@@ -666,7 +699,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         // capability, so history stays precise while trust stays workspace-shaped.
         capabilityGroup: descriptor.group,
         platform,
-        resourceScope: actionId === 'web.openUrl' ? new URL(String((step.params as MorpheusParamRecord).url)).origin : resourceScopeFor(resolution.target),
+        resourceScope: ['web.openUrl', 'web.readPage'].includes(actionId) ? new URL(String((step.params as MorpheusParamRecord).url)).origin : resourceScopeFor(resolution.target),
         riskTier: descriptor.riskTier,
         originType,
         agentId,
@@ -713,7 +746,15 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
 
       // `execute` records the outcome and returns it, so the plan's view and
       // the audit trail come from the same place and cannot disagree.
-      const outcome = await execute(run, reason as PermissionResolutionReason, undefined, true);
+      let releaseTransient: (() => void) | undefined;
+      const signal = activePlanControllers.get(planId)?.signal;
+      if (hasWorkers && actionId !== 'web.readPage') {
+        const resources = actionResources(actionId, options.roots.forWorkspace(workspaceId).resolve('morpheusFiles')).filter((resource) => !resource.key.startsWith('files:'));
+        releaseTransient = await coordinator.acquire(resources, taskPriority(originType), signal ?? new AbortController().signal);
+      }
+      let outcome: Awaited<ReturnType<typeof execute>>;
+      try { outcome = await execute(run, reason as PermissionResolutionReason, undefined, true, signal); }
+      finally { releaseTransient?.(); }
       const durationMs = now().getTime() - startedAt;
       return outcome.error
         ? { status: 'failed', error: outcome.error, durationMs }
@@ -766,6 +807,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
   return {
     describeActions(): MorpheusDescribeActionsResult {
       const supported = new Set(options.registry.supportedActions(platform));
+      for (const id of options.workerPort?.supportedActions() ?? []) supported.add(id);
       return {
         platform,
         actions: listMorpheusActionIds().map((actionId) => ({
@@ -802,7 +844,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
 
       await transition({ runId, actionId, phase: 'requested', auditParams });
 
-      if (!withinRateLimit() || inFlight() >= MORPHEUS_MAX_CONCURRENT_RUNS) {
+      if (!withinRateLimit(actionId === 'web.readPage') || inFlight() >= MORPHEUS_MAX_CONCURRENT_RUNS) {
         await transition({
           runId,
           actionId,
@@ -813,10 +855,10 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         });
         return { runId };
       }
-      recentRequests.push(startedAt);
+      (actionId === 'web.readPage' ? recentWorkerRequests : recentRequests).push(startedAt);
 
       const capability = options.registry.resolve(actionId, platform);
-      if (!capability) {
+      if (!capability && !(actionId === 'web.readPage' && options.workerPort)) {
         await transition({
           runId,
           actionId,
@@ -846,7 +888,10 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         // The registry dispatches on a runtime id, so the static type argument
         // is erased at the lookup. `params` was validated against THIS action's
         // descriptors in `validateRequestActionPayload` before reaching here.
-        resolution = await capability.resolve(params as MorpheusParamsFor<MorpheusActionId>, {
+        resolution = actionId === 'web.readPage' && options.workerPort
+          ? await options.workerPort.resolve({ kind: 'web.readPage', url: String((params as MorpheusParamRecord).url) }, {
+            objectiveRunId: runId, attemptId: `${runId}:1`, cancellationGeneration: 1, workspaceId, planId: runId, stepId: 'read-page',
+          }) : await capability!.resolve(params as MorpheusParamsFor<MorpheusActionId>, {
           roots: options.roots.forWorkspace(workspaceId),
           appVersion: options.appVersion,
           env,
@@ -874,7 +919,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         // capability, so history stays precise while trust stays workspace-shaped.
         capabilityGroup: singleDescriptor.group,
         platform,
-        resourceScope: actionId === 'web.openUrl' ? new URL(String((params as MorpheusParamRecord).url)).origin : resourceScopeFor(resolution.target),
+        resourceScope: ['web.openUrl', 'web.readPage'].includes(actionId) ? new URL(String((params as MorpheusParamRecord).url)).origin : resourceScopeFor(resolution.target),
         riskTier: singleDescriptor.riskTier,
         originType,
         agentId,
@@ -1030,7 +1075,8 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         };
       }
 
-      if (!withinRateLimit() || inFlight() >= MORPHEUS_MAX_CONCURRENT_RUNS) {
+      const hasWorkers = plan.steps.some((step) => step.capabilityId === 'web.readPage');
+      if (!withinRateLimit(hasWorkers) || inFlight() >= MORPHEUS_MAX_CONCURRENT_RUNS) {
         return {
           planId,
           status: 'rejected',
@@ -1038,7 +1084,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
           rejection: { code: 'rate-limited', message: 'Another action is already in progress' },
         };
       }
-      recentRequests.push(now().getTime());
+      (hasWorkers ? recentWorkerRequests : recentRequests).push(now().getTime());
 
       activePlans += 1;
       const controller = new AbortController();
@@ -1052,7 +1098,10 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
         const completed = new Set((context?.completedSteps ?? []).map((step) => step.stepId));
         const resources = plan.steps.filter((step) => !completed.has(step.stepId))
           .flatMap((step) => actionResources(step.capabilityId, root));
-        release = await coordinator.acquire(resources, taskPriority(plan.origin.type), controller.signal);
+        // Worker plans retain workspace dependencies, but take desktop/native
+        // leases only for the concrete native step, never during network waits.
+        release = await coordinator.acquire(hasWorkers ? resources.filter((resource) => resource.key.startsWith('files:')) : resources,
+          taskPriority(plan.origin.type), controller.signal, { countsTowardLimit: !hasWorkers });
         await options.onPlanLifecycle?.({ planId, phase: 'preparing' });
         const result = await runPlanGraph({
           plan,
@@ -1062,6 +1111,8 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
             'agentProfileId' in plan.origin ? plan.origin.agentProfileId : undefined,
             plan.workspaceId,
             context?.explicitRoutine,
+            context?.workerOwner,
+            hasWorkers,
           ),
           policy: { evaluate: (input) => options.gate.evaluate({ ...input, explicitRoutine: context?.explicitRoutine }) },
           auditHealth: (options.auditHealth ?? (() => 'healthy' as AuditHealth))(),
@@ -1198,6 +1249,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       for (const controller of queuedActions.values()) controller.abort();
       queuedActions.clear();
       coordinator.dispose();
+      options.workerPort?.dispose();
       // A parked plan resolves empty, which the executor reads as a refusal.
       for (const parked of planConsent.values()) {
         clearTimeout(parked.timer);

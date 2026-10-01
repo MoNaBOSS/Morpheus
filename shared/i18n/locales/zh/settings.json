@@ -278,6 +278,10 @@
     "faq": "常见问题"
   },
   "managedAccount": {
+    "modeLabel": "AI 服务：",
+    "ownProviders": "使用我的服务商",
+    "useManaged": "使用 Morpheus Premium",
+    "noSilentFallback": "Premium 失败时不会自动使用你的服务商并产生费用。你可以在此切换。",
     "title": "Morpheus 账户",
     "description": "查看托管服务权限和包含的用量。您自己的 AI 提供商账户独立保留。",
     "loading": "正在加载账户…",

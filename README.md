@@ -10,6 +10,11 @@ Returning greetings respect quiet settings and saved daily history; companion ch
 and neural speech share saved personality preferences. Full Phase 7 acceptance is
 still in progress; see [the current checkpoint](SOL_START_HERE.md).
 
+New source checkpoints add inspectable/exportable local memory, quiet orb check-ins,
+bounded public-page retrieval, recoverable static-site revisions and restored site
+previews. Approved app discovery is broader without shell access. Managed model/voice
+adapters are tested foundations, not yet wired end to end or available as live Premium.
+
 Phase 7 (2026-09-30): the current source audit and assistant architecture are ready
 for small implementation checkpoints, not a completed-release claim. Start with
 [the Sol handoff](SOL_START_HERE.md), [ordered work](docs/roadmap/MORPHEUS_PHASE7_EXECUTION_PLAN.md)

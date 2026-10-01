@@ -299,6 +299,18 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
     plannedBy: 'deterministic',
   });
 
+  const readPage = /^(?:read|retrieve)\s+(https:\/\/\S+)$/i.exec(text);
+  if (readPage) {
+    try {
+      const url = new URL(readPage[1]);
+      if (!url.username && !url.password && (!url.port || url.port === '443')) return {
+        ok: true,
+        plan: basePlan([makeStep('step-1', 'web.readPage', { url: url.href },
+          buildPermission('web.readPage', platform, url.origin), 'morpheus.actions.webReadPage.label')]),
+      };
+    } catch { /* Invalid URLs follow the existing truthful unsupported route. */ }
+  }
+
   if (FILE_CREATE_PATTERNS.some((pattern) => pattern.test(text))) {
     const projectPath = extractPath(text);
     // The legacy text-file capability accepts only a basename. Any explicitly

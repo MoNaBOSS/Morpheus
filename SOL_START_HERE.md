@@ -47,9 +47,13 @@ Upstream OAuth, unprovenanced old image keys and transient upgrade snapshots
 retain documented plaintext limits; B.1 packaged/real-profile/live gates remain
 open. Do not reopen its source discovery or destroy those existing credentials.
 
-Current source checkpoint is C.3 persona/arrival, verified on 2026-10-01 with
-177 focused units and seven fresh Windows journeys, four locales and reduced
-motion included. Next is C.4 memory and proactivity. Read their
+Current source checkpoint integrates C.4 memory/native check-ins, D.1 public-source
+worker and E.1 recoverable static-site revisions. F.1 app discovery has source
+regression; G.2 managed adapters are preserved but actual runtime joins remain
+unfinished and managed activation stays guarded. On 2026-10-01, the boundary
+suite passed 3,083 units (two skips); fresh Windows journeys cover memory/orb,
+four-locale site revision/preview/rollback, restored sites and account regression.
+Next is D.2 task-owned browser interaction. Read the
 narrow source evidence in `docs/releases/` and the current checkpoint in the
 roadmap. Exact installer identity/checks appear in the acceptance ledger when
 built; a source build or packaged-payload smoke is not hardware/live acceptance.
@@ -74,7 +78,7 @@ journeys; C.2 passed 21 focused units and a real-Chromium synthetic silence
 journey with zero provider/task requests. Neural auditions now include a greeting,
 joke and explicitly prepared update in one request. Hardware/live voice remains
 open. C.3 is now verified in source; see `docs/releases/phase7-c3-source-checkpoint.md`.
-Continue C.4 then the existing D–I sequence. Do not redo B.1/C.1 discovery or
+Continue D.2/D.3, E.2/E.3, F.2 then the existing G–I sequence. Do not redo B.1/C.1 discovery or
 call the whole Phase 7 complete.
 
 ## Operating rules for continuity and cost
@@ -104,7 +108,7 @@ User-ready resume prompt:
 
 > Continue Morpheus Phase 7 on Sol from SOL_START_HERE.md on
 > codex/morpheus-phase6-managed-layer. Verify the checkout and preserve all work.
-> Read the current checkpoint, then continue 7C.4 memory/proactivity and 7D.1 worker integration in
+> Read the current checkpoint, then continue 7D.2 task-owned browser interaction in
 > the documented small checkpoints. Keep the approved bottom-right Siri-style Morpheus companion,
 > not a dashboard. NerdGPT later. Update tests, evidence and handoff as you go;
 > distinguish source implementation from packaged/live acceptance.

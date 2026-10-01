@@ -13,6 +13,7 @@ import { buildWorkspacePreviewTarget } from '@/components/file-preview/build-pre
 import { FilePreviewOverlay } from '@/components/file-preview/FilePreviewOverlay';
 import type { FilePreviewTarget } from '@/components/file-preview/types';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
+import type { ExecutionArtifact } from '@shared/morpheus/execution-types';
 
 function reportSummary(data: Record<string, string | number>): string {
   if (typeof data.path === 'string') return data.path;
@@ -23,17 +24,18 @@ function reportSummary(data: Record<string, string | number>): string {
   return first ? `${first[0]}: ${first[1]}` : 'report';
 }
 
-export function ArtifactsPanel({ limit }: { limit?: number }) {
+export function ArtifactsPanel({ limit, items, showRoot = true }: { limit?: number; items?: ExecutionArtifact[]; showRoot?: boolean }) {
   const { t } = useTranslation('dashboard');
   const [previewFile, setPreviewFile] = useState<FilePreviewTarget | null>(null);
-  const artifacts = useMorpheusCommandStore((state) => state.artifacts);
+  const recentArtifacts = useMorpheusCommandStore((state) => state.artifacts);
+  const artifacts = items ?? recentArtifacts;
   const filesRoot = useMorpheusCommandStore((state) => state.filesRoot);
   const openFilesRoot = useMorpheusCommandStore((state) => state.openFilesRoot);
   const visibleArtifacts = typeof limit === 'number' ? artifacts.slice(0, limit) : artifacts;
 
   return (
     <div data-testid="morpheus-artifacts" className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2 rounded-md border bg-surface-input px-2.5 py-2">
+      {showRoot ? <div className="flex items-center justify-between gap-2 rounded-md border bg-surface-input px-2.5 py-2">
         <div className="min-w-0">
           <p className="text-2xs uppercase tracking-wide text-muted-foreground">
             {t('morpheus.artifacts.rootLabel')}
@@ -53,7 +55,7 @@ export function ArtifactsPanel({ limit }: { limit?: number }) {
           <FolderOpen className="h-3.5 w-3.5" aria-hidden />
           {t('morpheus.artifacts.open')}
         </Button>
-      </div>
+      </div> : null}
 
       {artifacts.length === 0 ? (
         <p data-testid="morpheus-artifacts-empty" className="text-tiny text-muted-foreground">

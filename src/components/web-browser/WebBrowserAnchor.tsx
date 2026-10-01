@@ -10,7 +10,7 @@ export function HtmlPreviewAnchor() {
     <div
       ref={registerAnchor}
       data-testid="html-preview-anchor"
-      className="h-full min-h-0 w-full"
+      className="relative h-full min-h-0 w-full"
     />
   );
 }

@@ -15,6 +15,8 @@ import { MorpheusPermissionDialog } from './MorpheusPermissionDialog';
 import { MorpheusPlanConsentDialog } from './MorpheusPlanConsentDialog';
 import { MorpheusVoiceRuntime } from './MorpheusVoiceRuntime';
 import { MorpheusOperatorNavigation } from './operator/MorpheusOperatorNavigation';
+import { MorpheusSocialCheckIn } from './MorpheusSocialCheckIn';
+import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
 
 export function MorpheusGlobalRuntime() {
   const subscribe = useMorpheusActionsStore((state) => state.subscribe);
@@ -38,6 +40,7 @@ export function MorpheusGlobalRuntime() {
   const ensureAmbient = useMorpheusVoiceStore((state) => state.ensureAmbient);
   const loadIntelligence = useMorpheusIntelligenceStore((state) => state.load);
   const refreshToday = useMorpheusIntelligenceStore((state) => state.refreshToday);
+  const activeCount = useMorpheusCommandStore((state) => Object.values(state.objectiveHistory?.runsById ?? {}).filter((run) => !isObjectiveTerminalState(run.state)).length);
 
   useEffect(() => {
     return subscribeMorpheusAudioLevel((level) => {
@@ -102,6 +105,7 @@ export function MorpheusGlobalRuntime() {
       <MorpheusPermissionDialog />
       <MorpheusVoiceRuntime />
       <MorpheusOperatorNavigation />
+      <MorpheusSocialCheckIn activeCount={activeCount} />
     </>
   );
 }

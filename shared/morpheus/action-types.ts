@@ -12,6 +12,7 @@
 import type { MorpheusActionId, MorpheusApplicationKey, MorpheusParamsFor } from './actions/registry';
 import type { MorpheusWebsiteProjectManifest } from './site-types';
 import type { MorpheusReminderResult } from './schedule-types';
+import type { MorpheusSourceObservation, MorpheusWorkerUsage } from './worker-types';
 
 export const MORPHEUS_EVENT_VERSION = 1 as const;
 export const MORPHEUS_AUDIT_VERSION = 1 as const;
@@ -195,6 +196,7 @@ export type MorpheusScheduledReminderResult = MorpheusReminderResult & {
 };
 
 export type MorpheusActionResult =
+  | { kind: 'source'; source: MorpheusSourceObservation; workerRunId: string; usage: MorpheusWorkerUsage }
   | MorpheusScheduledReminderResult
   | MorpheusWebsiteResult
   | MorpheusNotificationResult
@@ -218,6 +220,7 @@ export type MorpheusActionResult =
  * an action ran and must never become durable audit content.
  */
 export type MorpheusAuditOutcome =
+  | { kind: 'source'; origin: string; bytes: number; contentSha256: string; workerRunId: string; usageStatus: 'known' | 'unknown' }
   | MorpheusLaunchResult
   | MorpheusFileResult
   | MorpheusSystemResult
@@ -239,6 +242,8 @@ export type MorpheusAuditOutcome =
     fileCount: number;
     totalBytes: number;
     verified: true;
+    revision?: string;
+    revisionId?: string;
   };
 
 /** Renderer-supplied parameters. Validated in Main against a key whitelist. */

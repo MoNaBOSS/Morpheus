@@ -46,6 +46,7 @@ export function createMorpheusTaskCoordinator(options: { maxActive?: number; max
     signal: AbortSignal;
     abort: () => void;
     addedAt: number;
+    countsTowardLimit: boolean;
   };
   const conflicts = (a: Waiter, b: Waiter) => a.resources.some((left) => b.resources.some((right) => overlaps(left, right)));
   const pump = (): void => {
@@ -53,9 +54,10 @@ export function createMorpheusTaskCoordinator(options: { maxActive?: number; max
     // Aging prevents an endless stream of commands from starving background work.
     const weight = (entry: Waiter) => entry.priority === 'interactive' || Date.now() - entry.addedAt > 30_000 ? 0 : 1;
     pending.sort((a, b) => weight(a) - weight(b) || a.addedAt - b.addedAt);
-    for (let i = 0; i < pending.length && running.size < maxActive;) {
+    for (let i = 0; i < pending.length;) {
       const entry = pending[i];
-      if ([...running].some((other) => conflicts(entry, other))
+      if (entry.countsTowardLimit && [...running].filter((other) => other.countsTowardLimit).length >= maxActive
+        || [...running].some((other) => conflicts(entry, other))
         || pending.slice(0, i).some((other) => conflicts(entry, other))) { i += 1; continue; }
       pending.splice(i, 1);
       entry.signal.removeEventListener('abort', entry.abort);
@@ -70,12 +72,13 @@ export function createMorpheusTaskCoordinator(options: { maxActive?: number; max
     }
   };
   return {
-    acquire(resources: readonly TaskResource[], priority: TaskPriority, signal: AbortSignal): Promise<() => void> {
+    acquire(resources: readonly TaskResource[], priority: TaskPriority, signal: AbortSignal,
+      admission: { countsTowardLimit?: boolean } = {}): Promise<() => void> {
       if (disposed || signal.aborted) return Promise.reject(new DOMException('Task cancelled', 'AbortError'));
       if (pending.length >= maxPending) return Promise.reject(new Error('Morpheus task queue is full.'));
       return new Promise((resolvePromise, reject) => {
         const entry: Waiter = {
-          resources, priority, signal, resolve: resolvePromise, reject, addedAt: Date.now(),
+          resources, priority, signal, resolve: resolvePromise, reject, addedAt: Date.now(), countsTowardLimit: admission.countsTowardLimit ?? true,
           abort: () => {
             const index = pending.indexOf(entry);
             if (index >= 0) pending.splice(index, 1);

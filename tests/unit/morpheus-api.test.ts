@@ -118,6 +118,9 @@ function stubOptions(runtime = stubRuntime()) {
       reset: vi.fn(),
       noteInteraction: vi.fn(),
       admitGreeting: vi.fn(() => ({ admitted: false, preferredName: '' })),
+      socialCheckInDue: vi.fn(() => false),
+      admitSocialCheckIn: vi.fn(() => ({ admitted: false })),
+      dismissSocialCheckIn: vi.fn(() => false),
     } as never,
     systems: {
       list: vi.fn(() => ({ systems: [] })),
@@ -625,6 +628,7 @@ describe('createMorpheusApi', () => {
       'addWorkspace',
       'admitArrivalGreeting',
       'admitAssistantTurn',
+      'admitSocialCheckIn',
       'agentProfile',
       'agentProfiles',
       'assistantSelectConversation',
@@ -644,9 +648,11 @@ describe('createMorpheusApi', () => {
       'describeActions',
       'dismissAttention',
       'dismissCompanionSurface',
+      'dismissSocialCheckIn',
       'endAmbientVoice',
       'executePlan',
       'expandCompanionSurface',
+      'exportMemories',
       'filesRoot',
       'goal',
       'goals',
@@ -754,6 +760,89 @@ describe('createMorpheusApi', () => {
       expect(() => api.updatePresentationLevel(payload as { level: number })).toThrow(MorpheusValidationError);
     }
     expect(onPresentationLevel).toHaveBeenCalledTimes(1);
+  });
+
+  it('captures one explicit user preference per admitted turn and cannot resurrect it on retry', async () => {
+    const options = stubOptions();
+    const memory = { list: vi.fn(() => ({ memories: [] })), save: vi.fn(), get: vi.fn(), remove: vi.fn() };
+    const api = createMorpheusApi({ ...options, memory: memory as never });
+    const request = { conversationId: 'agent:main:main', clientRequestId: 'explicit-one', text: "Don't roast me", source: 'compact' as const };
+    const [first, duplicate] = await Promise.all([api.admitAssistantTurn(request), api.admitAssistantTurn(request)]);
+    expect(duplicate).toEqual(first);
+    expect(memory.save).toHaveBeenCalledTimes(1);
+    const draft = memory.save.mock.calls[0][0] as { memoryId: string; text: string };
+    expect(draft).toMatchObject({ text: 'Do not roast me.', kind: 'preference' });
+    expect(memory.save.mock.calls[0][1]).toEqual({ source: 'user', sourceId: first.turnId });
+    await api.removeMemory({ memoryId: draft.memoryId });
+    await api.admitAssistantTurn(request);
+    expect(memory.save).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify((options.audit as { recordControl: ReturnType<typeof vi.fn> }).recordControl.mock.calls)).not.toContain('roast');
+  });
+
+  it('exports an explicit project scope with no renderer destination or unrelated fields', async () => {
+    const options = stubOptions();
+    const entry = { v: 1, memoryId: 'memory-personal', title: 'Preference', text: 'Short updates', kind: 'preference', sensitivity: 'normal', providerUse: 'allowed', source: 'user', enabled: true, createdAt: '2026-01-01', updatedAt: '2026-01-01', password: 'not-memory' };
+    const saveMemoryExport = vi.fn(async () => 'memory.json');
+    const api = createMorpheusApi({ ...options, saveMemoryExport,
+      projects: { get: () => ({ projectId: 'personal' }) } as never,
+      memory: { list: () => ({ memories: [entry, { ...entry, memoryId: 'memory-other', projectId: 'project-other' }] }) } as never });
+    expect(await api.exportMemories({ projectId: 'personal' })).toEqual({ status: 'saved', count: 1, fileName: 'memory.json' });
+    expect(saveMemoryExport.mock.calls[0][0]).toMatchObject({ v: 1, memories: [{ memoryId: 'memory-personal' }] });
+    expect(JSON.stringify(saveMemoryExport.mock.calls)).not.toContain('not-memory');
+    await expect(api.exportMemories({ projectId: 'personal', path: 'C:/owner.json' } as never)).rejects.toThrow('unsupported key');
+    expect(saveMemoryExport).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps explicit name capture and later memory deletion aligned with the saved profile', async () => {
+    const options = stubOptions();
+    const updateProfile = vi.fn();
+    const memory = { list: () => ({ memories: [{ memoryId: 'memory-old-name', sourceId: 'onboarding-preferred-name', text: 'Call the user OldName.' }] }),
+      get: () => ({ sourceId: 'onboarding-preferred-name' }), save: vi.fn((value: unknown) => value), remove: vi.fn() };
+    const onboarding = { noteInteraction: vi.fn(), status: () => ({ completed: true }), updateProfile };
+    const api = createMorpheusApi({ ...options, memory: memory as never, onboarding: onboarding as never });
+    await api.admitAssistantTurn({ conversationId: 'agent:main:main', clientRequestId: 'name-new', text: 'Call me Larry', source: 'compact' });
+    expect(updateProfile).toHaveBeenCalledWith({ preferredName: 'Larry' });
+    expect(memory.save.mock.calls[0][0]).toMatchObject({ memoryId: 'memory-old-name', text: 'Call the user Larry.' });
+    await api.removeMemory({ memoryId: 'memory-old-name' });
+    expect(updateProfile).toHaveBeenLastCalledWith({ preferredName: '' });
+  });
+
+  it('does not export or offer an invitation when the required audit fails', async () => {
+    const options = stubOptions();
+    const saveMemoryExport = vi.fn();
+    const admit = vi.fn();
+    const api = createMorpheusApi({ ...options, saveMemoryExport,
+      localSocialAvailability: () => true,
+      proactive: { snapshot: () => ({ settings: { enabled: true, quietHoursEnabled: false } }) } as never,
+      onboarding: { socialCheckInDue: () => true, admitSocialCheckIn: admit } as never,
+      audit: { recordControl: async () => { throw new Error('audit unavailable'); } } as never });
+    await expect(api.exportMemories()).rejects.toThrow('audit unavailable');
+    await expect(api.admitSocialCheckIn({ available: true })).rejects.toThrow('audit unavailable');
+    expect(saveMemoryExport).not.toHaveBeenCalled(); expect(admit).not.toHaveBeenCalled();
+  });
+
+  it('Main denies unavailable busy DND or pending-turn social admissions and records before admission', async () => {
+    const options = stubOptions();
+    const due = vi.fn((quiet: boolean) => !quiet);
+    const admit = vi.fn(() => ({ admitted: true, invitationId: 'social-fixture' }));
+    const onboarding = { status: vi.fn(), socialCheckInDue: due, admitSocialCheckIn: admit, noteInteraction: vi.fn() };
+    let available = false;
+    let dnd = false;
+    const api = createMorpheusApi({ ...options, onboarding: onboarding as never,
+      localSocialAvailability: () => available,
+      proactive: { snapshot: () => ({ settings: { enabled: true, doNotDisturb: dnd, quietHoursEnabled: false } }) } as never });
+    expect(await api.admitSocialCheckIn({ available: true })).toEqual({ admitted: false });
+    available = true; dnd = true;
+    expect(await api.admitSocialCheckIn({ available: true })).toEqual({ admitted: false });
+    dnd = false;
+    expect(await api.admitSocialCheckIn({ available: false })).toEqual({ admitted: false });
+    expect(await api.admitSocialCheckIn({ available: true })).toMatchObject({ admitted: true, invitationId: 'social-fixture', text: expect.any(String) });
+    const audit = options.audit as { recordControl: ReturnType<typeof vi.fn> };
+    expect(audit.recordControl.mock.invocationCallOrder[0]).toBeLessThan(admit.mock.invocationCallOrder[0]);
+    await api.admitAssistantTurn({ conversationId: 'agent:main:main', clientRequestId: 'pending-social', text: 'Hello', source: 'orb' });
+    expect(await api.admitSocialCheckIn({ available: true })).toEqual({ admitted: false });
+    expect(admit).toHaveBeenCalledTimes(1);
+    expect(() => api.admitSocialCheckIn({ available: true, now: '2030-01-01' } as never)).toThrow('unsupported key');
   });
 
   it('forwards validated payloads to the runtime', async () => {

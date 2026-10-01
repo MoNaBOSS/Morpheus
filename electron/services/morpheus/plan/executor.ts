@@ -283,6 +283,12 @@ export async function executePlan(input: ExecutePlanInput): Promise<ExecutePlanR
     if (signal?.aborted) return cancelPending();
     const outcome = await runner.run(step, prepared, reasonByStep.get(stepId) ?? 'pre-authorized');
 
+    if (outcome.status === 'failed' && signal?.aborted && outcome.error.code === 'cancelled') {
+      results.set(stepId, { stepId, status: 'cancelled', startedAt, durationMs: outcome.durationMs, error: outcome.error });
+      await input.checkpoint?.(results.get(stepId)!);
+      return cancelPending();
+    }
+
     if (outcome.status === 'succeeded') {
       results.set(stepId, {
         stepId, status: 'succeeded', startedAt, durationMs: outcome.durationMs, artifact: outcome.artifact,

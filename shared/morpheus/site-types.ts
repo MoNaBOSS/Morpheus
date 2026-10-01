@@ -1,6 +1,19 @@
 /** Platform-neutral contract for a verified Morpheus website project. */
 export const MORPHEUS_WEBSITE_PROJECT_VERSION = 1 as const;
 
+export type MorpheusSiteRevisionPatch = {
+  path: string;
+  expectedRevision: string;
+  files: readonly { path: string; content: string }[];
+};
+
+export type MorpheusSiteRevisionReceipt = {
+  revisionId: string;
+  previousRevision: string;
+  revision: string;
+  fileCount: number;
+};
+
 export type MorpheusWebsiteVerification = {
   entryDocument: true;
   viewportMetadata: true;
@@ -27,4 +40,8 @@ export type MorpheusWebsiteProjectManifest = {
   totalBytes: number;
   checks: MorpheusWebsiteVerification;
   verifiedAt: string;
+  /** Digest of the files actually inspected, usable as a revision precondition. */
+  revision?: string;
+  /** Main-authored recoverable revision, never supplied by generated content. */
+  revisionId?: string;
 };

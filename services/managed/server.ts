@@ -26,10 +26,24 @@ export function createManagedHttpServer(handle: (request: Request) => Promise<Re
       if (outgoing.destroyed) return;
       response.headers.forEach((value, name) => outgoing.setHeader(name, value));
       outgoing.writeHead(response.status);
-      outgoing.end(Buffer.from(await response.arrayBuffer()));
+      if (!response.body) { outgoing.end(); return; }
+      // Preserve bounded speech streaming and downstream cancellation instead
+      // of buffering the entire audio response before the first byte.
+      const reader = response.body.getReader();
+      try {
+        for (;;) {
+          const chunk = await reader.read(); if (chunk.done) break;
+          if (outgoing.destroyed) { controller.abort(); break; }
+          if (!outgoing.write(Buffer.from(chunk.value))) await new Promise<void>((resolve) => {
+            const finish = () => { outgoing.off('drain', finish); outgoing.off('close', finish); resolve(); };
+            outgoing.once('drain', finish); outgoing.once('close', finish);
+          });
+        }
+        if (!outgoing.destroyed) outgoing.end();
+      } finally { await reader.cancel().catch(() => undefined); reader.releaseLock(); }
     } catch {
-      if (!outgoing.headersSent) outgoing.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-      outgoing.end('{"error":"service_unavailable"}');
+      if (!outgoing.headersSent) { outgoing.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); outgoing.end('{"error":"service_unavailable"}'); }
+      else outgoing.destroy();
     } finally { clearTimeout(timer); }
   });
   server.maxConnections = 64;

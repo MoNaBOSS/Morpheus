@@ -1,30 +1,79 @@
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-const preferences = vi.hoisted(() => ({ level: 'talkative', dnd: false }));
+const preferences = vi.hoisted(() => ({ level: 'talkative', dnd: false, speak: false }));
+const social = vi.hoisted(() => ({ admit: vi.fn(), dismiss: vi.fn() }));
+const speech = vi.hoisted(() => ({ play: vi.fn() }));
+vi.mock('@/lib/morpheus-speech-player', () => ({ playMorpheusSpeech: speech.play }));
+vi.mock('@/stores/morpheus-voice', () => ({ useMorpheusVoiceStore: { getState: () => ({ status: { settings: { speakResponses: preferences.speak }, neuralSpeechAvailable: true } }) } }));
+vi.mock('@/lib/host-api', () => ({ hostApi: { morpheus: { admitSocialCheckIn: social.admit, dismissSocialCheckIn: social.dismiss } } }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
-vi.mock('@/stores/morpheus-companion', () => ({ useMorpheusCompanionStore: (select: (state: unknown) => unknown) => select({ onboarding: { preferences: { proactivityLevel: preferences.level } } }) }));
+vi.mock('@/stores/morpheus-companion', () => {
+  const getState = () => ({ onboarding: { preferences: { proactivityLevel: preferences.level, speakResponses: preferences.speak } } });
+  return { useMorpheusCompanionStore: Object.assign((select: (state: unknown) => unknown) => select(getState()), { getState }) };
+});
 vi.mock('@/stores/morpheus-intelligence', () => ({ useMorpheusIntelligenceStore: (select: (state: unknown) => unknown) => select({ proactive: { settings: { enabled: true, doNotDisturb: preferences.dnd } } }) }));
 import { MorpheusSocialCheckIn } from '@/components/morpheus/MorpheusSocialCheckIn';
 
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); localStorage.clear(); preferences.dnd = false; });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); vi.clearAllMocks(); preferences.dnd = false; preferences.speak = false; });
 describe('social check-in interruption', () => {
-  it('dismisses immediately when work or DND starts and does not revive the old prompt', () => {
+  it('uses Main admission and dismisses immediately when work or DND starts without answer buttons', async () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date('2026-09-28T00:00:00Z'));
     vi.spyOn(document, 'hasFocus').mockReturnValue(true);
     vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    social.admit.mockResolvedValueOnce({ admitted: true, invitationId: 'social-first' }).mockResolvedValue({ admitted: false });
+    social.dismiss.mockResolvedValue({ dismissed: true });
     const view = render(<MorpheusSocialCheckIn activeCount={0} />);
-    act(() => vi.advanceTimersByTime(10 * 60_000));
+    await act(() => vi.advanceTimersByTimeAsync(10 * 60_000));
     expect(screen.getByTestId('morpheus-social-check-in')).toBeInTheDocument();
     act(() => vi.advanceTimersByTime(8_000));
     expect(screen.queryByTestId('social-answer-good')).toBeNull();
     expect(screen.queryByTestId('social-answer-rough')).toBeNull();
     view.rerender(<MorpheusSocialCheckIn activeCount={1} />);
     expect(screen.queryByTestId('morpheus-social-check-in')).toBeNull();
+    expect(social.dismiss).toHaveBeenCalledExactlyOnceWith('social-first');
     view.rerender(<MorpheusSocialCheckIn activeCount={0} />);
     expect(screen.queryByTestId('morpheus-social-check-in')).toBeNull();
-    act(() => vi.advanceTimersByTime(24 * 60 * 60_000));
+    await act(() => vi.advanceTimersByTimeAsync(10 * 60_000));
+    expect(screen.queryByTestId('morpheus-social-check-in')).toBeNull();
+    social.admit.mockResolvedValueOnce({ admitted: true, invitationId: 'social-second' });
+    await act(() => vi.advanceTimersByTimeAsync(60_000));
     expect(screen.getByTestId('morpheus-social-check-in')).toBeInTheDocument();
     preferences.dnd = true; view.rerender(<MorpheusSocialCheckIn activeCount={0} />);
     expect(screen.queryByTestId('morpheus-social-check-in')).toBeNull();
+  });
+  it('silence expires locally and ignores late admissions after hidden/unmount', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    social.admit.mockResolvedValueOnce({ admitted: true, invitationId: 'social-expire' }).mockResolvedValue({ admitted: false });
+    social.dismiss.mockResolvedValue({ dismissed: true });
+    const view = render(<MorpheusSocialCheckIn activeCount={0} />);
+    await act(() => vi.advanceTimersByTimeAsync(10 * 60_000));
+    expect(screen.getByTestId('morpheus-social-check-in')).toBeVisible();
+    await act(() => vi.advanceTimersByTimeAsync(45_000));
+    expect(screen.queryByTestId('morpheus-social-check-in')).toBeNull();
+    expect(social.dismiss).toHaveBeenCalledWith('social-expire');
+    let complete!: (value: { admitted: boolean; invitationId: string }) => void;
+    social.admit.mockImplementationOnce(() => new Promise((resolve) => { complete = resolve; }));
+    await act(() => vi.advanceTimersByTimeAsync(60_000));
+    view.unmount();
+    await act(async () => { complete({ admitted: true, invitationId: 'social-late' }); });
+    expect(social.dismiss).toHaveBeenCalledWith('social-late');
+  });
+  it('allows Main-approved native orb check-ins while the main renderer is hidden, with one cancellable natural utterance', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(document, 'hasFocus').mockReturnValue(false);
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+    preferences.speak = true;
+    social.admit.mockResolvedValueOnce({ admitted: true, invitationId: 'social-native', text: 'How has your day been?' }).mockResolvedValue({ admitted: false });
+    social.dismiss.mockResolvedValue({ dismissed: true });
+    speech.play.mockReturnValue(new Promise(() => {}));
+    const view = render(<MorpheusSocialCheckIn activeCount={0} />);
+    await act(() => vi.advanceTimersByTimeAsync(10 * 60_000));
+    expect(speech.play).toHaveBeenCalledExactlyOnceWith('How has your day been?', expect.objectContaining({ neuralAvailable: true, allowWindowsFallback: false }));
+    const signal = speech.play.mock.lastCall![1].signal as AbortSignal;
+    view.rerender(<MorpheusSocialCheckIn activeCount={1} />);
+    expect(signal.aborted).toBe(true);
+    expect(social.dismiss).toHaveBeenCalledWith('social-native');
   });
 });

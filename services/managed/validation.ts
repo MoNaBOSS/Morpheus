@@ -6,6 +6,9 @@ export const featuresSchema = z.array(z.enum(['conversation', 'planning', 'trans
 export const requestSchema = z.object({
   requestId: idSchema,
   objectiveId: idSchema.optional(),
+  turnId: idSchema.optional(),
+  workerRunId: idSchema.optional(),
+  speechId: idSchema.optional(),
   route: idSchema,
   input: z.json(),
 }).strict();

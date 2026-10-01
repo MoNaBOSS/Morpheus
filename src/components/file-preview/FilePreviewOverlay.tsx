@@ -6,7 +6,7 @@
  */
 import { useEffect } from 'react';
 
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { isHtmlPreviewExt } from '@/lib/generated-files';
 import { useArtifactPanel } from '@/stores/artifact-panel';
 import { FilePreviewBody } from './FilePreviewBody';
@@ -41,8 +41,11 @@ export function FilePreviewOverlay({ file, readOnly = false, onClose }: FilePrev
     <Sheet open={!!file} onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent
         side="right"
-        className="w-[70vw] max-w-[1100px] sm:max-w-[1100px] p-0 flex flex-col"
+        data-testid="file-preview-overlay"
+        aria-describedby={undefined}
+        className="w-[70vw] max-w-[1100px] sm:max-w-[1100px] p-0 flex flex-col motion-reduce:!animate-none motion-reduce:transition-none"
       >
+        <SheetTitle className="sr-only">{file?.fileName}</SheetTitle>
         {file && <FilePreviewBody file={file} readOnly={readOnly} />}
       </SheetContent>
     </Sheet>

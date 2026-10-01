@@ -73,7 +73,7 @@ import type { MorpheusAgentProfileDraft } from '@shared/morpheus/agent-profile-t
 import type { MorpheusWorkflowDraft } from '@shared/morpheus/workflow-types';
 import type { PermissionProfile } from '@shared/morpheus/permission-types';
 import type { MorpheusProjectDraft } from '@shared/morpheus/project-types';
-import type { MorpheusMemoryDraft } from '@shared/morpheus/memory-types';
+import type { MorpheusMemoryDraft, MorpheusMemoryExportPayload } from '@shared/morpheus/memory-types';
 import type { MorpheusGoalDraft } from '@shared/morpheus/goal-types';
 import type {
   CreateMorpheusReminderPayload,
@@ -449,6 +449,7 @@ export const hostApi = {
   },
   managedAccount: {
     status: () => invokeHost('managedAccount', 'status'),
+    setMode: (mode: 'byok' | 'managed') => invokeHost('managedAccount', 'setMode', { mode }),
     googleSignIn: () => invokeHost('managedAccount', 'googleSignIn'),
     requestEmailCode: (email: string) => invokeHost('managedAccount', 'requestEmailCode', { email }),
     verifyEmailCode: (code: string) => invokeHost('managedAccount', 'verifyEmailCode', { code }),
@@ -516,6 +517,9 @@ export const hostApi = {
     memories: () => invokeHost('morpheus', 'memories'),
     saveMemory: (payload: MorpheusMemoryDraft) => invokeHost('morpheus', 'saveMemory', payload),
     removeMemory: (memoryId: string) => invokeHost('morpheus', 'removeMemory', { memoryId }),
+    exportMemories: (payload?: MorpheusMemoryExportPayload) => invokeHost('morpheus', 'exportMemories', payload),
+    admitSocialCheckIn: (available: boolean) => invokeHost('morpheus', 'admitSocialCheckIn', { available }),
+    dismissSocialCheckIn: (invitationId: string) => invokeHost('morpheus', 'dismissSocialCheckIn', { invitationId }),
     onboardingStatus: () => invokeHost('morpheus', 'onboardingStatus'),
     admitArrivalGreeting: () => invokeHost('morpheus', 'admitArrivalGreeting'),
     completeOnboarding: (payload: CompleteMorpheusOnboardingPayload) => (

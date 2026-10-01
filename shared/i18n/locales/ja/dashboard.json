@@ -253,6 +253,9 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
+      "siteRevise": {"label":"ウェブサイトを修正","description":"検証済みのリビジョンからのみ修正し、無関係な手動編集を保持します。"},
+      "siteRollback": {"label":"ウェブサイトを戻す","description":"現在のリビジョンを検証してから記録済みの版を復元し、手動編集を保持します。"},
+      "webReadPage": { "label": "ウェブページを読む", "description": "公開 HTTPS ページを読み、取得した情報源の証拠を保存します。" },
       "appLaunch": {
         "label": "承認済みアプリケーションを起動",
         "description": "組み込みの承認済みリストからアプリケーションを起動します。"
@@ -745,6 +748,8 @@
       "eyebrow": "パーソナル知能", "title": "プロジェクトとコンテキスト", "description": "正確に信頼されたワークスペースと確認可能なコンテキストで目的を整理します。", "active": "アクティブなプロジェクト", "none": "プロジェクトなし", "manage": "コンテキストを管理", "create": "プロジェクトを作成", "newProject": "新しいプロジェクト", "projectContext": "プロジェクトコンテキスト", "untitled": "無題のプロジェクト", "name": "プロジェクト名", "descriptionLabel": "説明", "workspace": "信頼済みワークスペース", "instructions": "計画コンテキスト", "instructionsPlaceholder": "このプロジェクトで作業するとき Morpheus が理解すべきことは？", "noDescription": "説明はまだありません。", "noActiveDescription": "Morpheus に焦点を絞ったコンテキストを与えるプロジェクトを選択してください。"
     },
     "memory": {
+      "export": "このメモリをエクスポート",
+      "exportStatus": { "saved": "メモリを保存しました。チャット履歴は Morpheus に残ります。", "cancelled": "エクスポートをキャンセルしました。", "error": "メモリを書き出せませんでした。もう一度お試しください。" },
       "title": "Morpheus メモリ", "description": "確認、編集、無効化、削除できる明示的なコンテキストです。機密項目はローカルに留まります。", "context": "コンテキストメモリ", "disclosure": "有効かつ通常で、プロバイダー利用を許可した項目だけが計画コンテキストに入ります。", "saveProjectFirst": "メモリを追加する前にプロジェクトを保存してください。", "titlePlaceholder": "Morpheus に何を覚えさせますか？", "textPlaceholder": "簡潔なコンテキスト、設定、習慣、決定を入力します。", "sensitive": "機密 — ローカルに保ち、プロバイダー計画から除外", "add": "メモリを追加", "entries": "{{count}} 件のメモリ", "empty": "このプロジェクトにメモリはありません。", "emptyCompact": "このコンテキストで有効なメモリはありません。", "remove": "メモリを削除",
       "kinds": { "preference": "設定", "project-context": "プロジェクトコンテキスト", "routine": "ルーチン", "decision": "決定" },
       "providerUse": { "allowed": "プランナーで利用可能", "local-only": "ローカルのみ" }

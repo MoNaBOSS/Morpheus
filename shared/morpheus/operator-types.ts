@@ -60,6 +60,7 @@ const DESIRE_ACTION = new RegExp(
 );
 const ACTION_NOUN_REQUEST = /^(?:set|create)\s+(?:up\s+)?(?:a\s+)?(?:reminder|schedule|workflow|project|website|site)\b/i;
 const CONVERSATIONAL_QUESTION = /^(?:what|why|who|where|when|how|which|is|are|am|do|does|did|can|could|would|should)\b/i;
+const COMPANION_CONVERSATION = /^(?:(?:hi|hello|hey|good morning|good evening|thanks|thank you)(?:[\s,!].*)?|(?:i prefer|remember(?: that)?|call me)\s+.+|(?:please\s+)?(?:don't|do not)\s+(?:roast|mock|joke|make jokes|use jokes|make fun|tease)\b.*)[.!?]?$/i;
 
 /**
  * Bounded deterministic routing for Auto mode.
@@ -84,7 +85,7 @@ export function routeMorpheusInteraction(
     return { route: 'objective', reason: 'actionable-intent', confidence: 'high', text };
   }
 
-  if (CONVERSATIONAL_QUESTION.test(text) || text.endsWith('?')) {
+  if (CONVERSATIONAL_QUESTION.test(text) || COMPANION_CONVERSATION.test(text) || text.endsWith('?')) {
     return { route: 'conversation', reason: 'conversational-intent', confidence: 'high', text };
   }
 

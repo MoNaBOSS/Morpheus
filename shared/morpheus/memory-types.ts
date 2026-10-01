@@ -36,6 +36,9 @@ export type MorpheusMemoryWriteMetadata = {
 export type MorpheusMemorySnapshot = { memories: readonly MorpheusMemory[] };
 export type MorpheusMemoryIdPayload = { memoryId: string };
 export type MorpheusMemoryResult = { memory: MorpheusMemory | null };
+/** Logical scope only. Destination is selected in Main's native save dialog. */
+export type MorpheusMemoryExportPayload = { projectId?: string };
+export type MorpheusMemoryExportResult = { status: 'saved' | 'cancelled'; count: number; fileName?: string };
 
 export function isMorpheusMemoryId(value: unknown): value is string {
   return typeof value === 'string' && /^memory-[a-z0-9][a-z0-9-]{0,95}$/i.test(value);

@@ -15,6 +15,7 @@ import {
 } from '../../capability-registry';
 import type { MorpheusRootProvider } from '../../roots';
 import { resolveWorkspacePath } from './workspace';
+import { inspectMorpheusSiteRevision } from '../../sites/site-revisions';
 
 const MAX_SITE_FILES = 128;
 const MAX_SITE_DEPTH = 8;
@@ -172,6 +173,7 @@ export const win32VerifySiteCapability: MorpheusCapability<'site.verify'> = {
           throw new MorpheusCapabilityError('execution-failed', 'Website entry changed before verification');
         }
 
+        const initialRevision = await inspectMorpheusSiteRevision(context.roots, params.path);
         const files = await inventorySite(project.absolute, project.workspaceRoot, context.roots);
         const cssFiles = files.filter((file) => /\.css$/i.test(file.relative));
         if (cssFiles.length === 0) {
@@ -200,6 +202,10 @@ export const win32VerifySiteCapability: MorpheusCapability<'site.verify'> = {
           throw new MorpheusCapabilityError('invalid-params', 'Website is missing a bounded analytics.json configuration');
         }
         verifyAnalytics(await readFile(analytics.absolute, 'utf8'));
+        const finalRevision = await inspectMorpheusSiteRevision(context.roots, params.path);
+        if (finalRevision.revision !== initialRevision.revision) {
+          throw new MorpheusCapabilityError('execution-failed', 'Website changed during verification');
+        }
 
         return {
           kind: 'website',
@@ -220,6 +226,7 @@ export const win32VerifySiteCapability: MorpheusCapability<'site.verify'> = {
               selfContained: true,
             },
             verifiedAt: new Date().toISOString(),
+            revision: finalRevision.revision,
           },
         };
       },

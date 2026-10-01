@@ -17,6 +17,9 @@ describe('managed account host integration', () => {
     const service = createManagedAccountApi({ env: {}, userDataDir: '/unused', protection, fetch: fetcher, openExternal: vi.fn() });
     expect(await service.api.status()).toMatchObject({ configured: false, access: { state: 'not-configured' } });
     expect(await service.api.googleSignIn()).toMatchObject({ success: false, error: 'not-configured' });
+    expect(await service.api.status()).toMatchObject({ runtimeReady: false });
+    await expect(service.api.setMode({ mode: 'managed' })).rejects.toThrow('integration is not available');
+    expect(service.getRuntime()).toBeNull();
     expect(fetcher).not.toHaveBeenCalled();
   });
   it('connects email identity, protected persistence and allowance status without exposing tokens', async () => {
@@ -41,6 +44,7 @@ describe('managed account host integration', () => {
       expect(await service.api.requestEmailCode({ email: 'person@example.test' })).toEqual({ success: true });
       expect(await service.api.verifyEmailCode({ code: '123456' })).toEqual({ success: true });
       const status = await service.api.status();
+      await expect(service.api.setMode({ mode: 'managed' })).rejects.toThrow('integration is not available');
       expect(status).toMatchObject({ signedIn: true, access: { state: 'ready', account: { tier: 'basic' } } });
       expect(JSON.stringify(status)).not.toContain('private-');
       const restarted = create(); expect(await restarted.api.status()).toMatchObject({ signedIn: true });

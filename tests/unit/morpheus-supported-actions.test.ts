@@ -50,7 +50,8 @@ describe('capability labels', () => {
 describe('launcher example commands', () => {
   it('covers every capability', () => {
     for (const actionId of listMorpheusActionIds()) {
-      expect(EXAMPLE_COMMAND[actionId], actionId).toBeTruthy();
+      expect(Object.hasOwn(EXAMPLE_COMMAND, actionId), actionId).toBe(true);
+      if (!EXAMPLE_COMMAND[actionId]) expect(['site.revise', 'site.rollback']).toContain(actionId);
     }
   });
 
@@ -58,6 +59,7 @@ describe('launcher example commands', () => {
     // A phrase the interpreter does not recognise would make a listed
     // capability look broken the moment someone clicked Run.
     for (const [actionId, objective] of Object.entries(EXAMPLE_COMMAND)) {
+      if (objective === null) continue; // Requires an observed project revision.
       const result = interpretCommand({
         objective,
         origin: { type: 'action-launcher' },
@@ -70,8 +72,10 @@ describe('launcher example commands', () => {
 
   it('the example for a capability plans THAT capability', () => {
     for (const actionId of listMorpheusActionIds()) {
+      const objective = EXAMPLE_COMMAND[actionId];
+      if (objective === null) continue;
       const result = interpretCommand({
-        objective: EXAMPLE_COMMAND[actionId],
+        objective,
         origin: { type: 'action-launcher' },
         platform: 'win32',
         filesRoot: 'C:\\Morpheus\\files',

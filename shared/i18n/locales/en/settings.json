@@ -278,6 +278,10 @@
     "faq": "FAQ"
   },
   "managedAccount": {
+    "modeLabel": "AI service:",
+    "ownProviders": "Use my providers",
+    "useManaged": "Use Morpheus Premium",
+    "noSilentFallback": "Premium failures won’t silently charge your own providers. You can switch back here.",
     "title": "Morpheus account",
     "description": "Your managed access and included usage. Your own AI provider accounts stay separate.",
     "loading": "Loading account…",

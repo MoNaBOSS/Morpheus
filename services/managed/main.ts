@@ -5,8 +5,9 @@ import { ManagedLedger } from './ledger';
 import { createSupabaseIdentityVerifier } from './identity';
 import { createManagedGateway } from './gateway';
 import { createManagedHttpServer } from './server';
+import { configuredManagedProviderRoutes } from './provider-routes';
 
-/** No provider routes are enabled until evaluated adapters and rates exist. */
+/** Account-only until operator-evaluated provider routes/rates are configured. */
 const config = z.object({
   MORPHEUS_AUTH_ORIGIN: z.string().url(),
   MORPHEUS_AUTH_PUBLISHABLE_KEY: z.string().min(1),
@@ -23,10 +24,11 @@ if (!config.success) {
     mkdirSync(dirname(value.MORPHEUS_LEDGER_PATH), { recursive: true, mode: 0o700 });
     const ledger = new ManagedLedger(value.MORPHEUS_LEDGER_PATH);
     chmodSync(value.MORPHEUS_LEDGER_PATH, 0o600);
-    const server = createManagedHttpServer(createManagedGateway({ ledger, identity, routes: new Map() }));
+    const routes = configuredManagedProviderRoutes(process.env);
+    const server = createManagedHttpServer(createManagedGateway({ ledger, identity, routes, timeoutMs: 120_000 }));
     server.once('error', () => { ledger.close(); process.stderr.write('Managed listener could not start.\n'); process.exitCode = 1; });
     server.listen(value.MORPHEUS_MANAGED_PORT, '127.0.0.1', () => {
-      process.stdout.write(`Managed account service listening on 127.0.0.1:${value.MORPHEUS_MANAGED_PORT}; inference and billing are not configured.\n`);
+      process.stdout.write(`Managed service listening on 127.0.0.1:${value.MORPHEUS_MANAGED_PORT}; ${routes.size} configured inference routes; billing is not configured.\n`);
     });
     let stopping = false;
     const stop = () => {

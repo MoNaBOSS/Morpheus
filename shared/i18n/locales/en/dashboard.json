@@ -345,6 +345,9 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
+      "siteRevise": {"label":"Revise website","description":"Revise a website only from its verified revision, preserving unrelated manual edits."},
+      "siteRollback": {"label":"Roll back website","description":"Restore a recorded website revision only when the current revision is verified, preserving manual edits."},
+      "webReadPage": { "label": "Read web page", "description": "Read a public HTTPS page and retain its retrieved source evidence." },
       "appLaunch": {
         "label": "Launch an approved application",
         "description": "Starts an application from the built-in approved list."
@@ -989,6 +992,8 @@
       "noActiveDescription": "Choose a Project to give Morpheus focused context."
     },
     "memory": {
+      "export": "Export this memory",
+      "exportStatus": { "saved": "Memory saved. Chat history stays in Morpheus.", "cancelled": "Export cancelled.", "error": "Could not export memory. Please try again." },
       "title": "Morpheus Memory",
       "description": "Explicit context you can inspect, edit, disable or remove. Sensitive entries stay local.",
       "context": "Context memory",

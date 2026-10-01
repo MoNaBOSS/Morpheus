@@ -9,6 +9,10 @@
  */
 import { randomUUID } from 'node:crypto';
 import { composeMorpheusPersonaContext } from '@shared/morpheus/persona-context';
+import enDashboard from '@shared/i18n/locales/en/dashboard.json';
+import zhDashboard from '@shared/i18n/locales/zh/dashboard.json';
+import jaDashboard from '@shared/i18n/locales/ja/dashboard.json';
+import ruDashboard from '@shared/i18n/locales/ru/dashboard.json';
 
 import {
   MORPHEUS_MAX_AUDIT_PAGE,
@@ -300,6 +304,10 @@ export type CreateMorpheusApiOptions = {
   auditHealth: () => 'healthy' | 'degraded';
   /** Main-owned native picker. Renderer can never supply a directory path. */
   selectWorkspaceDirectory: () => Promise<string | null>;
+  /** Main owns native availability and the save-dialog destination. No paths in IPC. */
+  localSocialAvailability?: () => boolean;
+  onSocialCaption?: (text: string | null) => void;
+  saveMemoryExport?: (document: { v: 1; exportedAt: string; memories: readonly import('@shared/morpheus/memory-types').MorpheusMemory[] }) => Promise<string | null>;
   /** Main-owned Windows setup side effects; renderer supplies booleans only. */
   applyDesktopSetup?: (preferences: { launchAtStartup: boolean }) => Promise<void>;
   now?: () => Date;
@@ -1314,6 +1322,18 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
   const withLocale = async () => {
     try { return await options.getLocale?.() ?? 'en'; } catch { return 'en'; }
   };
+  // AssistantSession retains at most 4096 requests and never evicts them. Retain
+  // the same capture identity so deleting a memory then retrying a turn cannot
+  // resurrect it. Concurrent duplicate admissions share one write.
+  const capturedTurns = new Map<string, Promise<void>>();
+  let socialQueue: Promise<unknown> = Promise.resolve();
+  const quietForSocial = (available: boolean): boolean => {
+    const settings = proactive.snapshot().settings;
+    return !available || !options.localSocialAvailability?.() || settings.doNotDisturb || !settings.enabled
+      || isInsideMorpheusQuietHours(settings, now()) || runtimeControl.snapshot().paused
+      || Object.values(objectives.snapshot().runsById).some((run) => !isObjectiveTerminalState(run.state))
+      || assistantSession.snapshot({}).pendingTurns.length > 0;
+  };
   return {
     assistantSnapshot: async (payload) => ({
       ...assistantSession.snapshot(validateAssistantSnapshotPayload(payload)),
@@ -1324,10 +1344,33 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
       locale: await withLocale(),
     }),
     updateAssistantDraft: (payload) => assistantSession.updateDraft(validateAssistantDraftPayload(payload)),
-    admitAssistantTurn: (payload) => {
+    admitAssistantTurn: async (payload) => {
       const input = validateAssistantAdmitTurnPayload(payload);
+      const turn = assistantSession.admitTurn(input);
+      options.onSocialCaption?.(null);
       onboarding.noteInteraction();
-      return assistantSession.admitTurn(input);
+      if (!capturedTurns.has(turn.turnId)) {
+        const capture = (async () => {
+          const extracted = extractMorpheusMemoryCandidate(input.text);
+          if (extracted.kind !== 'candidate') return;
+          const candidate = extracted.candidate;
+          if (memory.list().memories.some((entry) => !entry.projectId && entry.text.toLocaleLowerCase() === candidate.text.toLocaleLowerCase())) return;
+          const nameMemory = candidate.title === 'Preferred name'
+            ? memory.list().memories.find((entry) => entry.sourceId === 'onboarding-preferred-name') : undefined;
+          const memoryId = nameMemory?.memoryId ?? `memory-${randomUUID()}`;
+          await audit.recordControl({ category: 'memory', event: 'captured-explicit-preference', subjectId: memoryId,
+            details: { kind: candidate.kind, source: 'user' }, appVersion });
+          if (candidate.title === 'Preferred name' && onboarding.status().completed) {
+            const name = candidate.text.slice('Call the user '.length).replace(/\.$/, '');
+            onboarding.updateProfile({ preferredName: name });
+          }
+          memory.save({ ...candidate, memoryId }, { source: 'user', sourceId: candidate.title === 'Preferred name' ? 'onboarding-preferred-name' : turn.turnId });
+        })();
+        capturedTurns.set(turn.turnId, capture);
+        capture.catch(() => capturedTurns.delete(turn.turnId));
+      }
+      await capturedTurns.get(turn.turnId);
+      return turn;
     },
     ackAssistantTurn: (payload) => assistantSession.ackTurn(validateAssistantAckTurnPayload(payload)),
     routeInteraction: async (payload) => {
@@ -1442,17 +1485,74 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
         },
         appVersion,
       });
-      return { memory: memory.save({ ...draft, memoryId }) };
+      const nameMemory = memory.get(memoryId)?.sourceId === 'onboarding-preferred-name';
+      const saved = memory.save({ ...draft, memoryId });
+      if (nameMemory && onboarding.status().completed) {
+        const name = /^Call the user ([^\n]{1,80})\.$/.exec(draft.text)?.[1] ?? '';
+        onboarding.updateProfile({ preferredName: draft.enabled && draft.sensitivity === 'normal' && draft.providerUse === 'allowed' ? name : '' });
+      }
+      return { memory: saved };
     },
     removeMemory: async (payload) => {
       const { memoryId } = validateMemoryIdPayload(payload);
       await audit.recordControl({
         category: 'memory', event: 'removed', subjectId: memoryId, details: {}, appVersion,
       });
-      return { memory: memory.remove(memoryId) };
+      const nameMemory = memory.get(memoryId)?.sourceId === 'onboarding-preferred-name';
+      const removed = memory.remove(memoryId);
+      if (nameMemory && onboarding.status().completed) onboarding.updateProfile({ preferredName: '' });
+      return { memory: removed };
+    },
+    exportMemories: async (payload) => {
+      const record = payload === undefined ? {} : requireRecord(payload, 'exportMemories payload');
+      assertNoUnknownKeys(record, ['projectId'], 'exportMemories payload');
+      if (record.projectId !== undefined && (!isMorpheusProjectId(record.projectId) || !projects.get(record.projectId))) throw new MorpheusValidationError('Invalid memory Project');
+      if (!options.saveMemoryExport) throw new MorpheusValidationError('Memory export is unavailable');
+      const scope = record.projectId;
+      const entries = memory.list().memories.filter((entry) => scope === undefined || entry.projectId === scope || (scope === 'personal' && !entry.projectId)).slice(0, 500);
+      // Explicit allowlist: legacy extra store fields and runtime state are never
+      // serialized into a memory export.
+      const memories = entries.map((entry) => ({ v: entry.v, memoryId: entry.memoryId, title: entry.title, text: entry.text,
+        kind: entry.kind, sensitivity: entry.sensitivity, providerUse: entry.providerUse, source: entry.source,
+        ...(entry.sourceId ? { sourceId: entry.sourceId } : {}), ...(entry.projectId ? { projectId: entry.projectId } : {}),
+        enabled: entry.enabled, createdAt: entry.createdAt, updatedAt: entry.updatedAt }));
+      await audit.recordControl({ category: 'memory', event: 'export-requested', details: { count: memories.length, scopedToProject: scope !== undefined }, appVersion });
+      const fileName = await options.saveMemoryExport({ v: 1, exportedAt: now().toISOString(), memories });
+      return fileName ? { status: 'saved', count: memories.length, fileName } : { status: 'cancelled', count: 0 };
+    },
+    admitSocialCheckIn: (payload) => {
+      const record = requireRecord(payload, 'admitSocialCheckIn payload');
+      assertNoUnknownKeys(record, ['available'], 'admitSocialCheckIn payload');
+      if (typeof record.available !== 'boolean') throw new MorpheusValidationError('available must be boolean');
+      const available = record.available;
+      const admission = socialQueue.then(async () => {
+        if (!onboarding.socialCheckInDue(quietForSocial(available))) return { admitted: false };
+        await audit.recordControl({ category: 'proactive', event: 'social-invitation-admitted', details: {}, appVersion });
+        const locale = (await withLocale()).split('-')[0];
+        if (quietForSocial(available)) return { admitted: false };
+        const result = onboarding.admitSocialCheckIn(`social-${randomUUID()}`);
+        if (!result.admitted) return result;
+        const copies = { en: enDashboard, zh: zhDashboard, ja: jaDashboard, ru: ruDashboard };
+        const copy = copies[locale as keyof typeof copies] ?? enDashboard;
+        const text = copy.morpheus.socialCheckIn.question;
+        options.onSocialCaption?.(text);
+        return { ...result, text };
+      });
+      socialQueue = admission.catch(() => undefined);
+      return admission;
+    },
+    dismissSocialCheckIn: async (payload) => {
+      const record = requireRecord(payload, 'dismissSocialCheckIn payload');
+      assertNoUnknownKeys(record, ['invitationId'], 'dismissSocialCheckIn payload');
+      if (typeof record.invitationId !== 'string' || !/^social-[a-z0-9-]{1,96}$/i.test(record.invitationId)) throw new MorpheusValidationError('Invalid social invitation id');
+      if (onboarding.status().socialCheckIn?.pending?.invitationId !== record.invitationId) return { dismissed: false };
+      await audit.recordControl({ category: 'proactive', event: 'social-invitation-dismissed', details: {}, appVersion });
+      const dismissed = onboarding.dismissSocialCheckIn(record.invitationId);
+      if (dismissed) options.onSocialCaption?.(null);
+      return { dismissed };
     },
     onboardingStatus: () => onboarding.status(),
-    admitArrivalGreeting: async (payload?: unknown) => {
+    admitArrivalGreeting: async (payload) => {
       if (payload !== undefined) throw new MorpheusValidationError('admitArrivalGreeting accepts no payload');
       const settings = proactive.snapshot().settings;
       const activeWork = Object.values(objectives.snapshot().runsById).some((run) => !isObjectiveTerminalState(run.state));

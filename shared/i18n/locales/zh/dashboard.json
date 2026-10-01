@@ -253,6 +253,9 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
+      "siteRevise": {"label":"修改网站","description":"仅基于已验证的网站版本进行修改，保留无关的手动编辑。"},
+      "siteRollback": {"label":"回退网站","description":"仅在当前版本已验证时恢复已记录的网站版本，保留手动编辑。"},
+      "webReadPage": { "label": "读取网页", "description": "读取公开 HTTPS 网页并保留实际获取的来源证据。" },
       "appLaunch": {
         "label": "启动已批准的应用程序",
         "description": "从内置批准列表中启动一个应用程序。"
@@ -745,6 +748,8 @@
       "eyebrow": "个人智能", "title": "项目与上下文", "description": "围绕精确可信工作区和可检查上下文组织目标。", "active": "活动项目", "none": "无项目", "manage": "管理上下文", "create": "创建项目", "newProject": "新项目", "projectContext": "项目上下文", "untitled": "未命名项目", "name": "项目名称", "descriptionLabel": "说明", "workspace": "可信工作区", "instructions": "规划上下文", "instructionsPlaceholder": "Morpheus 在此项目中工作时应了解什么？", "noDescription": "尚无说明。", "noActiveDescription": "选择项目，为 Morpheus 提供聚焦上下文。"
     },
     "memory": {
+      "export": "导出这些记忆",
+      "exportStatus": { "saved": "记忆已保存。聊天记录仍保留在 Morpheus 中。", "cancelled": "已取消导出。", "error": "无法导出记忆，请重试。" },
       "title": "Morpheus 记忆", "description": "可检查、编辑、禁用或删除的明确上下文。敏感条目保留在本地。", "context": "上下文记忆", "disclosure": "只有启用、普通且允许提供商使用的条目才会进入规划上下文。", "saveProjectFirst": "请先保存项目再添加记忆。", "titlePlaceholder": "Morpheus 应该记住什么？", "textPlaceholder": "输入简洁的上下文、偏好、惯例或决定。", "sensitive": "敏感 — 仅保留在本地并排除在提供商规划之外", "add": "添加记忆", "entries": "{{count}} 条记忆", "empty": "此项目没有关联记忆。", "emptyCompact": "当前上下文没有可用记忆。", "remove": "删除记忆",
       "kinds": { "preference": "偏好", "project-context": "项目上下文", "routine": "惯例", "decision": "决定" },
       "providerUse": { "allowed": "可供规划器使用", "local-only": "仅本地" }

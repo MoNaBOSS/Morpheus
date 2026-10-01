@@ -407,3 +407,49 @@ Earlier Astra documentation checkpoint validation: Phase 7 spec validation and d
 7 new documents resolved. All 9 referenced harness rules exist. Git whitespace
 check passed. Dry-run intentionally skipped application build/type/lint/tests;
 these results certify the handoff structure, not the implemented product.
+
+### C4/D1/E1/F1 integration and G2 foundation — 2026-10-01
+
+Base `8115f199`, same isolated Windows worktree and authorized application branch.
+No owner profiles, credentials or original PC checkout changed; no paid API calls.
+
+- Full source suite: **3,083 passed, two skipped, 302 files**. Initial integration
+  found five failures (compound explicit memory, typed host handlers, action
+  examples); fixes passed focused reruns and the complete boundary suite. The
+  skips are the macOS JXA enumeration and non-Windows placeholder in
+  `attachment-open-with-native.test.ts`, not counted as passes.
+- All three typechecks, fresh build and lint pass (zero errors, 12 pre-existing
+  warnings). Unit environment still reports canvas stubs and listener warnings;
+  these are not live Electron/microphone acceptance.
+- Seven fresh Electron memory/native check-in journeys pass, including actual
+  Main export/correction/deletion and quiet native caption with no forced window,
+  keyboard/reduced motion and en/zh/ja/ru.
+- The site journey caught a real missing preview affordance in the simplified
+  workspace. Restored result controls now pass four localized actual-Main
+  verify/revise/preview/rollback/conflict journeys, rendered at 1024/390 widths,
+  plus restored-site preview regression. Original static safety remains intact.
+- F1: 92 focused app-discovery/files/reminder/workflow/runtime units pass. No
+  executable fixture was run and no real installed-app acceptance is claimed.
+- D1: bounded HTTPS source observations, authority/worker identity, independent
+  native work, cancellation and recovery pass the combined suite. Full DOM
+  browser, cited synthesis and report delivery remain D2/D3.
+- G2: managed server routes/bridge/receipts pass fixture tests. Three existing
+  account Electron regressions pass. The subsequent Main/UI readiness guard keeps
+  activation unavailable until actual planner/conversation/voice integration;
+  31 focused bridge/harness units, two readiness-guard units and three fresh-build
+  account journeys pass after the guard. No live server,
+  trial, billing or end-to-end managed runtime is claimed.
+- Communications replay/compare and umbrella diff-aware harness validation/dry-run
+  pass. Evidence screenshots are in ignored `test-results/c4-native/` and
+  `test-results/e1-settled-preview/`; logs are in the host's temporary directory.
+- Final visual review caught the HTML guest behind the modal sheet despite a
+  loaded DOM. Modal-scoped placement and stale-navigation suppression fix it;
+  seven host units and five fresh site journeys pass, including topmost/accessible
+  guest and zero-error-toast assertions. The final screenshot was visually checked.
+  These readiness/preview deltas follow the full 3,083-test boundary; final-candidate
+  full-suite/package checks must include them.
+
+Next: D2 interaction worker, D3 source-grounded reports, E2 interactive templates,
+E3 publication, F2 desktop controls, G runtime/billing joins, H reliability/perf
+and fresh I installer/acceptance. The old `6e19fadc` installer is not this code and
+must not be handed over as the completed version. External gates remain unchanged.

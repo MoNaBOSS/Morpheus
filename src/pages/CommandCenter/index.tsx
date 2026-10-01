@@ -7,9 +7,9 @@ import morpheusLogo from '@/assets/morpheus-logo.svg';
 import { hostApi } from '@/lib/host-api';
 import { stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
 import { CommandBar } from './CommandBar';
+import { ArtifactsPanel } from './ArtifactsPanel';
 import { MatrixRain } from '@/components/morpheus/boot/MatrixRain';
 import { MorpheusFluidOrb } from '@/components/morpheus/MorpheusFluidOrb';
-import { MorpheusSocialCheckIn } from '@/components/morpheus/MorpheusSocialCheckIn';
 import { MorpheusConversationThread } from '@/components/morpheus/MorpheusConversationThread';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
@@ -19,15 +19,6 @@ import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { useMorpheusConversationStore } from '@/stores/morpheus-conversation';
 import { resolveMorpheusSignalState } from '@/components/morpheus/signal/signal-state';
 import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
-import type { ExecutionArtifact } from '@shared/morpheus/execution-types';
-
-function artifactName(artifact: ExecutionArtifact): string {
-  if (artifact.kind === 'file') return artifact.path;
-  if (artifact.kind === 'process') return artifact.executablePath;
-  if (artifact.kind === 'website') return artifact.entryPath;
-  if (artifact.kind === 'schedule') return artifact.nextRunAt ?? artifact.scheduleId;
-  return Object.entries(artifact.data).map(([key, value]) => `${key}: ${String(value)}`).join(' · ');
-}
 
 /** The full workspace projects real tasks as conversation and useful results. */
 export function CommandCenter() {
@@ -41,6 +32,7 @@ export function CommandCenter() {
   const preferredName = onboarding?.preferences.preferredName.trim() ?? '';
   const history = useMorpheusCommandStore((state) => state.objectiveHistory);
   const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
+  const recentArtifacts = useMorpheusCommandStore((state) => state.artifacts);
   const selectedConversationId = useMorpheusConversationStore((state) => state.snapshot?.selectedConversationId ?? null);
   const selectObjective = useMorpheusCommandStore((state) => state.selectObjective);
   const cancelObjective = useMorpheusCommandStore((state) => state.cancelObjective);
@@ -52,7 +44,8 @@ export function CommandCenter() {
     const run = history?.runsById[id];
     return run && !isObjectiveTerminalState(run.state);
   }).length;
-  const hasResult = Boolean(objectiveRun && (objectiveRun.summary || objectiveRun.artifacts.length || objectiveRun.error || objectiveRun.clarification));
+  const resultArtifacts = objectiveRun?.artifacts ?? recentArtifacts;
+  const hasResult = resultArtifacts.length > 0 || Boolean(objectiveRun && (objectiveRun.summary || objectiveRun.error || objectiveRun.clarification));
   const keepInTray = async (): Promise<void> => {
     setTrayError(false);
     stopMorpheusSpeech();
@@ -94,7 +87,6 @@ export function CommandCenter() {
           <div className="min-w-0">
             <h2 className="text-[clamp(22px,3vw,31px)] font-semibold leading-tight tracking-[-0.035em] text-[#edf5ef]">{preferredName ? t('morpheus.workspace.greetingNamed', { name: preferredName }) : t('morpheus.workspace.greeting')}</h2>
             <p className="mt-1 text-[13px] text-[#a0b6aa]">{t('morpheus.workspace.subtitle')}</p>
-            <MorpheusSocialCheckIn activeCount={activeCount} />
           </div>
         </div>
 
@@ -122,14 +114,15 @@ export function CommandCenter() {
             <CommandBar />
           </section>
 
-          {hasResult && objectiveRun ? <aside data-testid="workspace-result" className="morpheus-workspace-result min-h-0 min-w-0 overflow-y-auto border-l border-white/10 pl-7">
+          {hasResult ? <aside data-testid="workspace-result" className="morpheus-workspace-result min-h-0 min-w-0 overflow-y-auto border-l border-white/10 pl-7">
             <FileText className="mb-5 h-5 w-5 text-[#53edb4]" strokeWidth={1.6} />
             <h3 className="text-xl font-semibold tracking-tight text-[#edf5ef]">{t('morpheus.workspace.result')}</h3>
-            <p data-testid="command-center-objective-state" className="mt-2 text-xs text-[#a0b6aa]">{t(`morpheus.objective.states.${objectiveRun.state}`)}</p>
-            <p className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-[#d8e7dd]">{objectiveRun.clarification ?? objectiveRun.error?.message ?? objectiveRun.summary ?? t('morpheus.workspace.working')}</p>
-            {objectiveRun.artifacts.length ? <ul className="mt-6 space-y-3 border-t border-white/10 pt-4">{objectiveRun.artifacts.map((artifact) => <li key={artifact.artifactId} data-testid="morpheus-artifact" data-kind={artifact.kind} className="break-all text-xs leading-relaxed text-[#a0b6aa]">
-              {artifact.kind === 'report' ? <dl className="grid grid-cols-2 gap-x-4 gap-y-3">{Object.entries(artifact.data).map(([key, value]) => <div key={key} className="min-w-0"><dt className="mb-1 text-[10px] uppercase tracking-[0.08em] text-[#7d9b88]">{key.replace(/([a-z])([A-Z])/g, '$1 $2')}</dt><dd className="text-sm text-[#d8e7dd]">{value}</dd></div>)}</dl> : artifactName(artifact)}
+            {objectiveRun ? <><p data-testid="command-center-objective-state" className="mt-2 text-xs text-[#a0b6aa]">{t(`morpheus.objective.states.${objectiveRun.state}`)}</p>
+            <p className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-[#d8e7dd]">{objectiveRun.clarification ?? objectiveRun.error?.message ?? objectiveRun.summary ?? t('morpheus.workspace.working')}</p></> : null}
+            {resultArtifacts.length ? <ul className="mt-6 space-y-3 border-t border-white/10 pt-4">{resultArtifacts.filter((artifact) => artifact.kind === 'report').map((artifact) => <li key={artifact.artifactId} data-testid="morpheus-artifact" data-kind={artifact.kind} className="break-all text-xs leading-relaxed text-[#a0b6aa]">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3">{Object.entries(artifact.data).map(([key, value]) => <div key={key} className="min-w-0"><dt className="mb-1 text-[10px] uppercase tracking-[0.08em] text-[#7d9b88]">{key.replace(/([a-z])([A-Z])/g, '$1 $2')}</dt><dd className="text-sm text-[#d8e7dd]">{value}</dd></div>)}</dl>
             </li>)}</ul> : null}
+            {resultArtifacts.some((artifact) => artifact.kind !== 'report') ? <ArtifactsPanel items={resultArtifacts.filter((artifact) => artifact.kind !== 'report')} showRoot={false} /> : null}
           </aside> : null}
         </div>
       </div>

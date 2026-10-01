@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ComponentType, CSSProperties, HTMLAttributes, RefAttributes } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -76,9 +77,11 @@ export function WebBrowserHost(): React.ReactElement | null {
     if (!guest || attachedWebviewRef.current !== guest || !url || loadedUrlRef.current === url) return;
     try {
       await hostApi.webBrowser.navigate(url);
-      loadedUrlRef.current = url;
+      if (webviewRef.current === guest && previewUrlRef.current === url) loadedUrlRef.current = url;
     } catch {
-      toast.error(t('filePreview.errors.htmlLoadFailed', 'Could not load HTML preview'));
+      if (webviewRef.current === guest && previewUrlRef.current === url) {
+        toast.error(t('filePreview.errors.htmlLoadFailed', 'Could not load HTML preview'));
+      }
     }
   }, [t]);
 
@@ -162,18 +165,22 @@ export function WebBrowserHost(): React.ReactElement | null {
   if (!previewUrl) return null;
 
   const visible = panelOpen && activeTab === 'preview' && anchor !== null && geometry !== null;
+  // A modal sheet covers the route-level host and hides it from accessibility.
+  // Keep the same Main-owned guest inside its modal anchor instead of escaping
+  // the sheet's stacking/focus boundary with a higher global z-index.
+  const modalAnchor = anchor?.closest('[data-testid="file-preview-overlay"]') ? anchor : null;
   const style: CSSProperties = {
-    position: 'fixed',
-    left: geometry?.left ?? 0,
-    top: geometry?.top ?? 0,
-    width: geometry?.width ?? 0,
-    height: geometry?.height ?? 0,
-    zIndex: geometry?.fullscreen ? 110 : 20,
+    position: modalAnchor ? 'absolute' : 'fixed',
+    left: modalAnchor ? 0 : geometry?.left ?? 0,
+    top: modalAnchor ? 0 : geometry?.top ?? 0,
+    width: modalAnchor ? '100%' : geometry?.width ?? 0,
+    height: modalAnchor ? '100%' : geometry?.height ?? 0,
+    zIndex: modalAnchor ? 0 : geometry?.fullscreen ? 110 : 20,
     visibility: visible ? 'visible' : 'hidden',
     pointerEvents: visible ? 'auto' : 'none',
   };
 
-  return (
+  const host = (
     <div
       data-testid="html-preview-host"
       aria-busy={loading}
@@ -212,4 +219,5 @@ export function WebBrowserHost(): React.ReactElement | null {
       )}
     </div>
   );
+  return modalAnchor ? createPortal(host, modalAnchor) : host;
 }
