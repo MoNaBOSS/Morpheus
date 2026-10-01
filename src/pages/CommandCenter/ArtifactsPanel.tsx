@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { CalendarClock, Eye, FileText, FolderOpen, Globe2, MonitorPlay, ScrollText } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { buildWorkspacePreviewTarget } from '@/components/file-preview/build-preview-target';
+import { buildPreviewTarget, buildWorkspacePreviewTarget } from '@/components/file-preview/build-preview-target';
 import { FilePreviewOverlay } from '@/components/file-preview/FilePreviewOverlay';
 import type { FilePreviewTarget } from '@/components/file-preview/types';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
@@ -90,6 +90,11 @@ export function ArtifactsPanel({ limit, items, showRoot = true }: { limit?: numb
                   {artifact.kind === 'schedule' ? ` · ${t('morpheus.artifacts.reminderScheduled', { trigger: artifact.triggerType })}` : ''}
                 </p>
               </div>
+              {artifact.kind === 'file' ? <Button type="button" size="icon" variant="ghost" className="h-7 w-7 shrink-0"
+                data-testid="morpheus-preview-file" aria-label={t('morpheus.artifacts.previewFile')} title={t('morpheus.artifacts.previewFile')}
+                onClick={() => setPreviewFile(buildPreviewTarget(artifact.path, undefined, artifact.bytes))}>
+                <Eye className="h-3.5 w-3.5" aria-hidden />
+              </Button> : null}
               {artifact.kind === 'website' ? (
                 <Button
                   type="button"
@@ -116,7 +121,7 @@ export function ArtifactsPanel({ limit, items, showRoot = true }: { limit?: numb
           {t('morpheus.artifacts.more', { count: artifacts.length - visibleArtifacts.length })}
         </p>
       ) : null}
-      <FilePreviewOverlay file={previewFile} readOnly onClose={() => setPreviewFile(null)} />
+      <FilePreviewOverlay file={previewFile} readOnly allowPublicCitations onClose={() => setPreviewFile(null)} />
     </div>
   );
 }

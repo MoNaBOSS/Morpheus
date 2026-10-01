@@ -112,6 +112,11 @@
     }
   },
   "morpheus": {
+    "research": {
+      "openSource": "Open source: {{title}}",
+      "boundedExcerpt": "Retrieved excerpt — not the full page.",
+      "openFailed": "The source could not be opened. Try again."
+    },
     "socialCheckIn": { "question": "How's your day going?", "answer": { "good": "Good", "rough": "Could be better" }, "reply": { "good": "Glad to hear it. I'm here when you need me.", "rough": "Sorry to hear that. I'm here if you want to talk or need a hand." }, "dismiss": "Dismiss check-in" },
     "activationV2": {
       "profileTitle": "Your Morpheus",
@@ -630,6 +635,7 @@
       "rootUnknown": "Not available",
       "open": "Open",
       "previewWebsite": "Preview verified website",
+      "previewFile": "Preview saved file",
       "websiteVerified": "{{count}} files verified",
       "reminderScheduled": "{{trigger}} reminder scheduled",
       "empty": "No artifacts yet. Completed actions appear here.",

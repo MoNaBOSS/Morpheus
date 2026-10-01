@@ -17,10 +17,11 @@ export type { FilePreviewTarget } from './types';
 export interface FilePreviewOverlayProps {
   file: FilePreviewTarget | null;
   readOnly?: boolean;
+  allowPublicCitations?: boolean;
   onClose: () => void;
 }
 
-export function FilePreviewOverlay({ file, readOnly = false, onClose }: FilePreviewOverlayProps) {
+export function FilePreviewOverlay({ file, readOnly = false, allowPublicCitations = false, onClose }: FilePreviewOverlayProps) {
   const htmlPreview = file && isHtmlPreviewExt(file.ext) ? file : null;
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export function FilePreviewOverlay({ file, readOnly = false, onClose }: FilePrev
         className="w-[70vw] max-w-[1100px] sm:max-w-[1100px] p-0 flex flex-col motion-reduce:!animate-none motion-reduce:transition-none"
       >
         <SheetTitle className="sr-only">{file?.fileName}</SheetTitle>
-        {file && <FilePreviewBody file={file} readOnly={readOnly} />}
+        {file && <FilePreviewBody file={file} readOnly={readOnly} allowPublicCitations={allowPublicCitations} />}
       </SheetContent>
     </Sheet>
   );

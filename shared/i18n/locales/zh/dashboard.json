@@ -112,6 +112,11 @@
     }
   },
   "morpheus": {
+    "research": {
+      "openSource": "打开来源：{{title}}",
+      "boundedExcerpt": "已获取的摘录，并非完整页面。",
+      "openFailed": "无法打开来源，请重试。"
+    },
     "socialCheckIn": { "question": "今天过得怎么样？", "answer": { "good": "不错", "rough": "不太好" }, "reply": { "good": "真好。有需要随时叫我。", "rough": "抱歉听到这个。想聊聊或需要帮忙时，我都在。" }, "dismiss": "关闭问候" },
     "activationV2": {
       "profileTitle": "你的 Morpheus",
@@ -519,6 +524,7 @@
       "auditDegraded": "审计不可用"
     },
     "artifacts": {
+      "previewFile": "预览已保存文件",
       "title": "产物",
       "latest": "最新产物",
       "rootLabel": "已批准的文件位置",

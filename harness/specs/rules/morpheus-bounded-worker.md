@@ -25,3 +25,10 @@ JavaScript or selector execution: use fixed isolated-world routines and fresh
 observed node references. Account writes, credentials, uploads and downloads need
 separate authority; public browsing cannot imply it. Success requires observed
 content/control results, not generated prose.
+
+Research synthesis binds citation ids to this objective's Main-observed sources,
+not model URLs, imported prose or search snippets. Failed sources remain labeled
+unavailable. Main compiles bounded plain Markdown and saves through the existing
+file permission/audit/no-overwrite path; a generated answer is not a saved file.
+Citation provenance does not certify semantic claim support. Keep that distinction
+and preserve the existing provider request/iteration budgets.

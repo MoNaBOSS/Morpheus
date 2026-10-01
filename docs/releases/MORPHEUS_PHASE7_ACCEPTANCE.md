@@ -474,3 +474,19 @@ seven fresh Windows journeys, typechecks, scoped lint, build, comms and diff-awa
 harness checks passed. See [D2 evidence](phase7-d2-browser.md) for fixture scope.
 No live account, paid calls or new package acceptance. Next: D3 cited research;
 account-session support and final-candidate tests remain open.
+
+### D3 source-bound research/report checkpoint — 2026-10-01
+
+After D2.2 `7a64592c`, actual retrieved source observations feed bounded synthesis
+and a normal permission-gated file plan. Main rejects invented citation ids;
+denied/failed/missing saves do not complete. A real Core/adapter/provider-protocol/
+filesystem fixture creates a report while an independent app command remains free.
+Four fresh localized Windows journeys cover readable source cards, actual saved
+Markdown preview, safe external citations, keyboard and reduced-motion behavior at
+desktop/narrow widths. Source/citation open calls are intercepted; no live source
+or paid model was used. Final preview screenshot was visually inspected.
+
+Full regression: **3,145 passed, two inherited skips, 307 files**. All typechecks,
+scoped lint, build, communication checks and diff-aware harness validate/dry-run
+passed. See [D3 evidence and limitations](phase7-d3-research.md). The existing EXE
+still excludes these changes. Next: E2 interactive client-site creation/preview.

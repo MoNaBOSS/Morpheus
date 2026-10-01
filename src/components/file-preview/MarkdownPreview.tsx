@@ -8,6 +8,7 @@ import {
   type StreamdownProps,
 } from 'streamdown';
 import { BrowserLink } from '@/components/common/BrowserLink';
+import { MorpheusCitationLink } from '@/components/common/MorpheusCitationLink';
 import {
   streamdownControls,
   streamdownLinkSafety,
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils';
 export interface MarkdownPreviewProps {
   source: string;
   className?: string;
+  allowPublicCitations?: boolean;
 }
 
 const previewRemarkPlugins: NonNullable<StreamdownProps['remarkPlugins']> = [
@@ -59,7 +61,12 @@ const previewComponents: Components = {
   ),
 };
 
-export default function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
+const publicCitationComponents: Components = {
+  ...previewComponents,
+  a: ({ children, href }) => <MorpheusCitationLink href={href}>{children}</MorpheusCitationLink>,
+};
+
+export default function MarkdownPreview({ source, className, allowPublicCitations = false }: MarkdownPreviewProps) {
   const { t } = useTranslation('common');
   const translations = useMemo(() => ({
     copyCode: t('markdown.copyCode'),
@@ -67,8 +74,9 @@ export default function MarkdownPreview({ source, className }: MarkdownPreviewPr
 
   return (
     <Streamdown
+      key={allowPublicCitations ? 'public-citations' : 'inert-links'}
       className={cn('clawx-markdown clawx-markdown-preview clawx-streamdown prose max-w-none px-6 py-4 text-sm leading-relaxed', className)}
-      components={previewComponents}
+      components={allowPublicCitations ? publicCitationComponents : previewComponents}
       controls={streamdownControls}
       lineNumbers={false}
       linkSafety={streamdownLinkSafety}

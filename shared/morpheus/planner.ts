@@ -17,6 +17,7 @@ import type {
 import type { MorpheusActionId, MorpheusRiskTier } from './actions/registry';
 import type { MorpheusParamDescriptor } from './capabilities/params';
 import type { MorpheusContextItem, MorpheusObjectiveLimits } from './core/objective-types';
+import type { MorpheusResearchDraft, MorpheusResearchEvidence } from './research-types';
 
 export type MorpheusPlanningCapability = {
   capabilityId: MorpheusActionId;
@@ -55,6 +56,7 @@ export type MorpheusPlannerReviewRequest = {
   plan: ExecutionPlan;
   planStatus: ExecutionPlanStatus;
   stepResults: readonly ExecutionStepResult[];
+  researchEvidence?: MorpheusResearchEvidence;
   context: readonly MorpheusContextItem[];
   capabilities: readonly MorpheusPlanningCapability[];
   limits: MorpheusObjectiveLimits;
@@ -63,6 +65,7 @@ export type MorpheusPlannerReviewRequest = {
 
 export type MorpheusPlannerReviewResult =
   | { outcome: 'complete'; summary: string }
+  | { outcome: 'report'; report: MorpheusResearchDraft }
   | { outcome: 'clarify'; question: string; choices?: readonly string[] }
   | { outcome: 'continue'; reason: string; plan: ExecutionPlan };
 

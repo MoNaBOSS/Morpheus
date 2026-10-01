@@ -66,6 +66,8 @@ import type { MorpheusWorkspaceStore } from '../workspaces/workspace-store';
 import type { MorpheusMissionStore } from '../missions/mission-store';
 import { createMorpheusTaskCoordinator, taskPriority } from './task-coordinator';
 import { actionFingerprint, isReplaySafeRead, reconcileTaskCheckpoint, type MorpheusTaskCheckpoints } from './task-checkpoints';
+import { collectResearchEvidence, compileResearchReport, failedResearchSources } from './research-report';
+import type { MorpheusResearchEvidence } from '@shared/morpheus/research-types';
 
 const CAPABILITY_DESCRIPTIONS: Record<MorpheusActionId, string> = {
   'app.launch': 'Launch one compiled-in approved Windows application by logical key.',
@@ -629,6 +631,9 @@ export function createMorpheusObjectiveOrchestrator(options: {
       .reduce((sum, observation) => sum + observation.steps.length, 0) ?? 0;
     let planner: MorpheusPlanner;
     let proposed: InterpretationResult | null = null;
+    let reportSave: { planId: string; summary: string } | undefined;
+    let unavailableSources: MorpheusResearchEvidence['unavailable'] = [];
+    let researchNeedsReport = false;
     const deadline = setTimeout(() => owner.controller.abort(new Error('Objective reached its maximum duration.')), limits.maxDurationMs);
     deadline.unref?.();
 
@@ -867,11 +872,22 @@ export function createMorpheusObjectiveOrchestrator(options: {
         // conclusive successful observation, another provider round trip adds
         // latency without adding authority or evidence. Partial, rejected, or
         // failed work still enters bounded semantic review and replanning.
-        const requiresBrowserReview = plan.steps.some((step) => step.capabilityId.startsWith('browser.'));
-        if (execution.status === 'completed' && !requiresBrowserReview) {
+        const requiresResearchReview = planner.plannedBy === 'provider' && plan.steps.some((step) => step.capabilityId === 'web.readPage');
+        researchNeedsReport ||= requiresResearchReview;
+        const requiresEvidenceReview = requiresResearchReview || plan.steps.some((step) => step.capabilityId.startsWith('browser.'));
+        unavailableSources = [...unavailableSources, ...failedResearchSources(plan, execution.steps)].slice(0, 6);
+        const researchEvidence = collectResearchEvidence(options.store.get(objectiveRunId)?.artifacts ?? [], unavailableSources);
+        if (reportSave?.planId === plan.planId && execution.status !== 'completed') {
+          throw new Error('The cited report was not saved. Retrieved sources remain available; no completed report is claimed.');
+        }
+        if (execution.status === 'completed' && !requiresEvidenceReview) {
+          if (researchNeedsReport && reportSave?.planId !== plan.planId) throw new Error('Research has no source-bound report yet. The task is not complete.');
+          if (reportSave?.planId === plan.planId && !execution.steps.some((step) => step.status === 'succeeded' && step.artifact?.kind === 'file')) {
+            throw new Error('The research report save has no verified file result.');
+          }
           options.store.setActivePlan(objectiveRunId, null);
           await transition(objectiveRunId, 'complete', {
-            summary: summaryForExecution(execution),
+            summary: reportSave?.planId === plan.planId ? reportSave.summary : summaryForExecution(execution),
           });
           finishActive(objectiveRunId);
           return;
@@ -897,6 +913,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
               plan,
               planStatus: execution.status,
               stepResults: execution.steps,
+              ...(researchEvidence.sources.length || researchEvidence.unavailable.length ? { researchEvidence } : {}),
               context,
               capabilities,
               limits,
@@ -918,7 +935,17 @@ export function createMorpheusObjectiveOrchestrator(options: {
         }
 
         if (!isCurrent(objectiveRunId, generation)) return;
+        if (review.outcome === 'report') {
+          if (iteration >= limits.maxIterations) throw new Error('Research reached its bounded iteration limit before saving the report. Retrieved sources remain available.');
+          if (!capabilities.some((capability) => capability.capabilityId === 'file.create')) throw new Error('This agent cannot save reports in the workspace.');
+          const compiled = compileResearchReport({ draft: review.report, evidence: researchEvidence, objective, origin: run.origin, platform, createdAt: now().toISOString() });
+          reportSave = { planId: compiled.plan.planId, summary: compiled.summary };
+          proposed = { ok: true, plan: compiled.plan };
+          await transition(objectiveRunId, 'replanning', { iteration });
+          continue;
+        }
         if (review.outcome === 'complete') {
+          if (researchNeedsReport) throw new Error('Research retrieved pages but did not produce a source-bound report. The task is not complete.');
           options.store.setActivePlan(objectiveRunId, null);
           await transition(objectiveRunId, 'complete', { summary: review.summary });
           finishActive(objectiveRunId);

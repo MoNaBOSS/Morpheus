@@ -58,7 +58,10 @@ adds a tested isolated Chromium/public-network boundary. D2.2 now connects publi
 inspect/interact to the existing Core worker, permissions, audit and bounded
 planner review, with task-owned cleanup. 3,112 units passed (two inherited skips),
 118 focused units and seven fresh Windows journeys passed. Account sessions and
-live-site acceptance remain open. Next is D.3 cited research/report delivery;
+live-site acceptance remain open. D3 now connects observed-source synthesis to
+real file saving and readable source/report previews. Read
+`docs/releases/phase7-d3-research.md` for evidence and live boundaries.
+Next is E.2 pinned interactive client-site creation and isolated preview;
 read `docs/releases/phase7-d2-browser.md`.
 Read the
 narrow source evidence in `docs/releases/` and the current checkpoint in the
@@ -85,7 +88,7 @@ journeys; C.2 passed 21 focused units and a real-Chromium synthetic silence
 journey with zero provider/task requests. Neural auditions now include a greeting,
 joke and explicitly prepared update in one request. Hardware/live voice remains
 open. C.3 is now verified in source; see `docs/releases/phase7-c3-source-checkpoint.md`.
-Continue D.2/D.3, E.2/E.3, F.2 then the existing G–I sequence. Do not redo B.1/C.1 discovery or
+Continue E.2/E.3, F.2 then the existing G–I sequence; D2 account/live gates stay open. Do not redo B.1/C.1 discovery or
 call the whole Phase 7 complete.
 
 ## Operating rules for continuity and cost
@@ -115,7 +118,7 @@ User-ready resume prompt:
 
 > Continue Morpheus Phase 7 on Sol from SOL_START_HERE.md on
 > codex/morpheus-phase6-managed-layer. Verify the checkout and preserve all work.
-> Read the current checkpoint, then continue 7D.3 cited research/report delivery in
+> Read the current checkpoint, then continue 7E.2 interactive client-site creation in
 > the documented small checkpoints. Keep the approved bottom-right Siri-style Morpheus companion,
 > not a dashboard. NerdGPT later. Update tests, evidence and handoff as you go;
 > distinguish source implementation from packaged/live acceptance.

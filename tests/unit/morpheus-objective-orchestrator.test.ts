@@ -104,6 +104,37 @@ function setup(
 }
 
 describe('Main-owned objective orchestration', () => {
+  it.each(['saved', 'denied', 'missing-file'] as const)('research reviews retrieved evidence and only completes after verified save: %s', async (saveOutcome) => {
+    const researchPlan = plan('research-plan');
+    researchPlan.steps = [{ ...researchPlan.steps[0], capabilityId: 'web.readPage', params: { url: 'https://example.com/guide' }, permission: { ...researchPlan.steps[0].permission, capabilityId: 'web.readPage' } }];
+    const planner: MorpheusPlanner = { plannerId: 'provider:test', plannedBy: 'provider',
+      plan: vi.fn(async () => ({ ok: true, plan: researchPlan })),
+      review: vi.fn(async (request) => {
+        expect(request.researchEvidence?.sources[0]).toMatchObject({ sourceId: 's1', excerpt: 'Actually retrieved text' });
+        return { outcome: 'report', report: { title: 'Useful research', paragraphs: [{ text: 'The retrieved guide explains this.', sourceIds: ['s1'] }] } };
+      }),
+    };
+    const { orchestrator, runtime } = setup(planner, vi.fn(async ({ planId }) => planId === 'research-plan' ? {
+      planId, status: 'completed', steps: [{ stepId: 'report', status: 'succeeded', artifact: { kind: 'report', artifactId: 'source', createdAt: '2026-10-01T10:00:00Z', data: { sourceType: 'public-https', finalUrl: 'https://example.com/guide', title: 'Guide', excerpt: 'Actually retrieved text', contentSha256: 'a'.repeat(64) } } }],
+    } : saveOutcome === 'denied' ? { planId, status: 'rejected', steps: [], rejection: { code: 'permission-denied', message: 'Denied' } } : {
+      planId, status: 'completed', steps: [{ stepId: 'save-research', status: 'succeeded', ...(saveOutcome === 'saved' ? { artifact: { kind: 'file' as const, artifactId: 'saved', createdAt: '2026-10-01T10:00:00Z', path: 'C:\\approved\\research.md', bytes: 200, contentSha256: 'a'.repeat(64) } } : {}) }],
+    }));
+    const response = await orchestrator.submit({ objective: 'Research the referenced guide', originType: 'command-bar' });
+    await vi.waitFor(() => expect(orchestrator.snapshot().runsById[response.objectiveRunId].state).toBe(saveOutcome === 'saved' ? 'complete' : saveOutcome === 'denied' ? 'needs-clarification' : 'error'));
+    expect(planner.review).toHaveBeenCalledTimes(1);
+    expect(runtime.registerPlan).toHaveBeenCalledWith(expect.objectContaining({ steps: [expect.objectContaining({ capabilityId: 'file.create', params: expect.objectContaining({ content: expect.stringContaining('[s1](<https://example.com/guide>)') }) })] }));
+    orchestrator.dispose();
+  });
+  it('does not accept research completion prose without a cited report', async () => {
+    const researchPlan = plan('research-plan');
+    researchPlan.steps = [{ ...researchPlan.steps[0], capabilityId: 'web.readPage', params: { url: 'https://example.com' }, permission: { ...researchPlan.steps[0].permission, capabilityId: 'web.readPage' } }];
+    const planner: MorpheusPlanner = { plannerId: 'provider:test', plannedBy: 'provider', plan: async () => ({ ok: true, plan: researchPlan }), review: async () => ({ outcome: 'complete', summary: 'All research complete, trust me.' }) };
+    const { orchestrator } = setup(planner);
+    const response = await orchestrator.submit({ objective: 'Research the referenced guide', originType: 'command-bar' });
+    await vi.waitFor(() => expect(orchestrator.snapshot().runsById[response.objectiveRunId].state).toBe('error'));
+    expect(orchestrator.snapshot().runsById[response.objectiveRunId].error?.message).toContain('not complete');
+    orchestrator.dispose();
+  });
   it('reviews successful browser observations instead of treating an opened page as a completed task', async () => {
     const browserPlan = plan('browser-plan');
     browserPlan.steps = [{ ...browserPlan.steps[0], capabilityId: 'browser.inspect', params: { url: 'https://example.com/' }, permission: { ...browserPlan.steps[0].permission, capabilityId: 'browser.inspect' } }];

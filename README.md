@@ -17,6 +17,9 @@ adapters are tested foundations, not yet wired end to end or available as live P
 Isolated public browsing now uses the existing task engine, permissions and observed
 controls, verified with real Chromium fixtures. Authenticated operations and live-site
 acceptance remain open; this does not promise arbitrary website automation.
+Research now synthesizes actually retrieved sources into a cited Markdown report
+saved through workspace permissions. Source cards and saved-file previews support
+explicit safe external citations; live research quality remains to be accepted.
 
 Phase 7 (2026-09-30): the current source audit and assistant architecture are ready
 for small implementation checkpoints, not a completed-release claim. Start with

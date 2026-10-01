@@ -65,6 +65,8 @@ export type FilePreviewBodyMode = 'full' | 'preview';
 export interface FilePreviewBodyProps {
   file: FilePreviewTarget;
   readOnly?: boolean;
+  /** Only explicit saved-artifact previews opt into public citation links. */
+  allowPublicCitations?: boolean;
   /** Compact mode reduces padding/font for use inside the side panel. */
   compact?: boolean;
   /** Optional slot rendered to the LEFT of the header info (e.g. back button). */
@@ -122,6 +124,7 @@ function pickInitialTab(tabs: Tab[], file: FilePreviewTarget): Tab {
 export function FilePreviewBody({
   file,
   readOnly = false,
+  allowPublicCitations = false,
   compact = false,
   leadingHeader,
   trailingHeader,
@@ -591,7 +594,7 @@ export function FilePreviewBody({
                 isHtmlPreviewExt(file.ext) ? (
                   <HtmlPreviewAnchor />
                 ) : (
-                  <MarkdownPreview source={draft ?? state.content} />
+                  <MarkdownPreview source={draft ?? state.content} allowPublicCitations={allowPublicCitations} />
                 )
               ) : (
                 <div className="p-4 text-sm text-muted-foreground">

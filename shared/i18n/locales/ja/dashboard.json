@@ -112,6 +112,11 @@
     }
   },
   "morpheus": {
+    "research": {
+      "openSource": "出典を開く：{{title}}",
+      "boundedExcerpt": "取得した抜粋です。ページ全体ではありません。",
+      "openFailed": "出典を開けませんでした。もう一度お試しください。"
+    },
     "socialCheckIn": { "question": "今日はどうですか？", "answer": { "good": "順調", "rough": "いまいち" }, "reply": { "good": "よかった。必要なときは声をかけてください。", "rough": "大変ですね。話したいときや手伝いが必要なときはここにいます。" }, "dismiss": "声かけを閉じる" },
     "activationV2": {
       "profileTitle": "あなたの Morpheus",
@@ -519,6 +524,7 @@
       "auditDegraded": "監査利用不可"
     },
     "artifacts": {
+      "previewFile": "保存したファイルをプレビュー",
       "title": "成果物",
       "latest": "最新の成果物",
       "rootLabel": "承認済みファイルの場所",

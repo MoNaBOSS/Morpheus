@@ -75,7 +75,7 @@ Only record what the evidence supports. All rows below start TODO.
 | 7C.4 AUTOMATED (source fixtures) | Local memory correction/deletion/export and persisted ignore backoff; quiet native orb caption without focus theft and optional cancellable neural speech. Seven fresh Electron journeys pass; no inferred mood or paid polling. | C.3 |
 | 7D.1 AUTOMATED (source fixtures) | Core worker port and public HTTPS adapter: owned ids, scoped retrieval, independent leases, cancellation, source artifacts, known-zero usage and unknown-effect recovery. This is not full browser interaction. | A.1, B.1 |
 | 7D.2 IN PROGRESS | Public inspect/interact now use Core permissions, worker scheduling, audit and bounded observed-control review. 118 focused units and seven Windows journeys pass. Account scope and broader live-site acceptance remain open. | D.1 |
-| 7D.3 TODO | Research → cited answer → saved report. Sources actually retrieved; citations open safely; unavailable sources labeled; launch another app during research without cancelling it. | D.2, A.3 |
+| 7D.3 AUTOMATED (source fixtures) | Retrieved sources feed bounded synthesis and a real cited Markdown save through Core permissions. Safe external citations, unavailable labels and independent app task verified; four localized native source/preview journeys pass. Live quality/search/provider/package acceptance remains open. | D.2, A.3 |
 | 7E.1 AUTOMATED (source fixtures) | Recoverable static revisions/rollback preserve manual edits; original static verifier intact; restored result preview. Four locale native journeys inspect real revised HTML at desktop/narrow widths; restored-artifact regression also passes. | D.1, A.3 |
 | 7E.2 TODO | Interactive client-site worker. Pinned template build, constrained execution and isolated script-capable preview; real button/form behavior tested; no arbitrary package scripts/secret access. | E.1 |
 | 7E.3 TODO | Authorized publication adapter. Exact target/revision preview; publish one supported static build; HTTP verification/receipt; timeout reconciliation and tested revision/rollback. | E.1–2, B.1 |
@@ -223,8 +223,11 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
 - D2.2 public-browser integration is verified through the existing Core; see
   `docs/releases/phase7-d2-browser.md`. Full regression passes 3,112 units (two
   inherited skips). Authenticated operations and live-site acceptance remain open.
-- Next executable source row: **7D.3 cited research/report delivery**, then
-  E.2/E.3, F.2, G/H/I. Do not redo C.4/E.1 discovery or rerun entire old campaigns.
+- D3 source-grounded reports are verified in source: strict citation ids, real
+  permission-gated save, independent app task and four localized report-preview
+  journeys. See `docs/releases/phase7-d3-research.md`; no live provider claim.
+- Next executable source row: **7E.2 interactive client-site worker**, then
+  E.3, F.2, G/H/I. Do not redo C.4/E.1 discovery or rerun entire old campaigns.
   The fresh internal installer does not mean these later rows or physical/live
   gates are complete. No paid test is inferred.
 - The Windows worktree is separate from the original PC checkout. Profiles and

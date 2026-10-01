@@ -8,6 +8,8 @@ ownedPaths:
   - shared/morpheus/worker-types.ts
   - electron/services/task-browser/**
   - shared/morpheus/browser-types.ts
+  - shared/morpheus/research-types.ts
+  - electron/services/morpheus/core/research-report.ts
 requiredProfiles:
   - fast
   - comms
@@ -26,3 +28,8 @@ Task browser sessions start without personal accounts. Fixed DOM actions reject
 stale or covered controls, operate only within the approved public origin, and
 close their own renderer/requests on cancellation or deadline. The HTML artifact
 viewer remains separate and unchanged.
+
+Research retrieval feeds the existing bounded review; only observed source ids
+can become citations. A real saved Markdown artifact is required for report
+completion. Retrieved source links open via the safe external shell route, never
+inside the local HTML preview. Failed/blocked sources are not cited as read.

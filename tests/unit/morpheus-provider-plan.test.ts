@@ -27,6 +27,12 @@ const CONTEXT = {
 };
 
 describe('provider plan validation', () => {
+  it('accepts only strict structured report synthesis without provider citation URLs', () => {
+    const report = { title: 'Result', paragraphs: [{ text: 'Source-backed answer.', sourceIds: ['s1'] }] };
+    expect(createReviewFromProviderText(JSON.stringify({ outcome: 'report', report }), CONTEXT)).toEqual({ outcome: 'report', report });
+    expect(() => createReviewFromProviderText(JSON.stringify({ outcome: 'report', report, path: '../outside' }), CONTEXT)).toThrow(/unsupported field/);
+    expect(() => createReviewFromProviderText(JSON.stringify({ outcome: 'report', report: { ...report, sources: [{ url: 'https://fabricated.example' }] } }), CONTEXT)).toThrow();
+  });
   it('converts strict provider JSON into a Main-authored typed plan', () => {
     const plan = createPlanFromProviderText(JSON.stringify({
       steps: [

@@ -13,6 +13,7 @@ import { validateParams } from './capabilities/params';
 import type { ExecutionOrigin, ExecutionPlan, ExecutionStep } from './execution-types';
 import type { MorpheusPlannerReviewResult } from './planner';
 import { buildPlanGraph } from './plan/graph';
+import { parseMorpheusResearchDraft } from './research-types';
 
 export const MORPHEUS_PROVIDER_PLAN_MAX_BYTES = 64 * 1024;
 export const MORPHEUS_PROVIDER_PLAN_MAX_STEPS = 12;
@@ -202,6 +203,10 @@ export function createReviewFromProviderText(
   }
   const record = requireRecord(raw, 'review');
   const outcome = requireBoundedString(record.outcome, 'review.outcome', 20);
+  if (outcome === 'report') {
+    rejectUnknownKeys(record, ['outcome', 'report'], 'review');
+    return { outcome, report: parseMorpheusResearchDraft(record.report) };
+  }
   if (outcome === 'complete') {
     rejectUnknownKeys(record, ['outcome', 'summary'], 'review');
     return { outcome, summary: requireBoundedString(record.summary, 'review.summary', 1_000) };
