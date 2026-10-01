@@ -65,3 +65,22 @@ Final source validation: **3,301 units pass + two inherited skips, 319 files,
 62.93s**; all three typechecks, scoped lint, comms replay/compare and the narrow
 diff-aware harness validate/dry-run pass. This closes the source launch regression,
 not the still-pending packaged normal-startup gate.
+
+## Preview.2 follow-through and ACP endpoint correction
+
+The 208eff4d preview.2 package starts the real Gateway in an isolated normal
+profile (14.1s in this run), shows the approved welcome, completes system
+information, and creates/selects a protected synthetic local provider. Its ACP
+bridge then tried port 18789 while Main's Gateway ran on 55147; the ordinary reply
+never reached the fixture provider. Evidence is retained under
+`E:\Morpheus-builds\phase7-20261002-0319\normal-runtime-evidence.json`.
+
+ACP now validates Main's actual port and passes its loopback URL explicitly.
+The same Main Gateway token goes in the owned child environment, never argv or
+diagnostics; inherited password cannot override that owner. Session access,
+generation, permission and history ownership remain unchanged. Forty-two ACP
+units, three typechecks and scoped lint pass. This is not the managed G2.3 join.
+Preview.3 will combine this change with quiet startup (1fbea5b9). Build its unpacked
+payload first, qualify actual Gateway/ACP/compact history using a free local
+fixture, then compress the EXE once the runtime path succeeds. No real account,
+live quality, hardware or installer acceptance is implied.

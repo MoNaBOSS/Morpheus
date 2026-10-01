@@ -36,6 +36,17 @@ conversation or redesign a logo to start implementation.
 
 ## Next work
 
+Latest ACP endpoint source correction: bridge validates the Main port and uses
+its explicit loopback URL plus child-env token (never argv). Forty-two ACP units,
+three typechecks and scoped lint pass. **Next:** build preview.3 unpacked payload
+from this checkpoint, reuse unchanged complete build caches by junction (do not
+recursively copy their dependency trees), run the normal local-provider companion
+smoke, then compress an EXE only after the path succeeds. The reusable local smoke
+script is `E:\Morpheus-builds\phase7-20261002-0253\normal-runtime-smoke.mjs` and takes
+the new build base plus `--companion`. Its profile/home and provider are synthetic,
+with no paid calls. Current last usable test base is `phase7-20261002-0319`, whose
+preview.2 evidence passes Gateway/first task but fails ACP's former wrong port.
+
 Latest quiet-startup source correction: returning users get the non-focusing orb;
 first run still gets welcome. Tray handoff no longer triggers an immediate orb.
 Five native locale/first-run journeys and seven focus/tray units pass; read H

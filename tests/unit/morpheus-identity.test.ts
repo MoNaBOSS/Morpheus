@@ -18,7 +18,7 @@ describe('package identity', () => {
 
   it('is named and versioned as the Morpheus 1.2.0 preview candidate', () => {
     expect(pkg.name).toBe('morpheus');
-    expect(pkg.version).toBe('1.2.0-preview.2');
+    expect(pkg.version).toBe('1.2.0-preview.3');
     expect(pkg.description).toContain('Morpheus');
     expect(pkg.description).not.toContain('ClawX');
   });

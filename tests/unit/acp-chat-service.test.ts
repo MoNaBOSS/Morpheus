@@ -38,6 +38,10 @@ vi.mock('@electron/utils/logger', () => ({
   logger: loggerMock,
 }));
 
+vi.mock('@electron/utils/store', () => ({
+  getSetting: vi.fn().mockResolvedValue('synthetic-local-gateway-token'),
+}));
+
 vi.mock('@agentclientprotocol/sdk', () => ({
   ClientSideConnection: acpSdkMock.ClientSideConnection,
   ndJsonStream: acpSdkMock.ndJsonStream,
@@ -105,7 +109,7 @@ function createFakeChild() {
   return child;
 }
 
-async function createSpawnedService(connection = createConnection()) {
+async function createSpawnedService(connection = createConnection(), gateway?: ConstructorParameters<typeof import('../../electron/services/acp-chat-service').AcpChatService>[3]) {
   const send = vi.fn();
   const child = createFakeChild();
   acpSdkMock.state.connectionForSpawn = connection;
@@ -115,7 +119,7 @@ async function createSpawnedService(connection = createConnection()) {
     { webContents: { send } } as never,
     createPassthroughAccessRegistry() as never,
     undefined,
-    undefined,
+    gateway,
   );
   return { service, connection, send, child };
 }
@@ -190,6 +194,25 @@ describe('AcpChatService', () => {
     expect(done).toBe(false);
     expect(new TextDecoder().decode(value)).toBe('{"jsonrpc":"2.0","id":1,"result":{}}\n');
     expect(loggerMock.info).toHaveBeenCalledWith('[acp-chat] [stdout] │ startup doctor note');
+  });
+
+  it('binds ACP to the actual Main loopback port with authentication outside argv', async () => {
+    const gateway = { isConnected: () => true, getStatus: () => ({ port: 23189 }), rpc: vi.fn() };
+    const { service } = await createSpawnedService(createConnection(), gateway);
+    const result = await service.loadSession({ sessionKey: 'agent:main:local', workspaceRoot: '/repo', cwd: '/repo' });
+    expect(result.success).toBe(true);
+    expect(childProcessMock.fork).toHaveBeenCalledWith(expect.any(String), ['acp', '--url', 'ws://127.0.0.1:23189'],
+      expect.objectContaining({ env: expect.objectContaining({ OPENCLAW_GATEWAY_TOKEN: 'synthetic-local-gateway-token' }) }));
+    expect(JSON.stringify(childProcessMock.fork.mock.calls[0]?.[1])).not.toContain('synthetic-local-gateway-token');
+    expect(JSON.stringify(loggerMock.info.mock.calls)).not.toContain('synthetic-local-gateway-token');
+  });
+
+  it('rejects an invalid owner port before starting a child', async () => {
+    const gateway = { isConnected: () => true, getStatus: () => ({ port: 65536 }), rpc: vi.fn() };
+    const { service } = await createSpawnedService(createConnection(), gateway);
+    const result = await service.loadSession({ sessionKey: 'agent:main:local', workspaceRoot: '/repo', cwd: '/repo' });
+    expect(result).toMatchObject({ success: false, error: expect.stringContaining('port is invalid') });
+    expect(childProcessMock.fork).not.toHaveBeenCalled();
   });
 
   it('loads historical sessions without explicit routing metadata so replay can resolve by session key', async () => {

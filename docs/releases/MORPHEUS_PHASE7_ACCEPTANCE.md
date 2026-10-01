@@ -649,3 +649,11 @@ synthetic provider. ACP then incorrectly connected to default port 18789 instead
 of the isolated Main-owned port. This remains a real connection bug to fix before
 claiming packaged conversational readiness. No paid inference was made. Preview.2
 does not contain this quiet-startup correction and is not the final handoff build.
+
+### Original ACP endpoint correction — 2026-10-02
+
+ACP uses the validated Main-owned loopback endpoint and its child-env token,
+without token argv or replacement session/history logic. Forty-two focused ACP
+units, three typechecks and scoped lint pass. Preview.3 combines this fix with
+quiet startup; real packaged conversation remains unverified until its normal
+local-provider fixture succeeds. [I evidence](phase7-i-windows-candidate.md).

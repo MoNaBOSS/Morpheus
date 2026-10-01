@@ -57,3 +57,7 @@ Returning startup reads Main's onboarding owner and presents a non-focusing orb,
 not an automatic full window. Explicit tray handoff cannot trigger close-to-orb
 behavior; unavailable tray must leave an accessible surface. Visibility changes
 never grant microphone permission or enable launch-at-startup.
+
+ACP must address the actual Main-owned Gateway, including non-default ports.
+Loopback authentication stays out of argv and diagnostics. A successful Gateway
+start alone does not prove an ordinary reply traversed ACP and its history owner.

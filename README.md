@@ -23,6 +23,9 @@ reduced UI tests. The launch boundary is corrected and real child-process tested
 the rebuilt candidate still needs normal runtime acceptance.
 Returning startup now stays at the quiet orb; explicit tray handoff no longer
 immediately reopens the orb. Neither presentation choice enables the microphone.
+The original ACP bridge now uses Main's actual local endpoint, including isolated
+ports. Preview.3 contains these source fixes; packaged conversation qualification
+is separate from the passing unit checks.
 
 New source checkpoints add inspectable/exportable local memory, quiet orb check-ins,
 bounded public-page retrieval, recoverable static-site revisions and restored site

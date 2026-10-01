@@ -31,6 +31,7 @@ import { logger } from '../utils/logger';
 import { recordAcpTrace } from './acp-trace';
 import { AcpSessionAccessRegistry, type AcpSessionAccessContext } from './acp-session-access-registry';
 import { expandPath } from '../utils/paths';
+import { getSetting } from '../utils/store';
 import type { MorpheusPersonaContext } from '@shared/morpheus/persona-context';
 
 type AcpConnection = Pick<ClientSideConnection, 'initialize' | 'newSession' | 'loadSession' | 'prompt' | 'cancel'>;
@@ -496,7 +497,7 @@ export class AcpChatService {
   }
 
   private async initializeConnectionOnce(attempt: number): Promise<AcpConnection> {
-    if (!this.connection) this.connection = this.spawnConnection();
+    if (!this.connection) this.connection = await this.spawnConnection();
     const connection = this.connection;
     const child = this.child;
 
@@ -551,8 +552,20 @@ export class AcpChatService {
     });
   }
 
-  private spawnConnection(): ClientSideConnection {
-    const spec = getOpenClawEmbeddedForkSpec(['acp']);
+  private async spawnConnection(): Promise<ClientSideConnection> {
+    const port = this.gateway?.getStatus?.().port;
+    if (port !== undefined && (!Number.isInteger(port) || port < 1 || port > 65535)) {
+      throw new Error('The local Gateway port is invalid');
+    }
+    const args = port === undefined ? ['acp'] : ['acp', '--url', `ws://127.0.0.1:${port}`];
+    const spec = getOpenClawEmbeddedForkSpec(args);
+    if (port !== undefined) {
+      // Use the same Main-owned endpoint/authentication as the running engine.
+      // A default CLI discovery URL can target another installation. Never put
+      // the local authentication token into argv or diagnostic records.
+      spec.options.env = { ...spec.options.env, OPENCLAW_GATEWAY_TOKEN: await getSetting('gatewayToken') };
+      delete spec.options.env.OPENCLAW_GATEWAY_PASSWORD;
+    }
     const forked = fork(spec.modulePath, spec.args, spec.options);
     if (!forked.stdin || !forked.stdout || !forked.stderr) {
       forked.kill();
