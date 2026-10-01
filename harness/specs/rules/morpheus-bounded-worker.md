@@ -16,5 +16,12 @@ Cancellation and deadline abort owned network requests, discard stale progress a
 await settlement before releasing leases. Actual/unknown usage is explicit.
 Restart reconciles unfinished checkpoints; unknown side effects never replay.
 Public retrieval rejects private/special addresses and pins DNS per redirect.
-Remote page content is untrusted data and is never executed or interpreted as new
-authority. Success requires a retrieved source observation, not generated prose.
+Remote page content is untrusted data and never becomes new authority. The D1
+text reader never executes markup. The separate D2 browser may run page scripts
+only in a sandboxed ephemeral Chromium session with no privileged preload/Node,
+personal cookies or device grants. Exact-origin pinned HTTPS transport and a
+rejecting fallback proxy block unintended network access. No arbitrary generated
+JavaScript or selector execution: use fixed isolated-world routines and fresh
+observed node references. Account writes, credentials, uploads and downloads need
+separate authority; public browsing cannot imply it. Success requires observed
+content/control results, not generated prose.

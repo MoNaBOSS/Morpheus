@@ -453,3 +453,13 @@ Next: D2 interaction worker, D3 source-grounded reports, E2 interactive template
 E3 publication, F2 desktop controls, G runtime/billing joins, H reliability/perf
 and fresh I installer/acceptance. The old `6e19fadc` installer is not this code and
 must not be handed over as the completed version. External gates remain unchanged.
+
+### D2.1 isolated public Chromium foundation — 2026-10-01
+
+C4/D1/E1/F1/G2 integration was committed/pushed as `f0f2b11c`. The subsequent
+D2.1 boundary passes 19 network units, all typechecks, scoped lint and two actual
+Chromium journeys (observed DOM actions, keyboard navigation, stale controls,
+restricted requests, deadlines and owned-resource cleanup). Source module is
+bundled into the test app's Main; network payloads/DNS are deterministic fixtures.
+No live account/site, paid call, native installer or Core capability integration
+is claimed. See [D2.1 evidence and next work](phase7-d2-browser.md).

@@ -53,7 +53,11 @@ regression; G.2 managed adapters are preserved but actual runtime joins remain
 unfinished and managed activation stays guarded. On 2026-10-01, the boundary
 suite passed 3,083 units (two skips); fresh Windows journeys cover memory/orb,
 four-locale site revision/preview/rollback, restored sites and account regression.
-Next is D.2 task-owned browser interaction. Read the
+The integrated checkpoint is committed/pushed as `f0f2b11c`. D2.1 subsequently
+adds a tested isolated Chromium/public-network boundary (19 units, two real
+Chromium journeys), not yet a registered Core capability. Next is D.2 browser
+worker/planner/audit integration; read `docs/releases/phase7-d2-browser.md`.
+Read the
 narrow source evidence in `docs/releases/` and the current checkpoint in the
 roadmap. Exact installer identity/checks appear in the acceptance ledger when
 built; a source build or packaged-payload smoke is not hardware/live acceptance.

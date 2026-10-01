@@ -14,6 +14,8 @@ New source checkpoints add inspectable/exportable local memory, quiet orb check-
 bounded public-page retrieval, recoverable static-site revisions and restored site
 previews. Approved app discovery is broader without shell access. Managed model/voice
 adapters are tested foundations, not yet wired end to end or available as live Premium.
+An isolated public-browser foundation has real Chromium tests; task integration
+and authenticated browser operations are still in progress.
 
 Phase 7 (2026-09-30): the current source audit and assistant architecture are ready
 for small implementation checkpoints, not a completed-release claim. Start with

@@ -74,7 +74,7 @@ Only record what the evidence supports. All rows below start TODO.
 | 7C.3 AUTOMATED (source fixtures) | Unified bounded persona for admitted companion conversation and neural delivery; saved daily/quiet arrival; first-run name/skip/Matrix welcome; structured genuine-question answers correct the original task. 177 focused units and seven Windows journeys pass, including four locales/reduced motion. Human voice/persona and final packaged acceptance remain open. | A.3, C.2 |
 | 7C.4 AUTOMATED (source fixtures) | Local memory correction/deletion/export and persisted ignore backoff; quiet native orb caption without focus theft and optional cancellable neural speech. Seven fresh Electron journeys pass; no inferred mood or paid polling. | C.3 |
 | 7D.1 AUTOMATED (source fixtures) | Core worker port and public HTTPS adapter: owned ids, scoped retrieval, independent leases, cancellation, source artifacts, known-zero usage and unknown-effect recovery. This is not full browser interaction. | A.1, B.1 |
-| 7D.2 TODO | Real browser navigation/interaction. Named sites, DOM actions, account scope, redirects/downloads, keyboard fallback and cancel; no policy bypass through agent tools. | D.1 |
+| 7D.2 IN PROGRESS | D2.1 isolated public Chromium boundary passes 19 network units and two real Chromium journeys. Core worker/planner integration, account scope and broader site acceptance remain open. | D.1 |
 | 7D.3 TODO | Research → cited answer → saved report. Sources actually retrieved; citations open safely; unavailable sources labeled; launch another app during research without cancelling it. | D.2, A.3 |
 | 7E.1 AUTOMATED (source fixtures) | Recoverable static revisions/rollback preserve manual edits; original static verifier intact; restored result preview. Four locale native journeys inspect real revised HTML at desktop/narrow widths; restored-artifact regression also passes. | D.1, A.3 |
 | 7E.2 TODO | Interactive client-site worker. Pinned template build, constrained execution and isolated script-capable preview; real button/form behavior tested; no arbitrary package scripts/secret access. | E.1 |
@@ -220,7 +220,9 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
   planner/conversation/voice owners consume the bridge. Read the G2 foundation
   note before enabling it. No server/domain/payment account exists yet; user chose
   Stripe and crypto, payment country unspecified.
-- Next executable source row: **7D.2 task-owned browser interaction**, then D.3,
+- D2.1 real public-browser boundary is verified in source; see
+  `docs/releases/phase7-d2-browser.md`. It is not yet a registered Core capability.
+- Next executable source row: **7D.2 Core browser-worker integration**, then D.3,
   E.2/E.3, F.2, G/H/I. Do not redo C.4/E.1 discovery or rerun entire old campaigns.
   The fresh internal installer does not mean these later rows or physical/live
   gates are complete. No paid test is inferred.
