@@ -84,3 +84,13 @@ Preview.3 will combine this change with quiet startup (1fbea5b9). Build its unpa
 payload first, qualify actual Gateway/ACP/compact history using a free local
 fixture, then compress the EXE once the runtime path succeeds. No real account,
 live quality, hardware or installer acceptance is implied.
+
+### Pinned authentication compatibility correction
+
+The e7636b70 preview.3 unpacked smoke reached the correct port but failed auth:
+OpenClaw intentionally suppresses environment credentials with CLI `--url`.
+The source now supplies both owner URL and token in the child environment and
+removes inherited case aliases/passwords. Forty-four units pass, including a
+real pinned bootstrap compatibility check proving the distinction. Node typecheck
+passes. The failed unpacked fixture is retained at `phase7-20261002-0340`; it was
+not compressed or handed off. Rebuild and rerun the normal smoke before the EXE.

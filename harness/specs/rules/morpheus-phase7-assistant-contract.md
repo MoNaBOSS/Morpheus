@@ -61,3 +61,6 @@ never grant microphone permission or enable launch-at-startup.
 ACP must address the actual Main-owned Gateway, including non-default ports.
 Loopback authentication stays out of argv and diagnostics. A successful Gateway
 start alone does not prove an ordinary reply traversed ACP and its history owner.
+Pin/bootstrap compatibility must verify endpoint and authentication together;
+CLI URL overrides can intentionally suppress inherited credentials. Never solve
+that by logging secrets, adding token argv or weakening Gateway authentication.

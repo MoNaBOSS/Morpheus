@@ -557,14 +557,20 @@ export class AcpChatService {
     if (port !== undefined && (!Number.isInteger(port) || port < 1 || port > 65535)) {
       throw new Error('The local Gateway port is invalid');
     }
-    const args = port === undefined ? ['acp'] : ['acp', '--url', `ws://127.0.0.1:${port}`];
-    const spec = getOpenClawEmbeddedForkSpec(args);
+    const spec = getOpenClawEmbeddedForkSpec(['acp']);
     if (port !== undefined) {
       // Use the same Main-owned endpoint/authentication as the running engine.
       // A default CLI discovery URL can target another installation. Never put
       // the local authentication token into argv or diagnostic records.
-      spec.options.env = { ...spec.options.env, OPENCLAW_GATEWAY_TOKEN: await getSetting('gatewayToken') };
-      delete spec.options.env.OPENCLAW_GATEWAY_PASSWORD;
+      // OpenClaw deliberately ignores env authentication with CLI --url. Set
+      // both via the owned env instead; remove Windows case aliases first.
+      const env = { ...spec.options.env };
+      for (const key of Object.keys(env)) {
+        if (/^OPENCLAW_GATEWAY_(URL|TOKEN|PASSWORD)$/i.test(key)) delete env[key];
+      }
+      env.OPENCLAW_GATEWAY_URL = `ws://127.0.0.1:${port}`;
+      env.OPENCLAW_GATEWAY_TOKEN = await getSetting('gatewayToken');
+      spec.options.env = env;
     }
     const forked = fork(spec.modulePath, spec.args, spec.options);
     if (!forked.stdin || !forked.stdout || !forked.stderr) {

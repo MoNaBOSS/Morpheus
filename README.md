@@ -24,7 +24,9 @@ the rebuilt candidate still needs normal runtime acceptance.
 Returning startup now stays at the quiet orb; explicit tray handoff no longer
 immediately reopens the orb. Neither presentation choice enables the microphone.
 The original ACP bridge now uses Main's actual local endpoint, including isolated
-ports. Preview.3 contains these source fixes; packaged conversation qualification
+ports, with URL/token paired in its owned environment (the pinned runtime suppresses
+environment authentication with a CLI URL). The real bootstrap is regression-tested.
+Preview.3 contains these source fixes; packaged conversation qualification
 is separate from the passing unit checks.
 
 New source checkpoints add inspectable/exportable local memory, quiet orb check-ins,

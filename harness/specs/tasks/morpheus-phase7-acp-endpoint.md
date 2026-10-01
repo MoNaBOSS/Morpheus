@@ -9,6 +9,7 @@ touchedAreas:
   - tests/unit/morpheus-identity.test.ts
   - electron/services/acp-chat-service.ts
   - tests/unit/acp-chat-service.test.ts
+  - tests/unit/acp-runtime-auth.test.ts
   - harness/specs/tasks/morpheus-phase7-acp-endpoint.md
   - harness/specs/rules/morpheus-phase7-assistant-contract.md
   - docs/releases/phase7-i-windows-candidate.md
@@ -26,11 +27,13 @@ requiredRules:
   - morpheus-phase7-assistant-contract
 requiredTests:
   - pnpm exec vitest run tests/unit/acp-chat-service.test.ts
+  - pnpm exec vitest run tests/unit/acp-runtime-auth.test.ts
 expectedUserBehavior:
   - Compact conversation uses the running Gateway endpoint instead of silently dialing port 18789.
 acceptance:
   - Main-owned validated port determines the loopback endpoint; renderer cannot choose an arbitrary endpoint.
   - Gateway authentication travels only in the owned child environment, not command arguments or diagnostics.
+  - The pinned runtime accepts URL and authentication together via environment; CLI URL must not suppress authentication.
   - The original ACP session/history/permission owner remains unchanged.
   - Packaged local-provider conversation is verified separately from unit mocks and paid live acceptance.
 docs:

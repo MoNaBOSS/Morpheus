@@ -657,3 +657,8 @@ without token argv or replacement session/history logic. Forty-two focused ACP
 units, three typechecks and scoped lint pass. Preview.3 combines this fix with
 quiet startup; real packaged conversation remains unverified until its normal
 local-provider fixture succeeds. [I evidence](phase7-i-windows-candidate.md).
+
+The e7636b70 unpacked preview.3 failed the pinned runtime's CLI-URL/env-auth
+combination. Both values now use the owned environment; 44 focused checks include
+the real bootstrap and inherited-alias exclusion. Rebuild remains required;
+this failed candidate is not a usable installer. See I evidence above.

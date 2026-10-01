@@ -36,9 +36,11 @@ conversation or redesign a logo to start implementation.
 
 ## Next work
 
-Latest ACP endpoint source correction: bridge validates the Main port and uses
-its explicit loopback URL plus child-env token (never argv). Forty-two ACP units,
-three typechecks and scoped lint pass. **Next:** build preview.3 unpacked payload
+Latest ACP endpoint correction: URL and token must both use the child environment;
+the pinned engine deliberately drops env auth with CLI `--url`. The e7636b70
+preview.3 unpacked test exposed that mismatch. Forty-four focused tests now pass,
+including the actual pinned runtime bootstrap, not just a fork mock. **Next:**
+build the corrected preview.3 unpacked payload
 from this checkpoint, reuse unchanged complete build caches by junction (do not
 recursively copy their dependency trees), run the normal local-provider companion
 smoke, then compress an EXE only after the path succeeds. The reusable local smoke

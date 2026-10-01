@@ -201,8 +201,8 @@ describe('AcpChatService', () => {
     const { service } = await createSpawnedService(createConnection(), gateway);
     const result = await service.loadSession({ sessionKey: 'agent:main:local', workspaceRoot: '/repo', cwd: '/repo' });
     expect(result.success).toBe(true);
-    expect(childProcessMock.fork).toHaveBeenCalledWith(expect.any(String), ['acp', '--url', 'ws://127.0.0.1:23189'],
-      expect.objectContaining({ env: expect.objectContaining({ OPENCLAW_GATEWAY_TOKEN: 'synthetic-local-gateway-token' }) }));
+    expect(childProcessMock.fork).toHaveBeenCalledWith(expect.any(String), ['acp'],
+      expect.objectContaining({ env: expect.objectContaining({ OPENCLAW_GATEWAY_URL: 'ws://127.0.0.1:23189', OPENCLAW_GATEWAY_TOKEN: 'synthetic-local-gateway-token' }) }));
     expect(JSON.stringify(childProcessMock.fork.mock.calls[0]?.[1])).not.toContain('synthetic-local-gateway-token');
     expect(JSON.stringify(loggerMock.info.mock.calls)).not.toContain('synthetic-local-gateway-token');
   });
@@ -213,6 +213,22 @@ describe('AcpChatService', () => {
     const result = await service.loadSession({ sessionKey: 'agent:main:local', workspaceRoot: '/repo', cwd: '/repo' });
     expect(result).toMatchObject({ success: false, error: expect.stringContaining('port is invalid') });
     expect(childProcessMock.fork).not.toHaveBeenCalled();
+  });
+
+  it('does not forward inherited endpoint or password aliases to the owned ACP child', async () => {
+    vi.stubEnv('openclaw_gateway_url', 'ws://unrelated.invalid:1234');
+    vi.stubEnv('OpenClaw_Gateway_Password', 'synthetic-unrelated-password');
+    try {
+      const gateway = { isConnected: () => true, getStatus: () => ({ port: 23189 }), rpc: vi.fn() };
+      const { service } = await createSpawnedService(createConnection(), gateway);
+      await service.loadSession({ sessionKey: 'agent:main:local', workspaceRoot: '/repo', cwd: '/repo' });
+      const env = childProcessMock.fork.mock.calls[0]?.[2]?.env;
+      expect(env).toMatchObject({ OPENCLAW_GATEWAY_URL: 'ws://127.0.0.1:23189' });
+      expect(env).not.toHaveProperty('openclaw_gateway_url');
+      expect(env).not.toHaveProperty('OpenClaw_Gateway_Password');
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('loads historical sessions without explicit routing metadata so replay can resolve by session key', async () => {
