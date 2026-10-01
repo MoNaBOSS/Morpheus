@@ -24,6 +24,7 @@ type MorpheusConversationState = {
   submit: (text: string, source: MorpheusAssistantTurnSource) => Promise<boolean>;
   selectConversation: (conversationId: string) => Promise<void>;
   retryPending: () => void;
+  restoreHistory: (conversationId: string) => Promise<void>;
 };
 
 let activeListeners = 0;
@@ -37,6 +38,7 @@ let draftWriterActive = false;
 const queuedDrafts = new Map<string, string>();
 const dirtyDrafts = new Map<string, string>();
 let applyingMainSelection = false;
+const sessionLoads = new Map<string, Promise<{ cwd: string } | null>>();
 
 function messageFromError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -80,7 +82,16 @@ async function flushDrafts(): Promise<void> {
   }
 }
 
-async function loadSelectedAcpSession(conversationId: string): Promise<{ cwd: string } | null> {
+async function loadSelectedAcpSession(conversationId: string, allowCreate = true): Promise<{ cwd: string } | null> {
+  const existing = sessionLoads.get(conversationId);
+  if (existing) return existing;
+  const pending = loadAcpSession(conversationId, allowCreate);
+  sessionLoads.set(conversationId, pending);
+  try { return await pending; }
+  finally { if (sessionLoads.get(conversationId) === pending) sessionLoads.delete(conversationId); }
+}
+
+async function loadAcpSession(conversationId: string, allowCreate: boolean): Promise<{ cwd: string } | null> {
   const chat = useChatStore.getState();
   const session = chat.sessions.find((entry) => entry.key === conversationId);
   const cwd = resolveEffectiveWorkspace({
@@ -96,12 +107,12 @@ async function loadSelectedAcpSession(conversationId: string): Promise<{ cwd: st
   }
   const acp = useAcpChatSessionStore.getState();
   if (acp.activeSessionKey === conversationId && acp.workspaceRoot === resolved.workspaceRoot
-    && acp.cwd === resolved.executionCwd && !acp.loading) {
+    && acp.cwd === resolved.executionCwd && !acp.loading && !acp.error) {
     return acp.sending ? null : { cwd: resolved.executionCwd };
   }
   if (acp.activeSessionKey === conversationId && acp.loading) return null;
 
-  const createIfMissing = !session || !!session.createdLocally;
+  const createIfMissing = allowCreate && (!session || !!session.createdLocally);
   const loaded = await acp.loadSession({
     sessionKey: conversationId,
     workspaceRoot: resolved.workspaceRoot,
@@ -273,6 +284,28 @@ export const useMorpheusConversationStore = create<MorpheusConversationState>((s
       applySnapshot(snapshot);
     } catch (error) {
       set({ dispatchError: messageFromError(error) });
+    }
+  },
+
+  restoreHistory: async (conversationId) => {
+    const snapshot = get().snapshot;
+    if (snapshot?.selectedConversationId !== conversationId
+      || snapshot.pendingTurns.some((turn) => turn.conversationId === conversationId)) return;
+    const hasHistory = snapshot.turns.some((turn) => turn.conversationId === conversationId
+      && turn.status !== 'admitted') || useChatStore.getState().sessions.some((session) =>
+      session.key === conversationId && !session.createdLocally);
+    if (!hasHistory) return;
+    const previousError = get().dispatchError;
+    try {
+      // Replay the original owner. No prompt, second history or empty-session creation.
+      await loadSelectedAcpSession(conversationId, false);
+      if (get().snapshot?.selectedConversationId === conversationId && get().dispatchError === previousError) {
+        set({ dispatchError: null });
+      }
+    } catch (error) {
+      if (get().snapshot?.selectedConversationId === conversationId) {
+        set({ dispatchError: messageFromError(error) });
+      }
     }
   },
 

@@ -662,3 +662,11 @@ The e7636b70 unpacked preview.3 failed the pinned runtime's CLI-URL/env-auth
 combination. Both values now use the owned environment; 44 focused checks include
 the real bootstrap and inherited-alias exclusion. Rebuild remains required;
 this failed candidate is not a usable installer. See I evidence above.
+
+### Real ACP reply / history follow-through — 2026-10-02
+
+The 3fe59e0c normal unpacked candidate delivers a real local-provider ACP reply,
+without paid calls, but loses its visible timeline on renderer reload. Source now
+loads existing ACP history without another prompt or a second store. Six native/
+four-locale journeys and 97 related units pass; I evidence records boundaries.
+Rebuild before claiming the exact package passes reload/recovery.

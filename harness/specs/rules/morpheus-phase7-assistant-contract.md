@@ -64,3 +64,8 @@ start alone does not prove an ordinary reply traversed ACP and its history owner
 Pin/bootstrap compatibility must verify endpoint and authentication together;
 CLI URL overrides can intentionally suppress inherited credentials. Never solve
 that by logging secrets, adding token argv or weakening Gateway authentication.
+
+Companion restoration must replay the original ACP history even after every
+admission has been acknowledged. It must not send inference, create empty sessions
+on quiet first run, duplicate compact/full loads or overwrite a newly selected
+conversation with stale failure state.

@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { writeFile } from 'node:fs/promises';
 import {
   closeElectronApp,
   expect,
@@ -40,6 +41,14 @@ test.describe('Morpheus compact conversation continuity', () => {
         .toContainText('The report now includes the verified summary.');
       await expect(companion).toHaveAttribute('data-presentation', 'compact-window');
       expect(main!.url()).not.toContain('#/chat');
+      await fixture.setSessionReplay(SESSION_KEY, [{
+        sessionUpdate: 'agent_message_chunk', messageId: 'compact-answer',
+        content: { type: 'text', text: 'The report now includes the verified summary.' },
+      }]);
+      await main!.reload();
+      await expect(main!.getByTestId('quick-command-conversation'))
+        .toContainText('The report now includes the verified summary.');
+      await expect(companion).toHaveAttribute('data-presentation', 'compact-window');
       await main!.screenshot({ path: testInfo.outputPath('native-compact-reply.png'), animations: 'disabled' });
       if (process.env.MORPHEUS_VISUAL_EVIDENCE_DIR) {
         await main!.screenshot({
@@ -102,3 +111,39 @@ test.describe('Morpheus compact conversation continuity', () => {
     }
   });
 });
+
+for (const language of ['en', 'zh', 'ja', 'ru']) {
+  test(`restores existing ${language} history without a new admission or prompt`, async ({ launchElectronApp, userDataDir }, testInfo) => {
+    await writeFile(join(userDataDir, 'settings.json'), JSON.stringify({ language }));
+    const app = await launchElectronApp({ skipSetup: true });
+    try {
+      const fixture = await installAttachmentHostFixture(app, {
+        sessions: [{ key: SESSION_KEY, title: 'Saved conversation' }],
+      });
+      await fixture.setSessionReplay(SESSION_KEY, [{
+        sessionUpdate: 'agent_message_chunk', messageId: 'saved-answer',
+        content: { type: 'text', text: 'Your original saved reply is still here.' },
+      }]);
+      const page = await getStableWindow(app);
+      const errors: string[] = [];
+      page.on('pageerror', (error) => errors.push(error.message));
+      page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.reload();
+      await expect(page).toHaveTitle('Morpheus');
+      await expect(page.getByTestId('workspace-conversation')).toContainText('Your original saved reply is still here.');
+      await page.getByTestId('signal-nav-presence').click();
+      await expect(page.getByTestId('quick-command-conversation')).toContainText('Your original saved reply is still here.');
+      await expect(page.locator('vite-error-overlay')).toHaveCount(0);
+      expect(page.url()).not.toContain('#/chat');
+      await page.screenshot({ path: testInfo.outputPath(`restored-${language}.png`), animations: 'disabled' });
+      const invocations = await fixture.getHostInvocations();
+      expect(invocations.filter((entry) => entry.module === 'chat' && entry.action === 'sendAcpPrompt')).toHaveLength(0);
+      expect(invocations.filter((entry) => entry.module === 'morpheus' && entry.action === 'admitAssistantTurn')).toHaveLength(0);
+      const loads = invocations.filter((entry) => entry.module === 'chat' && entry.action === 'loadAcpSession');
+      expect(loads.length).toBeGreaterThan(0);
+      for (const load of loads) expect(load.payload?.createIfMissing).not.toBe(true);
+      expect(errors).toEqual([]);
+    } finally { await closeElectronApp(app); }
+  });
+}

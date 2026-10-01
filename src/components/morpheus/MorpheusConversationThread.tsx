@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AcpPermissionCard } from '@/pages/Chat/AcpPermissionCard';
 import { projectMorpheusConversation } from '@/lib/morpheus-conversation-projection';
 import { useAcpChatSessionStore } from '@/stores/acp-chat-session';
 import { useMorpheusConversationStore } from '@/stores/morpheus-conversation';
+import { useChatStore } from '@/stores/chat';
 import type { MorpheusAssistantPendingTurn } from '@shared/morpheus/assistant-session-types';
 
 const EMPTY_PENDING_TURNS: MorpheusAssistantPendingTurn[] = [];
@@ -24,6 +25,14 @@ export function MorpheusConversationThread({
   const error = useAcpChatSessionStore((state) => state.error);
   const respondPermission = useAcpChatSessionStore((state) => state.respondPermission);
   const pendingTurns = useMorpheusConversationStore((state) => state.snapshot?.pendingTurns ?? EMPTY_PENDING_TURNS);
+  const restoreHistory = useMorpheusConversationStore((state) => state.restoreHistory);
+  const hasTurnReference = useMorpheusConversationStore((state) => state.snapshot?.turns.some((turn) =>
+    turn.conversationId === sessionKey && turn.status !== 'admitted') ?? false);
+  const hasSavedSession = useChatStore((state) => state.sessions.some((session) =>
+    session.key === sessionKey && !session.createdLocally));
+  useEffect(() => {
+    if (sessionKey && (hasTurnReference || hasSavedSession)) void restoreHistory(sessionKey);
+  }, [hasSavedSession, hasTurnReference, restoreHistory, sessionKey]);
   const projection = useMemo(() => projectMorpheusConversation(timeline, sessionKey, {
     messageLimit: compact ? 8 : 24,
     textLimit: compact ? 4_000 : 20_000,
@@ -65,6 +74,10 @@ export function MorpheusConversationThread({
       )) : null}
       {current && error ? <p role="alert" className="rounded-xl border border-red-500/30 bg-red-950/30 p-3 text-sm text-red-200">
         {error}
+        {sessionKey && !pendingTurns.some((turn) => turn.conversationId === sessionKey)
+          ? <button type="button" className="ml-2 underline" onClick={() => void restoreHistory(sessionKey)}>
+            {t('morpheus.conversation.retry')}
+          </button> : null}
       </p> : null}
       {current && (loading || sending) ? <p role="status" className="text-xs text-[#a0b6aa]">
         {t('morpheus.conversation.waiting')}

@@ -1,208 +1,112 @@
-# Sol: continue Phase 7 implementation
+# Sol: continue Morpheus Phase 7
 
-Prepared by the Astra architecture pass on 2026-09-30 and updated after the Sol
-7A.1–7A.4 source checkpoints and the partial 7B.1 source pass. NerdGPT is deferred. **Phase 7 is not complete or
-packaged/live accepted.** Read the current checkpoint and evidence ledger for the
-actual test scope before extending it.
+Application repository: `https://github.com/MoNaBOSS/Morpheus.git`.
+Authorized branch: `codex/morpheus-phase6-managed-layer`.
+**Phase 7 is not yet fully packaged/hardware/live accepted. NerdGPT is later.**
 
-## Verify source, preserve work
+## Current checkpoint — 2026-10-02
 
-Repository: `https://github.com/MoNaBOSS/Morpheus.git`.
-Application branch: `codex/morpheus-phase6-managed-layer`.
-Audited application baseline: `32badea9c792863cbc9248100025f18f83d26e00`.
-Windows checkout: `C:\Morpheus\morpheus-core`; verify, don't assume.
+Active isolated Windows worktree:
+`C:\Users\monir\Documents\Codex\2026-09-18\morpheus-experience-reset\morpheus-phase7`.
+Original PC checkout `C:\Morpheus\morpheus-core` is preserved, not the active source.
+Verify remote, current commit and dirty files before editing. Never reset, clean,
+overwrite or automatically stash work/profiles/providers. Fetch only the verified
+origin. Reviewed checkpoints are pushed to the authorized branch without force.
 
-Inspect status, remote, branch and recent commits; fetch origin only after verifying
-the remote. Read this file at the latest branch tip. Never reset, clean, overwrite
-or automatically stash user work/profiles/providers. If dirty/divergent work needs
-isolation, inspect attached worktrees and reuse a suitable one or create a managed
-worktree through the app tools. Do not test an old installer or use `gh-pages` as
-the application branch. Git source continuity does not synchronize private user
-profiles, keys or chat history between PCs.
+Latest source: **3fe59e0c**, after e7636b70, 1fbea5b9, 208eff4d and 37095e95.
+Those changes fix the real welcome, quiet returning startup/tray separation,
+Electron Gateway environment and original ACP endpoint/authentication. A normal
+packaged smoke exposed bugs that simplified UI fixtures missed. In particular,
+OpenClaw ignores env credentials with CLI `--url`; both owner URL and token now
+travel in the child environment. Forty-four focused tests include the actual
+pinned bootstrap, not just a mocked fork. Node types/lint/comms/harness pass.
+Prior full suite: 3,301 passes plus two inherited skips before the ACP changes.
 
-## Reading order (once; then read only the active checkpoint's dependencies)
+The 3fe59e0c normal smoke now proves real Gateway → protected local provider →
+original ACP compact reply. It exposed one further gap: no history replay after
+renderer reload once pending admissions had been acknowledged. The current source
+restores existing sessions through the same ACP owner, with single-flight loads
+and no duplicate prompt. Six native/four-locale journeys and 97 related units pass.
 
-1. `AGENTS.md`, `CLAUDE.md` for repository rules.
-2. [Phase 7 execution plan/current checkpoint](docs/roadmap/MORPHEUS_PHASE7_EXECUTION_PLAN.md).
-3. [Assistant architecture and selected native motion](docs/architecture/MORPHEUS_ASSISTANT_ARCHITECTURE.md).
-4. [Acceptance gates and evidence ledger](docs/releases/MORPHEUS_PHASE7_ACCEPTANCE.md).
-5. [September 29 verified PC checkpoint](docs/roadmap/MORPHEUS_PC_CHECKPOINT_2026-09-29.md)
-   for inherited results; relevant source/test owners listed in the plan.
+**Next exact action:** commit/rebuild this history correction and repeat the normal
+smoke before compressing the EXE. The preceding unpacked smoke is from
+`E:\Morpheus-builds\phase7-20261002-0351`, source 3fe59e0c,
+version **1.2.0-preview.3**. Its build and test logs are in that directory.
+The reusable script is
+`E:\Morpheus-builds\phase7-20261002-0253\normal-runtime-smoke.mjs`;
+arguments: the new base directory and `--companion`. It uses an isolated home,
+real Gateway/ACP and a free local provider, not E2E-mode or an owner's account.
+Qualify welcome → local task → compact reply → reload before compressing the EXE.
+If another real failure appears, preserve evidence, fix its owner and add a
+targeted regression; do not keep compressing installers between source edits.
 
-These dated records supersede old dashboard/Ask-Auto-Act, left/top-right placement,
-two-edition and sequential-all-tasks product descriptions. Existing permission,
-audit and runtime-isolation rules remain. Do not reread the entire historical
-conversation or redesign a logo to start implementation.
+Do not hand off the older binaries as current:
+- preview.1/d5954e6c compiled but failed real Gateway environment startup.
+- preview.2/208eff4d compiled and ran Gateway/local task, but dialed the wrong ACP
+  port and predates quiet startup.
+- preview.3/e7636b70 unpacked reached the right port but failed auth pairing.
+- The 6e19fadc/1.1.2 installer is an even older historical provider fixture.
 
-## Next work
+Build on E: because C: is nearly full. Reuse complete unchanged asset caches by
+junction; never recursively copy their large dependency trees. The current build
+environment scripts record exact caches. Do not run an NSIS install/upgrade
+against the owner's existing registration/profile as a test.
 
-Latest ACP endpoint correction: URL and token must both use the child environment;
-the pinned engine deliberately drops env auth with CLI `--url`. The e7636b70
-preview.3 unpacked test exposed that mismatch. Forty-four focused tests now pass,
-including the actual pinned runtime bootstrap, not just a fork mock. **Next:**
-build the corrected preview.3 unpacked payload
-from this checkpoint, reuse unchanged complete build caches by junction (do not
-recursively copy their dependency trees), run the normal local-provider companion
-smoke, then compress an EXE only after the path succeeds. The reusable local smoke
-script is `E:\Morpheus-builds\phase7-20261002-0253\normal-runtime-smoke.mjs` and takes
-the new build base plus `--companion`. Its profile/home and provider are synthetic,
-with no paid calls. Current last usable test base is `phase7-20261002-0319`, whose
-preview.2 evidence passes Gateway/first task but fails ACP's former wrong port.
+## Reading order — once, then active dependencies only
 
-Latest quiet-startup source correction: returning users get the non-focusing orb;
-first run still gets welcome. Tray handoff no longer triggers an immediate orb.
-Five native locale/first-run journeys and seven focus/tray units pass; read H
-evidence. **Next exact source action:** fix ACP's fork context to use the actual
-Main-owned Gateway endpoint. Normal preview.2 (208eff4d) starts Gateway, completes
-welcome/local system information and protected fixture provider selection, but
-ACP still dials default 18789 instead of the isolated port. The current EXE also
-predates quiet startup; rebuild once both changes qualify, not after every edit.
-Normal fixture and logs: `E:\Morpheus-builds\phase7-20261002-0319`; no paid calls.
+1. `AGENTS.md`, `CLAUDE.md`.
+2. [Execution plan](docs/roadmap/MORPHEUS_PHASE7_EXECUTION_PLAN.md).
+3. [Assistant architecture](docs/architecture/MORPHEUS_ASSISTANT_ARCHITECTURE.md).
+4. [Acceptance ledger](docs/releases/MORPHEUS_PHASE7_ACCEPTANCE.md).
+5. Active evidence: [H native readiness](docs/releases/phase7-h-native-readiness.md)
+   and [I Windows candidate](docs/releases/phase7-i-windows-candidate.md).
 
-Latest runtime correction: normal preview.1 startup failed before Gateway spawn
-because Electron rejects undefined credential entries. The launch boundary now
-omits them after provider overrides (including Windows aliases); a real Electron
-utility-child regression passes. Manager/state honor the existing isolated-port
-override. Read `phase7-i-windows-candidate.md`. Rebuild **preview.2** including this
-checkpoint and 37095e95, then rerun normal Gateway startup and local-provider ACP
-conversation without paid calls. The preview.1 binary is retained failed evidence,
-not the handoff EXE. Do not repeat first-run or credential-migration discovery.
-The final source suite passes 3,301 units + two inherited skips (62.93s), all
-typechecks/scoped lint/comms and narrow diff-aware harness validation/dry-run.
+The ledger and linked checkpoint documents retain historical test/commit details.
+Do not repeat the whole discovery or treat historical “next” paragraphs as current.
 
-Latest first-run correction: App no longer routes a new Morpheus profile through
-the legacy installer wizard. Main-persisted arrival owns completion and keyboard
-focus is contained. Ten fresh/returning locale journeys pass, including real local
-task execution and relaunch; read H evidence. The d5954e6c preview.1 installer
-compiled but excludes this fix. Next: rebuild **1.2.0-preview.2** from this reviewed
-checkpoint, qualify normal packaged startup and exact-payload companion/provider
-lifecycle. Preserve the completed source coverage; do not rerun discovery.
+## Preserved work and remaining gates
 
-Latest 2026-10-02 H/I preparation: native click acknowledgement, Escape suppression
-and reload recovery are fixed. Six final native companion journeys and five
-corrected device journeys pass; warm 30-sample click p95 is 12.2ms on this PC.
-Installer helper now preserves exact recoverable backups, never kills globally
-named processes, and retains user profiles on uninstall. 3,298 units pass + two
-inherited skips; all typechecks, scoped lint and comms pass. Read
-`docs/releases/phase7-h-native-readiness.md` and `phase7-i-windows-candidate.md`.
-Next exact action: build **1.2.0-preview.1** from the reviewed committed source in
-a fresh E: clone, inspect its payload and test isolated normal startup/upgrade.
-No fresh EXE or compiled installer acceptance is claimed yet. Full H load/idle/
-hardware/soak, G2.3 conversation and managed G3/G4 remain open. Do not redo the
-already-passed native cycles or provider migration discovery.
+A1–A4: original assistant session, upward native composer, same compact/full ACP
+history and shared fluid M/orb motion. B1: protected static keys, bounded migration,
+SecretRefs, account switching/recovery; upstream OAuth plaintext limits documented.
+C1–C4: local wake pipeline, neural speech/silence handling, shared persona/arrival,
+local editable memory and quiet check-ins. D1–D3: Core-owned public web/browser
+workers and source-grounded reports. E1–E3: recoverable static/interactive sites,
+preview and exact-byte GitHub publication/rollback approval. F1–F2: approved app
+discovery and typed desktop/media controls. These preserve existing agents,
+skills, channels, cron, providers and history; see individual release evidence.
 
-7A.1–7A.4 have focused Windows source automation. B.1 app-owned static-key
-migration/runtime recovery is committed as `2469c650`: protected storage,
-SecretRefs, exact-match rotation/relaunch, stable sibling-account selection,
-OAuth activation without stale replay and safe deletion. A copied synthetic
-legacy profile and same-user Windows protected restart passed; unrelated
-credentials and owner profiles were preserved. The narrow B.1 diff-aware
-harness validation/dry-run passed in the isolated build clone against `1edfd536`.
-Upstream OAuth, unprovenanced old image keys and transient upgrade snapshots
-retain documented plaintext limits; B.1 packaged/real-profile/live gates remain
-open. Do not reopen its source discovery or destroy those existing credentials.
+G2.1 planner and G2.2 voice use the original managed owners; G1.1 recognizes matched
+settled receipts and retains unknown usage. **G2.3 original ACP managed conversation
+is still unfinished**, not replaced by a planner or second chat engine.
+Main `runtimeReady:false` remains deliberate. See
+[managed joins](docs/releases/phase7-g2-runtime-joins.md) and
+[usage boundaries](docs/releases/phase7-g1-usage.md).
 
-Current source checkpoint integrates C.4 memory/native check-ins, D.1 public-source
-worker and E.1 recoverable static-site revisions. F.1 app discovery has source
-regression; G.2 managed adapters are preserved but actual runtime joins remain
-unfinished and managed activation stays guarded. On 2026-10-01, the boundary
-suite passed 3,083 units (two skips); fresh Windows journeys cover memory/orb,
-four-locale site revision/preview/rollback, restored sites and account regression.
-The integrated checkpoint is committed/pushed as `f0f2b11c`. D2.1 subsequently
-adds a tested isolated Chromium/public-network boundary. D2.2 now connects public
-inspect/interact to the existing Core worker, permissions, audit and bounded
-planner review, with task-owned cleanup. 3,112 units passed (two inherited skips),
-118 focused units and seven fresh Windows journeys passed. Account sessions and
-live-site acceptance remain open. D3 now connects observed-source synthesis to
-real file saving and readable source/report previews. Read
-`docs/releases/phase7-d3-research.md` for evidence and live boundaries.
-E2 now connects pinned client-interactive site creation and isolated preview to
-Core and the existing result surface. Read `docs/releases/phase7-e2-interactive-sites.md`.
-Untouched historical starter upgrade now uses complete known-profile equality;
-customized planner/capability choices are preserved and loading never rewrites
-the profile file. See `docs/releases/phase7-profile-continuity.md`.
-E3 now joins exact-target GitHub Pages publication to the existing site result:
-protected connection, explicit exact-file approval, flushed write-ahead receipts,
-read-only restart recovery and reviewed rollback. Four native locale journeys use
-the actual Main owner/vault/adapter with injected network bytes, not a real account.
-Read `docs/releases/phase7-e3-publication.md`. F2 typed window, Spotify and output
-volume controls are implemented through the original Core; four native locale
-window journeys and read-only audio discovery pass. See
-`docs/releases/phase7-f2-desktop-controls.md`. Next is G1/G2 actual runtime
-joins and usage, then H/I. G2.1 now joins the planner with shared validators,
-generation/cancellation and correlated receipt usage; read
-`docs/releases/phase7-g2-runtime-joins.md`. G2.2 voice is now joined and source-tested:
-3,292 unit passes plus two inherited skips; seven native account/voice fixture
-journeys. G1.1 usage reporting recognizes matched settled receipts and cancelled
-transcription (10 tests); see `docs/releases/phase7-g1-usage.md`. Next is the
-roadmap's non-blocking H reliability/performance and I fresh Larry/BYOK candidate.
-G2.3 original ACP conversation, full G1 paid-path coverage/live qualification and
-G3/G4 remain open for managed-ready completion, not silently dropped.
-Managed activation remains guarded. Package, authenticated-browser and live-service
-acceptance remain open. Test scratch/builds use E: because C: is nearly full.
-Read the
-narrow source evidence in `docs/releases/` and the current checkpoint in the
-roadmap. Exact installer identity/checks appear in the acceptance ledger when
-built; a source build or packaged-payload smoke is not hardware/live acceptance.
-Preserve the same assistant/conversation/task owner; no second engine or dashboard.
+Continue the roadmap's non-blocking **H → I Larry/BYOK candidate** sequence.
+H loaded/idle/crash/sleep/recovery/soak, authenticated browser scope, full G1 cost
+coverage and G2.3 remain independent implementation/qualification work.
+Public managed readiness also requires G3/G4 hosted identity/trial/payment and
+operational acceptance. No server/domain/payment account is supplied; Stripe and
+crypto are preferences, business country still unspecified. Signing/update-feed,
+authorized live publication/provider budgets, physical microphone/voice taste,
+DPI/monitors and human 60-minute acceptance remain external/manual gates.
 
-Use [the Phase 7 harness spec](harness/specs/tasks/morpheus-phase7-assistant.md)
-as the umbrella and create a narrowly scoped task spec per communication change.
-Keep changes reviewable. No generic privileged bridge; no changing the local HTML
-viewer into an unrestricted browser; no dropping existing integrations/settings.
+## Continuity, scope and cost rules
 
-The B.1 final-review fixes are implemented: exact runtime deletion/vendor cleanup,
-stable active sibling selection, current OAuth activation, scoped compatibility
-JSON writes, protected deletion failure reporting, serialized mandatory secret
-refresh and the missing-snapshot completion marker fix. Final combined B.1/C.1
-source checks passed 2,959 unit tests (two skipped), all typechecks, lint (zero
-errors, 12 existing warnings), build, communications and umbrella diff-aware
-harness checks. Eight fresh-build provider journeys passed, including copied
-synthetic legacy migration and same-user Windows protected restart. B.1 remains
-open for exact packaged/real-profile/live acceptance and documented upstream
-plaintext limits. C.1 passed 59 focused units and six fresh-build Electron voice
-journeys; C.2 passed 21 focused units and a real-Chromium synthetic silence
-journey with zero provider/task requests. Neural auditions now include a greeting,
-joke and explicitly prepared update in one request. Hardware/live voice remains
-open. C.3 is now verified in source; see `docs/releases/phase7-c3-source-checkpoint.md`.
-Continue G1/G2 then the existing H–I sequence; D2 account/live gates stay open. Do not redo B.1/C.1 discovery or
-call the whole Phase 7 complete.
-
-## Operating rules for continuity and cost
-
-- Main owns authority. Renderer uses typed host API; shared contracts stay
-  platform-neutral. Preserve stable task identity, resource leases and recovery.
-- Orb remains quiet bottom-right; hover/wake do not steal focus. Ordinary replies
-  stay compact. Full expansion is explicit. No everyday Ask/Auto/Act dashboard.
-- Use deterministic local commands first; test most behavior without paid calls.
-  Do not buy services, publish content or spend from an unknown account merely to
-  make a test green. Record bounded live evaluations honestly.
-- Keep Basic/BYOK functional. Managed service, natural voice and actual paid-path
-  coverage remain required work, not placeholders that count as finished.
-- Each checkpoint updates status/evidence/next exact action BEFORE a large build
-  or interruption. Commit/push reviewed project checkpoints to the same authorized
-  branch; preserve unrelated changes. No force push or release publication.
-- UI changes require fresh-build Electron tests, four locales, accessible/reduced
-  motion behavior and native screenshots/recordings. Full final candidate suite
-  and real Windows/hardware/live tests remain mandatory.
-- If a credential or external setup is missing, finish the independent code/tests,
-  record that gate as blocked and ask once when relevant. Don't ask answered
-  design questions or pretend a fixture proves a real provider/device.
-- Stop to hand back only for a genuine missing input, interruption, or achieved
-  requested checkpoint; otherwise continue authorized ordered implementation.
-
-User-ready resume prompt:
-
-> Continue Morpheus Phase 7 on Sol from SOL_START_HERE.md on
-> codex/morpheus-phase6-managed-layer. Verify the checkout and preserve all work.
-> Read the current checkpoint, then continue H native qualification in
-> the documented small checkpoints. Keep the approved bottom-right Siri-style Morpheus companion,
-> not a dashboard. NerdGPT later. Update tests, evidence and handoff as you go;
-> distinguish source implementation from packaged/live acceptance.
-
-An internal Windows installer was built from immutable source `6e19fadc` at
-`E:\Morpheus-builds\phase7-20261001-prepare-0120\candidate\release\Morpheus-1.1.2-win-x64.exe`.
-Its packaged isolated synthetic provider lifecycle passed. It excludes C.3 and
-later work and is not the completed version. SHA256/signature/evidence are in
-the acceptance ledger. Build the final candidate on E: after the remaining
-source work; C: has only about 2 GiB free. Never test an old installer as current.
+- Quiet bottom-right green M/orb; composer upward, ordinary replies compact,
+  full expansion explicit. No rejected dashboard/Ask-Auto-Act or new logo.
+- Main owns authority, profiles and task state. Typed host API only; shared code
+  platform-neutral. Preserve leases, permissions, audit and recovery.
+- Use original runtime agents/tools; no parallel conversation/history engine.
+- Local deterministic work first. No paid calls, publishing, purchases or account
+  mutation merely to make tests green. No fabricated capabilities/results.
+- Distinguish implemented source, local fixtures, exact packaged payload,
+  actual installer, physical hardware and live service acceptance.
+- UI changes need rendered/native regression; communication changes need a narrow
+  [task spec](harness/specs/tasks/morpheus-phase7-assistant.md), matching rules,
+  tests, comms replay/compare and diff-aware harness checks. Sync README locales.
+- Save evidence/next action and commit/push reviewed work before interruptions.
+  Preserve failures honestly; don't rerun already-passed campaigns without cause.
+- Missing external setup blocks only its live gate, not independent local work.
+  Ask only for genuinely missing inputs. Continue while safe relevant work remains.

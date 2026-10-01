@@ -94,3 +94,22 @@ removes inherited case aliases/passwords. Forty-four units pass, including a
 real pinned bootstrap compatibility check proving the distinction. Node typecheck
 passes. The failed unpacked fixture is retained at `phase7-20261002-0340`; it was
 not compressed or handed off. Rebuild and rerun the normal smoke before the EXE.
+
+### Original history recovery
+
+The 3fe59e0c unpacked package reached a real compact ACP reply through one free
+local streaming-provider request. Provider metadata/protected storage and the
+actual local task passed. Reload then showed an empty conversation: the companion
+only loaded ACP when pending admissions existed. The source now replays known
+sessions after reload using the original owner. Compact/full requests share one
+in-flight load; an untouched local placeholder is not created and pending turns
+keep their existing delivery path. A late failure cannot replace another selected
+conversation's error. History retry does not send inference.
+
+Six native/rendered journeys pass (21.2s), including four locales, existing-session
+replay with zero admissions/prompts and compact reply after reload. 97 related
+unit tests pass; all three typechecks and scoped lint pass. Browser plugin absent;
+repository Electron Playwright used. Page identity/content, no framework overlay,
+zero captured page/console errors and screenshots checked. English compact and
+desktop-overlay screenshots inspected. Evidence: `phase7-history-evidence-20261002`
+under E: builds. Normal packaged follow-through is still required after rebuilding.
