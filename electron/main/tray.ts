@@ -23,6 +23,15 @@ export type MorpheusTrayOptions = {
 let tray: Tray | null = null;
 let activeWindow: BrowserWindow | null = null;
 let activeOptions: MorpheusTrayOptions | null = null;
+const parkedWindows = new WeakSet<BrowserWindow>();
+
+export function isWindowParkedInTray(window: BrowserWindow): boolean {
+  return parkedWindows.has(window);
+}
+
+export function clearWindowTrayHandoff(window: BrowserWindow): void {
+  parkedWindows.delete(window);
+}
 
 function getIconsDir(): string {
   return app.isPackaged
@@ -182,6 +191,7 @@ export function createTray(mainWindow: BrowserWindow, options: MorpheusTrayOptio
 }
 
 export function destroyTray(): void {
+  if (activeWindow) parkedWindows.delete(activeWindow);
   tray?.destroy();
   tray = null;
   activeWindow = null;
@@ -193,5 +203,9 @@ export function hideWindowToTray(window: BrowserWindow): void {
   if (!tray || tray.isDestroyed() || activeWindow !== window || window.isDestroyed()) {
     throw new Error('Morpheus tray is unavailable. Keep the workspace open.');
   }
-  window.hide();
+  // The Main hide listener must distinguish an explicit tray handoff from an
+  // ordinary close-to-orb action. Mark first: hide emits synchronously.
+  parkedWindows.add(window);
+  try { window.hide(); }
+  catch (error) { parkedWindows.delete(window); throw error; }
 }

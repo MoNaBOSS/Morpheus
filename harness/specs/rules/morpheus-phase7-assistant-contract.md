@@ -52,3 +52,8 @@ Normal packaged Gateway startup must be qualified separately from reduced E2E
 startup. Electron utility-process environments must contain only string values
 after credential overrides; omitted credentials must not reappear from inherited
 environment aliases. Synthetic runtime tests use an isolated Gateway port.
+
+Returning startup reads Main's onboarding owner and presents a non-focusing orb,
+not an automatic full window. Explicit tray handoff cannot trigger close-to-orb
+behavior; unavailable tray must leave an accessible surface. Visibility changes
+never grant microphone permission or enable launch-at-startup.

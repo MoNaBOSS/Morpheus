@@ -36,6 +36,16 @@ conversation or redesign a logo to start implementation.
 
 ## Next work
 
+Latest quiet-startup source correction: returning users get the non-focusing orb;
+first run still gets welcome. Tray handoff no longer triggers an immediate orb.
+Five native locale/first-run journeys and seven focus/tray units pass; read H
+evidence. **Next exact source action:** fix ACP's fork context to use the actual
+Main-owned Gateway endpoint. Normal preview.2 (208eff4d) starts Gateway, completes
+welcome/local system information and protected fixture provider selection, but
+ACP still dials default 18789 instead of the isolated port. The current EXE also
+predates quiet startup; rebuild once both changes qualify, not after every edit.
+Normal fixture and logs: `E:\Morpheus-builds\phase7-20261002-0319`; no paid calls.
+
 Latest runtime correction: normal preview.1 startup failed before Gateway spawn
 because Electron rejects undefined credential entries. The launch boundary now
 omits them after provider overrides (including Windows aliases); a real Electron

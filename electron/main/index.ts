@@ -9,7 +9,7 @@ import { GatewayManager } from '../gateway/manager';
 import { registerOpenClawConfigCoordinator } from '../gateway/config-delivery';
 import { registerIpcHandlers } from './ipc-handlers';
 import { HostApiRegistry } from './ipc/host-invoke';
-import { createTray, refreshTray } from './tray';
+import { createTray, refreshTray, hideWindowToTray, isWindowParkedInTray, clearWindowTrayHandoff } from './tray';
 import { createMenu } from './menu';
 import { registerZoomShortcuts } from './zoom-shortcuts';
 
@@ -65,6 +65,7 @@ import { classifyMainNavigation } from './navigation-policy';
 import { createMorpheusCompanionSurfaceController } from './morpheus-companion-surface';
 import { MorpheusWakeOrb } from './morpheus-wake-orb';
 import { registerMorpheusOrbBridge } from './morpheus-orb-bridge';
+import type { MorpheusOnboardingStatus } from '@shared/morpheus/onboarding-types';
 import type {
   MorpheusAssistantAdmitTurnPayload,
   MorpheusAssistantDraftPayload,
@@ -376,7 +377,7 @@ function createMainWindow(): BrowserWindow {
   };
   win.webContents.on('did-finish-load', syncPresentationVisibility);
 
-  win.once('ready-to-show', () => {
+  win.once('ready-to-show', async () => {
     if (mainWindow !== win) {
       return;
     }
@@ -393,6 +394,31 @@ function createMainWindow(): BrowserWindow {
       return;
     }
 
+    if (!isE2EMode || process.argv.includes('--morpheus-test-initial-presence')) {
+      try {
+        const readOnboarding = hostApiRegistry.resolve('morpheus', 'onboardingStatus');
+        if (!readOnboarding) throw new Error('Onboarding owner is not ready');
+        const onboarding = await readOnboarding({}) as MorpheusOnboardingStatus;
+        if (win.isDestroyed() || mainWindow !== win || isQuitting()) return;
+        // An explicit second-instance/tray/shortcut request may have shown the
+        // window while we were reading. Never undo that foreground request.
+        if (win.isVisible()) return;
+        if (onboarding.completed) {
+          if (shouldStartHidden) {
+            try { hideWindowToTray(win); return; }
+            catch { /* No live tray: keep the orb available, never strand users. */ }
+          }
+          wakeOrb.show();
+          return;
+        }
+        win.show();
+        return;
+      } catch (error) {
+        logger.warn('Initial companion presence unavailable; showing recovery window:', error);
+        if (!win.isDestroyed()) win.show();
+        return;
+      }
+    }
     if (!shouldStartHidden) win.show();
   });
 
@@ -413,13 +439,15 @@ function createMainWindow(): BrowserWindow {
   });
 
   win.on('show', () => {
+    clearWindowTrayHandoff(win);
     syncPresentationVisibility();
     wakeOrb.hide();
   });
   win.on('hide', () => {
     syncPresentationVisibility();
     if (!isQuitting() && (!isE2EMode || process.argv.includes('--morpheus-test-wake-orb'))) {
-      wakeOrb.show();
+      if (isWindowParkedInTray(win)) wakeOrb.hide();
+      else wakeOrb.show();
     }
   });
 
@@ -473,10 +501,10 @@ async function initialize(): Promise<void> {
     // Apply persisted proxy settings before creating windows or network requests.
     await applyProxySettings();
     await syncLaunchAtStartupSettingFromStore();
-    shouldStartHidden = Boolean(await getSetting('startMinimized'));
   } else {
     logger.info('Running in E2E mode: startup side effects minimized');
   }
+  shouldStartHidden = Boolean(await getSetting('startMinimized'));
 
   // Set application menu
   await createMenu();

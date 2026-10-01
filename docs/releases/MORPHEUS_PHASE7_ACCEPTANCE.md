@@ -637,3 +637,15 @@ including Windows aliases, with no inherited-key fallback. The real Electron
 utility child regression passes and port overrides now isolate the Gateway owner.
 Read [I runtime evidence](phase7-i-windows-candidate.md). Rebuild preview.2 with
 both this correction and 37095e95; preview.1 is not a usable handoff candidate.
+
+### Quiet startup / normal runtime follow-through — 2026-10-02
+
+Returning startup now follows the approved non-focusing orb contract, with explicit
+tray handoff kept distinct from close-to-orb. Five locale/startup native journeys
+and seven focused units pass; see [H evidence](phase7-h-native-readiness.md).
+The preview.2 package from 208eff4d starts its real Gateway (14.1s in this fixture),
+shows approved first-run UI, completes a real local task and selects a protected
+synthetic provider. ACP then incorrectly connected to default port 18789 instead
+of the isolated Main-owned port. This remains a real connection bug to fix before
+claiming packaged conversational readiness. No paid inference was made. Preview.2
+does not contain this quiet-startup correction and is not the final handoff build.

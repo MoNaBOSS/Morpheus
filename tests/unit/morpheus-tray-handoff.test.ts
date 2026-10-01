@@ -9,7 +9,7 @@ vi.mock('electron', () => ({
   },
   nativeImage: { createFromPath: () => ({ isEmpty: () => false, setTemplateImage: vi.fn() }) },
 }));
-import { createTray, destroyTray, hideWindowToTray } from '@electron/main/tray';
+import { createTray, destroyTray, hideWindowToTray, isWindowParkedInTray, clearWindowTrayHandoff } from '@electron/main/tray';
 
 const windowFixture = () => ({ isDestroyed: () => false, hide: vi.fn() });
 const options = () => ({
@@ -31,12 +31,16 @@ describe('explicit Morpheus tray handoff', () => {
     const window = windowFixture();
     const controls = options();
     createTray(window as never, controls as never);
+    window.hide.mockImplementation(() => expect(isWindowParkedInTray(window as never)).toBe(true));
     hideWindowToTray(window as never);
     expect(window.hide).toHaveBeenCalledOnce();
     expect(controls.controls.setAmbientVoiceEnabled).not.toHaveBeenCalled();
     const unrelated = windowFixture();
     expect(() => hideWindowToTray(unrelated as never)).toThrow();
     expect(unrelated.hide).not.toHaveBeenCalled();
+    expect(isWindowParkedInTray(unrelated as never)).toBe(false);
+    clearWindowTrayHandoff(window as never);
+    expect(isWindowParkedInTray(window as never)).toBe(false);
   });
   it('does not hide when the tray was destroyed', () => {
     const window = windowFixture();
@@ -44,5 +48,12 @@ describe('explicit Morpheus tray handoff', () => {
     state.destroyed = true;
     expect(() => hideWindowToTray(window as never)).toThrow();
     expect(window.hide).not.toHaveBeenCalled();
+  });
+  it('does not leave a tray marker after a failed hide', () => {
+    const window = windowFixture();
+    createTray(window as never, options() as never);
+    window.hide.mockImplementation(() => { throw new Error('window unavailable'); });
+    expect(() => hideWindowToTray(window as never)).toThrow('window unavailable');
+    expect(isWindowParkedInTray(window as never)).toBe(false);
   });
 });

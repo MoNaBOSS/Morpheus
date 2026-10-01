@@ -21,6 +21,8 @@ installer containing this correction is `1.2.0-preview.2`, pending qualification
 Normal packaged startup also exposed a Gateway environment failure missed by
 reduced UI tests. The launch boundary is corrected and real child-process tested;
 the rebuilt candidate still needs normal runtime acceptance.
+Returning startup now stays at the quiet orb; explicit tray handoff no longer
+immediately reopens the orb. Neither presentation choice enables the microphone.
 
 New source checkpoints add inspectable/exportable local memory, quiet orb check-ins,
 bounded public-page retrieval, recoverable static-site revisions and restored site

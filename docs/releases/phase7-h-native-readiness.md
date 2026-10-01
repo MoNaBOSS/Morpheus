@@ -72,3 +72,21 @@ The d5954e6c preview.1 installer compiled, but does not include this fix. Rebuil
 as preview.2 before handing off an installer as the current UX.
 All three typechecks, scoped ESLint (zero errors/warnings), four onboarding units,
 comms replay/compare, and the narrow diff-aware harness validate/dry-run pass.
+
+## Quiet initial presence
+
+Normal returning startup previously showed the full window unless a legacy
+start-minimized checkbox was enabled. Main now reads its existing onboarding owner
+at ready-to-show: first run shows welcome; completed profiles show the non-focusing
+orb; saved start-minimized uses the verified tray (or accessible orb if unavailable).
+A foreground request arriving during that read is not undone. Explicit tray handoff
+is marked before hiding so the hide listener does not immediately show the orb;
+showing the workspace clears that marker. No microphone/startup consent is changed.
+
+Five fresh-source Electron journeys pass (16.9s): four returning locales, native
+click/focus/draft-to-compact continuity, no ambient enabling, missing-tray fallback,
+and genuine first-run welcome. Seven focused tray/focus units and all typechecks/
+scoped lint pass. Evidence: `E:\Morpheus-builds\phase7-quiet-start-evidence-20261002`
+and matching report; English native screenshot inspected. This uses an opt-in E2E
+flag for the actual Main startup branch while omitting OS startup/tray side effects.
+The 208eff4d preview.2 installer predates this correction.
