@@ -54,3 +54,37 @@ test('an empty report cannot certify no spend', () => {
   assert.equal(usageReport([]).completeSpendingCap, false);
   assert.equal(usageReport([]).totalBilledCostUsd, null);
 });
+
+const receipt = { serviceRoute: 'planning', costStatus: 'known', receiptState: 'settled',
+  chargedMicroUsd: 250, reservedMicroUsd: 500, assessedCostMicroUsd: 250, costEvidence: 'rate-estimate', rateVersion: 'rates-v1' };
+test('adds settled managed charges separately, including verified zero, without inventing the overall bill', () => {
+  const source = audit([core('completed', { ...receipt, objectiveRunId: 'owner' }), core('started', { serviceRoute: 'planning', objectiveRunId: 'owner' }),
+    core('started', { requestId: 'zero', serviceRoute: 'planning' }), core('completed', { ...receipt, requestId: 'zero', chargedMicroUsd: 0, assessedCostMicroUsd: 0 })]);
+  const report = usageReport([source]);
+  assert.equal(report.paths.core.settledManagedRequests, 2); assert.equal(report.paths.core.unknownCostRequests, 0);
+  assert.equal(report.settledManagedChargeMicroUsd, 250); assert.equal(report.totalBilledCostUsd, null); assert.equal(report.completeSpendingCap, false);
+});
+test('cancelled input remains visible and uncertain output is never counted as free', () => {
+  const source = audit(['transcription', 'speech'].flatMap((route) => ['started', 'cancelled'].map((phase) => ({
+    category: 'voice', event: `${route}-${phase}`, details: { ...receipt, requestId: route, serviceRoute: route,
+      receiptState: 'uncertain', costStatus: 'unknown', chargedMicroUsd: null, speechId: route },
+  }))));
+  const report = usageReport([source]);
+  assert.equal(report.paths.stt.cancelled, 1); assert.equal(report.paths.tts.cancelled, 1);
+  assert.equal(report.paths.stt.unknownCostRequests, 1); assert.equal(report.settledManagedChargeMicroUsd, 0);
+});
+test('conflicting amounts/rates/owners or missing started evidence remain unknown', () => {
+  for (const changed of [{ chargedMicroUsd: 251 }, { rateVersion: 'rates-v2' }, { objectiveRunId: 'another' }]) {
+    const report = usageReport([audit([core('started', { serviceRoute: 'planning' }), core('completed', receipt), core('completed', { ...receipt, ...changed })])]);
+    assert.equal(report.conflictingReceipts, 1); assert.equal(report.paths.core.unknownCostRequests, 1);
+    assert.equal(report.settledManagedChargeMicroUsd, 0);
+  }
+  assert.equal(usageReport([audit([core('completed', receipt)])]).settledManagedChargeMicroUsd, 0);
+});
+test('malformed or wrong-route managed amounts are not accepted as settled currency', () => {
+  for (const changed of [{ chargedMicroUsd: -1 }, { chargedMicroUsd: 0.1 }, { chargedMicroUsd: 1e13 }, { reservedMicroUsd: null },
+    { serviceRoute: 'speech' }, { rateVersion: '' }, { costEvidence: 'guessed' }, { receiptState: 'uncertain' }]) {
+    const report = usageReport([audit([core('started', { serviceRoute: changed.serviceRoute ?? 'planning' }), core('completed', { ...receipt, ...changed })])]);
+    assert.equal(report.paths.core.unknownCostRequests, 1); assert.equal(report.settledManagedChargeMicroUsd, 0);
+  }
+});

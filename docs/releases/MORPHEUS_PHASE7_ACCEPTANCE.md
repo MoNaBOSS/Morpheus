@@ -588,3 +588,12 @@ synthetic input and muted output. Actual gateway/client/voice code runs with
 injected upstream responses. Hardware/taste/live service/package are not established.
 Read [the scope, initial failures and evidence](phase7-g2-runtime-joins.md).
 G2.3 original conversation join is next; activation remains guarded. No new EXE yet.
+
+### G1.1 offline usage evidence — 2026-10-02
+
+Matched settled Core/STT/TTS managed charges now remain separate from runtime
+estimates and unknown spend. Cancelled transcription is counted. Ten script tests
+pass; contradictory/unmatched/invalid receipts cannot imply known cost or a complete
+cap. [Remaining paid-path/live qualification gaps](phase7-g1-usage.md) are explicit.
+Proceed to H/I on the roadmap's BYOK candidate track; managed G2.3/G3/G4 are still
+required for managed-ready acceptance. No live spend or new installer in this pass.

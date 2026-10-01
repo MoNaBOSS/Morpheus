@@ -40,3 +40,8 @@ must stop renderer-buffered output as well as Main transport; pending capture an
 ambient startup must not resurrect. Status must not resolve personal keys in managed
 mode. Preserve BYOK preferences and suppress nonfunctional model/provider controls.
 No audio/transcript content in usage audit; cancelled/uncertain spend is not free.
+
+Usage reducers keep matched settled managed charges separate from provider/runtime
+estimates. Missing starts, mismatched owner/route, contradictory receipt metadata
+and malformed currency remain unknown. Count cancelled transcription too. Partial
+supplied logs cannot establish an invoice or complete spending cap.

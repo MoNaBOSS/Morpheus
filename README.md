@@ -16,6 +16,8 @@ previews. Approved app discovery is broader without shell access. Managed model/
 adapters now include the original Core planner and voice owners: bounded local
 audio conversion, streamed playback and account-change cancellation preserve BYOK
 settings. Conversation composition remains unfinished; live Premium is not available.
+The offline usage report separates matched settled managed charges from runtime
+estimates and unknown spend; it does not claim a complete bill or spending cap.
 Isolated public browsing now uses the existing task engine, permissions and observed
 controls, verified with real Chromium fixtures. Authenticated operations and live-site
 acceptance remain open; this does not promise arbitrary website automation.

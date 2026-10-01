@@ -81,8 +81,8 @@ Only record what the evidence supports. All rows below start TODO.
 | 7E.3 AUTOMATED (source fixtures) | Existing interactive-site result joins protected GitHub credentials, exact-byte approval, non-force publication, flushed receipts, read-only recovery and reviewed rollback. Four native locale journeys with actual Main owner/vault and injected network pass. Real target/public HTTP and package acceptance remain open. | E.1–2, B.1 |
 | 7F.1 IMPLEMENTED (source regression) | Approved app discovery checks known directories and bounded App Paths; 92 focused native-capability/runtime regressions pass. Real installed-app and packaged acceptance remain. | D.1 |
 | 7F.2 IMPLEMENTED (native + source fixtures) | Typed named window, Spotify and output-volume controls use Core permissions/leases/audit and deterministic commands. Four locale native window journeys and read-only audio discovery pass; actual Spotify/volume effects, sleep and packaged acceptance remain open. | F.1 |
-| 7G.1 TODO | Usage coverage and economy qualification. All paid paths correlated; bounded attempts and task owner; matched strong/economy results record success, latency and cost per success. | C.2, D.3, E.3 |
-| 7G.2 IN PROGRESS | Planner now consumes the managed bridge using shared typed validators and correlated receipts. Conversation/voice joins remain next; Main/UI still block managed activation. No live Premium claim. | B.1, D.1, G.1 |
+| 7G.1 IN PROGRESS | Offline report recognizes correlated managed receipts and cancelled input, retaining unknown/unobserved paths. Full paid-path correlation and matched live economy/strong qualification remain open. | C.2, D.3, E.3 |
+| 7G.2 IN PROGRESS | Original planner and voice owners consume the managed bridge. G2.3 ACP conversation remains; Main/UI still block managed activation. No live Premium claim. | B.1, D.1, G.1 |
 | 7G.3 TODO | Live account → eligible trial → real task → voice → receipt. Issuer/configured service, protected restart/login/logout/deletion and limits validated; needs deployment inputs. | G.2, C.3 |
 | 7G.4 TODO | Managed operations and billing. Renewal/top-up/refund/revocation with unordered/duplicate events; tenant/spend controls, backup/restore, kill switch, account deletion; needs eligible payment setup. | G.3 |
 | 7H.1 TODO | Failure/recovery gate. Concurrent work, provider/gateway outage, worker crash, restart, sleep, disk-full/audit failure, unknown publication outcome and cancellation leave truthful state. | A–F; G paths when enabled |
@@ -236,7 +236,10 @@ not as a new product-discovery questionnaire. Never request secrets pasted in ch
   G2.1 planner and G2.2 voice now reuse the original owners; full source suite is
   3,292 passes + two inherited skips. Seven native account/voice fixture journeys
   pass. See `docs/releases/phase7-g2-runtime-joins.md`. Next source work is
-  **G2.3 original ACP conversation join and G1 usage**, then H/I. Hosted activation
+  **H native failure/performance and I candidate** following the non-blocking BYOK
+  order above. G1.1 usage reducer now handles settled managed receipts (10 tests);
+  see `docs/releases/phase7-g1-usage.md`. G2.3 original ACP conversation join, full G1
+  paid-path coverage and matched live qualification remain open. Hosted activation
   remains guarded; no hardware, live-provider or newly packaged acceptance is inferred.
   Untouched starter-profile upgrade now has exact historical matching and focused
   preservation tests; copied-profile/package acceptance is still required. See

@@ -78,7 +78,11 @@ joins and usage, then H/I. G2.1 now joins the planner with shared validators,
 generation/cancellation and correlated receipt usage; read
 `docs/releases/phase7-g2-runtime-joins.md`. G2.2 voice is now joined and source-tested:
 3,292 unit passes plus two inherited skips; seven native account/voice fixture
-journeys. Next: G2.3 original ACP conversation owner and G1 usage, then H/I.
+journeys. G1.1 usage reporting recognizes matched settled receipts and cancelled
+transcription (10 tests); see `docs/releases/phase7-g1-usage.md`. Next is the
+roadmap's non-blocking H reliability/performance and I fresh Larry/BYOK candidate.
+G2.3 original ACP conversation, full G1 paid-path coverage/live qualification and
+G3/G4 remain open for managed-ready completion, not silently dropped.
 Managed activation remains guarded. Package, authenticated-browser and live-service
 acceptance remain open. Test scratch/builds use E: because C: is nearly full.
 Read the
@@ -136,7 +140,7 @@ User-ready resume prompt:
 
 > Continue Morpheus Phase 7 on Sol from SOL_START_HERE.md on
 > codex/morpheus-phase6-managed-layer. Verify the checkout and preserve all work.
-> Read the current checkpoint, then continue G2.3 original managed conversation in
+> Read the current checkpoint, then continue H native qualification in
 > the documented small checkpoints. Keep the approved bottom-right Siri-style Morpheus companion,
 > not a dashboard. NerdGPT later. Update tests, evidence and handoff as you go;
 > distinguish source implementation from packaged/live acceptance.
