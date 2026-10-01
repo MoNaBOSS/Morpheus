@@ -34,3 +34,34 @@ source/hash, then isolated packaged lifecycle and normal startup. Never run the
 NSIS installer against the owner's existing registration/profile as a test.
 Signing, authorized update feed, physical voice/performance, live hero workflows,
 G2.3 ACP managed conversation and G3/G4 service/payment acceptance remain open.
+
+## Normal startup exposed a launch blocker
+
+The d5954e6c `1.2.0-preview.1` NSIS installer compiled successfully. A normal
+(not E2E-mode) launch in a separate synthetic Windows home/profile failed to
+start Gateway: `utilityProcess.fork` rejected undefined credential-clearing
+entries with `Invalid value for env`. Reduced UI tests had skipped this launch.
+The app retained its bounded retry policy; it was not a usable runtime candidate.
+
+The Gateway launch boundary now omits undefined values **after** all provider
+overrides, including cleared Windows case aliases. It neither restores inherited
+credentials nor serializes the word `undefined`, and preserves selected SecretRef
+values. An actual Electron utility child verifies omission and selected-value
+delivery without a network provider. Windows Electron itself drops empty strings
+in the child environment; the boundary keeps them valid, not stringified.
+Gateway manager/state also honor the existing environment port override so the
+normal-startup fixture cannot share an owner's default port. No runtime, tool,
+session or permission owner has been replaced.
+
+The real utility-process regression passes (3.3s). The first full suite exposed
+nine outdated config mocks and the pre-preview version assertion; those fixtures
+were corrected, not runtime safety checks weakened. The preview.2 candidate must
+include this fix and the 37095e95 first-run correction. Normal Gateway readiness,
+full packaged lifecycle and exact source/hash remain pending until rebuilt.
+Evidence: `E:\Morpheus-builds\phase7-runtime-launch-final-evidence-20261002`;
+failed normal preview.1 evidence under `phase7-20261002-0253` is retained.
+
+Final source validation: **3,301 units pass + two inherited skips, 319 files,
+62.93s**; all three typechecks, scoped lint, comms replay/compare and the narrow
+diff-aware harness validate/dry-run pass. This closes the source launch regression,
+not the still-pending packaged normal-startup gate.

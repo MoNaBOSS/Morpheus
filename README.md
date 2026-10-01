@@ -18,6 +18,9 @@ Fresh profiles now enter the approved name/welcome scene directly, with trapped
 keyboard focus. Returning profiles do not repeat the legacy setup wizard when
 renderer storage is missing. Ten fresh/returning Windows journeys pass; the
 installer containing this correction is `1.2.0-preview.2`, pending qualification.
+Normal packaged startup also exposed a Gateway environment failure missed by
+reduced UI tests. The launch boundary is corrected and real child-process tested;
+the rebuilt candidate still needs normal runtime acceptance.
 
 New source checkpoints add inspectable/exportable local memory, quiet orb check-ins,
 bounded public-page retrieval, recoverable static-site revisions and restored site

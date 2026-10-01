@@ -36,6 +36,17 @@ conversation or redesign a logo to start implementation.
 
 ## Next work
 
+Latest runtime correction: normal preview.1 startup failed before Gateway spawn
+because Electron rejects undefined credential entries. The launch boundary now
+omits them after provider overrides (including Windows aliases); a real Electron
+utility-child regression passes. Manager/state honor the existing isolated-port
+override. Read `phase7-i-windows-candidate.md`. Rebuild **preview.2** including this
+checkpoint and 37095e95, then rerun normal Gateway startup and local-provider ACP
+conversation without paid calls. The preview.1 binary is retained failed evidence,
+not the handoff EXE. Do not repeat first-run or credential-migration discovery.
+The final source suite passes 3,301 units + two inherited skips (62.93s), all
+typechecks/scoped lint/comms and narrow diff-aware harness validation/dry-run.
+
 Latest first-run correction: App no longer routes a new Morpheus profile through
 the legacy installer wizard. Main-persisted arrival owns completion and keyboard
 focus is contained. Ten fresh/returning locale journeys pass, including real local

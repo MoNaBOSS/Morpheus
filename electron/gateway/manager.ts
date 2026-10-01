@@ -7,7 +7,7 @@ import path from 'path';
 import { createHash } from 'node:crypto';
 import { EventEmitter } from 'events';
 import WebSocket from 'ws';
-import { PORTS } from '../utils/config';
+import { getPort } from '../utils/config';
 import { JsonRpcNotification, isNotification, isResponse } from './protocol';
 import { logger } from '../utils/logger';
 import { captureTelemetryEvent, trackMetric } from '../utils/telemetry';
@@ -174,7 +174,7 @@ export class GatewayManager extends EventEmitter {
   private processExitCode: number | null = null; // set by exit event, replaces exitCode/signalCode
   private ownsProcess = false;
   private ws: WebSocket | null = null;
-  private status: GatewayStatus = { state: 'stopped', port: PORTS.OPENCLAW_GATEWAY };
+  private status: GatewayStatus = { state: 'stopped', port: getPort('OPENCLAW_GATEWAY') };
   private readonly stateController: GatewayStateController;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private reconnectAttempts = 0;

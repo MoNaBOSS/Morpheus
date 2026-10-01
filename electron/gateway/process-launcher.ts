@@ -82,9 +82,17 @@ const GATEWAY_FETCH_PRELOAD_SOURCE = `'use strict';
 
 export function buildGatewayRuntimeEnv(
   forkEnv: Record<string, string | undefined>,
-): Record<string, string | undefined> {
+): Record<string, string> {
+  const clearedWindowsNames = new Set(process.platform === 'win32'
+    ? Object.entries(forkEnv).filter(([, value]) => value === undefined).map(([name]) => name.toUpperCase())
+    : []);
   return {
-    ...forkEnv,
+    // Node child_process omits undefined values, but Electron utilityProcess
+    // rejects the entire environment. Apply omission AFTER account overrides:
+    // an unset credential must not reappear from the parent environment.
+    ...Object.fromEntries(Object.entries(forkEnv).filter((entry): entry is [string, string] => (
+      typeof entry[1] === 'string' && !clearedWindowsNames.has(entry[0].toUpperCase())
+    ))),
     // ClawX does not expose LAN discovery, so keep Bonjour disabled even if
     // the parent process inherited an explicit opt-in value.
     OPENCLAW_DISABLE_BONJOUR: '1',
@@ -184,7 +192,7 @@ export async function launchGatewayProcess(options: {
     const child = utilityProcess.fork(entryScript, gatewayArgs, {
       cwd: openclawDir,
       stdio: 'pipe',
-      env: runtimeEnv as NodeJS.ProcessEnv,
+      env: runtimeEnv,
       serviceName: 'OpenClaw Gateway',
     });
 

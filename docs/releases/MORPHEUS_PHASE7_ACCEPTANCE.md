@@ -628,3 +628,12 @@ system-information completion and profile-preserving relaunch after renderer
 storage removal. See [H first-run evidence](phase7-h-native-readiness.md).
 The preview.1 NSIS build from d5954e6c succeeded, but predates this correction.
 `1.2.0-preview.2` is the next candidate; packaged/runtime/hardware gates stay open.
+
+### Real Gateway launch boundary — 2026-10-02
+
+Normal preview.1 startup found Electron rejecting undefined provider-env entries.
+The original Gateway launch now removes cleared entries after account overrides,
+including Windows aliases, with no inherited-key fallback. The real Electron
+utility child regression passes and port overrides now isolate the Gateway owner.
+Read [I runtime evidence](phase7-i-windows-candidate.md). Rebuild preview.2 with
+both this correction and 37095e95; preview.1 is not a usable handoff candidate.

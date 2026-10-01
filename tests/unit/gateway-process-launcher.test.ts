@@ -42,4 +42,21 @@ describe('Gateway process launcher environment', () => {
     expect(on).toHaveBeenCalledTimes(1);
     expect(on).toHaveBeenCalledWith('data', expect.any(Function));
   });
+
+  it('omits cleared credentials without dropping empty values or mutating overrides', () => {
+    const source = { OPENAI_API_KEY: undefined, ANTHROPIC_API_KEY: undefined,
+      CLAWX_PROVIDER_SELECTED: 'synthetic-selected', EMPTY: '', PATH: '/fixture/bin' };
+    const result = buildGatewayRuntimeEnv(source);
+    expect(result).not.toHaveProperty('OPENAI_API_KEY');
+    expect(result).not.toHaveProperty('ANTHROPIC_API_KEY');
+    expect(result).toMatchObject({ CLAWX_PROVIDER_SELECTED: 'synthetic-selected', EMPTY: '', PATH: '/fixture/bin' });
+    expect(Object.values(result).every((value) => typeof value === 'string')).toBe(true);
+    expect(source).toHaveProperty('OPENAI_API_KEY', undefined);
+  });
+
+  it.runIf(process.platform === 'win32')('also omits differently cased Windows aliases of a cleared key', () => {
+    const result = buildGatewayRuntimeEnv({ OpenAI_Api_Key: 'stale-inherited', OPENAI_API_KEY: undefined });
+    expect(result).not.toHaveProperty('OpenAI_Api_Key');
+    expect(result).not.toHaveProperty('OPENAI_API_KEY');
+  });
 });

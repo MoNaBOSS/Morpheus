@@ -16,9 +16,9 @@ const read = (relative: string) => readFileSync(join(REPO_ROOT, relative), 'utf8
 describe('package identity', () => {
   const pkg = JSON.parse(read('package.json')) as Record<string, string>;
 
-  it('is named and versioned as Morpheus 1.1.2', () => {
+  it('is named and versioned as the Morpheus 1.2.0 preview candidate', () => {
     expect(pkg.name).toBe('morpheus');
-    expect(pkg.version).toBe('1.1.2');
+    expect(pkg.version).toBe('1.2.0-preview.2');
     expect(pkg.description).toContain('Morpheus');
     expect(pkg.description).not.toContain('ClawX');
   });
@@ -39,7 +39,7 @@ describe('installer identity', () => {
 
   it('produces a Morpheus-named installer', () => {
     expect(builder).toContain('productName: Morpheus');
-    // artifactName interpolates productName, so this yields Morpheus-1.1.2-win-x64.exe
+    // artifactName includes the candidate version, never an old release label.
     expect(builder).toContain('artifactName: ${productName}-${version}-${os}-${arch}.${ext}');
     expect(builder).toContain('shortcutName: Morpheus');
     expect(builder).toContain('uninstallDisplayName: Morpheus');

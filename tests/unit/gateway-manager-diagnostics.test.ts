@@ -33,8 +33,15 @@ describe('GatewayManager diagnostics', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     vi.useRealTimers();
     Object.defineProperty(process, 'platform', { value: originalPlatform });
+  });
+
+  it('honors the existing Gateway port override for isolated runtime launches', async () => {
+    vi.stubEnv('CLAWX_PORT_OPENCLAW_GATEWAY', '23189');
+    const { GatewayManager } = await import('@electron/gateway/manager');
+    expect(new GatewayManager().getStatus().port).toBe(23189);
   });
 
   it('updates diagnostics on gateway message, rpc success/timeout, and socket close', async () => {

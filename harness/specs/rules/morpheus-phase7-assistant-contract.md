@@ -47,3 +47,8 @@ First-run qualification must launch without the skip-setup fixture flag. The
 Main-owned onboarding profile, not the old renderer setup flag, controls the
 approved arrival. Clearing renderer storage cannot force returning users through
 the legacy setup wizard. Modal first-run controls contain keyboard focus.
+
+Normal packaged Gateway startup must be qualified separately from reduced E2E
+startup. Electron utility-process environments must contain only string values
+after credential overrides; omitted credentials must not reappear from inherited
+environment aliases. Synthetic runtime tests use an isolated Gateway port.
