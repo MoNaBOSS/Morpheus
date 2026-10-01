@@ -10,6 +10,11 @@ Returning greetings respect quiet settings and saved daily history; companion ch
 and neural speech share saved personality preferences. Full Phase 7 acceptance is
 still in progress; see [the current checkpoint](SOL_START_HERE.md).
 
+Native click/Escape/reload recovery now has repeated Windows checks and a recorded
+warm interaction baseline. Upgrade preparation preserves recoverable installation
+backups and no longer kills other instances or erases user profiles. These are
+source/helper results; a fresh packaged candidate is still under qualification.
+
 New source checkpoints add inspectable/exportable local memory, quiet orb check-ins,
 bounded public-page retrieval, recoverable static-site revisions and restored site
 previews. Approved app discovery is broader without shell access. Managed model/voice

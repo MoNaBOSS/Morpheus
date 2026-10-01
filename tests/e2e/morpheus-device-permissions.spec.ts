@@ -20,11 +20,11 @@ async function openCommandCenter(page: Page): Promise<void> {
   await expect(page.getByTestId('command-center-page')).toBeVisible();
 }
 
-async function useBalancedProfile(page: Page): Promise<void> {
+async function useProfile(page: Page, profile: 'balanced' | 'strict' = 'balanced'): Promise<void> {
   await page.getByTestId('sidebar-nav-settings').click();
   await expect(page.getByTestId('settings-permissions-section')).toBeVisible();
-  await page.getByTestId('morpheus-profile-balanced').click();
-  await expect(page.getByTestId('morpheus-profile-balanced')).toHaveAttribute('data-active', 'true');
+  await page.getByTestId(`morpheus-profile-${profile}`).click();
+  await expect(page.getByTestId(`morpheus-profile-${profile}`)).toHaveAttribute('data-active', 'true');
   await page.getByTestId('sidebar-nav-command-center').click();
   await expect(page.getByTestId('command-center-page')).toBeVisible();
 }
@@ -32,10 +32,11 @@ async function useBalancedProfile(page: Page): Promise<void> {
 async function runCommand(page: Page, objective: string): Promise<void> {
   await page.getByTestId('morpheus-command-input').fill(objective);
   await page.getByTestId('morpheus-command-submit').click();
+  await expect(page.getByTestId('workspace-selected-task')).toContainText(objective);
 }
 
 const consentDialog = (page: Page) => page.getByTestId('morpheus-plan-consent-dialog');
-const firstCard = (page: Page) => page.getByTestId('morpheus-run-card').first();
+const taskState = (page: Page) => page.getByTestId('command-center-objective-state');
 
 test.describe('Morpheus device capability permissions', () => {
   test('a notification runs with no prompt at all under Balanced', async ({ launchElectronApp }) => {
@@ -43,11 +44,11 @@ test.describe('Morpheus device capability permissions', () => {
     try {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
-      await useBalancedProfile(page);
+      await useProfile(page);
 
       await runCommand(page, 'Notify me "Morpheus is ready"');
 
-      await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
+      await expect(taskState(page)).toHaveText('Complete', { timeout: 20_000 });
       // Low risk: no dialog was ever shown.
       await expect(consentDialog(page)).toHaveCount(0);
     } finally {
@@ -57,19 +58,20 @@ test.describe('Morpheus device capability permissions', () => {
 
   test('clipboard write asks once, and does NOT grant clipboard read', async ({ launchElectronApp }) => {
     const app = await launchElectronApp({ skipSetup: true });
+    const savedClipboard = await app.evaluate(({ clipboard }) => clipboard.readText());
     try {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
-      await useBalancedProfile(page);
+      await useProfile(page);
 
       await runCommand(page, 'Copy "Morpheus" to the clipboard');
       await expect(consentDialog(page)).toBeVisible({ timeout: 20_000 });
       await page.getByTestId('morpheus-plan-consent-allow-always').click();
-      await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
+      await expect(taskState(page)).toHaveText('Complete', { timeout: 20_000 });
 
       // A second WRITE is covered by the grant just made.
       await runCommand(page, 'Copy "Second" to the clipboard');
-      await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 20_000 });
+      await expect(taskState(page)).toHaveText('Complete', { timeout: 20_000 });
       await expect(consentDialog(page)).toHaveCount(0);
 
       // A READ is a different trust scope and must ask again. The clipboard
@@ -78,6 +80,7 @@ test.describe('Morpheus device capability permissions', () => {
       await expect(consentDialog(page)).toBeVisible({ timeout: 20_000 });
       await page.getByTestId('morpheus-plan-consent-deny').click();
     } finally {
+      await app.evaluate(({ clipboard }, previous) => clipboard.writeText(previous), savedClipboard);
       await closeElectronApp(app);
     }
   });
@@ -98,7 +101,7 @@ test.describe('Morpheus device capability permissions', () => {
       await expect(page.getByTestId('morpheus-plan-consent-target')).toContainText('captures');
 
       await page.getByTestId('morpheus-plan-consent-allow-session').click();
-      await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 30_000 });
+      await expect(taskState(page)).toHaveText('Complete', { timeout: 30_000 });
 
       // Capture is announced where the user is already looking.
       const indicator = page.getByTestId('morpheus-capture-indicator');
@@ -113,7 +116,7 @@ test.describe('Morpheus device capability permissions', () => {
 
       // Session grant honoured: the second capture does not prompt.
       await runCommand(page, 'Take a screenshot');
-      await expect(firstCard(page)).toHaveAttribute('data-phase', 'succeeded', { timeout: 30_000 });
+      await expect(taskState(page)).toHaveText('Complete', { timeout: 30_000 });
       await expect(consentDialog(page)).toHaveCount(0);
       expect(readdirSync(capturesDir(userDataDir)).length).toBe(files.length + 1);
     } finally {
@@ -131,7 +134,7 @@ test.describe('Morpheus device capability permissions', () => {
       await expect(consentDialog(page)).toBeVisible({ timeout: 20_000 });
       await page.getByTestId('morpheus-plan-consent-deny').click();
 
-      await expect(page.getByTestId('plan-status')).toBeVisible({ timeout: 20_000 });
+      await expect(taskState(page)).toHaveText('Needs clarification', { timeout: 20_000 });
       expect(existsSync(capturesDir(userDataDir))).toBe(false);
       // Nothing ran, so nothing is announced.
       await expect(page.getByTestId('morpheus-capture-indicator')).toHaveCount(0);
@@ -140,20 +143,21 @@ test.describe('Morpheus device capability permissions', () => {
     }
   });
 
-  test('a grant for one approved application does not extend to another', async ({
+  test('Strict can still require confirmation for each exact application without launching it', async ({
     launchElectronApp,
   }) => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
       await openCommandCenter(page);
-      await useBalancedProfile(page);
+      // Balanced intentionally auto-runs explicit routine launches. Strict is
+      // the deliberate opt-in boundary; denying keeps user applications closed.
+      await useProfile(page, 'strict');
 
       await runCommand(page, 'Open Notepad');
       await expect(consentDialog(page)).toBeVisible({ timeout: 20_000 });
       // Deny: launching a GUI process would leak into later specs. The
-      // assertion is that the scope is per-application, which the next command
-      // proves regardless of the decision here.
+      // next command must present its own target, not the previous application's.
       await page.getByTestId('morpheus-plan-consent-deny').click();
 
       await runCommand(page, 'Open Calculator');

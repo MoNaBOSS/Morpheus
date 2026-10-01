@@ -72,6 +72,25 @@ describe.skipIf(process.platform !== 'win32')('native orb visibility across dela
     expect(mock.windows[0].hide).not.toHaveBeenCalled();
   });
 
+  it('restores visibility and hover state after a renderer reload without stealing focus', () => {
+    const orb = new MorpheusWakeOrb(vi.fn());
+    orb.show();
+    const window = mock.windows[0];
+    window.finishLoad();
+    orb.present('hover');
+    window.webContents.executeJavaScript.mockClear();
+    window.finishLoad();
+    const scripts = window.webContents.executeJavaScript.mock.calls.map(([script]) => script);
+    expect(scripts.some((script) => script.includes("dataset.windowVisible = 'true'"))).toBe(true);
+    expect(scripts.some((script) => script.includes('inert = false'))).toBe(true);
+    expect(window.focus).not.toHaveBeenCalled();
+    orb.hide();
+    window.showInactive.mockClear();
+    window.finishLoad();
+    expect(window.showInactive).not.toHaveBeenCalled();
+    orb.dispose();
+  });
+
   it('projects Main-owned visibility because Electron hide may not change document.hidden', () => {
     const orb = new MorpheusWakeOrb(vi.fn());
     orb.show();
@@ -132,6 +151,26 @@ describe.skipIf(process.platform !== 'win32')('native orb visibility across dela
     expect(window.showInactive).toHaveBeenCalledOnce();
     expect(window.show).not.toHaveBeenCalled();
     expect(window.focus).not.toHaveBeenCalled();
+  });
+
+  it('acknowledges a focus request only after the composer is no longer inert', async () => {
+    const orb = new MorpheusWakeOrb(vi.fn());
+    orb.show();
+    const window = mock.windows[0];
+    window.finishLoad();
+    let release!: () => void;
+    const applied = new Promise<void>((resolve) => { release = resolve; });
+    window.webContents.executeJavaScript.mockImplementation((script: string) =>
+      script.includes('inert = false') ? applied : Promise.resolve());
+    let acknowledged = false;
+    const request = Promise.resolve(orb.present('focus')).then(() => { acknowledged = true; });
+    await Promise.resolve();
+    expect(acknowledged).toBe(false);
+    expect(window.focus).toHaveBeenCalledOnce();
+    release();
+    await request;
+    expect(acknowledged).toBe(true);
+    orb.dispose();
   });
 
   it('shows a bounded social caption without focusing or opening the composer and clears on interaction/expiry', () => {

@@ -55,14 +55,15 @@ describe('patch-nsis-extract', () => {
     expect(patchNsisExtractTemplate(target)).toBe(true);
 
     const result = readFileSync(target, 'utf8');
-    expect(result).toContain('Morpheus-patched-v3');
+    expect(result).toContain('Morpheus-patched-v4');
     expect(result).not.toContain('CopyFiles /SILENT');
     expect(result).not.toContain('$(appCannotBeClosed)');
     expect(result).toContain('$(decompressionFailed)');
     expect(result).toContain('Quit');
     expect(result).toContain('SetErrorLevel 2');
     expect(result).toContain('Restoring previous Morpheus installation after failed update');
-    expect(result).not.toMatch(/taskkill[^\r\n]*openclaw-gateway\.exe/i);
+    expect(result).not.toMatch(/taskkill|RMDir \/r/);
+    expect(result).toContain('morpheusInstallGuard Restore');
     expect(result).not.toContain('continuing overwrite install anyway');
     expect(patchNsisExtractTemplate(target)).toBe(true);
   });
@@ -87,7 +88,7 @@ describe('patch-nsis-extract', () => {
     expect(patchNsisExtractTemplate(target)).toBe(true);
 
     const result = readFileSync(target, 'utf8');
-    expect(result).toContain('Morpheus-patched-v3');
+    expect(result).toContain('Morpheus-patched-v4');
     expect(result).toContain('Failed to extract Morpheus files after multiple attempts.');
     expect(result).toContain('$(decompressionFailed)');
     expect(result).toContain('Quit');
@@ -121,7 +122,7 @@ describe('patch-nsis-extract', () => {
     expect(patchNsisExtractTemplate(target)).toBe(true);
 
     const result = readFileSync(target, 'utf8');
-    expect(result).toContain('Morpheus-patched-v3');
+    expect(result).toContain('Morpheus-patched-v4');
     expect(result).toContain('Failed to extract Morpheus files after multiple attempts.');
     expect(result).not.toContain('ClawX-patched-v2');
     expect(result).not.toMatch(/taskkill[^\r\n]*openclaw-gateway\.exe/i);

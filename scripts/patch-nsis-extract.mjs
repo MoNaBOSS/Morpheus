@@ -26,7 +26,8 @@ export const EXTRACT_APP_PACKAGE_NSH = join(
   'extractAppPackage.nsh',
 );
 
-const PATCH_MARKER = 'Morpheus-patched-v3: extract directly to $INSTDIR and fail closed';
+const PATCH_MARKER = 'Morpheus-patched-v4: extract directly to $INSTDIR with recoverable rollback';
+const LEGACY_PATCH_MARKER_V3 = 'Morpheus-patched-v3: extract directly to $INSTDIR and fail closed';
 const LEGACY_PATCH_MARKER = 'ClawX-patched: extract directly to $INSTDIR';
 const LEGACY_PATCH_MARKER_V2 = 'ClawX-patched-v2: extract directly to $INSTDIR and fail closed';
 const LEGACY_CONTINUE_ON_EXTRACT_FAILURE = 'continuing overwrite install anyway';
@@ -45,10 +46,7 @@ const PATCHED_EXTRACT_MACRO = [
   '    Nsis7z::Extract "${FILE}"',
   '    IfErrors 0 clawx_extract_done',
   '    ${if} $R9 < 5',
-  '      DetailPrint "Releasing file locks before retry..."',
-  '      nsExec::ExecToStack \'taskkill /F /T /IM "${APP_EXECUTABLE_FILENAME}"\'',
-  '      Pop $0',
-  '      Pop $1',
+  '      DetailPrint "Waiting for extraction to become available before retry..."',
   '      Sleep 3000',
   '      Goto clawx_extract_attempt',
   '    ${endIf}',
@@ -57,8 +55,10 @@ const PATCHED_EXTRACT_MACRO = [
   '      IfFileExists "$clawxRollbackDir\\" 0 clawx_extract_show_error',
   '      DetailPrint "Restoring previous Morpheus installation after failed update..."',
   '      SetOutPath $TEMP',
-  '      RMDir /r "$INSTDIR"',
-  '      Rename "$clawxRollbackDir" "$INSTDIR"',
+  '      !insertmacro morpheusInstallGuard Restore "$clawxRollbackDir"',
+  '      ${if} $R0 != 0',
+  '        DetailPrint "Automatic restore could not finish. Previous files remain at $clawxRollbackDir. $R1"',
+  '      ${endIf}',
   '    ${endIf}',
   '  clawx_extract_show_error:',
   '    MessageBox MB_OK|MB_ICONEXCLAMATION "$(decompressionFailed)" /SD IDOK',
@@ -105,6 +105,7 @@ function hasStaleExtractPatch(content) {
   return content.includes(PATCH_MARKER)
     || content.includes(LEGACY_PATCH_MARKER)
     || content.includes(LEGACY_PATCH_MARKER_V2)
+    || content.includes(LEGACY_PATCH_MARKER_V3)
     || content.includes(LEGACY_CONTINUE_ON_EXTRACT_FAILURE)
     || content.includes('$(appCannotBeClosed)');
 }

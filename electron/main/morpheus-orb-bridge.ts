@@ -22,7 +22,7 @@ export type MorpheusOrbBridgeOptions = {
   snapshot: () => Promise<MorpheusAssistantSnapshot>;
   updateDraft: (payload: MorpheusAssistantDraftPayload) => Promise<MorpheusAssistantDraft>;
   admitTurn: (payload: MorpheusAssistantAdmitTurnPayload) => Promise<MorpheusAssistantTurn>;
-  present: (action: OrbPresentationAction) => void;
+  present: (action: OrbPresentationAction) => void | Promise<void>;
 };
 
 function exactRecord(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
@@ -96,7 +96,7 @@ export function createMorpheusOrbHandlers(options: MorpheusOrbBridgeOptions) {
       if (args.length !== 1 || !['hover', 'collapse', 'open', 'focus'].includes(args[0] as string)) {
         throw new Error('Invalid orb presentation request');
       }
-      options.present(args[0] as OrbPresentationAction);
+      return options.present(args[0] as OrbPresentationAction);
     },
   };
 }

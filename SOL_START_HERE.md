@@ -36,6 +36,19 @@ conversation or redesign a logo to start implementation.
 
 ## Next work
 
+Latest 2026-10-02 H/I preparation: native click acknowledgement, Escape suppression
+and reload recovery are fixed. Six final native companion journeys and five
+corrected device journeys pass; warm 30-sample click p95 is 12.2ms on this PC.
+Installer helper now preserves exact recoverable backups, never kills globally
+named processes, and retains user profiles on uninstall. 3,298 units pass + two
+inherited skips; all typechecks, scoped lint and comms pass. Read
+`docs/releases/phase7-h-native-readiness.md` and `phase7-i-windows-candidate.md`.
+Next exact action: build **1.2.0-preview.1** from the reviewed committed source in
+a fresh E: clone, inspect its payload and test isolated normal startup/upgrade.
+No fresh EXE or compiled installer acceptance is claimed yet. Full H load/idle/
+hardware/soak, G2.3 conversation and managed G3/G4 remain open. Do not redo the
+already-passed native cycles or provider migration discovery.
+
 7A.1–7A.4 have focused Windows source automation. B.1 app-owned static-key
 migration/runtime recovery is committed as `2469c650`: protected storage,
 SecretRefs, exact-match rotation/relaunch, stable sibling-account selection,

@@ -597,3 +597,24 @@ pass; contradictory/unmatched/invalid receipts cannot imply known cost or a comp
 cap. [Remaining paid-path/live qualification gaps](phase7-g1-usage.md) are explicit.
 Proceed to H/I on the roadmap's BYOK candidate track; managed G2.3/G3/G4 are still
 required for managed-ready acceptance. No live spend or new installer in this pass.
+
+### H native fixes / I installation preparation — 2026-10-02
+
+Native presentation now acknowledges applied editability; Escape does not reopen
+from stationary-pointer resize; reload restores visible state. Six final native
+journeys pass, including four locales/reduced-motion screenshots and compact/full
+continuity. Five legacy device journeys now assert the current task surface and
+pass; the initial broad run was 42/48, not a full pass. Details and the first warm
+30-sample click/hover baseline are in [H evidence](phase7-h-native-readiness.md).
+
+The inherited installer cleanup was narrowed to checked literal targets, retained
+rollback/failed-extraction folders and no process killing or profile deletion.
+32 focused tests include actual PowerShell fixtures. Full suite: **3,298 passes,
+two inherited skips, 319 files, 62.04s**. Three typechecks, zero-error scoped lint,
+comms replay/compare and fresh source build pass. Existing canvas/listener warnings
+are unit-harness output, not a measured app-leak result.
+
+[I preparation](phase7-i-windows-candidate.md) records the changed installer scope.
+Version is now `1.2.0-preview.1` to distinguish the new candidate from the old 1.1.2.
+Fresh EXE/hash, compiled NSIS/normal startup, hardware/load/idle/soak and live gates
+are not yet accepted. Next exact action is build/inspect the reviewed source on E:.

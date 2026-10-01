@@ -80,7 +80,7 @@ export class MorpheusWakeOrb {
     this.ready = false;
     window.webContents.on('will-navigate', (event) => event.preventDefault());
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-    window.webContents.once('did-finish-load', () => {
+    window.webContents.on('did-finish-load', () => {
       if (window.isDestroyed() || this.window !== window) return;
       this.ready = true;
       this.applyPresence();
@@ -143,7 +143,7 @@ export class MorpheusWakeOrb {
     }
   }
 
-  present(action: 'hover' | 'collapse' | 'open' | 'focus'): void {
+  present(action: 'hover' | 'collapse' | 'open' | 'focus'): void | Promise<void> {
     this.showCaption(null);
     const window = this.window;
     if (!this.wantsVisible || !window || window.isDestroyed()) return;
@@ -156,17 +156,18 @@ export class MorpheusWakeOrb {
       this.hovered = true;
       window.setBounds(wakeOrbHoverBounds(this.getWorkArea()));
       this.shapeWindow();
-      this.applyHover();
       if (action === 'focus') {
         window.show();
         window.focus();
       }
-      return;
+      // The renderer focuses its input after the IPC acknowledgement. Do not
+      // acknowledge while the composer is still inert in the other process.
+      return this.applyHover();
     }
     this.hovered = false;
-    this.applyHover();
     window.setBounds(wakeOrbBounds(this.getWorkArea()));
     this.shapeWindow();
+    return this.applyHover();
   }
 
   hide(): void {
@@ -213,10 +214,10 @@ export class MorpheusWakeOrb {
       .catch(() => undefined);
   }
 
-  private applyHover(): void {
+  private applyHover(): void | Promise<void> {
     const window = this.window;
     if (!window || window.isDestroyed() || window.webContents.isLoading()) return;
-    void window.webContents.executeJavaScript(
+    return window.webContents.executeJavaScript(
       `document.documentElement.dataset.hover = ${JSON.stringify(String(this.hovered))}; document.querySelector('.hover-composer').inert = ${!this.hovered}`,
       true,
     ).catch(() => undefined);

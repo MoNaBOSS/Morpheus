@@ -65,6 +65,15 @@ let composing = false;
 let pendingRequestId = '';
 let hoverTimer;
 let collapseTimer;
+let pointerPosition = null;
+let dismissedPointer = null;
+
+function observePointer(event) {
+  pointerPosition = { x: event.screenX, y: event.screenY };
+  if (dismissedPointer && (Math.abs(event.screenX - dismissedPointer.x) > 4
+    || Math.abs(event.screenY - dismissedPointer.y) > 4)) dismissedPointer = null;
+}
+document.addEventListener('pointermove', observePointer);
 
 const notices = {
   en: { conflict: 'The draft changed in another window. Send this text here or copy it before closing.', failed: 'Morpheus could not save that yet. Try again.', sending: 'Sending to Morpheus.' },
@@ -181,9 +190,13 @@ async function submit() {
   }
 }
 
-orb.addEventListener('pointerenter', () => {
+orb.addEventListener('pointerenter', (event) => {
+  observePointer(event);
   clearTimeout(collapseTimer);
   clearTimeout(hoverTimer);
+  // Resizing a native window can generate pointerenter under a stationary
+  // cursor. Escape is a dismissal, not an invitation to reopen immediately.
+  if (dismissedPointer) return;
   hoverTimer = setTimeout(() => {
     void bridge?.present('hover');
     if (!dirty && !writing) void snapshot().catch(() => report(notices[language].failed));
@@ -191,6 +204,8 @@ orb.addEventListener('pointerenter', () => {
 });
 
 orb.addEventListener('click', async () => {
+  dismissedPointer = null;
+  clearTimeout(hoverTimer);
   clearTimeout(collapseTimer);
   await bridge.present('focus');
   if (!ready) await snapshot();
@@ -198,7 +213,8 @@ orb.addEventListener('click', async () => {
 });
 
 document.body.addEventListener('pointerenter', () => clearTimeout(collapseTimer));
-document.body.addEventListener('pointerleave', () => {
+document.body.addEventListener('pointerleave', (event) => {
+  observePointer(event);
   clearTimeout(hoverTimer);
   clearTimeout(collapseTimer);
   if (composer.contains(document.activeElement) || conflict) return;
@@ -222,6 +238,9 @@ expand.addEventListener('click', () => { void openCompact(); });
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
   event.preventDefault();
+  dismissedPointer = pointerPosition;
+  clearTimeout(hoverTimer);
+  clearTimeout(collapseTimer);
   void (async () => {
     await saveDraft();
     if (conflict || dirty) return;

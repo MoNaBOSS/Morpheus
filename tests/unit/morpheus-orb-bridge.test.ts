@@ -45,6 +45,16 @@ function fixture() {
 }
 
 describe('sandboxed Morpheus orb bridge', () => {
+  it('forwards the native presentation acknowledgement without dropping its promise', async () => {
+    const { present, handlers, trustedEvent } = fixture();
+    let release!: () => void;
+    const applied = new Promise<void>((resolve) => { release = resolve; });
+    present.mockReturnValue(applied);
+    const result = handlers.present(trustedEvent, 'focus');
+    expect(result).toBe(applied);
+    release();
+    await result;
+  });
   it('registers only the four fixed native channels and removes them on disposal', () => {
     electronMock.handle.mockClear();
     electronMock.removeHandler.mockClear();

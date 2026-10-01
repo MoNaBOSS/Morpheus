@@ -37,3 +37,8 @@ Natural voice/hardware/managed identity/payment/signing outcomes need real evide
 Use source-only, fixture, native-automated, manual-hardware and live-service labels.
 A browser design, source build or documentation checkpoint cannot pass Phase 7.
 NerdGPT is deferred; preserve extension contracts without a fake activation flow.
+
+Native presentation acknowledgement follows the applied editable state, not just
+queued DOM work. Escape cannot reopen from stationary-pointer resize events.
+Installer upgrades target validated dedicated folders, preserve exact recoverable
+backups, and never terminate globally named processes or erase other users' data.

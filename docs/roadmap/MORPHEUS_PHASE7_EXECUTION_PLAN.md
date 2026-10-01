@@ -85,9 +85,9 @@ Only record what the evidence supports. All rows below start TODO.
 | 7G.2 IN PROGRESS | Original planner and voice owners consume the managed bridge. G2.3 ACP conversation remains; Main/UI still block managed activation. No live Premium claim. | B.1, D.1, G.1 |
 | 7G.3 TODO | Live account → eligible trial → real task → voice → receipt. Issuer/configured service, protected restart/login/logout/deletion and limits validated; needs deployment inputs. | G.2, C.3 |
 | 7G.4 TODO | Managed operations and billing. Renewal/top-up/refund/revocation with unordered/duplicate events; tenant/spend controls, backup/restore, kill switch, account deletion; needs eligible payment setup. | G.3 |
-| 7H.1 TODO | Failure/recovery gate. Concurrent work, provider/gateway outage, worker crash, restart, sleep, disk-full/audit failure, unknown publication outcome and cancellation leave truthful state. | A–F; G paths when enabled |
-| 7H.2 TODO | Measured native performance. Baseline/after traces, named hardware and p50/p95; direct work remains responsive under research/build load; leaks and hidden animations fixed. | H.1 |
-| 7I.1 TODO | Fresh Windows candidate. All source checks, bundled dependencies/licenses, new build identity/checksums; isolated clean-install and existing-profile upgrade preserve data. | H.1–2; all candidate feature rows |
+| 7H.1 IN PROGRESS | Native click/Escape/reload repaired; 42 broad journeys plus corrected device/motion regressions pass. Full concurrent outage/crash/sleep/audit/recovery gate remains open. | A–F; G paths when enabled |
+| 7H.2 IN PROGRESS | First warm native baseline: 30-click p95 12.2ms; hover after dwell 14.6ms. Loaded work, whole-product idle/soak and physical presentation remain open. | H.1 |
+| 7I.1 IN PROGRESS | 1.2.0-preview.1 preparation; guarded recoverable installer helper tested. Fresh package, licenses, identity and isolated install/upgrade checks remain next. | H.1–2; all candidate feature rows |
 | 7I.2 TODO | Real PC acceptance with Larry/owner. Wake/mic/voice quality, taskbar/DPI/monitors, focus, 60-minute mixed use and live hero workflows on exact packaged candidate. | I.1 |
 | 7I.3 TODO | Public release gate. Signed installer/update verified; tamper rejection, rollback/profile compatibility, support/privacy docs and live managed readiness if advertised. | I.2, G.3–4 for Premium |
 
@@ -262,6 +262,12 @@ design. No application suite, live API or new installer was run for this docs-on
 checkpoint. Link/whitespace validation is recorded in the evidence ledger.
 
 ### Resume record template
+
+2026-10-02 current: H native and I installer-preparation source checks pass
+(3,298 units + two skips; six final native companion and five device journeys).
+Read `docs/releases/phase7-h-native-readiness.md` and
+`docs/releases/phase7-i-windows-candidate.md`. Next is a fresh E: build from the
+reviewed commit; do not call this full H/I or managed-ready acceptance.
 
 Keep one short record per checkpoint in the evidence ledger:
 
