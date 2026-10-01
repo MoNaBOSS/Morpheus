@@ -38,6 +38,24 @@ function readPlan(planId: string, nativeFirst = false): ExecutionPlan {
 }
 
 describe('Core injected worker execution', () => {
+  it('routes browser observations through the same permission audit and artifact owner', async () => {
+    const adapter: MorpheusWorkerAdapter = { supportedActions: () => ['browser.inspect'], releaseOwner: vi.fn(), run: async (request) => ({
+      workerRunId: request.workerRunId, effect: 'none', usage: { status: 'known', inputTokens: 0, outputTokens: 0, costUsd: 0 },
+      browser: { sessionId: 'a'.repeat(36), revision: 'b'.repeat(36), url: request.operation.url, title: 'Observed browser', text: 'Private task text', controls: [{ ref: 'e1', kind: 'button', name: 'Next' }], truncated: false, blockedRequests: 0 },
+    }) };
+    const { runtime, audit } = fixture(adapter);
+    const plan = readPlan('browser-plan');
+    plan.steps = [{ ...plan.steps[0], capabilityId: 'browser.inspect', permission: { ...plan.steps[0].permission, capabilityId: 'browser.inspect' } }];
+    runtime.registerPlan(plan);
+    const result = await runtime.executePlan({ planId: plan.planId }, { workerOwner: { objectiveRunId: 'browser-owner', attemptId: 'attempt', cancellationGeneration: 1 } });
+    expect(result.status).toBe('completed');
+    expect(result.steps[0].artifact).toMatchObject({ kind: 'report', data: { title: 'Observed browser', browserSnapshot: expect.stringContaining('e1') } });
+    expect(JSON.stringify(vi.mocked(audit.record).mock.calls)).not.toMatch(/Private task text|secret=private|browserSnapshot/);
+    runtime.releaseWorkerOwner!('browser-owner');
+    expect(adapter.releaseOwner).toHaveBeenCalledWith('browser-owner');
+    expect(buildAuditParams('browser.interact', { url: 'https://example.com/?q=private', sessionId: 'session', command: '{"text":"private input"}' })).toEqual({ urlOrigin: 'https://example.com', sessionId: 'session', commandBytes: 24, commandSha256: expect.any(String) });
+    runtime.dispose();
+  });
   it('does not block app launch behind five queued worker plans or hold desktop through a mixed plan read', async () => {
     const adapter: MorpheusWorkerAdapter = { run: vi.fn(async (_request, signal) => new Promise((_resolve, reject) => {
       signal.addEventListener('abort', () => reject(signal.reason), { once: true });

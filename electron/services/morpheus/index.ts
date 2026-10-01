@@ -7,7 +7,7 @@
  */
 import { join } from 'node:path';
 import { composeSavedMorpheusPersona } from './persona-context';
-import { createPublicSourceWorkerAdapter } from '../public-source-worker-adapter';
+import { createBrowserWorkerAdapter } from '../task-browser/worker-adapter';
 import { createMorpheusWorkerPort } from './workers/worker-port';
 import { createMorpheusWorkerCheckpoints } from './workers/worker-checkpoints';
 
@@ -156,7 +156,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
 
   let objectives: MorpheusObjectiveOrchestrator | undefined;
   const checkpoints = createMorpheusTaskCheckpoints(options.userDataDir);
-  const workerPort = createMorpheusWorkerPort({ adapter: createPublicSourceWorkerAdapter(),
+  const workerPort = createMorpheusWorkerPort({ adapter: createBrowserWorkerAdapter(),
     checkpoints: createMorpheusWorkerCheckpoints(options.userDataDir), audit, appVersion: options.appVersion });
   const runtime = createMorpheusRuntime({
     registry,

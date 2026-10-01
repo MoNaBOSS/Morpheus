@@ -345,6 +345,8 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
+      "browserInspect": { "label": "Inspect public page", "description": "Open an isolated public page and observe its current controls without using your browser accounts." },
+      "browserInteract": { "label": "Use public page control", "description": "Use a recently observed control in this task’s public browser session. Account operations and downloads are separate." },
       "siteRevise": {"label":"Revise website","description":"Revise a website only from its verified revision, preserving unrelated manual edits."},
       "siteRollback": {"label":"Roll back website","description":"Restore a recorded website revision only when the current revision is verified, preserving manual edits."},
       "webReadPage": { "label": "Read web page", "description": "Read a public HTTPS page and retain its retrieved source evidence." },

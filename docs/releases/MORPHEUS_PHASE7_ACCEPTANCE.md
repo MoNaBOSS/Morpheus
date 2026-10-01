@@ -463,3 +463,14 @@ restricted requests, deadlines and owned-resource cleanup). Source module is
 bundled into the test app's Main; network payloads/DNS are deterministic fixtures.
 No live account/site, paid call, native installer or Core capability integration
 is claimed. See [D2.1 evidence and next work](phase7-d2-browser.md).
+
+### D2.2 Core public-browser integration — 2026-10-01
+
+Public inspect/interact now run through the existing permission/audit/worker and
+bounded planner-review owners. Task/generation ownership, stale controls, unknown
+effects and cleanup are enforced. Readable result presentation hides internal ids.
+All 3,112 unit tests passed (two inherited skips, 304 files), 118 focused units,
+seven fresh Windows journeys, typechecks, scoped lint, build, comms and diff-aware
+harness checks passed. See [D2 evidence](phase7-d2-browser.md) for fixture scope.
+No live account, paid calls or new package acceptance. Next: D3 cited research;
+account-session support and final-candidate tests remain open.

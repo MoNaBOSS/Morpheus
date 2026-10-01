@@ -105,6 +105,8 @@ export function sanitizeAuditOutcome(
 ): MorpheusAuditOutcome | undefined {
   if (!outcome) return undefined;
   switch (outcome.kind) {
+    case 'browser':
+      return { kind: 'browser', origin: new URL(outcome.snapshot.url).origin, contentSha256: morpheusContentDigest(outcome.snapshot.text), workerRunId: outcome.workerRunId, controls: outcome.snapshot.controls.length };
     case 'source':
       return { kind: 'source', origin: new URL(outcome.source.finalUrl).origin, bytes: outcome.source.bytes,
         contentSha256: outcome.source.contentSha256, workerRunId: outcome.workerRunId, usageStatus: outcome.usage.status };

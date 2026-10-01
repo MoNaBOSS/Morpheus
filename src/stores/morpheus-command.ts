@@ -314,6 +314,8 @@ export function artifactFromAuditEntry(entry: MorpheusAuditEntry): ExecutionArti
   const createdAt = entry.ts;
 
   switch (outcome.kind) {
+    case 'browser':
+      return { kind: 'report', artifactId: entry.runId, createdAt, data: { origin: outcome.origin, digest: outcome.contentSha256, controls: outcome.controls } };
     case 'source':
       // Audit deliberately omits source content/queries. It cannot reconstruct a citation.
       return { kind: 'report', artifactId: entry.runId, createdAt, data: { origin: outcome.origin, bytes: outcome.bytes, digest: outcome.contentSha256, usageStatus: outcome.usageStatus } };

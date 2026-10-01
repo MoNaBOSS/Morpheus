@@ -1,11 +1,12 @@
 import { join } from 'node:path';
 import type { MorpheusWorkerOwner, MorpheusWorkerUsage } from '@shared/morpheus/worker-types';
+import { isMorpheusWorkerAction, type MorpheusWorkerOperation } from '@shared/morpheus/worker-types';
 import { readValidatedJson, writeJsonAtomically } from '../storage/atomic-json';
 
 export type MorpheusWorkerCheckpoint = MorpheusWorkerOwner & {
   v: 1;
   workerRunId: string;
-  operation: 'web.readPage';
+  operation: MorpheusWorkerOperation['kind'];
   origin: string;
   state: 'running' | 'completed' | 'failed' | 'cancelled' | 'needs-review';
   effect: 'none' | 'verified' | 'unknown';
@@ -19,7 +20,7 @@ function valid(value: unknown): value is MorpheusWorkerCheckpoint {
   const entry = value as MorpheusWorkerCheckpoint;
   return entry.v === 1 && ['workerRunId', 'objectiveRunId', 'attemptId', 'planId', 'stepId', 'origin', 'updatedAt'].every((key) =>
     typeof (entry as unknown as Record<string, unknown>)[key] === 'string')
-    && entry.operation === 'web.readPage' && Number.isSafeInteger(entry.cancellationGeneration)
+    && isMorpheusWorkerAction(entry.operation) && Number.isSafeInteger(entry.cancellationGeneration)
     && ['running', 'completed', 'failed', 'cancelled', 'needs-review'].includes(entry.state)
     && ['none', 'verified', 'unknown'].includes(entry.effect)
     && Boolean(entry.usage) && ['known', 'unknown'].includes(entry.usage.status)

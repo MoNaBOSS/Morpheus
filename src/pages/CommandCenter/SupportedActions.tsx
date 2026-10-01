@@ -21,6 +21,8 @@ import { morpheusActionLabelKey } from '@/components/morpheus/morpheus-phase';
  * asserts exactly that.
  */
 export const EXAMPLE_COMMAND: Record<string, string | null> = {
+  'browser.inspect': null,
+  'browser.interact': null,
   'system.report': 'Show system information',
   'app.launch': 'Open Notepad',
   'file.createText': 'Create a text file named notes.txt',

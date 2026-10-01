@@ -12,13 +12,13 @@ const GENERAL_CAPABILITIES = Object.freeze([
   'file.createText', 'file.create', 'file.readText', 'file.appendText', 'file.list', 'file.search',
   'file.move', 'file.copy', 'folder.create',
   'app.launch', 'clipboard.readText', 'clipboard.writeText', 'screen.capture',
-  'web.openUrl', 'web.readPage', 'site.verify', 'site.revise', 'site.rollback',
+  'web.openUrl', 'web.readPage', 'browser.inspect', 'browser.interact', 'site.verify', 'site.revise', 'site.rollback',
 ] satisfies readonly MorpheusActionId[]);
 
 const RESEARCH_CAPABILITIES = Object.freeze([
   'system.report', 'system.storage', 'system.notify', 'reminder.schedule',
   'file.createText', 'file.create', 'file.readText', 'file.appendText', 'file.list', 'file.search',
-  'clipboard.readText', 'clipboard.writeText', 'web.openUrl', 'web.readPage', 'site.verify', 'screen.capture',
+  'clipboard.readText', 'clipboard.writeText', 'web.openUrl', 'web.readPage', 'browser.inspect', 'browser.interact', 'site.verify', 'screen.capture',
 ] satisfies readonly MorpheusActionId[]);
 
 const DEVELOPER_CAPABILITIES = Object.freeze([
@@ -26,7 +26,7 @@ const DEVELOPER_CAPABILITIES = Object.freeze([
   'file.createText', 'file.create', 'file.readText', 'file.appendText', 'file.list', 'file.search',
   'file.move', 'file.copy', 'folder.create',
   'app.launch', 'clipboard.readText', 'clipboard.writeText', 'screen.capture',
-  'web.openUrl', 'web.readPage', 'site.verify', 'site.revise', 'site.rollback', 'dev.launchProject',
+  'web.openUrl', 'web.readPage', 'browser.inspect', 'browser.interact', 'site.verify', 'site.revise', 'site.rollback', 'dev.launchProject',
 ] satisfies readonly MorpheusActionId[]);
 
 function starter(

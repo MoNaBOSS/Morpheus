@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { isMorpheusWorkerAction } from '@shared/morpheus/worker-types';
 import type { MorpheusActionId } from '@shared/morpheus/actions/registry';
 import type { MorpheusActionResult } from '@shared/morpheus/action-types';
 import type { MorpheusWorkerOperation, MorpheusWorkerOutcome, MorpheusWorkerOwner, MorpheusWorkerRequest, MorpheusWorkerProgress } from '@shared/morpheus/worker-types';
@@ -8,6 +9,9 @@ import { createMorpheusTaskCoordinator } from '../core/task-coordinator';
 import type { MorpheusWorkerCheckpoints, MorpheusWorkerCheckpoint } from './worker-checkpoints';
 
 export interface MorpheusWorkerAdapter {
+  supportedActions?(): readonly MorpheusActionId[];
+  releaseOwner?(objectiveRunId: string): void | Promise<void>;
+  dispose?(): void;
   run(request: MorpheusWorkerRequest, signal: AbortSignal, progress: (entry: MorpheusWorkerProgress) => Promise<void>): Promise<MorpheusWorkerOutcome>;
 }
 
@@ -15,6 +19,7 @@ export interface MorpheusWorkerPort {
   supportedActions(): readonly MorpheusActionId[];
   resolve(operation: MorpheusWorkerOperation, owner: MorpheusWorkerOwner): Promise<MorpheusResolution>;
   dispose(): void;
+  releaseOwner?(objectiveRunId: string): void | Promise<void>;
 }
 
 function normalizeUrl(value: string): URL {
@@ -40,9 +45,13 @@ export function createMorpheusWorkerPort(options: {
   const recovery = options.checkpoints.reconcile();
   let disposed = false;
   return {
-    supportedActions: () => ['web.readPage'],
+    supportedActions: () => options.adapter.supportedActions?.() ?? ['web.readPage'],
+    releaseOwner: (objectiveRunId) => options.adapter.releaseOwner?.(objectiveRunId),
     async resolve(operation, owner) {
-      if (disposed || operation.kind !== 'web.readPage' || Object.keys(operation).some((key) => !['kind', 'url'].includes(key))) throw new Error('Unsupported worker operation.');
+      const allowedKeys = operation.kind === 'browser.interact' ? ['kind', 'url', 'sessionId', 'command'] : ['kind', 'url'];
+      if (disposed || !isMorpheusWorkerAction(operation.kind)
+        || !(options.adapter.supportedActions?.() ?? ['web.readPage']).includes(operation.kind)
+        || Object.keys(operation).some((key) => !allowedKeys.includes(key))) throw new Error('Unsupported worker operation.');
       if (!['objectiveRunId', 'attemptId', 'planId', 'stepId'].every((key) => typeof owner[key as keyof MorpheusWorkerOwner] === 'string' && String(owner[key as keyof MorpheusWorkerOwner]).length <= 200)
         || !Number.isSafeInteger(owner.cancellationGeneration) || owner.cancellationGeneration < 0) throw new Error('Invalid worker ownership.');
       if (recovery.some((entry) => entry.objectiveRunId === owner.objectiveRunId && !entry.replaySafe)
@@ -52,8 +61,10 @@ export function createMorpheusWorkerPort(options: {
       const url = normalizeUrl(operation.url);
       const worker: MorpheusWorkerRequest = {
         v: 1, ...owner, workerRunId: options.createId?.() ?? randomUUID(),
-        operation: { kind: 'web.readPage', url: url.href },
-        authority: { capabilityId: 'web.readPage', origins: [url.origin], service: 'public-https', tools: ['https.get'], providerRouteRef: 'local-public-http' },
+        operation: { ...structuredClone(operation), url: url.href },
+        authority: operation.kind === 'web.readPage'
+          ? { capabilityId: operation.kind, origins: [url.origin], service: 'public-https', tools: ['https.get'], providerRouteRef: 'local-public-http' }
+          : { capabilityId: operation.kind, origins: [url.origin], service: 'public-browser', tools: ['browser.inspect', 'browser.interact'], providerRouteRef: 'local-public-browser' },
         limits: { deadlineAt: new Date(now().getTime() + Math.min(60_000, Math.max(1, options.deadlineMs ?? 30_000))).toISOString(), maxSteps: 4, maxOutputBytes: 32 * 1024, maxInputTokens: 0, maxOutputTokens: 0, maxCostUsd: 0 },
       };
       let consumed = false;
@@ -71,8 +82,8 @@ export function createMorpheusWorkerPort(options: {
           timeout.unref?.();
           let release: (() => void) | undefined;
           let checkpoint: MorpheusWorkerCheckpoint = {
-            v: 1, ...owner, workerRunId: worker.workerRunId, operation: 'web.readPage', origin: url.origin,
-            state: 'running', effect: 'none', usage: { status: 'known', inputTokens: 0, outputTokens: 0, costUsd: 0 }, updatedAt: now().toISOString(),
+            v: 1, ...owner, workerRunId: worker.workerRunId, operation: operation.kind, origin: url.origin,
+            state: 'running', effect: operation.kind === 'browser.interact' ? 'unknown' : 'none', usage: { status: 'known', inputTokens: 0, outputTokens: 0, costUsd: 0 }, updatedAt: now().toISOString(),
           };
           let latestSequence = 0;
           try {
@@ -93,8 +104,27 @@ export function createMorpheusWorkerPort(options: {
             });
             controller.signal.throwIfAborted();
             checkpoint = { ...checkpoint, effect: outcome.effect, usage: outcome.usage };
+            if (operation.kind !== 'web.readPage') {
+              const snapshot = outcome.browser;
+              if (outcome.workerRunId !== worker.workerRunId || !snapshot
+                || outcome.effect !== (operation.kind === 'browser.interact' ? 'verified' : 'none')
+                || outcome.usage.status !== 'known' || outcome.usage.costUsd !== 0 || outcome.usage.inputTokens !== 0 || outcome.usage.outputTokens !== 0
+                || normalizeUrl(snapshot.url).origin !== url.origin || !/^[a-f0-9-]{36}$/.test(snapshot.sessionId) || !/^[a-f0-9-]{36}$/.test(snapshot.revision)
+                || typeof snapshot.title !== 'string' || snapshot.title.length > 240 || typeof snapshot.text !== 'string'
+                || !Array.isArray(snapshot.controls) || snapshot.controls.length > 100
+                || snapshot.controls.some((control) => !/^e\d{1,3}$/.test(control.ref) || !['link', 'button', 'input', 'select'].includes(control.kind)
+                  || typeof control.name !== 'string' || control.name.length > 180 || control.href && normalizeUrl(control.href).origin !== url.origin)
+                || !Number.isSafeInteger(snapshot.blockedRequests) || snapshot.blockedRequests < 0 || typeof snapshot.truncated !== 'boolean'
+                || Buffer.byteLength(JSON.stringify(snapshot)) > worker.limits.maxOutputBytes) throw new Error('Worker returned unverified browser evidence.');
+              checkpoint = { ...checkpoint, state: 'completed', updatedAt: now().toISOString() };
+              options.checkpoints.put(checkpoint);
+              await options.audit.recordControl({ category: 'objective', event: 'worker-completed', subjectId: worker.workerRunId,
+                details: { origin: url.origin, controls: snapshot.controls.length, usageStatus: 'known', effect: outcome.effect }, appVersion: options.appVersion });
+              controller.signal.throwIfAborted();
+              return { kind: 'browser', snapshot, workerRunId: worker.workerRunId };
+            }
             const source = outcome.source;
-            if (outcome.workerRunId !== worker.workerRunId || outcome.effect !== 'none'
+            if (!source || outcome.workerRunId !== worker.workerRunId || outcome.effect !== 'none'
               || outcome.usage.status !== 'known' || outcome.usage.inputTokens !== 0 || outcome.usage.outputTokens !== 0 || outcome.usage.costUsd !== 0
               || normalizeUrl(source.originalUrl).href !== worker.operation.url || normalizeUrl(source.finalUrl).origin !== url.origin
               || typeof source.title !== 'string' || source.title.length > 240 || typeof source.excerpt !== 'string'
@@ -128,6 +158,7 @@ export function createMorpheusWorkerPort(options: {
     dispose() {
       disposed = true;
       for (const controller of active) controller.abort(new DOMException('Morpheus shutting down', 'AbortError'));
+      options.adapter.dispose?.();
       coordinator.dispose();
     },
   };

@@ -54,9 +54,12 @@ unfinished and managed activation stays guarded. On 2026-10-01, the boundary
 suite passed 3,083 units (two skips); fresh Windows journeys cover memory/orb,
 four-locale site revision/preview/rollback, restored sites and account regression.
 The integrated checkpoint is committed/pushed as `f0f2b11c`. D2.1 subsequently
-adds a tested isolated Chromium/public-network boundary (19 units, two real
-Chromium journeys), not yet a registered Core capability. Next is D.2 browser
-worker/planner/audit integration; read `docs/releases/phase7-d2-browser.md`.
+adds a tested isolated Chromium/public-network boundary. D2.2 now connects public
+inspect/interact to the existing Core worker, permissions, audit and bounded
+planner review, with task-owned cleanup. 3,112 units passed (two inherited skips),
+118 focused units and seven fresh Windows journeys passed. Account sessions and
+live-site acceptance remain open. Next is D.3 cited research/report delivery;
+read `docs/releases/phase7-d2-browser.md`.
 Read the
 narrow source evidence in `docs/releases/` and the current checkpoint in the
 roadmap. Exact installer identity/checks appear in the acceptance ledger when
@@ -112,7 +115,7 @@ User-ready resume prompt:
 
 > Continue Morpheus Phase 7 on Sol from SOL_START_HERE.md on
 > codex/morpheus-phase6-managed-layer. Verify the checkout and preserve all work.
-> Read the current checkpoint, then continue 7D.2 task-owned browser interaction in
+> Read the current checkpoint, then continue 7D.3 cited research/report delivery in
 > the documented small checkpoints. Keep the approved bottom-right Siri-style Morpheus companion,
 > not a dashboard. NerdGPT later. Update tests, evidence and handoff as you go;
 > distinguish source implementation from packaged/live acceptance.

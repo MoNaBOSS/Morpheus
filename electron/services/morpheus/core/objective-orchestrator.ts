@@ -89,6 +89,8 @@ const CAPABILITY_DESCRIPTIONS: Record<MorpheusActionId, string> = {
   'system.processes': 'List a bounded privacy-sensitive process snapshot.',
   'web.openUrl': 'Open an exact validated HTTP or HTTPS URL in the default browser.',
   'web.readPage': 'Retrieve a public HTTPS text page with exact-origin redirect checks and observed source evidence; does not interact with a browser DOM.',
+  'browser.inspect': 'Open an isolated public HTTPS page and observe its real controls. No personal account, login, downloads or cross-origin navigation. A browserSnapshot contains task-bound sessionId, revision and refs for the next review.',
+  'browser.interact': 'Use one observed public page control. Supply its exact current url, sessionId and command JSON: {kind:click,revision,ref}, {kind:fill,revision,ref,text}, {kind:select,revision,ref,value}, or {kind:press,revision,ref,key}. Keys: Enter,Tab,Escape,ArrowDown,ArrowUp. Never invent refs or credentials; inspect after expiry. Each operation returns a new snapshot; do not batch stale refs.',
   'site.verify': 'Verify an existing self-contained responsive website project, its local stylesheet, and its analytics-ready manifest inside the approved workspace.',
   'site.revise': 'Revise a verified static website using its observed expectedRevision and a JSON patch {files:[{path,content}]}; staged files are verified and original files retained for recovery. Never guess the revision digest.',
   'site.rollback': 'Restore one recorded website revision using its observed revisionId and expectedRevision; rejects subsequent manual edits. Never guess these identifiers.',
@@ -259,6 +261,9 @@ export function createMorpheusObjectiveOrchestrator(options: {
   let recovering = false;
 
   const finishActive = (objectiveRunId: string): void => {
+    // Execution is stopped synchronously; ephemeral storage cleanup may settle
+    // afterwards without holding up unrelated local tasks.
+    void Promise.resolve(options.runtime.releaseWorkerOwner?.(objectiveRunId)).catch(() => {});
     active.delete(objectiveRunId);
     if (active.size !== 0) return;
     for (const waiter of idleWaiters) {
@@ -862,7 +867,8 @@ export function createMorpheusObjectiveOrchestrator(options: {
         // conclusive successful observation, another provider round trip adds
         // latency without adding authority or evidence. Partial, rejected, or
         // failed work still enters bounded semantic review and replanning.
-        if (execution.status === 'completed') {
+        const requiresBrowserReview = plan.steps.some((step) => step.capabilityId.startsWith('browser.'));
+        if (execution.status === 'completed' && !requiresBrowserReview) {
           options.store.setActivePlan(objectiveRunId, null);
           await transition(objectiveRunId, 'complete', {
             summary: summaryForExecution(execution),

@@ -7,7 +7,8 @@ import { createTaskBrowserNetwork, installTaskBrowserNetwork, publicBrowserUrl, 
 const WORLD = 934;
 const keys = ['Enter', 'Tab', 'Escape', 'ArrowDown', 'ArrowUp'];
 
-function validateCommand(command: MorpheusBrowserCommand): void {
+export function validateBrowserCommand(command: MorpheusBrowserCommand): void {
+  if (!command || typeof command !== 'object') throw new Error('Invalid typed browser command.');
   const allowed = command.kind === 'fill' ? ['kind', 'revision', 'ref', 'text'] : command.kind === 'select' ? ['kind', 'revision', 'ref', 'value'] : command.kind === 'press' ? ['kind', 'revision', 'ref', 'key'] : ['kind', 'revision', 'ref'];
   if (!['click', 'fill', 'select', 'press'].includes(command.kind) || Object.keys(command).some((key) => !allowed.includes(key))
     || !/^[a-f0-9-]{36}$/.test(command.revision) || !/^e\d{1,3}$/.test(command.ref)
@@ -37,18 +38,20 @@ export async function createTaskBrowser(input: {
   let busy = false;
   let operations = 0;
   let latestSnapshot: MorpheusBrowserSnapshot | undefined;
+  let closing: Promise<void> | undefined;
   const timer = setTimeout(() => controller.abort(new Error('Browser session expired.')), Math.min(120_000, Math.max(1, input.lifetimeMs ?? 120_000)));
   timer.unref();
-  const close = async () => {
-    if (closed) return;
+  const close = (): Promise<void> => {
+    if (closed) return closing ?? Promise.resolve();
     closed = true;
     clearTimeout(timer);
     input.signal.removeEventListener('abort', relay);
     controller.abort(new Error('Browser session closed.'));
     if (window && !window.isDestroyed()) window.destroy();
-    await cleanup?.();
+    closing = cleanup?.() ?? Promise.resolve();
+    return closing;
   };
-  controller.signal.addEventListener('abort', () => { void close(); }, { once: true });
+  controller.signal.addEventListener('abort', () => { void close().catch(() => {}); }, { once: true });
   const requireWindow = () => {
     controller.signal.throwIfAborted();
     if (!window || window.isDestroyed() || closed) throw new Error('Browser session unavailable.');
@@ -128,7 +131,7 @@ export async function createTaskBrowser(input: {
         return snapshot();
       }),
       act: (command: MorpheusBrowserCommand) => exclusive(async () => {
-        validateCommand(command);
+        validateBrowserCommand(command);
         if (latestSnapshot?.revision !== command.revision || !latestSnapshot.controls.some((control) => control.ref === command.ref)) throw new Error('Page control changed; inspect it again.');
         latestSnapshot = undefined;
         await runDom(browserDomScript({ origin: original.origin, command }));

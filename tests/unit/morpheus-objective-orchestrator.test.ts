@@ -104,6 +104,22 @@ function setup(
 }
 
 describe('Main-owned objective orchestration', () => {
+  it('reviews successful browser observations instead of treating an opened page as a completed task', async () => {
+    const browserPlan = plan('browser-plan');
+    browserPlan.steps = [{ ...browserPlan.steps[0], capabilityId: 'browser.inspect', params: { url: 'https://example.com/' }, permission: { ...browserPlan.steps[0].permission, capabilityId: 'browser.inspect' } }];
+    const planner: MorpheusPlanner = { plannerId: 'provider:test', plannedBy: 'provider',
+      plan: vi.fn(async () => ({ ok: true, plan: browserPlan })),
+      review: vi.fn(async () => ({ outcome: 'complete', summary: 'Observed requested public page.' })),
+    };
+    const { orchestrator, runtime } = setup(planner);
+    runtime.releaseWorkerOwner = vi.fn();
+    const response = await orchestrator.submit({ objective: 'Inspect the public page', originType: 'command-bar' });
+    if (!response.accepted) throw new Error('admission failed');
+    await vi.waitFor(() => expect(orchestrator.snapshot().runsById[response.objectiveRunId].state).toBe('complete'));
+    expect(planner.review).toHaveBeenCalledTimes(1);
+    expect(runtime.releaseWorkerOwner).toHaveBeenCalledWith(response.objectiveRunId);
+    orchestrator.dispose();
+  });
   it('rejects new objectives while paused without creating a run or calling a planner', async () => {
     const planner: MorpheusPlanner = {
       plannerId: 'provider:test', plannedBy: 'provider',

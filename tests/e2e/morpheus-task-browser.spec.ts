@@ -124,3 +124,59 @@ test('browser cancellation and denied navigation release their own renderer with
     await expect(main.getByTestId('command-center-page')).toBeVisible();
   } finally { await closeElectronApp(app); }
 });
+
+test('production Core executes task-bound browser plans and audits observations without page text', async ({ launchElectronApp, userDataDir }) => {
+  const bundle = join(userDataDir, 'browser-core.cjs');
+  const modules = {
+    createMorpheusRuntime: 'electron/services/morpheus/runtime.ts',
+    createMorpheusWorkerPort: 'electron/services/morpheus/workers/worker-port.ts',
+    createMorpheusWorkerCheckpoints: 'electron/services/morpheus/workers/worker-checkpoints.ts',
+    createMorpheusCapabilityRegistry: 'electron/services/morpheus/capability-registry.ts',
+    createMorpheusAuditSink: 'electron/services/morpheus/audit.ts',
+    createMorpheusGrantStore: 'electron/services/morpheus/policy/grant-store.ts',
+    createMorpheusPolicyEngine: 'electron/services/morpheus/policy/policy-engine.ts',
+    createPolicyPermissionGate: 'electron/services/morpheus/policy/permission-gate.ts',
+    createBrowserWorkerAdapter: 'electron/services/task-browser/worker-adapter.ts',
+    createTaskBrowser: 'electron/services/task-browser/session.ts',
+  };
+  await build({ stdin: { contents: Object.entries(modules).map(([name, path]) => `export { ${name} } from ${JSON.stringify(resolve(path))};`).join('\n'), resolveDir: process.cwd(), loader: 'ts' }, outfile: bundle, bundle: true, platform: 'node', format: 'cjs', external: ['electron'], tsconfig: resolve('tsconfig.node.json') });
+  const app = await launchElectronApp({ skipSetup: true });
+  try {
+    await getStableWindow(app);
+    const result = await app.evaluate(async ({ webContents }, { bundle, userDataDir, html }) => {
+      const factories = process.mainModule!.require(bundle);
+      const root = process.mainModule!.require('node:path').join(userDataDir, 'browser-core-fixture');
+      const audit = factories.createMorpheusAuditSink({ auditDir: root });
+      const adapter = factories.createBrowserWorkerAdapter({ createBrowser: (input: Parameters<typeof import('../../electron/services/task-browser/session').createTaskBrowser>[0]) => factories.createTaskBrowser(input, {
+        resolveAddresses: async () => [{ address: '93.184.216.34', family: 4 }],
+        transport: async (url: URL) => ({ status: 200, headers: { 'content-type': 'text/html' }, body: Buffer.from(url.pathname === '/next' ? '<title>Next</title><h1>Second shelf</h1>' : html) }),
+      }) });
+      const port = factories.createMorpheusWorkerPort({ adapter, audit, checkpoints: factories.createMorpheusWorkerCheckpoints(root), appVersion: 'test' });
+      const grants = factories.createMorpheusGrantStore({ userDataDir: root });
+      grants.setProfile('autonomous');
+      const roots: import('../../electron/services/morpheus/roots').MorpheusRootProvider = { resolve: () => root, forWorkspace: () => roots };
+      const runtime: import('../../electron/services/morpheus/runtime').MorpheusRuntime = factories.createMorpheusRuntime({ registry: factories.createMorpheusCapabilityRegistry(), workerPort: port, audit, roots, grants, gate: factories.createPolicyPermissionGate(factories.createMorpheusPolicyEngine(grants), grants), appVersion: 'test', emit: () => {} });
+      const run = async (id: string, action: 'browser.inspect' | 'browser.interact', params: Record<string, string>) => {
+        runtime.registerPlan({ v: 1, planId: id, createdAt: new Date().toISOString(), objective: 'Find the second shelf', origin: { type: 'command-bar', commandText: 'Find the second shelf' }, status: 'draft', plannedBy: 'provider', steps: [{ stepId: 'step', capabilityId: action, params, dependsOn: [], summaryKey: 'test', permission: { capabilityId: action, platform: 'win32', resourceScope: 'https://library.example', riskTier: action === 'browser.inspect' ? 'low' : 'medium', mandatoryConfirmation: false } }] });
+        return runtime.executePlan({ planId: id }, { workerOwner: { objectiveRunId: 'browser-core-objective', attemptId: id, cancellationGeneration: 1 } });
+      };
+      try {
+        const first = await run('inspect-plan', 'browser.inspect', { url: 'https://library.example/' });
+        const artifact = first.steps[0]?.artifact;
+        if (artifact?.kind !== 'report' || !artifact.data.browserSnapshot) return { first, error: 'missing-observation' };
+        const observed = JSON.parse(String(artifact.data.browserSnapshot)) as MorpheusBrowserSnapshot;
+        const next = observed.controls.find((control) => control.name === 'Next shelf')!;
+        const second = await run('interact-plan', 'browser.interact', { url: observed.url, sessionId: observed.sessionId, command: JSON.stringify({ kind: 'click', revision: observed.revision, ref: next.ref }) });
+        await runtime.releaseWorkerOwner!('browser-core-objective');
+        const history = await runtime.auditRecent({ limit: 100 });
+        return { first: first.status, second: second.status, artifact: second.steps[0]?.artifact, history: JSON.stringify(history), remaining: webContents.getAllWebContents().filter((wc) => wc.getURL().startsWith('https://library.example')).length };
+      } finally { runtime.dispose(); }
+    }, { bundle, userDataDir, html: HTML });
+    expect(result.first).toBe('completed');
+    expect(result.second).toBe('completed');
+    expect(result.artifact).toMatchObject({ kind: 'report', data: { title: 'Next', excerpt: 'Second shelf' } });
+    expect(result.history).not.toMatch(/Second shelf|Public library|Find books|browserSnapshot/);
+    expect(result.history).toContain('browser.interact');
+    expect(result.remaining).toBe(0);
+  } finally { await closeElectronApp(app); }
+});

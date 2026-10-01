@@ -253,6 +253,8 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
+      "browserInspect": { "label": "公開ページを確認", "description": "ブラウザーのアカウントを使わず、分離されたページの操作項目を確認します。" },
+      "browserInteract": { "label": "公開ページを操作", "description": "このタスクで直前に確認した操作項目を使います。アカウント操作やダウンロードは別の許可が必要です。" },
       "siteRevise": {"label":"ウェブサイトを修正","description":"検証済みのリビジョンからのみ修正し、無関係な手動編集を保持します。"},
       "siteRollback": {"label":"ウェブサイトを戻す","description":"現在のリビジョンを検証してから記録済みの版を復元し、手動編集を保持します。"},
       "webReadPage": { "label": "ウェブページを読む", "description": "公開 HTTPS ページを読み、取得した情報源の証拠を保存します。" },

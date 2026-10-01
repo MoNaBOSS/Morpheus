@@ -88,6 +88,8 @@ export type MorpheusActionId =
   | 'system.processes'
   | 'web.openUrl'
   | 'web.readPage'
+  | 'browser.inspect'
+  | 'browser.interact'
   | 'site.verify'
   | 'site.revise'
   | 'site.rollback'
@@ -120,6 +122,8 @@ export const MORPHEUS_AUTONOMOUS_FIRST_USE_ACTIONS = Object.freeze([
   'system.storage',
   'web.openUrl',
   'web.readPage',
+  'browser.inspect',
+  'browser.interact',
   'site.verify',
   'site.revise',
   'site.rollback',
@@ -524,6 +528,22 @@ export const MORPHEUS_ACTIONS = Object.freeze({
     descriptionKey: 'dashboard:morpheus.actions.webReadPage.description',
     platforms: Object.freeze(['win32', 'darwin', 'linux'] as const),
     params: Object.freeze([Object.freeze({ key: 'url', kind: 'httpUrl', required: true } as const)] as const),
+  } as const),
+  'browser.inspect': Object.freeze({
+    id: 'browser.inspect', kind: 'introspection', riskTier: 'low', privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.browserInspect.label', descriptionKey: 'dashboard:morpheus.actions.browserInspect.description',
+    platforms: Object.freeze(['win32', 'darwin', 'linux'] as const),
+    params: Object.freeze([Object.freeze({ key: 'url', kind: 'httpUrl', required: true } as const)] as const),
+  } as const),
+  'browser.interact': Object.freeze({
+    id: 'browser.interact', kind: 'introspection', riskTier: 'medium', privacySafe: false,
+    labelKey: 'dashboard:morpheus.actions.browserInteract.label', descriptionKey: 'dashboard:morpheus.actions.browserInteract.description',
+    platforms: Object.freeze(['win32', 'darwin', 'linux'] as const),
+    params: Object.freeze([
+      Object.freeze({ key: 'url', kind: 'httpUrl', required: true } as const),
+      Object.freeze({ key: 'sessionId', kind: 'shortText', required: true } as const),
+      Object.freeze({ key: 'command', kind: 'textContent', required: true } as const),
+    ] as const),
   } as const),
   'site.verify': Object.freeze({
     id: 'site.verify',

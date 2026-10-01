@@ -1,5 +1,18 @@
 /** Main-authored worker authority. No process, credential or executable input. */
-export type MorpheusWorkerOperation = { kind: 'web.readPage'; url: string };
+import type { MorpheusBrowserCommand, MorpheusBrowserSnapshot } from './browser-types';
+export type MorpheusWorkerOperation = { kind: 'web.readPage'; url: string }
+  | { kind: 'browser.inspect'; url: string }
+  | { kind: 'browser.interact'; url: string; sessionId: string; command: MorpheusBrowserCommand };
+
+export function isMorpheusWorkerAction(value: string): value is MorpheusWorkerOperation['kind'] {
+  return ['web.readPage', 'browser.inspect', 'browser.interact'].includes(value);
+}
+
+export function workerOperationFromParams(kind: MorpheusWorkerOperation['kind'], params: Record<string, unknown>): MorpheusWorkerOperation {
+  return kind === 'browser.interact'
+    ? { kind, url: String(params.url), sessionId: String(params.sessionId), command: JSON.parse(String(params.command)) }
+    : { kind, url: String(params.url) };
+}
 
 export type MorpheusWorkerOwner = {
   objectiveRunId: string;
@@ -24,11 +37,11 @@ export type MorpheusWorkerRequest = MorpheusWorkerOwner & {
   workerRunId: string;
   operation: MorpheusWorkerOperation;
   authority: {
-    capabilityId: 'web.readPage';
-    service: 'public-https';
+    capabilityId: MorpheusWorkerOperation['kind'];
+    service: 'public-https' | 'public-browser';
     origins: readonly string[];
-    tools: readonly ['https.get'];
-    providerRouteRef: 'local-public-http';
+    tools: readonly ['https.get'] | readonly ['browser.inspect', 'browser.interact'];
+    providerRouteRef: 'local-public-http' | 'local-public-browser';
   };
   limits: MorpheusWorkerLimits;
 };
@@ -51,10 +64,9 @@ export type MorpheusSourceObservation = {
 
 export type MorpheusWorkerOutcome = {
   workerRunId: string;
-  source: MorpheusSourceObservation;
   usage: MorpheusWorkerUsage;
   effect: 'none' | 'verified' | 'unknown';
-};
+} & ({ source: MorpheusSourceObservation; browser?: never } | { browser: MorpheusBrowserSnapshot; source?: never });
 
 export type MorpheusWorkerProgress = {
   workerRunId: string;

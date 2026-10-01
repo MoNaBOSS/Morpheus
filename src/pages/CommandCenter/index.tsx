@@ -120,7 +120,11 @@ export function CommandCenter() {
             {objectiveRun ? <><p data-testid="command-center-objective-state" className="mt-2 text-xs text-[#a0b6aa]">{t(`morpheus.objective.states.${objectiveRun.state}`)}</p>
             <p className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-[#d8e7dd]">{objectiveRun.clarification ?? objectiveRun.error?.message ?? objectiveRun.summary ?? t('morpheus.workspace.working')}</p></> : null}
             {resultArtifacts.length ? <ul className="mt-6 space-y-3 border-t border-white/10 pt-4">{resultArtifacts.filter((artifact) => artifact.kind === 'report').map((artifact) => <li key={artifact.artifactId} data-testid="morpheus-artifact" data-kind={artifact.kind} className="break-all text-xs leading-relaxed text-[#a0b6aa]">
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-3">{Object.entries(artifact.data).map(([key, value]) => <div key={key} className="min-w-0"><dt className="mb-1 text-[10px] uppercase tracking-[0.08em] text-[#7d9b88]">{key.replace(/([a-z])([A-Z])/g, '$1 $2')}</dt><dd className="text-sm text-[#d8e7dd]">{value}</dd></div>)}</dl>
+              {typeof artifact.data.browserSnapshot === 'string' ? <article data-testid="browser-observation-result" className="space-y-3 break-words">
+                <h4 className="text-base font-semibold text-[#edf5ef]">{artifact.data.title}</h4>
+                <p className="text-xs text-[#a0b6aa]">{artifact.data.url}</p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#d8e7dd]">{artifact.data.excerpt}</p>
+              </article> : <dl className="grid grid-cols-2 gap-x-4 gap-y-3">{Object.entries(artifact.data).map(([key, value]) => <div key={key} className="min-w-0"><dt className="mb-1 text-[10px] uppercase tracking-[0.08em] text-[#7d9b88]">{key.replace(/([a-z])([A-Z])/g, '$1 $2')}</dt><dd className="text-sm text-[#d8e7dd]">{value}</dd></div>)}</dl>}
             </li>)}</ul> : null}
             {resultArtifacts.some((artifact) => artifact.kind !== 'report') ? <ArtifactsPanel items={resultArtifacts.filter((artifact) => artifact.kind !== 'report')} showRoot={false} /> : null}
           </aside> : null}

@@ -7,8 +7,26 @@ intent: Add bounded isolated Chromium navigation and observed DOM actions withou
 touchedAreas:
   - electron/services/task-browser/**
   - shared/morpheus/browser-types.ts
+  - shared/morpheus/worker-types.ts
+  - shared/morpheus/action-types.ts
+  - shared/morpheus/actions/registry.ts
+  - shared/morpheus/agents/registry.ts
+  - shared/i18n/locales/*/dashboard.json
+  - electron/services/morpheus/workers/**
+  - electron/services/morpheus/runtime.ts
+  - electron/services/morpheus/audit.ts
+  - electron/services/morpheus/index.ts
+  - electron/services/morpheus/core/objective-orchestrator.ts
+  - electron/services/morpheus/planning/provider-planner.ts
+  - src/pages/CommandCenter/**
+  - src/stores/morpheus-command.ts
+  - tests/unit/morpheus-worker*.test.ts
+  - tests/unit/morpheus-objective-orchestrator.test.ts
+  - tests/unit/morpheus-provider-planner.test.ts
+  - tests/unit/morpheus-supported-actions.test.ts
   - tests/unit/morpheus-task-browser*.test.ts
   - tests/e2e/morpheus-task-browser.spec.ts
+  - tests/e2e/morpheus-browser-result.spec.ts
   - harness/specs/tasks/morpheus-phase7-d2-browser.md
   - harness/specs/rules/morpheus-bounded-worker.md
   - harness/specs/scenarios/morpheus-bounded-worker.md
@@ -43,6 +61,8 @@ docs:
   required: true
 ---
 
-D2.1 establishes the real Chromium boundary and its negative fixtures before
-registering capabilities. This is not full D2 acceptance until the existing Core
-worker/planner/audit path consumes it. Keep the local HTML viewer unchanged.
+D2.1 establishes the real Chromium boundary and its negative fixtures. D2.2
+registers inspect/interact through the existing worker/planner/audit path, reviews
+observed controls between operations, keeps task identity and releases the owned
+browser on termination. Full D2 account/live gates remain separate. Keep the local
+HTML viewer unchanged.

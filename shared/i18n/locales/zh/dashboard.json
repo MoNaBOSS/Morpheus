@@ -253,6 +253,8 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
+      "browserInspect": { "label": "查看公开页面", "description": "在隔离的浏览器中查看页面控件，不使用您的浏览器账户。" },
+      "browserInteract": { "label": "操作公开页面控件", "description": "使用此任务刚刚观察到的页面控件。账户操作与下载需要单独授权。" },
       "siteRevise": {"label":"修改网站","description":"仅基于已验证的网站版本进行修改，保留无关的手动编辑。"},
       "siteRollback": {"label":"回退网站","description":"仅在当前版本已验证时恢复已记录的网站版本，保留手动编辑。"},
       "webReadPage": { "label": "读取网页", "description": "读取公开 HTTPS 网页并保留实际获取的来源证据。" },
