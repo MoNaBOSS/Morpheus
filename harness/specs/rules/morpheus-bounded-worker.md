@@ -40,3 +40,10 @@ requires current registered workspace/revision verification and serves immutable
 memory bytes in an isolated ephemeral guest; no Node/preload/external network or
 credential access. Static verification and the local HTML viewer remain separate.
 Client-only form feedback must never claim an enquiry was sent or a site published.
+
+Publications bind exact user approval to account/repository/site/source revision,
+public bytes and current remote head. Persist write intent before remote effects,
+never force a branch or silently replace remote manual edits. Lost responses are
+unknown until read-only reconciliation; successful Git writes still require actual
+HTTP content verification. API credentials stay on the fixed API origin and never
+enter public files, planner context, exception diagnostics or content retrieval.

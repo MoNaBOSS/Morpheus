@@ -66,7 +66,11 @@ Core and the existing result surface. Read `docs/releases/phase7-e2-interactive-
 Untouched historical starter upgrade now uses complete known-profile equality;
 customized planner/capability choices are preserved and loading never rewrites
 the profile file. See `docs/releases/phase7-profile-continuity.md`.
-Next is E3 authorized publication, then F2/G/H/I; package acceptance remains open.
+E3.1 now has a fixture-tested exact-target GitHub Pages adapter, non-force writes,
+read-only reconciliation and exact public HTTP verification. It is NOT exposed
+in the app yet. Next is E3.2 protected connection + exact user approval + durable
+receipts + typed UI; read `docs/releases/phase7-e3-publication.md` before wiring.
+Then F2/G/H/I; package/live acceptance remains open.
 Read the
 narrow source evidence in `docs/releases/` and the current checkpoint in the
 roadmap. Exact installer identity/checks appear in the acceptance ledger when

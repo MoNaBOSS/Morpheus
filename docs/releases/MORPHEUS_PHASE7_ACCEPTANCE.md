@@ -520,3 +520,14 @@ unchanged. Loading does not rewrite disk or issue grants. This corrects the old
 unconditional offline-to-auto override for built-in ids. Ten focused profile/Core
 tests and Node typecheck pass. See [scope/evidence](phase7-profile-continuity.md).
 Owner profiles remain untouched; final copied-profile/package acceptance is open.
+
+### E3.1 publication adapter foundation — 2026-10-02
+
+After profile continuity `3292c4e6`, 21 publication adapter/snapshot/HTTP/transport
+tests pass (56 with adjacent source/profile/Core tests), plus Node typecheck and
+scoped lint. Tests use fixture GitHub/API/HTTP responses: no real account/token or
+publication was used. Exact target/head/content, remote-edit rejection, non-force
+write, lost-response reconciliation, previous-version rollback bytes, public HTTP
+digests/MIME and token diagnostic isolation are covered. This is NOT app-integrated:
+E3.2 protected connection, approval UI and durable receipts remain next. See
+[E3 scope/continuation](phase7-e3-publication.md). No new EXE acceptance claim.

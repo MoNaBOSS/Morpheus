@@ -38,3 +38,9 @@ Pinned interactive client projects use the same Core permission/audit owner.
 Generated content cannot supply scripts or package configuration. Exact revision
 verification precedes a separate network-isolated script-capable preview. Existing
 project files/manual edits are preserved and unsupported server behavior is labeled.
+
+Publishing a supported client build requires a separately approved public target
+and revision. Changing account, remote head or files invalidates preparation. A
+lost publication response is reconciled without repeating the write; exact HTTP
+bytes, not a returned URL, are evidence of deployment. Keep previous-version
+evidence for an explicitly approved non-force rollback.
