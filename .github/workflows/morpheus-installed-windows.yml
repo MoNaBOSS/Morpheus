@@ -6,6 +6,9 @@ on:
     paths:
       - .github/workflows/morpheus-installed-windows.yml
       - scripts/windows/qualify-installed-app.mjs
+      - src/lib/morpheus-speech-player.ts
+      - shared/morpheus/voice-types.ts
+      - electron/services/morpheus/voice/voice-service.ts
   workflow_dispatch:
 
 permissions:

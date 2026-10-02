@@ -27,7 +27,12 @@ is prepared. The real packaged `5b93a145` candidate revealed an active ACP reply
 reload failure and duplicate admission dispatch; its rejected EXE/evidence are
 preserved. Fix Main completion settlement and fresh-renderer recovery before
 accepting a replacement. Finish the scoped regressions and exact preview.7 packaged evidence
-in the same spec/checklist. Never execute NSIS against the owner's existing Windows
+in the same spec/checklist. The reload correction at `23d7bae9` passes normal packaged
+recovery, but exact native audio observation found incomplete speech playback:
+three generated PCM chunks, only the first scheduled. Await the Main-declared
+bounded stream count/length before finishing and requalify all played bytes. Its
+successful hosted install/reinstall/uninstall run remains historical evidence of
+installation only. Never execute NSIS against the owner's existing Windows
 registration/profile; the CI test uses its own clean hosted runner. External hosted,
 billing, signing and actual physical hardware acceptance are separate gates.
 Build artifacts stay on E: after storage checks. Preview.6 remains preserved;

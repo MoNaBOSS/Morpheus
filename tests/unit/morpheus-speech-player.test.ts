@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   meterPlayback: vi.fn(),
   stopMeter: vi.fn(),
   createStream: vi.fn(),
+  createPcmPlayback: vi.fn(),
+  onSpeechChunk: vi.fn(),
 }));
 
 vi.mock('@/lib/host-api', () => ({
@@ -18,6 +20,8 @@ vi.mock('@/lib/morpheus-audio-level', () => ({
 vi.mock('@/lib/morpheus-speech-stream', () => ({
   createMorpheusSpeechStream: mocks.createStream,
 }));
+vi.mock('@/lib/morpheus-pcm-playback', () => ({ createMorpheusPcmPlayback: mocks.createPcmPlayback }));
+vi.mock('@/lib/host-events', () => ({ hostEvents: { onMorpheusSpeechChunk: mocks.onSpeechChunk } }));
 
 import { playMorpheusSpeech, stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
 
@@ -50,6 +54,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.meterPlayback.mockReturnValue(mocks.stopMeter);
   mocks.createStream.mockReturnValue({ url: 'blob:morpheus-stream', finish: vi.fn(), dispose: vi.fn() });
+  mocks.onSpeechChunk.mockReturnValue(vi.fn());
+  mocks.createPcmPlayback.mockImplementation(() => {
+    let finish!: () => void;
+    const completed = new Promise<void>((resolve) => { finish = resolve; });
+    return { push: vi.fn(), finish: vi.fn(async () => finish()), dispose: vi.fn(finish), completed };
+  });
   mocks.synthesizeSpeech.mockResolvedValue({
     audioBase64: window.btoa('mp3-bytes'), mimeType: 'audio/mpeg',
     providerAccountId: 'openai', modelId: 'gpt-4o-mini-tts', voice: 'onyx', providerLatencyMs: 20,
@@ -59,7 +69,114 @@ beforeEach(() => {
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:morpheus-speech');
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
 });
-afterEach(() => { stopMorpheusSpeech(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+afterEach(() => { stopMorpheusSpeech(); vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+function pcmHarness() {
+  let respond!: (result: unknown) => void;
+  mocks.synthesizeSpeech.mockReturnValueOnce(new Promise((resolve) => { respond = resolve; }));
+  const pending = playMorpheusSpeech('The full reply.', { neuralAvailable: true, format: 'pcm24' });
+  const streamId = mocks.synthesizeSpeech.mock.calls[0][0].streamId as string;
+  const player = mocks.createPcmPlayback.mock.results[0].value;
+  const emit = (sequence: number, values = [1, 2]) => mocks.onSpeechChunk.mock.calls[0][0]({
+    streamId, sequence, mimeType: 'audio/pcm', audioBase64: window.btoa(String.fromCharCode(...values)),
+  });
+  const result = (chunkCount = 3, byteLength = 6) => ({
+    mimeType: 'audio/pcm', audioBase64: '', providerAccountId: 'included-local',
+    pcmStream: { streamId, chunkCount, byteLength },
+  });
+  return { pending, respond, emit, result, player, streamId };
+}
+async function flushPcmResponse() { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); }
+
+describe('sequenced PCM delivery completion', () => {
+  it('does not finish when the invoke response arrives between the first and later IPC chunks', async () => {
+    const h = pcmHarness();
+    h.emit(0); h.respond(h.result()); await flushPcmResponse();
+    expect(h.player.finish).not.toHaveBeenCalled();
+    h.emit(1); await flushPcmResponse(); expect(h.player.finish).not.toHaveBeenCalled();
+    h.emit(2);
+    await expect(h.pending).resolves.toBe('neural');
+    expect(h.player.push.mock.calls.map(([bytes]: [Uint8Array]) => [...bytes])).toEqual([[1, 2], [1, 2], [1, 2]]);
+    expect(h.player.finish).toHaveBeenCalledOnce(); expect(mocks.synthesizeSpeech).toHaveBeenCalledOnce();
+  });
+  it('accepts all chunks before the response and checks their exact completion totals', async () => {
+    const h = pcmHarness(); h.emit(0); h.emit(1); h.emit(2);
+    expect(h.player.finish).not.toHaveBeenCalled(); h.respond(h.result());
+    await expect(h.pending).resolves.toBe('neural'); expect(h.player.push).toHaveBeenCalledTimes(3);
+  });
+  it('accepts the response before any chunks without treating empty collected audio as completion', async () => {
+    const h = pcmHarness(); h.respond(h.result()); await flushPcmResponse();
+    expect(h.player.push).not.toHaveBeenCalled(); expect(h.player.finish).not.toHaveBeenCalled();
+    h.emit(0); h.emit(1); h.emit(2); await expect(h.pending).resolves.toBe('neural');
+  });
+  it('keeps collected non-stream PCM working without a stream manifest', async () => {
+    const h = pcmHarness(); h.respond({ mimeType: 'audio/pcm', audioBase64: window.btoa('1234') });
+    await expect(h.pending).resolves.toBe('neural');
+    expect(h.player.push).toHaveBeenCalledWith(new Uint8Array([49, 50, 51, 52]));
+    expect(h.player.finish).toHaveBeenCalledOnce();
+  });
+  it('fails instead of calling finish when the declared chunk count has the wrong byte total', async () => {
+    const h = pcmHarness(); h.emit(0); h.emit(1); h.respond(h.result(2, 6));
+    await expect(h.pending).rejects.toThrow('Natural speech is unavailable'); expect(h.player.finish).not.toHaveBeenCalled();
+  });
+  it.each([
+    { chunkCount: 0, byteLength: 6 }, { chunkCount: 1.5, byteLength: 6 },
+    { chunkCount: 3, byteLength: 5 }, { chunkCount: 3, byteLength: 8 * 1024 * 1024 + 2 },
+    { chunkCount: 7, byteLength: 6 }, { chunkCount: 3, byteLength: Number.POSITIVE_INFINITY },
+  ])('rejects malformed PCM completion %j before finishing or re-synthesizing', async (totals) => {
+    const h = pcmHarness(); h.respond({ ...h.result(), pcmStream: { streamId: h.streamId, ...totals } });
+    await expect(h.pending).rejects.toThrow('Natural speech is unavailable');
+    expect(h.player.finish).not.toHaveBeenCalled(); expect(mocks.synthesizeSpeech).toHaveBeenCalledOnce();
+  });
+  it('rejects a completion belonging to another stream', async () => {
+    const h = pcmHarness(); h.respond({ ...h.result(), pcmStream: { ...h.result().pcmStream, streamId: 'other-stream' } });
+    await expect(h.pending).rejects.toThrow('Natural speech is unavailable'); expect(h.player.finish).not.toHaveBeenCalled();
+  });
+  it('rejects an empty response lacking completion metadata and cannot silently drop received chunks', async () => {
+    const h = pcmHarness(); h.emit(0); h.respond({ mimeType: 'audio/pcm', audioBase64: '' });
+    await expect(h.pending).rejects.toThrow('Natural speech is unavailable'); expect(h.player.finish).not.toHaveBeenCalled();
+  });
+  it('rejects duplicate or out-of-order chunks while Main generation is still pending', async () => {
+    const h = pcmHarness(); h.emit(0); h.emit(0);
+    await expect(h.pending).rejects.toThrow('Natural speech is unavailable'); expect(h.player.push).toHaveBeenCalledOnce();
+    expect(h.player.finish).not.toHaveBeenCalled();
+  });
+  it('uses the existing playback deadline when a declared final chunk never arrives', async () => {
+    vi.useFakeTimers(); const h = pcmHarness(); h.emit(0); h.respond(h.result());
+    const rejected = expect(h.pending).rejects.toThrow('Natural speech is unavailable');
+    await vi.advanceTimersByTimeAsync(180_000); await rejected;
+    expect(h.player.finish).not.toHaveBeenCalled(); expect(h.player.dispose).toHaveBeenCalled();
+    expect(mocks.synthesizeSpeech).toHaveBeenCalledOnce();
+  });
+  it('settles cancellation while waiting for late chunks and never schedules them after stop', async () => {
+    const h = pcmHarness(); h.emit(0); h.respond(h.result()); await flushPcmResponse();
+    stopMorpheusSpeech(); await expect(h.pending).resolves.toBe('cancelled');
+    h.emit(1); h.emit(2); await flushPcmResponse();
+    expect(h.player.push).toHaveBeenCalledOnce(); expect(h.player.finish).not.toHaveBeenCalled();
+  });
+  it('a newer utterance supersedes an incomplete PCM delivery without letting the old chunks finish it', async () => {
+    const old = pcmHarness(); old.emit(0); old.respond(old.result()); await flushPcmResponse();
+    mocks.synthesizeSpeech.mockResolvedValueOnce({ mimeType: 'audio/pcm', audioBase64: window.btoa('1234') });
+    const latest = playMorpheusSpeech('New reply.', { neuralAvailable: true, format: 'pcm24' });
+    await expect(old.pending).resolves.toBe('cancelled'); await expect(latest).resolves.toBe('neural');
+    old.emit(1); old.emit(2); await flushPcmResponse();
+    expect(old.player.push).toHaveBeenCalledOnce(); expect(old.player.finish).not.toHaveBeenCalled();
+    expect(mocks.createPcmPlayback.mock.results[1].value.finish).toHaveBeenCalledOnce();
+  });
+  it('an actual playback failure settles immediately while declared IPC chunks are still missing', async () => {
+    let fail!: (error: Error) => void;
+    const completed = new Promise<void>((_resolve, reject) => { fail = reject; });
+    void completed.catch(() => undefined);
+    const player = { push: vi.fn(), finish: vi.fn(), dispose: vi.fn(), completed };
+    mocks.createPcmPlayback.mockReturnValueOnce(player);
+    const h = pcmHarness(); h.emit(0); h.respond(h.result()); await flushPcmResponse();
+    fail(new Error('Actual audio output failed'));
+    await expect(h.pending).rejects.toThrow('Natural speech is unavailable');
+    h.emit(1); h.emit(2); await flushPcmResponse();
+    expect(player.finish).not.toHaveBeenCalled(); expect(player.push).toHaveBeenCalledOnce();
+    expect(mocks.cancelSpeech).toHaveBeenCalledTimes(2);
+  });
+});
 
 describe('Morpheus speech player', () => {
   it('plays local WAV through real playback callbacks without starting an MPEG stream', async () => {

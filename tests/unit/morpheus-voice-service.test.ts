@@ -119,9 +119,19 @@ describe('Morpheus voice service', () => {
     ]);
     h.service.setSpeaking(true); expect(h.service.setSpeaking(false).state).toBe('preparing-speech');
     expect(h.recordControl).not.toHaveBeenCalledWith(expect.objectContaining({ event: 'speech-completed' }));
-    finish(); await expect(pending).resolves.toMatchObject({ audioBase64: '', mimeType: 'audio/pcm', firstAudioByteMs: expect.any(Number) });
+    finish(); await expect(pending).resolves.toMatchObject({ audioBase64: '', mimeType: 'audio/pcm', firstAudioByteMs: expect.any(Number),
+      pcmStream: { streamId: 'local-stream', chunkCount: 2, byteLength: 96_000 } });
     expect(h.providerService.getAccountRuntimeApiKey).not.toHaveBeenCalled(); expect(h.fetchImpl).not.toHaveBeenCalled();
     expect(JSON.stringify(h.recordControl.mock.calls)).not.toContain('private'); h.service.dispose();
+  });
+  it('collects included PCM when no chunk emitter is connected instead of claiming streamed delivery', async () => {
+    const audio = Buffer.from([1, 2, 3, 4]);
+    const localVoice = { ready: () => true, transcribe: vi.fn(), synthesize: vi.fn(),
+      synthesizeStream: vi.fn(async (_text, _voice, _signal, onPcm: (pcm: Buffer) => void) => { onPcm(audio.subarray(0, 2)); onPcm(audio.subarray(2)); }) };
+    const h = createHarness({ localVoice, apiKey: null });
+    const result = await h.service.synthesize({ text: 'Collected reply.', streamId: 'collected' });
+    expect(result.mimeType).toBe('audio/pcm'); expect(Buffer.from(result.audioBase64, 'base64')).toEqual(audio);
+    expect(result.pcmStream).toBeUndefined(); h.service.dispose();
   });
   it('cannot emit a late included speech segment after cancellation', async () => {
     let finish!: () => void, chunk!: (pcm: Buffer) => void;

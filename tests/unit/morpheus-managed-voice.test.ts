@@ -62,7 +62,8 @@ describe('managed voice joined to the original Main voice owner', () => {
     const h = setup();
     expect(await h.service.transcribe(payload)).toMatchObject({ transcript: 'Open Notepad', durationMs: 1000, modelId: 'fixture-stt', providerAccountId: 'managed' });
     const result = await h.service.synthesize({ text: 'private spoken response', streamId: 'utterance' });
-    expect(result).toMatchObject({ mimeType: 'audio/pcm', modelId: 'fixture-tts', voice: 'cedar' });
+    expect(result).toMatchObject({ mimeType: 'audio/pcm', modelId: 'fixture-tts', voice: 'cedar',
+      pcmStream: { streamId: 'utterance', chunkCount: h.chunks.length, byteLength: 48_000 } });
     expect(h.chunks.map((chunk) => chunk.sequence)).toEqual(h.chunks.map((_, index) => index));
     expect(h.chunks.every((chunk) => chunk.streamId === 'utterance' && chunk.mimeType === 'audio/pcm')).toBe(true);
     expect(Buffer.concat(h.chunks.map((chunk) => Buffer.from(chunk.audioBase64, 'base64'))).length).toBe(48_000);
@@ -75,6 +76,13 @@ describe('managed voice joined to the original Main voice owner', () => {
     expect(h.providerService.listAccounts).not.toHaveBeenCalled();
     const request = JSON.parse(String(h.upstream.mock.calls[1][1]?.body));
     expect(request.instructions).toContain('natural conversational voice');
+  });
+  it('keeps a managed collected PCM result usable without inventing chunk-completion metadata', async () => {
+    const h = setup();
+    const result = await h.service.synthesize({ text: 'Collected reply.' });
+    expect(result.mimeType).toBe('audio/pcm'); expect(Buffer.from(result.audioBase64, 'base64').length).toBe(48_000);
+    expect(result.pcmStream).toBeUndefined(); expect(h.chunks).toHaveLength(0);
+    expect(h.providerService.getAccountRuntimeApiKey).not.toHaveBeenCalled();
   });
   it('rejects compressed/malformed/short WAV and unhealthy audit before provider work', async () => {
     const h = setup();

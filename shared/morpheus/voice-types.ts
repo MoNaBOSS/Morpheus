@@ -160,6 +160,10 @@ export type MorpheusSynthesizeSpeechPayload = {
 
 export type MorpheusSpeechChunk = { streamId: string; sequence: number; audioBase64: string; mimeType?: 'audio/mpeg' | 'audio/pcm' };
 
+/** Main-authored completion totals. IPC chunks and the invoke response may arrive
+ * in different orders; receipt of the response does not finish PCM delivery. */
+export type MorpheusPcmStreamCompletion = { streamId: string; chunkCount: number; byteLength: number };
+
 export type MorpheusSynthesizeSpeechResult = {
   audioBase64: string;
   mimeType: 'audio/mpeg' | 'audio/pcm' | 'audio/wav';
@@ -169,4 +173,6 @@ export type MorpheusSynthesizeSpeechResult = {
   providerLatencyMs: number;
   /** First real generated segment, not fabricated playback progress. */
   firstAudioByteMs?: number;
+  /** Present when PCM was emitted as sequenced chunks rather than collected. */
+  pcmStream?: MorpheusPcmStreamCompletion;
 };

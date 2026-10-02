@@ -629,19 +629,22 @@ export function createMorpheusVoiceService(options: {
           await options.localVoice.synthesizeStream!(text, settings.speechVoice, controller.signal, (pcm) => {
             checkCurrent();
             bytes += pcm.length;
-            if (bytes > MORPHEUS_SPEECH_MAX_AUDIO_BYTES || pcm.length % 2) throw new Error('Included speech exceeded its audio limit.');
+            if (!pcm.length || bytes > MORPHEUS_SPEECH_MAX_AUDIO_BYTES || pcm.length % 2) throw new Error('Included speech exceeded its audio limit.');
             firstAudioByteMs ??= Math.round(performance.now() - started);
             if (!options.emitSpeechChunk) { collected.push(pcm); return; }
             for (let offset = 0; offset < pcm.length; offset += 48 * 1024) {
               options.emitSpeechChunk({ streamId: payload.streamId!, sequence: sequence++, mimeType: 'audio/pcm', audioBase64: pcm.subarray(offset, offset + 48 * 1024).toString('base64') });
             }
           });
+          checkCurrent();
+          if (!bytes) throw new Error('Included speech returned no audio.');
           audio = Buffer.concat(collected);
         } else audio = await options.localVoice.synthesize(text, settings.speechVoice, controller.signal);
         checkCurrent(); speechFailure = undefined;
         await options.audit.recordControl({ category: 'voice', event: 'speech-completed', subjectId: 'included-local',
           details: { modelId: 'kokoro-int8', providerLatencyMs: Math.round(performance.now() - started), ...(firstAudioByteMs !== undefined ? { firstAudioByteMs } : {}), costStatus: 'local' }, appVersion: options.appVersion });
-        return { audioBase64: audio.toString('base64'), mimeType: streaming ? 'audio/pcm' : 'audio/wav', providerAccountId: 'included-local', modelId: 'kokoro-int8', voice: settings.speechVoice, providerLatencyMs: Math.round(performance.now() - started), ...(firstAudioByteMs !== undefined ? { firstAudioByteMs } : {}) };
+        return { audioBase64: audio.toString('base64'), mimeType: streaming ? 'audio/pcm' : 'audio/wav', providerAccountId: 'included-local', modelId: 'kokoro-int8', voice: settings.speechVoice, providerLatencyMs: Math.round(performance.now() - started), ...(firstAudioByteMs !== undefined ? { firstAudioByteMs } : {}),
+          ...(streaming && options.emitSpeechChunk ? { pcmStream: { streamId: payload.streamId!, chunkCount: sequence, byteLength: bytes } } : {}) };
       } catch (error) { if (generation === speechGeneration) speechFailure = 'unavailable'; throw error; }
       finally { if (speechController === controller) speechController = null; if (generation === speechGeneration && currentPresence.state === 'preparing-speech') publish(ambientSession ? 'armed' : 'asleep'); }
     }
@@ -654,9 +657,15 @@ export function createMorpheusVoiceService(options: {
         const instructions = speechInstructions(options.getPersonaContext?.() ?? composeMorpheusPersonaContext({
           ...DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES, personality: options.getPersonality?.() ?? 'adaptive', humorStyle: undefined,
         }));
+        let chunkCount = 0, byteLength = 0;
+        const emitManagedChunk = payload.streamId && options.emitSpeechChunk ? (chunk: MorpheusSpeechChunk) => {
+          chunkCount += 1; byteLength += Buffer.byteLength(chunk.audioBase64, 'base64');
+          options.emitSpeechChunk!(chunk);
+        } : undefined;
         const result = await createManagedVoiceOperation({ runtime: managed, audit: options.audit, appVersion: options.appVersion,
-          signal: controller.signal, checkCurrent }).synthesize(text, settings.speechVoice, instructions, payload.streamId, options.emitSpeechChunk);
-        checkCurrent(); speechFailure = undefined; return result;
+          signal: controller.signal, checkCurrent }).synthesize(text, settings.speechVoice, instructions, payload.streamId, emitManagedChunk);
+        checkCurrent(); speechFailure = undefined;
+        return { ...result, ...(emitManagedChunk ? { pcmStream: { streamId: payload.streamId!, chunkCount, byteLength } } : {}) };
       } catch (error) {
         if (generation === speechGeneration) speechFailure = 'unavailable';
         throw error;

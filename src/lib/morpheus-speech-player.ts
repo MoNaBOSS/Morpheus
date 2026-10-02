@@ -4,6 +4,7 @@ import { createMorpheusSpeechStream } from './morpheus-speech-stream';
 import { createMorpheusPcmPlayback } from './morpheus-pcm-playback';
 import { hostEvents } from './host-events';
 import { resolveMorpheusWindowsVoice } from './morpheus-windows-voice';
+import { MORPHEUS_SPEECH_MAX_AUDIO_BYTES, type MorpheusPcmStreamCompletion } from '@shared/morpheus/voice-types';
 
 type SpeechOptions = {
   format?: 'pcm24' | 'wav';
@@ -78,33 +79,65 @@ async function playNeuralSpeech(text: string, id: number, format?: 'pcm24' | 'wa
     const streamId = crypto.randomUUID();
     const player = createMorpheusPcmPlayback((speaking) => { if (id === generation) setSpeaking(speaking); });
     let sequence = 0, received = 0;
+    let completion: MorpheusPcmStreamCompletion | undefined;
+    let closed = false;
     let streamError: Error | undefined;
     let rejectStream!: (error: Error) => void;
     const failed = new Promise<never>((_resolve, reject) => { rejectStream = reject; });
     void failed.catch(() => undefined);
+    let settleChunks!: () => void;
+    const chunksReceived = new Promise<void>((resolve) => { settleChunks = resolve; });
+    const checkCompletion = () => {
+      if (!completion) return;
+      if (sequence > completion.chunkCount || received > completion.byteLength
+        || sequence === completion.chunkCount && received !== completion.byteLength
+        || received === completion.byteLength && sequence !== completion.chunkCount) throw new Error('PCM speech totals do not match.');
+      if (sequence === completion.chunkCount && received === completion.byteLength) settleChunks();
+    };
+    const failStream = (error: Error) => {
+      streamError = error; rejectStream(error); settleChunks(); player.dispose();
+    };
     const unsubscribe = hostEvents.onMorpheusSpeechChunk((chunk) => {
-      if (id !== generation || chunk.streamId !== streamId) return;
+      if (closed || id !== generation || chunk.streamId !== streamId) return;
       try {
-        if (chunk.mimeType !== 'audio/pcm' || chunk.sequence !== sequence++ || chunk.audioBase64.length > 65536) throw new Error('Invalid PCM speech sequence.');
-        const bytes = new Uint8Array(decodeBase64(chunk.audioBase64)); received += bytes.length; player.push(bytes);
-      } catch { streamError = new Error('Managed speech stream is invalid.'); rejectStream(streamError); player.dispose(); }
+        if (chunk.mimeType !== 'audio/pcm' || chunk.sequence !== sequence || !chunk.audioBase64 || chunk.audioBase64.length > 65536) throw new Error('Invalid PCM speech sequence.');
+        const bytes = new Uint8Array(decodeBase64(chunk.audioBase64));
+        if (!bytes.length || received + bytes.length > MORPHEUS_SPEECH_MAX_AUDIO_BYTES) throw new Error('PCM speech exceeds its limit.');
+        sequence += 1; received += bytes.length; checkCompletion(); player.push(bytes);
+      } catch { failStream(new Error('PCM speech stream is invalid.')); }
     });
     let settleCancel!: () => void;
     const cancelled = new Promise<void>((resolve) => { settleCancel = resolve; });
     disposeStream = () => { unsubscribe(); player.dispose(); };
-    cancelPlayback = () => { player.dispose(); settleCancel(); };
-    const timer = window.setTimeout(() => { rejectStream(new Error('Speech playback timed out.')); player.dispose(); }, 180_000);
+    cancelPlayback = () => { player.dispose(); settleChunks(); settleCancel(); };
+    const timer = window.setTimeout(() => failStream(new Error('Speech playback timed out.')), 180_000);
     try {
       const request = hostApi.morpheus.synthesizeSpeech({ text, streamId }).then(async (result) => {
-        if (id !== generation) return;
+        if (closed || id !== generation) return;
         if (streamError) throw streamError;
         if (result.mimeType !== 'audio/pcm') throw new Error('Speech format changed.');
-        if (!received) player.push(new Uint8Array(decodeBase64(result.audioBase64)));
+        if (result.pcmStream) {
+          const totals = result.pcmStream;
+          if (totals.streamId !== streamId || !Number.isSafeInteger(totals.chunkCount) || totals.chunkCount < 1
+            || !Number.isSafeInteger(totals.byteLength) || totals.byteLength < 2 || totals.byteLength % 2
+            || totals.byteLength > MORPHEUS_SPEECH_MAX_AUDIO_BYTES || totals.chunkCount > totals.byteLength) throw new Error('Invalid PCM speech completion.');
+          completion = totals; checkCompletion();
+          // Main generation has ended; all its sequenced IPC messages still have
+          // to arrive before finish can close the original playback queue.
+          await chunksReceived;
+          if (closed || id !== generation) return;
+          if (streamError) throw streamError;
+        } else {
+          if (received) throw new Error('PCM speech completion is missing.');
+          const bytes = new Uint8Array(decodeBase64(result.audioBase64));
+          if (!bytes.length || bytes.length % 2 || bytes.length > MORPHEUS_SPEECH_MAX_AUDIO_BYTES) throw new Error('Invalid collected PCM speech.');
+          unsubscribe(); player.push(bytes);
+        }
         await player.finish();
       });
       await Promise.race([Promise.all([request, player.completed]), failed, cancelled]);
     } finally {
-      window.clearTimeout(timer); unsubscribe(); player.dispose();
+      closed = true; settleChunks(); window.clearTimeout(timer); unsubscribe(); player.dispose();
       if (id === generation) { setSpeaking(false); releaseAudio(); cancelPlayback = null; }
     }
     return;

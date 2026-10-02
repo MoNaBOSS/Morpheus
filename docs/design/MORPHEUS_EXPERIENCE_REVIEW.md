@@ -1,17 +1,24 @@
 # Morpheus experience specification
 
-Updated 2026-10-02, Asia/Dhaka. **Current owner requirements; preview.5 experience rejected.**
+Updated 2026-10-03, Asia/Dhaka. **Current owner requirements; preview.5 experience rejected.**
 This is the single current experience specification, reconciled from the existing
 design review and the owner's October 2 correction. The single current execution
 checklist is [WINDOWS_COMPLETION_CHECKLIST.md](../releases/WINDOWS_COMPLETION_CHECKLIST.md).
 Historical plans, prototypes and automated results remain evidence, not approval.
 Preview.7 autonomous qualification is current. A real packaged active-reply reload
 failure at `5b93a145` prevents accepting that candidate; its installer and evidence
-are preserved. The correction passes focused service/store and fresh native
-compact/full/Advanced permission and Stop checks; exact packaged qualification
-of the replacement is next. Main owns admission settlement, bounds same-identity
+are preserved. The correction at `23d7bae9` passes focused service/store, fresh native
+compact/full/Advanced permission and Stop checks, and actual normal packaged
+active-reply reload and quiet restart with exactly one inference. Main owns admission settlement, bounds same-identity
 receipts, and restores original authority cards/history without new empty sessions
 or automatic approval. It does not replay every missed live stream chunk.
+Actual native audio observation then rejected complete speech acceptance at
+`23d7bae9`: three PCM chunks contained 137,654 bytes, but playback scheduled only
+the first 49,152 bytes. A synthesis response can arrive before later IPC events.
+Completion must declare and await the exact bounded chunk count/byte length, then
+drain the actual player; an engine-generated WAV or a transient asleep state cannot
+prove complete playback. The rejected app.asar and evidence are preserved under
+`evidence/rejected-preview7-23d7bae9`; replacement qualification is pending.
 The preview.6 results later in this
 document are a preserved baseline; the current checklist records replacement results.
 No meaning is inferred from standalone historical A/B/C/D answers whose questions
@@ -122,6 +129,10 @@ setting after a real sequential engine benchmark (25-word baseline: 13.075 s at 
 9.508 s at eight). This is segmented speech, not token-by-token model streaming;
 generation can still outlast playback on slow CPUs. Genuine gaps show zero audio
 activity and do not reopen microphone capture while synthesis continues.
+Main declares streamed PCM chunk count and byte length; renderer completion waits
+for that whole ordered sequence before finishing playback. Cancellation or malformed
+streams cannot resynthesize automatically. Native qualification compares all received
+PCM bytes with actually scheduled and naturally ended AudioContext frame bytes.
 Tiny English recognition can mishear accents,
 noise and speaker echo. Actual microphone accuracy, naturalness, echo/interruption
 and low-power hardware acceptance remain owner tests. Hosted speech could offer

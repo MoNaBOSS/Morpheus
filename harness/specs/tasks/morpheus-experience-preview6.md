@@ -36,6 +36,7 @@ expectedUserBehavior:
   - Included local voice requires no voice API key; device and service failures have actionable recovery.
   - Presence respects actual work area, inactivity, reduced motion and manual microphone mute.
   - Included speech begins with real bounded local PCM segments and cannot reopen recording during generation gaps.
+  - PCM playback waits for every sequenced chunk declared by Main before finishing; an earlier synthesis response cannot truncate audible output.
   - Public research rejects credential-bearing URLs and retries only validated transport connection failures.
   - Completed task exchanges stay beside their original request in the continuous conversation.
   - Reloading an active reply restores original ACP history without duplicating the admitted turn; Main settles successful delivery independently of the renderer.
