@@ -230,3 +230,49 @@ missing/wrong versions or changed dependency closures. The mirror revision also
 includes the applied override identities so existing same-version plugin caches
 refresh. Focused packaging/revision/notice regressions pass (18 checks). Rebuild,
 inventory the payload before compression, and rerun normal packaged integration.
+
+### Corrected c8d021dd payload — 2026-10-02
+
+Both normal package and lifecycle evidence now identify application source
+`c8d021dda41d7abfeff8511bc1988b17b794ecad`. The rejected 50231971 artifacts are
+preserved outside the clean build clone at `E:\Morpheus-builds\p7-preview5\rejected-50231971`.
+Full suite on the final locked Vitest 4.1.11: **3,329 passes / two platform skips**,
+323 files, 68.63s. Scoped lint, communications replay/compare and diff-aware harness
+checks against the actual 59ea1b06 checkpoint pass. An initial clone harness run
+used origin/main and included historical changes/rejected build files; its log is
+preserved and the correctly bounded check supersedes it, not a disabled diff check.
+
+Pre-compression payload inventory has no mismatched audited same-major overrides.
+Five actual bundled Node 22.22.3 dependency-load checks pass for Discord/QQ/WhatsApp,
+including protobuf encode/decode and refreshed same-version plugin identities;
+no channel account/network call. `backport-payload-inventory.json` and
+`channel-backports-runtime.log` preserve this separate physical-bundle evidence.
+
+Normal welcome/local task/protected provider/original ACP reply/reload/quiet restart
+pass, with one free local inference total. Final screenshots inspected. First
+copied-payload Gateway 50.95s, returning UI 2.565s / Gateway 7.484s; not a closed
+startup performance gate. Local work does not depend on the Gateway being ready.
+The exact corrected payload passes outage/local task/recovery, unavailable Premium,
+no duplicate or queued turn, zero page/console errors and clean owned-process exit.
+Five-minute unarmed idle: **312.422s, 0.9152% total CPU**, stable process set, memory
+1,326,252,032 → 1,307,578,368 bytes, zero provider calls. The 1% target is unchanged.
+Final EXE is compressed from this qualified payload, not the rejected older one.
+
+### Identified EXE and static installer acceptance
+
+Final `Morpheus-1.2.0-preview.5-win-x64.exe`: **343,080,980 bytes**, source c8d021dd,
+SHA256 **cf82b227b90299bc1be1cf01bacfe7421be267449f37cf7c9cfd90e98b60b9c4**,
+Authenticode **NotSigned**. Full path, limits and the single PC checklist are in
+[the current handoff](WINDOWS_PREVIEW5_HANDOFF.md). No installer execution, release
+publication or auto-update feed is implied.
+
+Actual EXE's embedded archive integrity passes. All **40,511 file paths/sizes**
+match the qualified payload, including materialized cache-link contents. Extracted
+Morpheus executable/app archive/motion/runtime manifest hashes match; extracted
+channel versions are the patched ones. The package retains 725 inventoried
+license/notice assets. 7-Zip warns of data after the embedded archive (NSIS wrapper);
+CRC checks and identity comparisons pass. `installer-inspection.json`,
+`candidate-evidence.json` and `installer-integrity.log` record the actual result.
+NSIS install/upgrade/uninstall execution is still unverified: no preconfigured
+isolated VM/sandbox and owner installation/profiles were preserved. C: has only
+about 0.54 GiB free; address this before owner acceptance. Phase 7 is not closed.

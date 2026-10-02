@@ -2,7 +2,7 @@
 
 Application repository: `https://github.com/MoNaBOSS/Morpheus.git`.
 Authorized branch: `codex/morpheus-phase6-managed-layer`.
-**Phase 7 is not yet fully packaged/hardware/live accepted. NerdGPT is later.**
+**Windows candidate packaged; installer execution/hardware/live acceptance remain open. NerdGPT is later.**
 
 ## Current checkpoint — 2026-10-02
 
@@ -13,50 +13,59 @@ Verify remote, current commit and dirty files before editing. Never reset, clean
 overwrite or automatically stash work/profiles/providers. Fetch only the verified
 origin. Reviewed checkpoints are pushed to the authorized branch without force.
 
-Latest application source: **5023197175b6b08dad8cad4703e06661c5354f03**, version
+Latest application source: **c8d021dda41d7abfeff8511bc1988b17b794ecad**, version
 **1.2.0-preview.5**, pushed to the authorized branch. Later documentation commits
 do not change this application identity. Follow the owner's
 [fixed Windows checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) and
-[preview.5 handoff](docs/releases/WINDOWS_PREVIEW5_HANDOFF.md), not a new discovery
-phase. Hosted Premium remains unavailable; NerdGPT deferred.
+[preview.5 handoff](docs/releases/WINDOWS_PREVIEW5_HANDOFF.md); no fresh discovery,
+redesign or new features. Hosted Premium unavailable; NerdGPT deferred.
 
-Source qualification: **3,320 unit passes + two platform skips**, three typechecks,
-zero lint errors / 12 inherited warnings, comms replay/compare, harness/CI,
-15 fresh native journeys and the final shared-motion native regression. Same-major
-dependency fixes use Electron 41.10.6 / Vitest 4.1.11 with OpenClaw 2026.7.1 retained.
-Registry audit has zero unresolved advisories; existing image-size patch verified.
+Source qualification: **3,329 unit passes + two platform skips** on final locked
+Vitest 4.1.11. Unchanged application typechecks/native journeys remain valid;
+scoped packaging lint, comms replay/compare and diff-aware harness pass.
+Electron 41.10.6 and reviewed same-major dependency fixes retain OpenClaw 2026.7.1.
+Registry audit has zero unresolved advisories, with the existing image-size patch
+verified. Separate actual payload inventory catches embedded plugin dependencies
+that pnpm audit cannot see. Both bundle paths backport those from the locked graph
+and refresh existing same-version channel mirrors; actual bundled Node loads pass.
 
-**Actual normal packaged payload is qualified**, not just E2E fixtures: approved
-welcome/local task, protected local provider, original ACP compact reply, reload
-and quiet restart, no duplicate inference and no leaked persona instructions in
-the visually inspected history. Controlled Gateway outage/local task/recovery,
-Premium Main/UI guards, clean console and owned-process shutdown pass.
-Five-minute unarmed idle is **0.906% total CPU** (target <=1%), stable processes
-and memory, zero provider calls. The failed 2.406% and 1.063% measurements remain
-in the evidence; only tiny idle halo updates were bounded to 5 Hz, not active motion.
+**Exact normal packaged application passes** welcome/local task, protected local
+provider, original ACP compact reply, reload and quiet restart with no additional
+inference or leaked internal persona instructions. Actual screenshots inspected.
+Controlled Gateway outage/local task/recovery, Premium Main/UI guards, clean
+console and owned-process shutdown pass. Five-minute unarmed idle: **0.915% total
+CPU**, below the unchanged 1% target, stable process set and memory, zero provider
+calls. Only the small idle halo is stepped at 5 Hz; active aurora/audio unchanged.
 
-Evidence/build root: `E:\Morpheus-builds\p7-preview5`. Both
-`normal-runtime-evidence.json` and `qualification-result.json` identify 50231971.
-The first copied-payload Gateway startup was 45.19s; returning UI 2.59s / Gateway
-7.51s. These observations do not close all startup/loaded performance targets.
-All tests used synthetic homes and a free local provider; no paid inference,
-microphone, owner account, publication or installation registration was touched.
+Evidence/build root: `E:\Morpheus-builds\p7-preview5`.
+`normal-runtime-evidence.json` and `qualification-result.json` identify c8d021dd.
+First copied-payload Gateway readiness 50.95s; returning UI 2.565s / Gateway 7.484s.
+These are single observations, not closed startup/loaded performance gates.
+All test profiles/providers are synthetic. No paid calls, owner account, microphone,
+publication or installer execution is implied.
 
-**Latest catch:** the 50231971 EXE compiled but final contents inspection found
-old dependencies embedded by upstream Discord/QQ/WhatsApp tarballs, outside the
-pnpm override graph. Do not distribute it. Both plugin bundlers now apply the
-reviewed locked backports and include them in plugin refresh identity. See I evidence.
+**Delivered build:** `E:\Morpheus-builds\p7-preview5\candidate\release\Morpheus-1.2.0-preview.5-win-x64.exe`,
+343,080,980 bytes, unsigned. SHA256:
+`cf82b227b90299bc1be1cf01bacfe7421be267449f37cf7c9cfd90e98b60b9c4`.
+Compiled archive integrity, all 40,511 file paths/sizes, selected extracted identity
+hashes and patched channel versions match the qualified payload. 725 notice/license
+assets retained. Static inspection is not actual installation/upgrade acceptance.
 
-**Next exact action:** validate this narrow packaging correction, rebuild and
-inventory before compression, qualify normal integration, then hand off. Do not
-rebuild or rerun passed feature campaigns without a reproduced failure or changed
-dependency. The handoff records EXE/hash/signature and remaining gates.
-Older preview.1–4 / 1.1.2 and the rejected 50231971 EXE are not the handoff candidate.
+**Next exact action:** owner's short PC acceptance list in the handoff, after
+addressing low C: disk space. Connect a live provider only via protected settings
+or secure setup, not plaintext chat. Fix reproduced failures; do not rebuild,
+redesign or repeat passed campaigns without a concrete failure or changed dependency.
 
-Build on E: because C: is nearly full. Fresh runtime/plugin dependencies were
-bundled under the updated lockfile; only unchanged Node/uv/agent-browser and
-curated skills reuse caches. Never recursively copy large dependency trees to C:.
-Do not run NSIS install/upgrade against the owner's existing registration/profile.
+The first 50231971 EXE was rejected after inventory caught old dependency copies
+embedded by upstream channel tarballs. It is retained under
+`E:\Morpheus-builds\p7-preview5\rejected-50231971`, not delivered.
+Older preview.1–4 / 1.1.2 binaries are historical, not the acceptance candidate.
+Failed performance readings remain in I evidence rather than being erased.
+
+Build on E:; C: has only about 0.54 GiB free. Main/preload/renderer were unchanged
+by the final packaging-only correction; plugins were freshly regenerated.
+Only unchanged binary/curated-skill caches were reused. Never copy large dependency
+trees to C: or run NSIS upgrade against the owner's existing registration/profile.
 No preconfigured isolated Windows sandbox/VM is available for installer execution.
 
 ## Reading order — once, then active dependencies only

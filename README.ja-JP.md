@@ -5,6 +5,8 @@
 
 <h1 align="center">Morpheus</h1>
 
+Windows preview.5 は所有者の PC 受け入れ確認に進めます。正確な EXE・ハッシュ・制限は[現在の引き継ぎ](docs/releases/WINDOWS_PREVIEW5_HANDOFF.md)を参照してください。Phase 7 全体や公開 Premium の承認ではありません。
+
 プラグインに同梱された依存関係もロック済みの修正版へ置き換え、実際の配布内容とキャッシュ更新識別子を別途確認します。
 
 現在の Phase 7 ソースは、右下のコンパニオンと上に開く入力欄を使用します。

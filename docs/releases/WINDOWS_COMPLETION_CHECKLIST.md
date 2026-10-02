@@ -10,14 +10,14 @@ unverified features as complete or waive the Phase 7 acceptance requirements.
 
 | ID | Fixed outcome | Current status / evidence |
 | --- | --- | --- |
-| W1 | Verify source, preserve existing profiles and all work | DONE: isolated source 50231971 pushed to the authorized branch; original PC checkout/profiles untouched. |
-| W2 | Source regression for existing implemented capabilities | PASS at 50231971: 3,320 units, 2 platform skips; three typechecks, lint, comms, harness, 15 native journeys plus fresh final-motion regression. Not live acceptance. |
-| W3 | Normal packaged welcome, local task, protected provider, compact original-runtime reply, reload and quiet restart; visually inspect restored history | PASS on exact preview.5 / 50231971: screenshots inspected, protected synthetic provider, original ACP, one free local inference total; none on reload/relaunch. |
+| W1 | Verify source, preserve existing profiles and all work | DONE: isolated source c8d021dd pushed to the authorized branch; original PC checkout/profiles untouched. |
+| W2 | Source regression for existing implemented capabilities | PASS: final 3,329 units, 2 platform skips; unchanged app typechecks, lint, comms, harness, 15 native journeys plus final-motion regression. Packaged channel backports separately load-tested. Not live acceptance. |
+| W3 | Normal packaged welcome, local task, protected provider, compact original-runtime reply, reload and quiet restart; visually inspect restored history | PASS on exact preview.5 / c8d021dd: screenshots inspected, protected synthetic provider, original ACP, one free local inference total; none on reload/relaunch. |
 | W4 | Verify hosted Premium stays unavailable; no fake trial/payment or automatic BYOK fallback | PASS on exact preview.5: Main rejects activation; UI disabled/no fake sign-in. G2.3/G1 full accounting/G3/G4 remain unfinished, explicitly unavailable. |
-| W5 | Packaged reliability/performance checks possible without owner's devices, secrets or external writes | PASS for bounded local checks: outage/local task/recovery, no duplicate history, clean process exit; 312.4s unarmed idle 0.906% total CPU (target <=1%), zero provider calls, stable process set, RAM 1.329 → 1.309 GB. Physical sleep/microphone/DPI/monitor and 60-minute mixed use remain unaccepted. Startup targets remain open. |
-| W6 | Package the visually qualified payload; record version, source, SHA256, notices and signing status | IN PROGRESS: 50231971's EXE rejected after finding embedded old channel dependencies outside pnpm's audit graph. Both plugin bundle paths now apply locked backports and cache refresh identities; rebuild/inventory required before handoff. No weakened dependency check. |
-| W7 | Verify installer without altering owner's installation/registration/profile | TODO: safe static/payload inspection and isolated installation only if an existing safe Windows sandbox/VM is available. Helper tests alone do not certify NSIS install/upgrade. |
-| W8 | Deliver EXE, exact limitations and one short owner acceptance checklist | TODO: distinguish implemented, fixture-tested, packaged-tested and human/live pending. Do not call all Phase 7 complete. |
+| W5 | Packaged reliability/performance checks possible without owner's devices, secrets or external writes | PASS for bounded local checks on c8d021dd: outage/local task/recovery, no duplicate history, clean process exit; 312.4s unarmed idle 0.915% total CPU (target <=1%), zero provider calls, stable process set, RAM 1.326 → 1.308 GB. Physical sleep/microphone/DPI/monitor and 60-minute mixed use remain unaccepted. Startup targets remain open. |
+| W6 | Package the visually qualified payload; record version, source, SHA256, notices and signing status | DONE: preview.5 / c8d021dd EXE, 343,080,980 bytes; SHA256 cf82b227…b60b9c4, Authenticode NotSigned, 725 notice/license assets. Full identity in handoff. No public release/feed. |
+| W7 | Verify installer without altering owner's installation/registration/profile | STATIC PASS: compiled archive CRC/inventory (40,511 files), extracted identity hashes and patched channel versions match qualified payload. INSTALL/UPGRADE EXECUTION BLOCKED: no existing isolated VM/sandbox; owner registration/profile deliberately untouched. Helper tests do not close this gate. |
+| W8 | Deliver EXE, exact limitations and one short owner acceptance checklist | READY: [preview.5 handoff](WINDOWS_PREVIEW5_HANDOFF.md) identifies exact EXE/hash and one five-step PC checklist; implemented, packaged-tested, manual/live and unfinished scope separated. Full Phase 7 remains unaccepted. |
 
 ## External / human gates, not reasons to stop independent local work
 
@@ -35,11 +35,13 @@ unverified features as complete or waive the Phase 7 acceptance requirements.
 
 ## Next exact action
 
-Exact preview.5 source and normal payload are qualified; compress that same
-payload and record its identity, inspect the compiled installer, then hand off.
-Do not repeat already-passed feature campaigns without a changed dependency or
-reproduced failure. Evidence: `E:\Morpheus-builds\p7-preview5\qualification-result.json`
-and `normal-runtime-evidence.json`; both identify application source 50231971.
+Use the exact EXE in the handoff for owner PC acceptance after addressing low C:
+disk space; connect live credentials only through protected settings/secure setup.
+Do not repeat passed campaigns or add features. Fix reproducible acceptance failures;
+retain installer/hardware/live-service and startup-performance gates honestly.
+Evidence: `E:\Morpheus-builds\p7-preview5\candidate-evidence.json`,
+`installer-inspection.json`, `qualification-result.json` and
+`normal-runtime-evidence.json`; all identify application source c8d021dd.
 
 Existing detailed requirements/evidence remain in
 [Phase 7 acceptance](MORPHEUS_PHASE7_ACCEPTANCE.md) and

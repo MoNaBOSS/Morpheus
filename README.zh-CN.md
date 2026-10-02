@@ -5,6 +5,8 @@
 
 <h1 align="center">Morpheus</h1>
 
+Windows preview.5 已准备好供用户进行 PC 验收。准确 EXE、哈希及限制见[当前交接](docs/releases/WINDOWS_PREVIEW5_HANDOFF.md)；这不代表完整 Phase 7 或公开 Premium 已验收。
+
 插件压缩包内嵌依赖也采用锁定版本修复，并单独检查安装包中的实际副本和缓存刷新标识。
 
 当前 Phase 7 源码采用右下角助手和向上展开的输入框。返回问候遵守安静设置和已保存的每日记录；

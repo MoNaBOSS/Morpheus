@@ -677,3 +677,28 @@ full quiet relaunch with preserved provider/history and only one local inference
 restored user bubble; therefore it is not the final handoff despite those passes.
 Preview.4 adds explicit display metadata without rewriting history or stripping
 untagged user content. See I evidence for timings and exact scope.
+
+### Fixed Windows candidate delivered — 2026-10-02
+
+The [fixed completion checklist](WINDOWS_COMPLETION_CHECKLIST.md) now identifies
+the actual **1.2.0-preview.5 / c8d021dd** Windows x64 EXE. It is a Larry/BYOK
+acceptance candidate, not a completed public Premium release. The approved
+bottom-right companion, original agents/tools/history and green M identity remain.
+
+Final source: **3,329 unit passes / two platform skips**. Actual normal package:
+approved welcome/local task, protected local fixture provider, original compact
+ACP reply, renderer reload and full quiet restart with one inference total.
+Controlled outage/recovery, unavailable Premium, no duplicate history, clean
+console/process exit and 312.4s idle pass (0.915% total CPU, zero provider calls).
+Embedded channel dependencies caught by final inspection were backported in both
+packaging paths, not bypassed; all 197 checked loaded modules resolve in the payload.
+Compiled EXE integrity, inventory, selected extracted hashes and patched versions
+match. [Handoff](WINDOWS_PREVIEW5_HANDOFF.md) records the SHA256, unsigned status,
+full local path and one short PC checklist; [I evidence](phase7-i-windows-candidate.md)
+retains failed intermediate candidates and verification boundaries.
+
+**Not closed:** actual installer/upgrade, physical voice/mic/DPI/sleep, 60-minute
+mixed use, live model/research/publication quality and startup-performance targets.
+Authenticated-browser scope and hosted managed ACP/accounting/identity/payments
+remain unfinished; Premium cannot activate. No external accounts are supplied.
+NerdGPT remains deferred. Do not restart discovery or claim full Phase 7 completion.

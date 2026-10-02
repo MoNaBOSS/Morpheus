@@ -5,6 +5,10 @@
 
 <h1 align="center">Morpheus</h1>
 
+Windows preview.5 is ready for owner PC acceptance. Use the exact EXE/hash and
+remaining limits in the [current handoff](docs/releases/WINDOWS_PREVIEW5_HANDOFF.md).
+This is not full Phase 7 or public Premium acceptance.
+
 The current Phase 7 source uses the bottom-right companion with an upward composer.
 Returning greetings respect quiet settings and saved daily history; companion chat
 and neural speech share saved personality preferences. Full Phase 7 acceptance is
