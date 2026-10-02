@@ -45,6 +45,7 @@ export interface MorpheusCompanionSurfaceController {
   expand(window: CompanionWindow): MorpheusCompanionSurfaceStatus;
   reset(window?: CompanionWindow): void;
   status(): MorpheusCompanionSurfaceStatus;
+  reposition(): void;
 }
 
 export function createMorpheusCompanionSurfaceController(options: {
@@ -53,9 +54,10 @@ export function createMorpheusCompanionSurfaceController(options: {
   compactHeight?: number;
 }): MorpheusCompanionSurfaceController {
   const compactWidth = options.compactWidth ?? 440;
-  const compactHeight = options.compactHeight ?? 520;
+  const compactHeight = options.compactHeight ?? 400;
   let activeWindow: CompanionWindow | null = null;
   let saved: SavedWindowState | null = null;
+  let displayChanged = false;
   let current: MorpheusCompanionSurfaceStatus = { mode: 'full' };
 
   const positionCompact = (window: CompanionWindow, bounds: Rectangle): void => {
@@ -73,14 +75,19 @@ export function createMorpheusCompanionSurfaceController(options: {
       return;
     }
     const prior = saved;
+    const area = options.getWorkArea(displayChanged ? window.getBounds() : prior.bounds);
+    const width = Math.min(prior.bounds.width, area.width), height = Math.min(prior.bounds.height, area.height);
+    const restoredBounds = displayChanged ? { width, height,
+      x: Math.max(area.x, Math.min(prior.bounds.x, area.x + area.width - width)),
+      y: Math.max(area.y, Math.min(prior.bounds.y, area.y + area.height - height)) } : prior.bounds;
     // Bounds must be restored while the temporary compact minimum is active.
     window.setAlwaysOnTop(prior.wasAlwaysOnTop);
     window.setResizable(prior.wasResizable);
-    window.setBounds(prior.bounds, false);
-    window.setMinimumSize(prior.minimumSize[0], prior.minimumSize[1]);
+    window.setBounds(restoredBounds, false);
+    window.setMinimumSize(displayChanged ? Math.min(prior.minimumSize[0], area.width) : prior.minimumSize[0], displayChanged ? Math.min(prior.minimumSize[1], area.height) : prior.minimumSize[1]);
     if (prior.wasMaximized) window.maximize();
     if (prior.wasFullScreen) window.setFullScreen(true);
-    if (keepVisible || prior.wasVisible) {
+    if (keepVisible) {
       window.show();
       window.focus();
     } else {
@@ -89,6 +96,7 @@ export function createMorpheusCompanionSurfaceController(options: {
     current = { mode: 'full' };
     activeWindow = null;
     saved = null;
+    displayChanged = false;
   };
 
   return {
@@ -135,8 +143,10 @@ export function createMorpheusCompanionSurfaceController(options: {
       if (window && activeWindow !== window) return;
       activeWindow = null;
       saved = null;
+      displayChanged = false;
       current = { mode: 'full' };
     },
     status: () => ({ ...current }),
+    reposition() { if (activeWindow && saved && current.mode === 'compact' && !activeWindow.isDestroyed()) { displayChanged = true; positionCompact(activeWindow, activeWindow.getBounds()); } },
   };
 }

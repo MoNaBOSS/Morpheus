@@ -70,7 +70,7 @@ describe('Morpheus voice settings', () => {
     render(<MorpheusVoiceSettings />);
     fireEvent.click(await screen.findByTestId('morpheus-voice-preview'));
     await waitFor(() => expect(screen.getByTestId('morpheus-voice-preview-result')).toHaveTextContent('morpheus.voice.check.windows'));
-    expect(mocks.play).toHaveBeenCalledWith('morpheus.voice.check.sample', { neuralAvailable: true });
+    expect(mocks.play).toHaveBeenCalledWith('morpheus.voice.check.sample', { neuralAvailable: true, format: undefined, allowWindowsFallback: false });
     fireEvent.change(screen.getByTestId('morpheus-speech-voice'), { target: { value: 'marin' } });
     await waitFor(() => expect(screen.getByTestId('morpheus-voice-preview-result')).toHaveTextContent('morpheus.voice.check.idle'));
   });

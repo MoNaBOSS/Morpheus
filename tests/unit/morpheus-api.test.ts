@@ -713,6 +713,7 @@ describe('createMorpheusApi', () => {
       'setPermissionProfile',
       'setRuntimePaused',
       'setVoiceSpeaking',
+      'showCompanionSurface',
       'snoozeAttention',
       'submitObjective',
       'synthesizeSpeech',

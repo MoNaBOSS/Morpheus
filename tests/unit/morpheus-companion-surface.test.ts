@@ -37,6 +37,13 @@ function fakeWindow(options: { visible?: boolean; maximized?: boolean } = {}) {
 }
 
 describe('Main-owned compact companion surface', () => {
+  it('repositions compact and fits restored full bounds after a display change', () => {
+    const window = fakeWindow(); let area = { x: 0, y: 0, width: 1920, height: 1040 };
+    const controller = createMorpheusCompanionSurfaceController({ getWorkArea: () => area });
+    controller.show(window, 'tray'); area = { x: -800, y: 0, width: 800, height: 580 }; controller.reposition();
+    const compact = window.snapshot().bounds; expect(compact.x).toBeGreaterThanOrEqual(-800); expect(compact.x + compact.width).toBeLessThanOrEqual(0);
+    controller.expand(window); expect(window.snapshot()).toMatchObject({ bounds: { x: -800, y: 0, width: 800, height: 580 }, minimumSize: [800, 580], visible: true });
+  });
   it('anchors wake chat above the orb on a secondary display and restores full bounds', () => {
     const window = fakeWindow();
     const controller = createMorpheusCompanionSurfaceController({
@@ -44,7 +51,7 @@ describe('Main-owned compact companion surface', () => {
     });
     controller.show(window, 'global-shortcut');
     controller.show(window, 'wake-word');
-    expect(window.snapshot().bounds).toEqual({ x: -460, y: 488, width: 440, height: 520 });
+    expect(window.snapshot().bounds).toEqual({ x: -456, y: 656, width: 440, height: 400 });
     controller.expand(window);
     expect(window.snapshot().bounds).toEqual({ x: 40, y: 50, width: 1280, height: 800 });
   });
@@ -56,7 +63,7 @@ describe('Main-owned compact companion surface', () => {
     });
     controller.show(window, 'wake-word');
     expect(window.snapshot()).toMatchObject({
-      bounds: { x: 240, y: -480, width: 440, height: 360 }, minimumSize: [400, 360],
+      bounds: { x: 244, y: -484, width: 440, height: 368 }, minimumSize: [400, 360],
     });
   });
 
@@ -68,7 +75,7 @@ describe('Main-owned compact companion surface', () => {
 
     expect(controller.show(window, 'global-shortcut')).toEqual({ mode: 'compact', trigger: 'global-shortcut' });
     expect(window.snapshot()).toMatchObject({
-      bounds: { width: 440, height: 520 }, minimumSize: [400, 360],
+      bounds: { width: 440, height: 400 }, minimumSize: [400, 360],
       visible: true, alwaysOnTop: true, resizable: false,
     });
 
@@ -105,8 +112,8 @@ describe('bottom-right presence placement', () => {
     controller.show(window, trigger);
     const compact = window.snapshot().bounds;
     const orb = wakeOrbBounds(area);
-    expect(orb.x + orb.width).toBe(area.x + area.width - 20);
-    expect(orb.y + orb.height).toBe(area.y + area.height - 20);
+    expect(orb.x + orb.width).toBe(area.x + area.width - 16);
+    expect(orb.y + orb.height).toBe(area.y + area.height - 16);
     expect(compact.x + compact.width).toBe(orb.x + orb.width);
     expect(compact.y + compact.height).toBeLessThan(orb.y);
   });

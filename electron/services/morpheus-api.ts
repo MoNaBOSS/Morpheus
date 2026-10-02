@@ -293,6 +293,7 @@ export type CreateMorpheusApiOptions = {
   proactive: MorpheusProactiveService;
   systems: MorpheusSystemService;
   companionSurface: {
+    show?(): MorpheusCompanionSurfaceStatus;
     status(): MorpheusCompanionSurfaceStatus;
     dismiss(): MorpheusCompanionSurfaceStatus;
     expand(): MorpheusCompanionSurfaceStatus;
@@ -1024,8 +1025,10 @@ export function validateVoiceSettingsPatch(payload: unknown): MorpheusVoiceSetti
     'enabled', 'providerAccountId', 'modelId', 'speakResponses', 'autoSubmitTranscript',
     'speechProviderAccountId', 'speechModelId', 'speechVoice',
     'ambientEnabled', 'localWakeEnabled', 'wakePhrase', 'ambientSilenceMs', 'ambientMaxUtteranceMs', 'bargeIn',
-    'handsFreeFollowUp',
+    'handsFreeFollowUp', 'engine', 'inputDeviceId',
   ], 'updateVoiceSettings payload');
+  if (record.engine !== undefined && !['local', 'provider'].includes(record.engine as string)) throw new MorpheusValidationError('invalid voice engine');
+  if (record.inputDeviceId !== undefined && (typeof record.inputDeviceId !== 'string' || record.inputDeviceId.length > 256)) throw new MorpheusValidationError('invalid microphone device');
   for (const key of ['enabled', 'speakResponses', 'autoSubmitTranscript', 'ambientEnabled', 'localWakeEnabled', 'bargeIn', 'handsFreeFollowUp'] as const) {
     if (record[key] !== undefined && typeof record[key] !== 'boolean') {
       throw new MorpheusValidationError(`${key} must be a boolean`);
@@ -1705,6 +1708,7 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     companionSurfaceStatus: () => companionSurface.status(),
     dismissCompanionSurface: () => companionSurface.dismiss(),
     expandCompanionSurface: () => companionSurface.expand(),
+    showCompanionSurface: () => { if (!companionSurface.show) throw new Error('Native compact conversation is unavailable.'); return companionSurface.show(); },
     voiceStatus: () => voice.status(),
     updateVoiceSettings: (payload) => voice.updateSettings(validateVoiceSettingsPatch(payload)),
     transcribeAudio: (payload) => voice.transcribe(validateTranscribeAudioPayload(payload)),

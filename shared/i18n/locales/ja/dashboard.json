@@ -1024,6 +1024,68 @@
       "active": "画面をキャプチャ中",
       "recent": "画面をキャプチャしました",
       "savedTo": "保存先"
+    },
+    "experience": {
+      "history": "会話",
+      "newConversation": "新しい会話",
+      "conversation": "会話",
+      "back": "会話に戻る",
+      "advancedSettings": "詳細設定と権限",
+      "advancedChat": "フルワークスペース · 添付、スキル、エージェント",
+      "settings": {
+        "connections": "接続",
+        "voice": "音声",
+        "personality": "個性",
+        "account": "アカウントとプラン",
+        "advanced": "詳細",
+        "connectionsBody": "タスクモデルの API を安全に接続します。既存の接続は保持されます。Basic はお客様の API を使用し、ホスト型プランはまだ利用できません。モデルに送信する前に接続をテストしてください。",
+        "voiceBody": "マイクを設定し、Morpheus の声を試します。標準の英語音声はこの PC で動作し、音声 API キーは不要です。",
+        "personalityBody": "相棒の個性を設定します。会話、音声、タスクモデルで設定を共有します。",
+        "accountBody": "Basic は自分のタスクモデル API を使用します。Premium と Unrestricted はホスト型サービスが必要です。価格と決済は未提供で、NerdGPT は計画中です。",
+        "advancedBody": "既存のツールをすべて利用できます。フルワークスペースには添付、スキル、エージェント、履歴管理、技術設定があります。"
+      },
+      "voice": {
+        "included": "標準の英語音声",
+        "localBody": "Whisper の認識と Kokoro の音声合成をこの PC で実行します。音声用の契約や API キーは不要です。処理中は CPU とメモリを使用し、短文ほど速く応答します。タスクモデルは設定済みの接続を使用します。",
+        "microphone": "マイクを有効化 · オフで全録音を停止",
+        "device": "マイク",
+        "defaultDevice": "Windows の既定マイク",
+        "unnamedDevice": "マイク {{number}}",
+        "refresh": "更新",
+        "permission": "入力テストでマイクを許可し、更新してデバイス名を表示します。拒否された場合は Windows のプライバシー設定でデスクトップアプリのマイクを許可してください。",
+        "sound": "声",
+        "warm": "温かい · Michael",
+        "bright": "明るい · Heart",
+        "wake": "「Morpheus」を聞き取る",
+        "wakeBody": "任意のローカル起動検出には Windows の既定マイクを使います。非表示でも有効な起動検出は続き、手動ミュートで停止します。",
+        "advanced": "音声とプロバイダーの詳細設定",
+        "engine": "音声サービス",
+        "local": "標準のローカル音声",
+        "provider": "設定済みプロバイダー · 課金の可能性あり",
+        "repair": "音声設定を修復",
+        "checkLocal": "実際のローカル音声を再生するか、コマンドを送信せずにマイクをテストします。AI 音声はこの PC で処理されます。",
+        "providerBody": "詳細設定で {{provider}} を選択しました。音声はそのサービスへ送信され、課金される場合があります。以下で標準のローカル音声に戻せます。"
+      },
+      "setup": {
+        "skip": "今はスキップ",
+        "configured": "既存のタスクモデル設定を検出しました。接続テストでサービスへのアクセスを確認できます。",
+        "unconfigured": "アプリとサイトはローカルで開けます。モデルとの会話、調査、サイト生成にはタスクモデルの接続が必要です。設定からいつでも続けられます。"
+      },
+      "plans": {
+        "basic": "Basic",
+        "premium": "Premium",
+        "unrestricted": "Unrestricted",
+        "available": "自分の API で利用可能",
+        "planned": "計画中 · サービス未提供",
+        "basicBody": "自分のタスクモデル API、標準のローカル英語音声、既存のローカルツール。",
+        "premiumBody": "高品質のホスト型モデルと音声サポート。運営資金とアカウントサービスが必要です。",
+        "unrestrictedBody": "Premium の機能と将来の NerdGPT による辛口ジョーク、罵り、ローストの個性。NerdGPT は未接続です。"
+      },
+      "personality": {
+        "gentle": "一歩ずつ進めましょう。面倒な部分は任せてください。",
+        "cheeky": "タブが海賊団を結成していますね。整列させましょう。",
+        "unfiltered": "辛口のユーモアは好みの設定です。NerdGPT のローストは計画中です。"
+      }
     }
   }
 }

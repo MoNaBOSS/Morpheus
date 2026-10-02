@@ -51,6 +51,19 @@ vi.mock('electron', async () => {
 
 describe.skipIf(process.platform !== 'win32')('native orb visibility across delayed loading', () => {
   beforeEach(() => { mock.windows.length = 0; });
+  it('fades idle presence after ten seconds and holds during real speech', () => {
+    vi.useFakeTimers(); const orb = new MorpheusWakeOrb(vi.fn());
+    try {
+      orb.show(); const window = mock.windows[0]; window.finishLoad();
+      vi.advanceTimersByTime(9999); expect(window.hide).not.toHaveBeenCalled();
+      orb.updatePresence({ v: 4, state: 'speaking', ambientEnabled: false });
+      vi.advanceTimersByTime(30_000); expect(window.hide).not.toHaveBeenCalled();
+      orb.updatePresence({ v: 4, state: 'asleep', ambientEnabled: false });
+      vi.advanceTimersByTime(10_000); expect(window.hide).not.toHaveBeenCalled();
+      expect(window.webContents.executeJavaScript.mock.calls.some(([script]) => script.includes('dataset.visible = "false"'))).toBe(true);
+      vi.advanceTimersByTime(180); expect(window.hide).toHaveBeenCalledOnce();
+    } finally { orb.dispose(); vi.useRealTimers(); }
+  });
 
   it('honours hide while loading and permits a later explicit wake', () => {
     const orb = new MorpheusWakeOrb(vi.fn());
@@ -188,7 +201,8 @@ describe.skipIf(process.platform !== 'win32')('native orb visibility across dela
       expect(window.focus).not.toHaveBeenCalled();
       expect(window.show).not.toHaveBeenCalled();
       vi.advanceTimersByTime(45_000);
-      expect(window.getBounds().width).toBe(100);
+      expect(window.getBounds().width).toBe(56);
+      orb.show();
       orb.showCaption('A quiet check-in');
       orb.present('hover');
       expect(orb.isAvailableForSocial()).toBe(false);
@@ -196,10 +210,10 @@ describe.skipIf(process.platform !== 'win32')('native orb visibility across dela
       orb.present('collapse');
       orb.showCaption('Another check-in');
       orb.updatePresence({ v: 4, state: 'listening', ambientEnabled: true });
-      expect(window.getBounds().width).toBe(100);
+      expect(window.getBounds().width).toBe(56);
       expect(orb.isAvailableForSocial()).toBe(false);
       orb.showCaption('Must not interrupt');
-      expect(window.getBounds().width).toBe(100);
+      expect(window.getBounds().width).toBe(56);
     } finally { orb.dispose(); vi.useRealTimers(); }
   });
 

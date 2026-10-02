@@ -1,0 +1,45 @@
+import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { createMorpheusLocalVoice } from '../../electron/services/morpheus/voice/local-voice';
+
+const root = process.env.MORPHEUS_LOCAL_VOICE_TEST_ROOT;
+function pcm16k(source: Buffer): Buffer {
+  let dataOffset = 12; let rate = 24000; let samples = Buffer.alloc(0);
+  while (dataOffset + 8 < source.length) {
+    const name = source.toString('ascii', dataOffset, dataOffset + 4); const size = source.readUInt32LE(dataOffset + 4);
+    if (name === 'fmt ') rate = source.readUInt32LE(dataOffset + 12);
+    if (name === 'data') { samples = source.subarray(dataOffset + 8, dataOffset + 8 + size); break; }
+    dataOffset += 8 + size + size % 2;
+  }
+  const count = Math.floor(samples.length / 2 * 16000 / rate); const wav = Buffer.alloc(44 + count * 2);
+  wav.write('RIFF'); wav.writeUInt32LE(wav.length - 8, 4); wav.write('WAVEfmt ', 8); wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22); wav.writeUInt32LE(16000, 24); wav.writeUInt32LE(32000, 28);
+  wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34); wav.write('data', 36); wav.writeUInt32LE(count * 2, 40);
+  for (let i = 0; i < count; i++) wav.writeInt16LE(samples.readInt16LE(Math.floor(i * rate / 16000) * 2), 44 + i * 2);
+  return wav;
+}
+
+describe.skipIf(process.platform !== 'win32' || !root)('real included voice engine', () => {
+  it('synthesizes and recognizes a real command without a provider and removes audio after success', async () => {
+    const temporary = await mkdtemp(join(tmpdir(), 'local-voice-'));
+    try {
+      const voice = createMorpheusLocalVoice(root!, temporary); expect(voice.ready()).toBe(true);
+      const audio = await voice.synthesize('Open YouTube.', 'cedar', new AbortController().signal);
+      const transcript = await voice.transcribe(pcm16k(audio), new AbortController().signal);
+      expect(transcript.toLowerCase()).toMatch(/^open youtube[.!]?$/);
+      expect(await readdir(temporary)).toEqual([]);
+    } finally { await rm(temporary, { recursive: true, force: true }); }
+  }, 45_000);
+  it('cancels the real speech process and removes its temporary directory', async () => {
+    const temporary = await mkdtemp(join(tmpdir(), 'local-voice-cancel-'));
+    try {
+      const voice = createMorpheusLocalVoice(root!, temporary); const controller = new AbortController();
+      const result = voice.synthesize('This deliberately long sample is interrupted before it can finish speaking.', 'cedar', controller.signal);
+      const cancel = setTimeout(() => controller.abort(), 100);
+      await expect(result).rejects.toMatchObject({ name: 'AbortError' }); clearTimeout(cancel);
+      expect(await readdir(temporary)).toEqual([]);
+    } finally { await rm(temporary, { recursive: true, force: true }); }
+  });
+});

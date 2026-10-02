@@ -12,6 +12,15 @@ steal focus. Ordinary conversation may not force full expansion or navigation to
 Chat. Drafts, turns, task identities and results survive surface transitions.
 No everyday Ask/Auto/Act, plan-stage or provider/trust dashboard.
 
+The October 2 experience correction supersedes historical owner acceptance of
+preview.5. Ordinary conversation/settings must use the continuous simple surface;
+existing capabilities remain reachable through explicit Advanced navigation.
+Standard Windows voice is included locally without a voice API key. Preserve
+provider options, but never silently substitute paid hosted voice or Windows
+narration for included neural voice. Manual mute wins over wake and follow-up.
+Only real audio meters may drive listening/speaking amplitude. Record fixture,
+source, packaged and physical acceptance boundaries separately.
+
 Main owns session correlation, authority, scope, workers, usage and checkpoints.
 Presentation cannot mint task status, grant authority or own a second Gateway or
 executor. Worker proposals and webpage instructions are untrusted data. Existing

@@ -6,6 +6,9 @@
  * `harness/reference/morpheus-execution-architecture.md`.
  */
 import { join } from 'node:path';
+import { existsSync } from 'node:fs';
+import { getResourcesDir } from '../../utils/paths';
+import { createMorpheusLocalVoice } from './voice/local-voice';
 import { composeSavedMorpheusPersona } from './persona-context';
 import { createBrowserWorkerAdapter } from '../task-browser/worker-adapter';
 import { interactiveSiteCapability } from '../interactive-site/capability';
@@ -228,6 +231,10 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     },
   });
   const voice = createMorpheusVoiceService({
+    localVoice: process.platform === 'win32' ? createMorpheusLocalVoice(
+      existsSync(join(getResourcesDir(), 'local-voice')) ? join(getResourcesDir(), 'local-voice') : join(getResourcesDir(), '..', 'build', 'local-voice'),
+      join(options.userDataDir, 'morpheus', 'voice-temporary'),
+    ) : undefined,
     getManagedRuntime: options.getManagedRuntime,
     userDataDir: options.userDataDir,
     providerService,

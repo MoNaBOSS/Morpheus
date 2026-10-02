@@ -1,102 +1,68 @@
 # Current Windows experience completion checklist
 
-Updated 2026-10-02, Asia/Dhaka. **Preview.5 rejected by owner; product not accepted.**
-Single current checklist. Requirements and evidence are in the reconciled
-[experience specification](../design/MORPHEUS_EXPERIENCE_REVIEW.md). This replaces
-the previous "fixed release" queue, not its historical evidence. Preserve the
-existing backend, identity, capabilities, profiles, history and credentials.
+Updated 2026-10-02, Asia/Dhaka. Preview.6 implementation; **owner acceptance remains open**.
+This is the single current checklist. Requirements and baseline evidence live in
+[the experience specification](../design/MORPHEUS_EXPERIENCE_REVIEW.md). Previous
+checklist detail is recoverable at `3bcad683`; historical preview.5 evidence is
+retained in [its handoff](WINDOWS_PREVIEW5_HANDOFF.md).
 
-Status: `VERIFIED` means evidence exists for the stated boundary only;
-`IMPLEMENTED` means source exists; `SIMULATED`, `OPEN`, `REJECTED`, `BLOCKED` and
-`AWAITING OWNER` cannot be counted as production acceptance. No enormous completion
-phase. Small coherent components, relevant tests, owner review before proceeding.
+`VERIFIED` applies only to the stated test boundary. `IMPLEMENTED` is source,
+`SIMULATED` is fixture behavior, `OPEN` is untested or unaccepted, and `BLOCKED`
+requires external inputs. Automated counts never imply physical PC acceptance.
+The owner authorized a combined final review: complete the work and simplify
+without reducing capabilities. Separate component review pauses are superseded.
 
-## Checkpoint A — baseline
+## A — preserved baseline
 
-| Item | Current result |
+| Item | Result |
 | --- | --- |
-| Current directory and repositories | VERIFIED: chat directory is projectless; reused clean detached phase7 worktree at full `4a9f25e9e2a715572cd0a75c9205b9de681f82f4`; original checkout clean at `fa988f06`, branch behind 31 at inspection. |
-| Origin / branch / safe fetch | VERIFIED: Morpheus origin; fetch completed; authorized remote `codex/morpheus-phase6-managed-layer` matched baseline. No reset, stash, clean, divergent checkout overwrite or force push. |
-| Installed build identity | VERIFIED: Program Files preview.5 executable, app.asar, motion CSS and OpenClaw manifest match delivered candidate hashes; application source `c8d021dd`, later baseline commits docs only. |
-| Owner rejection | RECORDED: spacing, motion, taskbar, continuity/navigation, voice, setup, discoverability and plan presentation remain unaccepted. Earlier automated counts do not rebut this. |
-| Native inspection | VERIFIED scoped inspection: orb/upward composer -> compact -> expansion -> Settings. Large empty layout, generic voice error/readiness mismatch, hidden conversation on expansion and inherited technical sidebar observed. |
-| Source root causes and reuse map | VERIFIED scoped source review in specification. Full history hidden by task-only empty-state CSS; Settings chooses inherited Sidebar. Existing Main session/ACP, secure provider, motion, Core and voice adapters remain reusable. |
-| Taskbar / scaling / hardware voice | OPEN: owner's overlap report remains; this inspection did not verify actual screen work area/taskbar edges, DPI changes, recording, playback, interruption or device recovery. |
-| Storage / builds | VERIFIED: C: ~9.5 GiB free, E: ~156 GiB at baseline. No build/install/download ran. Future artifacts/intermediate profiles on E:; check storage again before each build. |
-| Specification and checklist | UPDATED in place; historical plans/handoff point here. Application code, dependencies and profiles not edited. |
-| A acceptance / next slice | AWAITING OWNER: review baseline and proposed B1 scope below. No B implementation yet. |
+| Identity and safe fetch | VERIFIED: Morpheus origin and authorized branch. Prior worktree clean at `4a9f25e9`, documentation baseline `3bcad683`; original checkout clean at `fa988f06`, behind 31 at inspection. No reset, stash, clean, forced update or lost work. |
+| Installed preview.5 | VERIFIED payload identity: Program Files EXE/app.asar/orb/runtime matched delivered `c8d021dd` candidate. Owner rejection confirmed by native inspection. |
+| Real root causes | VERIFIED: task-only empty CSS hid conversation, ordinary Settings/Chat exposed inherited navigation, 100-DIP orb, no inactivity fade, provider/key detection presented as voice readiness. |
+| Isolation/storage | Separate `E:\Morpheus-builds\experience-preview6\source` from `3bcad683`. Original source, prior worktree and installed app untouched. Credentials/profiles never copied into evidence. C/E checked before builds; large artifacts on E. |
 
-## Checkpoint B — interaction design, separately accepted slices
+## B — connected experience
 
-| Slice | Smallest coherent review / required evidence | Status |
-| --- | --- | --- |
-| B1: orb and compact conversation | Existing M/orb, smaller target, intentional upward composer and readable thread; real rendered motion, expand/back history/draft continuity, hide/reopen and reduced motion. Short motion recording; synthetic task/audio states explicitly labeled. | PROPOSED / AWAITING OWNER |
-| B2: introduction and Connections | Brief skippable arrival, name, existing-config detection, BYOK/hosted distinction, obvious secure setup and skip consequences in the same interface. Real key entry/tests wait for C; simulations labeled. | OPEN; after B1 acceptance |
-| B3: voice and personality controls | Connected mic selection/input-test/sample controls, brief personality examples, specific repair-and-return states. Real voice samples identify engine and evaluation conditions; no fabricated neural previews. | OPEN; separate owner review |
-| B4: contextual settings and expansion | Connections, Voice, Personality, Account & Plan, Advanced within approved experience. Expanded results give space without technical-dashboard navigation; all surfaces share state. | OPEN; separate owner review |
+| Component | Implementation / evidence boundary |
+| --- | --- |
+| Orb and compact | IMPLEMENTED: preserved artwork, 56-DIP native orb, 16-DIP work-area gap, upward composer, 440x400 compact, active state motion and audio-driven light. Native E2E verified actual current work-area geometry and compact/full transitions. Other physical taskbar edges/DPI/display changes OPEN. |
+| Continuous conversation | VERIFIED in native fixture journeys: original Main/ACP session and draft persist compact -> full -> back, reload and four-language history. The CSS hiding ordinary replies is removed. Model replies are SIMULATED by isolated fixtures. |
+| First launch | VERIFIED native journey: name -> secure Connections -> included Voice controls -> personality -> first command; skip/persistence/restart. API testing UI reuses existing protected owner; live account test OPEN. |
+| Contextual Settings | VERIFIED native UI: Connections, Voice, Personality, Account & Plan, Advanced. Ordinary conversation/history stays simple; full technical Chat/settings/tools remain available explicitly under Advanced. |
+| Appearance / motion taste | Short native recordings and real voice samples prepared for combined review. Owner visual/voice acceptance OPEN. Reduced motion and hidden motion ownership retained. |
 
-Proposed B1 defaults: approximately 48-56 DIP visible orb / >=44 DIP target,
-16-DIP work-area inset, ~10-second fade after completed idle interaction; keep
-visible for listening/speaking/questions and intentional typing/reading. Work
-continues hidden; notify under preferences; manual mute always wins. These are
-**proposals**, not settled owner choices or verified native behavior.
+## C — real first journey
 
-## Checkpoint C — make the first journey real
+| Item | Result |
+| --- | --- |
+| API setup | Protected provider implementation preserved, configured accounts detected, secure form and connection testing exposed. No keys requested in chat; no live paid-provider request made in qualification. |
+| Included speech | IMPLEMENTED and real engine VERIFIED: pinned static sherpa-onnx, Whisper tiny.en int8, Kokoro v1.0 int8. Default English Michael / alternate Heart. No voice key or hosted account. Actual synthesis, exact generated-command transcription and cancellation cleanup passed. |
+| Mic / audible output | Device selection, real input test, output sample and specific repair guidance implemented. Physical microphone accuracy, naturalness, speaker echo, same-breath wake and spoken execution OPEN owner gates. Samples are real neural audio, not Windows narrator or simulated sound. |
+| Persistence / routing | Existing personality/context model owners retained. Native tests verify profile changes, restart and draft/history; normal packaged runtime qualification pending below. |
+| Disappear / wake / mute | Ten-second completed-idle fade; busy audio/question states hold, hidden tasks continue. Input mute wins; local wake opt-in uses Windows default mic. Tray/shortcut routes retained. Native timer/work-area tests pass; physical wake/lock/sleep OPEN. |
 
-| Slice | Required real behavior | Status |
-| --- | --- | --- |
-| C1: task API | Preserve existing accounts; secure add/edit/test and understandable error; Basic usable without hosted account. Secret never enters chat/history/renderer diagnostics. | Existing foundation IMPLEMENTED; approved flow OPEN |
-| C2: included standard voice | Evaluate local neural speech with actual natural English samples/latency/resource/licensing evidence; evaluate funded hosted route when service inputs exist. No separate user voice key. Explain privacy/quality/funding tradeoffs. | OPEN; current configured API adapters insufficient |
-| C3: mic and command | Select/test actual input; specific permission/device repair; spoken simple command executes directly once and returns factual result plus audible reply. | OPEN physical acceptance |
-| C4: conversation and persistence | Interrupt speech, typed follow-up, saved name/personality/voice/provider, same history/draft/task across surfaces and restart. Fix task-only empty-state regression. | Source owners IMPLEMENTED; observed continuity REJECTED |
-| C5: presence/wake lifecycle | Fade/reopen, background notifications, tray, shortcut, opt-in wake, manual mute, taskbar/DPI/display change/lock/sleep; hidden loops stop. | OPEN |
+## D — retained product
 
-Give the owner exactly one short PC instruction at each physical test, record its
-actual outcome, and pause for the answer. No bundle of mic/DPI/live workflow tests
-at the first component review. No paid calls without a bounded approved test.
+| Item | Result |
+| --- | --- |
+| Capabilities/results | Existing action registry, Objective Core, browser, research citations, website create/revise/preview/publication, artifacts and tasks preserved. Full technical tools/agents/channels/schedules/skills remain accessible. No speculative income claims or guaranteed autonomous success. Live provider/research/publication acceptance OPEN. |
+| Recovery | Voice failure -> Voice settings -> same conversation/draft. Existing task cancellation, clarification and recovery owners retained. Contextual navigation verified; physical mic unplug/permission repair OPEN. |
+| Plans | Basic BYOK + included local voice available. Premium hosted and future Unrestricted/NerdGPT presented separately as unavailable/planned. Account entitlement, personality and actual service availability remain distinct. No invented prices, subscriptions or checkout. |
+| External blockers | Pricing/business country, server/domain/payment accounts, Stripe/crypto setup and hosted funding/operations absent. NerdGPT API deferred. They block their own service gates, not local BYOK or included voice. |
 
-## Checkpoint D — remaining product connection
+## E — release evidence
 
-| Slice | Required behavior | Status |
-| --- | --- | --- |
-| D1: capabilities/results | Preserve app/browser/tools/agents/tasks/history/providers; connect real task/results presentation, cited research, supported website create/revise/preview/publication and explicit status labels. | Existing source/fixtures; connected acceptance OPEN |
-| D2: recovery and Advanced | Specific error -> repair -> return; cancellation and partial outcomes; advanced inherited features reachable without ordinary exposure. | OPEN |
-| D3: Account & Plan | Basic/Premium/Unrestricted clearly presented; account entitlement, personality and availability separate. No invented price, active subscription, live checkout or NerdGPT integration. | Guarded managed foundation; simple presentation OPEN |
+| Gate | Result |
+| --- | --- |
+| Source regression | VERIFIED: 324 unit files, 3,336 passed and two skipped. Real bundled voice tests included. Typecheck passed; lint zero errors / 12 existing warnings. Comms replay/compare and harness CI/task validation/dry-run passed. Native journeys: 12 initial passes, one old overlay expectation corrected for intentional Windows compact behavior and targeted retest passed. |
+| Fresh package | NEXT: produce fresh preview.6 Windows payload with pinned voice/notices, then run normal isolated startup, local execution, secure loopback provider, conversation/persistence and voice playback/cancellation checks. |
+| Identified EXE | NEXT: compile NSIS from qualified payload, inspect exact artifact/version/hashes and deliver. Unsigned; no owned update feed. |
+| Installed upgrade / hardware | OPEN: installer execution, upgrade/uninstall with owner profile, physical mic/echo/interruption, DPI/taskbar positions/display removal/sleep, live paid provider/publication and long mixed-use session. Do not label source or fixtures as installed acceptance. |
 
-External service decisions: prices, business country, server/domain, payment
-accounts, Stripe/crypto setup, hosted funding/operations. NerdGPT integration is
-deferred. These block their own live gates, not local UI/BYOK or local voice work.
+## Current record and exact next step
 
-## Checkpoint E — actual release acceptance
-
-| Gate | Required evidence | Status |
-| --- | --- | --- |
-| E1: source/package | Relevant regression on final approved changes; candidate source/version/lock/runtime/EXE/hash/notices/signing identified. Exact package, not stale source captures. | Historical preview.5 only; new candidate OPEN |
-| E2: installed Windows | Setup, input/output/interruption, real audio-driven animation, scaling/taskbar/display changes, navigation continuity, task execution, persisted settings, tray/wake/mute, errors/recovery and mixed-use stability. Retain profiles and credentials. | OPEN / experience REJECTED |
-| E3: delivery | Exact EXE path/version/build identity; implemented/tested scope, limits/external blockers and one short final PC acceptance checklist. | OPEN; no new EXE at A |
-| Public distribution / hosted | Signing/update ownership and isolated install/upgrade evidence; managed ACP/full usage/identity/billing/operations if offered. | BLOCKED on external setup and unfinished implementation |
-
-Historical installer:
-`E:\Morpheus-builds\p7-preview5\candidate\release\Morpheus-1.2.0-preview.5-win-x64.exe`.
-Version `1.2.0-preview.5`, app source `c8d021dd`, SHA256
-`cf82b227b90299bc1be1cf01bacfe7421be267449f37cf7c9cfd90e98b60b9c4`.
-Unsigned, no owned update feed. Installed-payload identity was checked; that is
-not retrospective certification of installation/upgrade/uninstall behavior.
-
-Historical [preview.5 handoff](WINDOWS_PREVIEW5_HANDOFF.md),
-[H/I evidence](phase7-i-windows-candidate.md) and
-[acceptance ledger](MORPHEUS_PHASE7_ACCEPTANCE.md) retain bounded synthetic/package
-results. No new full unit, build, E2E, hardware or live-provider campaign ran at A.
-
-## Exact next step and checkpoint record
-
-**Next:** owner reviews A and B1 proposal. On acceptance, build only B1 in an
-isolated review harness using application-intended components. Show the smaller
-orb/upward compact exchange, motion recording, expand/back continuity and proposed
-fade; label all simulated audio/tasks. Pause for appearance/transition approval
-before broad integration or the next component. Do not install over the owner app.
-
-For each accepted slice update its row here and the current record in the spec:
-source and dirty state; change; actual tests/evidence; simulated/unverified parts;
-paid calls and bounded cost without secrets; owner result; exact next step.
-Do not repeatedly retest or redesign approved work without a demonstrated regression.
+All implementation stays in the E: worktree; no owner installation/profile is replaced.
+Qualify the fresh packaged preview.6 using an isolated normal runtime, record actual
+UI transitions plus independently generated voice samples, then deliver the exact
+EXE, package identity, limitations and one short combined PC acceptance checklist.
+Update this E record with actual outcomes before handoff. No separate competing plan.

@@ -13,7 +13,8 @@ test.describe('Morpheus Chat presence', () => {
       await page.setViewportSize({ width: 1280, height: 800 });
       await page.reload();
       await expect(page.getByTestId('command-center-page')).toBeVisible();
-      await page.getByTestId('sidebar-nav-chat').click();
+      await page.getByTestId('signal-nav-advanced').click();
+      await page.getByTestId('sidebar-nav-advanced-chat').click();
 
       const presence = page.getByTestId('morpheus-chat-presence');
       const signal = presence.getByTestId('morpheus-signal');

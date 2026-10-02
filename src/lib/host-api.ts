@@ -560,6 +560,7 @@ export const hostApi = {
     companionSurfaceStatus: () => invokeHost('morpheus', 'companionSurfaceStatus'),
     dismissCompanionSurface: () => invokeHost('morpheus', 'dismissCompanionSurface'),
     expandCompanionSurface: () => invokeHost('morpheus', 'expandCompanionSurface'),
+    showCompanionSurface: () => invokeHost('morpheus', 'showCompanionSurface'),
     voiceStatus: () => invokeHost('morpheus', 'voiceStatus'),
     updateVoiceSettings: (payload: MorpheusVoiceSettingsPatch) => (
       invokeHost('morpheus', 'updateVoiceSettings', payload)

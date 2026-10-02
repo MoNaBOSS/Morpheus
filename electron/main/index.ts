@@ -225,8 +225,8 @@ function createWindow(): BrowserWindow {
     title: 'Morpheus',
     width: 1280,
     height: 800,
-    minWidth: 960,
-    minHeight: 600,
+    minWidth: isWindows ? 640 : 960,
+    minHeight: isWindows ? 460 : 600,
     icon: getAppIcon(),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -545,6 +545,12 @@ async function initialize(): Promise<void> {
     webBrowserGuestRegistry,
     {
       status: () => companionSurfaceController.status(),
+      show: () => {
+        clearWindowTrayHandoff(window); wakeOrb.hide();
+        const status = companionSurfaceController.show(window, 'global-shortcut');
+        window.webContents.send(HOST_EVENT_CHANNELS.morpheus.quickCommand, { trigger: 'global-shortcut' });
+        return status;
+      },
       dismiss: () => companionSurfaceController.dismiss(window),
       expand: () => companionSurfaceController.expand(window),
       presence: (presence) => wakeOrb.updatePresence(presence),
@@ -872,9 +878,20 @@ if (gotTheLock) {
   // Application lifecycle
   app.whenReady().then(async () => {
     if (process.platform === 'win32') {
-      screen.on('display-metrics-changed', () => wakeOrb.reposition());
-      screen.on('display-added', () => wakeOrb.reposition());
-      screen.on('display-removed', () => wakeOrb.reposition());
+      const repositionPresence = () => {
+        wakeOrb.reposition(); companionSurfaceController.reposition();
+        const window = mainWindow;
+        if (!window || window.isDestroyed() || !window.isVisible() || window.isMaximized() || window.isFullScreen() || companionSurfaceController.status().mode !== 'full') return;
+        const bounds = window.getBounds(); const area = screen.getDisplayMatching(bounds).workArea;
+        const width = Math.min(bounds.width, area.width), height = Math.min(bounds.height, area.height);
+        const x = Math.max(area.x, Math.min(bounds.x, area.x + area.width - width));
+        const y = Math.max(area.y, Math.min(bounds.y, area.y + area.height - height));
+        window.setMinimumSize(Math.min(640, area.width), Math.min(460, area.height));
+        if (x !== bounds.x || y !== bounds.y || width !== bounds.width || height !== bounds.height) window.setBounds({ x, y, width, height });
+      };
+      screen.on('display-metrics-changed', repositionPresence);
+      screen.on('display-added', repositionPresence);
+      screen.on('display-removed', repositionPresence);
     }
     try {
       await initialize();

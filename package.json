@@ -1,6 +1,6 @@
 {
   "name": "morpheus",
-  "version": "1.2.0-preview.5",
+  "version": "1.2.0-preview.6",
   "pnpm": {
     "onlyBuiltDependencies": [
       "@discordjs/opus",
@@ -113,7 +113,7 @@
     "package": "node scripts/generate-ext-bridge.mjs && pnpm run build:vite && zx scripts/bundle-openclaw.mjs && zx scripts/bundle-openclaw-plugins.mjs && zx scripts/bundle-preinstalled-skills.mjs",
     "package:mac": "pnpm run package && node scripts/run-electron-builder.mjs --mac --publish never",
     "package:mac:local": "SKIP_PREINSTALLED_SKILLS=1 pnpm run package && node scripts/run-electron-builder.mjs --mac --publish never",
-    "package:win": "pnpm run prep:win-binaries && pnpm run package && node scripts/patch-nsis-win.mjs && node scripts/run-electron-builder.mjs --win --publish never",
+    "package:win": "pnpm run voice:prepare && pnpm run prep:win-binaries && pnpm run package && node scripts/patch-nsis-win.mjs && node scripts/run-electron-builder.mjs --win --publish never",
     "package:linux": "pnpm run package && node scripts/run-electron-builder.mjs --linux --publish never",
     "release": "pnpm run uv:download && pnpm run agent-browser:download && pnpm run package && node scripts/run-electron-builder.mjs --publish always",
     "preversion": "node scripts/pre-version-fetch-tags.mjs",
@@ -125,7 +125,8 @@
     "version:prerelease-alpha": "pnpm version prerelease --preid=alpha",
     "version:prerelease-beta": "pnpm version prerelease --preid=beta",
     "release:validate": "node scripts/assert-tag-matches-package.mjs",
-    "postversion": "node scripts/post-version-push.mjs"
+    "postversion": "node scripts/post-version-push.mjs",
+    "voice:prepare": "node scripts/prepare-local-voice.mjs"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "1.1.0",

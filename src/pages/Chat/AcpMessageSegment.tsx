@@ -71,7 +71,7 @@ function normalizeLatexDelimiters(input: string): string {
   return parts.join('');
 }
 
-function AcpMarkdownPart({ text, isAnimating = false }: { text: string; isAnimating?: boolean }) {
+export function AcpMarkdownPart({ text, isAnimating = false }: { text: string; isAnimating?: boolean }) {
   const { t } = useTranslation('common');
   const containerRef = useRef<HTMLDivElement>(null);
   const translations = useMemo(() => ({

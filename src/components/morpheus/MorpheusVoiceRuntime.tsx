@@ -11,7 +11,8 @@ import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { useMorpheusArrivalStore } from '@/stores/morpheus-arrival';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
-import { MorpheusSignal } from './signal/MorpheusSignal';
+import { MorpheusFluidOrb } from './MorpheusFluidOrb';
+import { hostApi } from '@/lib/host-api';
 import { resolveMorpheusSignalState } from './signal/signal-state';
 
 export function MorpheusVoiceRuntime() {
@@ -135,7 +136,7 @@ export function MorpheusVoiceRuntime() {
       className="pointer-events-auto fixed left-1/2 top-11 z-[100100] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-xl border border-[hsl(var(--morpheus-accent-dim))]/35 bg-[linear-gradient(135deg,hsl(var(--morpheus-surface-2))_0%,hsl(var(--morpheus-surface-1))_100%)]/95 shadow-2xl shadow-black/50 backdrop-blur-xl"
     >
       <div className="flex items-center gap-3 px-3 py-2.5">
-        <MorpheusSignal className="h-16 w-16 shrink-0" compact
+        <MorpheusFluidOrb className="h-9 w-9 shrink-0"
           state={resolveMorpheusSignalState({ voicePhase: phase, voicePresence: presence?.state })} />
 
         <div className="min-w-0 flex-1">
@@ -160,7 +161,7 @@ export function MorpheusVoiceRuntime() {
             </p>
           ) : null}
           {error ? (
-            <p data-testid="morpheus-voice-error" className="mt-0.5 truncate text-2xs text-[hsl(var(--morpheus-danger))]">
+            <p data-testid="morpheus-voice-error" className="mt-1 text-xs leading-relaxed text-[hsl(var(--morpheus-danger))]">
               {errorKind === 'device'
                 ? t('morpheus.voice.deviceBody')
                 : errorKind === 'repeat'
@@ -169,7 +170,7 @@ export function MorpheusVoiceRuntime() {
                   ? t('morpheus.voice.networkBody')
                 : errorKind === 'configuration'
                   ? t('morpheus.voice.configurationBody')
-                  : t('morpheus.voice.errorBody')}
+                  : error}
             </p>
           ) : null}
         </div>
@@ -184,14 +185,14 @@ export function MorpheusVoiceRuntime() {
             {t('morpheus.voice.retry')}
           </button>
         ) : null}
-        {errorKind === 'configuration' ? (
+        {error ? (
           <Link
-            to="/models?addProvider=1"
+            to="/settings?section=voice"
             data-testid="morpheus-voice-connect-provider"
-            onClick={dismiss}
+            onClick={() => { dismiss(); useMorpheusQuickCommandStore.getState().hide(); void hostApi.morpheus.expandCompanionSurface().catch(() => undefined); }}
             className="shrink-0 border-b border-[hsl(var(--morpheus-accent-dim))] pb-1 text-2xs text-[hsl(var(--morpheus-accent))]"
           >
-            {t('morpheus.voice.connectProvider')}
+            {t('morpheus.experience.voice.repair')}
           </Link>
         ) : null}
         {listening ? (
@@ -221,11 +222,6 @@ export function MorpheusVoiceRuntime() {
           <X className="h-4 w-4" aria-hidden />
         </button>
       </div>
-      {listening ? (
-        <div className="h-px w-full overflow-hidden bg-border/40" aria-hidden>
-          <div className="h-full w-1/3 bg-[hsl(var(--morpheus-accent))] motion-safe:animate-[morpheus-voice-scan_1.2s_ease-in-out_infinite]" />
-        </div>
-      ) : null}
     </aside>
   );
 }

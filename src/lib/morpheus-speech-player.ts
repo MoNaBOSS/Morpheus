@@ -6,7 +6,7 @@ import { hostEvents } from './host-events';
 import { resolveMorpheusWindowsVoice } from './morpheus-windows-voice';
 
 type SpeechOptions = {
-  format?: 'pcm24';
+  format?: 'pcm24' | 'wav';
   neuralAvailable: boolean;
   /** Setup previews should not surprise the user with a robotic fallback. */
   allowWindowsFallback?: boolean;
@@ -73,7 +73,7 @@ function decodeBase64(value: string): ArrayBuffer {
   return buffer;
 }
 
-async function playNeuralSpeech(text: string, id: number, format?: 'pcm24'): Promise<void> {
+async function playNeuralSpeech(text: string, id: number, format?: 'pcm24' | 'wav'): Promise<void> {
   if (format === 'pcm24') {
     const streamId = crypto.randomUUID();
     const player = createMorpheusPcmPlayback((speaking) => { if (id === generation) setSpeaking(speaking); });
@@ -109,7 +109,7 @@ async function playNeuralSpeech(text: string, id: number, format?: 'pcm24'): Pro
     }
     return;
   }
-  if (typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported('audio/mpeg')) {
+  if (format !== 'wav' && typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported('audio/mpeg')) {
     const streamId = crypto.randomUUID();
     let fail!: (error: Error) => void;
     let done!: () => void;
@@ -153,7 +153,7 @@ async function playNeuralSpeech(text: string, id: number, format?: 'pcm24'): Pro
   }
   const result = await hostApi.morpheus.synthesizeSpeech({ text });
   if (id !== generation) return;
-  if (result.mimeType !== 'audio/mpeg') throw new Error('Speech format changed.');
+  if (result.mimeType !== (format === 'wav' ? 'audio/wav' : 'audio/mpeg')) throw new Error('Speech format changed.');
   activeObjectUrl = URL.createObjectURL(new Blob([decodeBase64(result.audioBase64)], { type: result.mimeType }));
   const audio = new Audio(activeObjectUrl);
   activeAudio = audio;
@@ -228,11 +228,11 @@ export async function playMorpheusSpeech(text: string, options: SpeechOptions): 
         releaseAudio();
         cancelPlayback = null;
         setSpeaking(false);
-        if (options.allowWindowsFallback === false || options.format === 'pcm24') throw new Error('Natural speech is unavailable.');
+        if (options.allowWindowsFallback === false || options.format === 'pcm24' || options.format === 'wav') throw new Error('Natural speech is unavailable.');
       }
     }
     if (id !== generation) return 'cancelled';
-    if (options.allowWindowsFallback === false || options.format === 'pcm24') throw new Error('Natural speech is unavailable.');
+    if (options.allowWindowsFallback === false || options.format === 'pcm24' || options.format === 'wav') throw new Error('Natural speech is unavailable.');
     await playWindowsSpeech(text, id);
     return id === generation ? 'windows' : 'cancelled';
   };

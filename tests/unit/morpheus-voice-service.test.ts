@@ -53,6 +53,7 @@ afterEach(() => {
 });
 
 function createHarness(options?: {
+  localVoice?: Parameters<typeof createMorpheusVoiceService>[0]['localVoice'];
   accounts?: ProviderAccount[];
   apiKey?: string | null;
   healthy?: boolean;
@@ -80,6 +81,7 @@ function createHarness(options?: {
     return new Response(JSON.stringify({ text: 'Open Notepad' }), { status: 200 });
   }) as typeof fetch;
   const service = createMorpheusVoiceService({
+    localVoice: options?.localVoice,
     userDataDir,
     providerService: providerService as never,
     audit: {
@@ -103,6 +105,16 @@ function createHarness(options?: {
 }
 
 describe('Morpheus voice service', () => {
+  it('uses included voice without consulting provider keys and keeps manual mute authoritative', async () => {
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Open YouTube.'), synthesize: vi.fn(async () => Buffer.from('local speech')) };
+    const { service, providerService, fetchImpl } = createHarness({ apiKey: null, localVoice });
+    expect(await service.status()).toMatchObject({ transcriptionAvailable: true, neuralSpeechAvailable: true, speechFormat: 'wav', captureFormat: 'pcm16-wav' });
+    await expect(service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' })).resolves.toMatchObject({ providerAccountId: 'included-local', transcript: 'Open YouTube.' });
+    expect(providerService.getAccountRuntimeApiKey).not.toHaveBeenCalled(); expect(fetchImpl).not.toHaveBeenCalled();
+    await service.updateSettings({ enabled: false });
+    expect(await service.status()).toMatchObject({ transcriptionAvailable: false, settings: { enabled: false, ambientEnabled: false } });
+    await expect(service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' })).rejects.toThrow('disabled'); service.dispose();
+  });
   it('correlates transcription and speech receipts without inferring a bill', async () => {
     const h = createHarness({ fetchImpl: vi.fn(async (input) => String(input).endsWith('/audio/transcriptions')
       ? new Response(JSON.stringify({ text: 'private phrase', usage: { input_tokens: 7, output_tokens: 2, total_tokens: 9 } }))

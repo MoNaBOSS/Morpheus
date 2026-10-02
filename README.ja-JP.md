@@ -1,3 +1,5 @@
+Preview.6 は会話と設定を簡素化します。同じ会話と下書きを維持し、履歴はドロワーで表示します。設定は接続、音声、個性、アカウントとプラン、詳細に分かれます。既存の全ツールとフルワークスペースは詳細から利用できます。Windows の標準英語音声（Whisper tiny.en / Kokoro）はローカルで動作し、音声 API キーは不要です。マイクテストと実際の音声サンプルを音声設定で提供します。起動検出は任意で、手動ミュートで録音を停止し、コンパクト画面は約十秒のアイドル後に消えます。ホスト型プラン、決済、NerdGPT は外部サービスの準備が必要です。[現在の仕様](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) と [Windows チェックリスト](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) に検証範囲を記載します。
+
 
 <p align="center">
   <img src="src/assets/morpheus-logo.svg" width="128" height="128" alt="Morpheus Logo" />

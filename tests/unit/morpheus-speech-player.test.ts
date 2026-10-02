@@ -62,6 +62,17 @@ beforeEach(() => {
 afterEach(() => { stopMorpheusSpeech(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe('Morpheus speech player', () => {
+  it('plays local WAV through real playback callbacks without starting an MPEG stream', async () => {
+    vi.stubGlobal('MediaSource', { isTypeSupported: () => true });
+    mocks.synthesizeSpeech.mockResolvedValueOnce({ audioBase64: window.btoa('wav-bytes'), mimeType: 'audio/wav', providerAccountId: 'included-local', modelId: 'kokoro-int8', voice: 'cedar', providerLatencyMs: 20 });
+    await expect(playMorpheusSpeech('Hello.', { neuralAvailable: true, format: 'wav' })).resolves.toBe('neural');
+    expect(mocks.createStream).not.toHaveBeenCalled(); expect(mocks.meterPlayback).toHaveBeenCalledOnce();
+    expect(mocks.setVoiceSpeaking).toHaveBeenCalledWith({ speaking: true }); expect(mocks.setVoiceSpeaking).toHaveBeenCalledWith({ speaking: false });
+  });
+  it('does not silently substitute Windows narration when included neural speech fails', async () => {
+    mocks.synthesizeSpeech.mockRejectedValueOnce(new Error('Voice engine failed'));
+    await expect(playMorpheusSpeech('Hello.', { neuralAvailable: true, format: 'wav' })).rejects.toThrow('Natural speech is unavailable');
+  });
   it('an aborted social utterance cannot cancel a newer task response', async () => {
     const controller = new AbortController();
     mocks.synthesizeSpeech.mockReturnValueOnce(new Promise(() => {}));

@@ -1,9 +1,9 @@
 import type { Rectangle } from 'electron';
 
-export const MORPHEUS_ORB_SIZE = 100;
+export const MORPHEUS_ORB_SIZE = 56;
 export const MORPHEUS_ORB_HOVER_WIDTH = 360;
-export const MORPHEUS_ORB_HOVER_HEIGHT = 180;
-export const MORPHEUS_PRESENCE_EDGE_GAP = 20;
+export const MORPHEUS_ORB_HOVER_HEIGHT = 132;
+export const MORPHEUS_PRESENCE_EDGE_GAP = 16;
 
 function presenceInset(size: number): number {
   return Math.min(MORPHEUS_PRESENCE_EDGE_GAP, Math.max(0, Math.floor((size - 1) / 2)));

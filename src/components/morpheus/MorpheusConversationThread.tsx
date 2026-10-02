@@ -1,6 +1,9 @@
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { useProviderStore } from '@/stores/providers';
 import { AcpPermissionCard } from '@/pages/Chat/AcpPermissionCard';
+import { AcpMarkdownPart } from '@/pages/Chat/AcpMessageSegment';
 import { projectMorpheusConversation } from '@/lib/morpheus-conversation-projection';
 import { useAcpChatSessionStore } from '@/stores/acp-chat-session';
 import { useMorpheusConversationStore } from '@/stores/morpheus-conversation';
@@ -26,6 +29,8 @@ export function MorpheusConversationThread({
   const respondPermission = useAcpChatSessionStore((state) => state.respondPermission);
   const pendingTurns = useMorpheusConversationStore((state) => state.snapshot?.pendingTurns ?? EMPTY_PENDING_TURNS);
   const restoreHistory = useMorpheusConversationStore((state) => state.restoreHistory);
+  const setDraft = useMorpheusConversationStore((state) => state.setDraft);
+  const configured = useProviderStore((state) => state.statuses.some((provider) => provider.hasKey));
   const hasTurnReference = useMorpheusConversationStore((state) => state.snapshot?.turns.some((turn) =>
     turn.conversationId === sessionKey && turn.status !== 'admitted') ?? false);
   const hasSavedSession = useChatStore((state) => state.sessions.some((session) =>
@@ -46,6 +51,10 @@ export function MorpheusConversationThread({
   return (
     <div data-testid={compact ? 'quick-command-conversation' : 'workspace-conversation'}
       className={compact ? 'space-y-3' : 'space-y-4'}>
+      {!projection.messages.length && !awaitingProjection.length && !loading && !sending && !error ? <div data-testid="morpheus-first-success" className="rounded-xl border border-border/60 bg-surface-input p-4">
+        <p className="text-sm leading-relaxed text-muted-foreground">{t(configured ? 'morpheus.experience.setup.configured' : 'morpheus.experience.setup.unconfigured')}</p>
+        <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => setDraft(t('morpheus.activationV2.suggestions.openYouTube'))} className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-white/5">{t('morpheus.activationV2.suggestions.openYouTube')}</button><Link to="/settings?section=connections" className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-white/5">{t('morpheus.experience.settings.connections')}</Link></div>
+      </div> : null}
       {projection.messages.map((message) => (
         <div key={message.id} data-testid={`morpheus-conversation-${message.role}`}
           className={message.role === 'user'
@@ -54,7 +63,7 @@ export function MorpheusConversationThread({
           <span className="mb-2 block text-[11px] text-[#a0b6aa]">
             {t(message.role === 'user' ? 'morpheus.workspace.you' : 'morpheus.title')}
           </span>
-          {message.text ? <p className="whitespace-pre-wrap break-words">{message.text}{message.truncated ? '…' : ''}</p> : null}
+          {message.text ? message.role === 'assistant' ? <AcpMarkdownPart text={message.text + (message.truncated ? '…' : '')} isAnimating={current && sending}/> : <p className="whitespace-pre-wrap break-words">{message.text}{message.truncated ? '…' : ''}</p> : null}
           {message.mediaCount > 0 ? <p className="mt-2 text-xs text-[#a0b6aa]">
             {t('morpheus.conversation.mediaCount', { count: message.mediaCount })}
           </p> : null}

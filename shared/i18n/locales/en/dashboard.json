@@ -1380,6 +1380,68 @@
       "active": "Capturing the screen",
       "recent": "Screen captured just now",
       "savedTo": "Saved to"
+    },
+    "experience": {
+      "history": "Conversations",
+      "newConversation": "New conversation",
+      "conversation": "Conversation",
+      "back": "Back to conversation",
+      "advancedSettings": "Advanced settings and permissions",
+      "advancedChat": "Full workspace · attachments, skills and agents",
+      "settings": {
+        "connections": "Connections",
+        "voice": "Voice",
+        "personality": "Personality",
+        "account": "Account & Plan",
+        "advanced": "Advanced",
+        "connectionsBody": "Connect your own task-model API securely. Existing connections are preserved. Basic uses your API; hosted plans require a service that is not available yet. Use Test connection before sending a model request.",
+        "voiceBody": "Set up your microphone and hear Morpheus. Standard English voice runs on this PC and needs no voice API key.",
+        "personalityBody": "Make Morpheus feel like your companion. These preferences follow you across conversation, voice and task models.",
+        "accountBody": "Basic brings your own task-model API. Premium and Unrestricted need hosted services. Pricing and checkout are not available yet; NerdGPT is planned.",
+        "advancedBody": "All existing tools remain available here. Open the full workspace for attachments, skills, agents, history management and technical controls."
+      },
+      "voice": {
+        "included": "Included English voice",
+        "localBody": "Speech stays on this PC with Whisper recognition and Kokoro neural replies. No voice subscription or voice API key. It uses CPU and memory while processing; short sentences respond faster. Task-model requests still follow your configured connection.",
+        "microphone": "Microphone enabled · turn off to mute all capture",
+        "device": "Microphone",
+        "defaultDevice": "Windows default microphone",
+        "unnamedDevice": "Microphone {{number}}",
+        "refresh": "Refresh",
+        "permission": "Run the input test, allow microphone access, then refresh for device names. If blocked, check Windows Settings → Privacy & security → Microphone and allow desktop apps.",
+        "sound": "Voice",
+        "warm": "Warm · Michael",
+        "bright": "Bright · Heart",
+        "wake": "Listen for “Morpheus”",
+        "wakeBody": "Optional local wake listening uses the Windows default microphone. Hiding keeps enabled wake listening active; manual mute stops it.",
+        "advanced": "Advanced voice and provider options",
+        "engine": "Voice service",
+        "local": "Included local voice",
+        "provider": "Configured provider · may incur charges",
+        "repair": "Repair voice setup",
+        "checkLocal": "Play a real local voice sample, or test the microphone without sending a command. Audio is AI-generated and stays on this PC.",
+        "providerBody": "You chose {{provider}} in Advanced. Audio is sent to that service and may incur charges. You can return to included local voice below."
+      },
+      "setup": {
+        "skip": "Skip for now",
+        "configured": "Existing task-model configuration detected. A connection test confirms service access.",
+        "unconfigured": "You can open apps and websites locally. Model conversation, research and website generation need a task-model connection. Setup can be revisited in Settings."
+      },
+      "plans": {
+        "basic": "Basic",
+        "premium": "Premium",
+        "unrestricted": "Unrestricted",
+        "available": "Available with your API",
+        "planned": "Planned · service unavailable",
+        "basicBody": "Your task-model API, included local English voice and existing local tools.",
+        "premiumBody": "Hosted quality models and supported voice. Requires funded hosting and an account service.",
+        "unrestrictedBody": "Premium capabilities plus future NerdGPT spicy humor, profanity and roast-style personality. NerdGPT is not connected."
+      },
+      "personality": {
+        "gentle": "One step at a time. I’ll handle the fiddly bits.",
+        "cheeky": "Your tabs have formed a pirate crew. Let’s get them in line.",
+        "unfiltered": "Sharper humor is a preference. NerdGPT-powered roasts are planned."
+      }
     }
   }
 }

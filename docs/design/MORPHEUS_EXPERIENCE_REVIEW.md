@@ -58,7 +58,7 @@ or beside the taskbar. Verify taskbars on each edge, DPI/text scaling, display
 changes and removal, auto-hide, small work areas and sleep/resume. A usable target
 can be larger than its visible artwork. Historical 100-DIP size is not approval.
 
-**Proposed defaults for owner validation, not accepted implementation:**
+**Implemented preview.6 defaults, awaiting owner acceptance:**
 
 - Visible artwork about 48-56 DIP, with at least a 44-DIP interaction target;
   initial 16-DIP work-area inset, adjusted if actual taskbar/scaling tests require.
@@ -89,17 +89,37 @@ keyboard/IME, screen readers, readable contrast and high text scaling. Motion sh
 be noticeable during active interaction and quiet while idle. Hidden animation costs
 must be measured across the process tree.
 
-## Voice architecture decision gate
+## Included voice architecture — preview.6
 
-Current source requires a compatible configured API account for STT/neural TTS;
-Windows System.Speech covers wake recognition and Windows speech is a fallback.
-That foundation does **not** fulfill included standard voice. Keep existing adapters
-and cancellation/audio ownership while evaluating a viable included default.
+Preview.6 bundles sherpa-onnx 1.13.8 static Windows executables, Whisper tiny.en
+int8 recognition and Kokoro v1.0 int8 synthesis. English is the included standard;
+Michael is the default warm voice, Heart an alternate. No voice API key, account,
+download on first use or service payment is required. Existing provider speech
+adapters remain available in Advanced; their stored configuration is preserved.
+Windows System.Speech provides opt-in local wake detection, not the default narrator.
 
-Before choosing the default, test a bounded local neural STT/TTS candidate and a
-hosted product-funded candidate when hosted service inputs exist. Check current
-primary documentation, licensing, redistributable models, supported hardware and
-real samples. No engine/vendor is selected or installed at Checkpoint A.
+Each addressed recording is canonical mono 16 kHz PCM WAV. Main owns a bounded,
+cancelable subprocess and temporary utterance directory, removed on success,
+failure and cancellation. Audio stays local. No persistent engine process runs
+while idle. Local wake uses the Windows default microphone; the selected device
+applies to command/test capture. Manual mute blocks both wake and input. Output
+samples remain usable while input is muted. Recording tests never execute commands.
+
+This CPU implementation trades install size and startup latency for offline privacy
+and zero per-utterance service cost. Neural speech is generated before WAV playback;
+it does not promise realtime streaming. Tiny English recognition can mishear accents,
+noise and speaker echo. Actual microphone accuracy, naturalness, echo/interruption
+and low-power hardware acceptance remain owner tests. Hosted speech could offer
+stronger recognition or faster streaming, but no service account, funded allowance,
+retention policy or operating arrangement has been supplied; no hosted voice is live.
+
+Pinned artifact hashes and provenance are in `scripts/prepare-local-voice.mjs` and
+the packaged `local-voice/manifest.json`. Sherpa/Kokoro are Apache-2.0, Whisper and
+ONNX Runtime MIT; the independent eSpeak phonemizer is GPL-3.0. License texts and
+corresponding upstream source/build archives ship with the executables. Source is
+unmodified. These records identify distribution inputs, not a legal certification.
+Primary documentation: https://k2-fsa.github.io/sherpa/onnx/tts/pretrained_models/kokoro.html
+and https://github.com/k2-fsa/sherpa-onnx/releases/tag/v1.13.8 .
 
 | Candidate | Required evidence and tradeoffs |
 | --- | --- |
@@ -147,7 +167,7 @@ availability separate. One application/runtime serves all plans.
 
 | Plan | Intended presentation | Actual current service state |
 | --- | --- | --- |
-| Basic | Bring your own task-model API; included standard voice responsibility | BYOK foundation exists. Included standard voice not yet delivered. |
+| Basic | Bring your own task-model API; included standard voice | BYOK foundation preserved; included local recognition/synthesis bundled in preview.6, pending owner microphone/quality acceptance. |
 | Premium | Hosted quality models and supported voice | Unavailable; incomplete runtime/accounting and no supplied hosted operations. |
 | Unrestricted | Premium plus future NerdGPT spicy humor, profanity and roast personality | Planned; NerdGPT is the owner's platform and integration is deferred. |
 
@@ -208,25 +228,48 @@ not the installed app, real voice or current visual approval.
 
 ## Review sequence and exact next step
 
-**A:** preserve/identify baseline and reconcile this spec/checklist. No application
-rewrite. **B:** review connected application-intended moving components in small
-slices. **C:** make first journey real, one integration/physical PC test at a time.
-**D:** connect preserved capabilities/results/recovery/plans to approved experience.
-**E:** verify actual packaged/installed Windows app and identify the resulting EXE.
-Each slice records implemented/simulated/unverified/blocked separately and stops
-at the owner's meaningful acceptance gate. Do not redo approved work without a
-shown regression. Run only relevant validation; no broad test/build campaign here.
+**Current authorization:** the owner changed the schedule on October 2 to complete
+the job and review everything together: "Simplify but don't reduce capabilities."
+This supersedes separate B/C owner gates, not preservation or truthful acceptance.
+Checkpoint A is complete. Implementation proceeds in the separate E: worktree at
+`E:\Morpheus-builds\experience-preview6\source`, based on `3bcad683`. The original
+checkout and prior application worktree remain untouched. No owner profile is used
+for testing and no installer is run over the owner app.
 
-**Next proposed slice B1, awaiting owner acceptance of the scope:** small orb and
-upward compact conversation/composer, with visible idle/working/question/error
-motion, reduced motion, expand/back continuity and the proposed 10-second fade.
-Reuse the actual artwork, motion component, typed surface and draft owners.
-Use a clearly labeled isolated design-review harness with synthetic content and
-simulated task/audio states; do not replace the owner's installed profile. Show
-short motion recording plus rendered views. Expansion must retain displayed
-history and draft, including conversation-only history with zero objective runs.
-First owner review is appearance/size/composer/transition/dismissal; broader
-integration waits. Subsequent B slices connect introduction/setup, voice/personality
-and contextual settings into this same interface, each separately reviewable.
-Real voice samples belong to bounded engine evaluation and must be labeled with
-actual engine/output; simulated audio states cannot pass voice acceptance.
+Preview.6 simplifies the existing root conversation, removes the task-only CSS that
+hid conversation history, adds a retained-history drawer and readable Markdown,
+and gives Settings five contextual groups. Native compact/full transitions use
+the same Main conversation and draft owners. Technical Chat and all inherited
+tools remain under Advanced. Existing task/results, research and site execution
+owners remain in place; no executor, capability registry or provider secret store
+has been replaced. Simple local actions still bypass model reasoning.
+
+The first launch connects name -> secure Connections -> real Voice tests ->
+personality -> first command. Skipping persists and explains missing model access.
+Personality is revisitable and shared by existing routing. Voice failure links to
+Voice repair while keeping the conversation/draft. Three plan cards distinguish
+BYOK/included local speech from unavailable hosted service and deferred NerdGPT.
+
+The native orb is 56 DIP, with a 16-DIP work-area inset. Compact defaults to
+440x400 DIP. Orb/compact fade after ten seconds of completed idle interaction;
+pointer, keyboard and scrolling refresh compact inactivity. Listening, speech,
+active answers and questions hold it open. Explicit full workspace stays open.
+Hidden motion pauses; reduced motion is respected. Aurora/halo now sit visibly
+around the preserved artwork, with actual microphone/playback audio levels.
+Display changes reposition the active compact window as well as the orb; pure
+layout tests cover changed work areas, while physical DPI/taskbar-edge tests remain open.
+
+Verification so far: 324 unit files passed, 3,336 tests passed and two skipped,
+including real bundled synthesis/transcription and cancellation. Native Electron
+journeys cover setup, persisted personality, same conversation/draft through
+compact/full/reload, four-language history and explicit Advanced access. Model
+answers in fixture journeys are simulated and do not certify live model quality.
+Real generated English voice samples are separate, not simulated audio.
+
+**Exact next step:** qualify the fresh preview.6 Windows payload in a normal,
+isolated profile, record short native motion and real voice samples, then produce
+and statically verify its identified NSIS EXE. Update the checklist with actual
+package evidence and deliver one combined PC acceptance checklist. Installed
+upgrade, physical mic/echo/interruption, voice taste, DPI/sleep and live provider/
+publication acceptance remain explicit owner/external gates; no automated count
+can mark them accepted.

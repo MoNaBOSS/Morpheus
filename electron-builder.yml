@@ -118,6 +118,8 @@ win:
   # signing and update signature verification must be enabled together.
   verifyUpdateCodeSignature: false
   extraResources:
+    - from: build/local-voice/
+      to: resources/local-voice/
     - from: resources/bin/win32-${arch}
       to: bin
     - from: resources/cli/win32/

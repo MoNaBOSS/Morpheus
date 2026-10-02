@@ -15,16 +15,19 @@
 }
 
 .morpheus-motion__aurora {
-  inset: 4%;
+  z-index: 1;
+  inset: -2%;
   border-radius: 46% 54% 59% 41% / 53% 42% 58% 47%;
   background: conic-gradient(from 40deg, transparent 7%, rgb(83 237 180 / 0.34) 27%, transparent 52%, rgb(44 170 110 / 0.28) 78%, transparent 96%);
-  filter: blur(9px);
-  opacity: 0.36;
+  filter: blur(4px);
+  opacity: 0.65;
   transform: translateZ(0);
+  mask-image: radial-gradient(circle, transparent 52%, #000 72%);
 }
 
 .morpheus-motion__halo {
-  inset: 7%;
+  z-index: 2;
+  inset: 4%;
   border: 1px solid rgb(120 245 179 / 0.46);
   border-radius: 50%;
   box-shadow: 0 0 15px rgb(83 237 180 / 0.18);
@@ -34,7 +37,7 @@
 
 .morpheus-motion__cue {
   position: absolute;
-  z-index: 1;
+  z-index: 3;
   right: 5%;
   bottom: 7%;
   display: grid;
@@ -80,10 +83,15 @@
 
 .morpheus-motion[data-motion-state='working'] .morpheus-motion__halo {
   opacity: 0.7;
+  border-left-color: transparent;
+  animation: morpheus-motion-work 2.4s linear infinite;
 }
+
+@keyframes morpheus-motion-work { to { transform: rotate(360deg); } }
 
 .morpheus-motion[data-motion-state='listening'] .morpheus-motion__halo,
 .morpheus-motion[data-motion-state='speaking'] .morpheus-motion__halo {
+  inset: 10%;
   transform: scale(calc(1 + var(--morpheus-audio-level, 0) * 0.16));
   opacity: calc(0.6 + var(--morpheus-audio-level, 0) * 0.35);
   box-shadow: 0 0 24px rgb(110 255 190 / 0.38);

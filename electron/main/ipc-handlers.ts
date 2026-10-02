@@ -90,6 +90,7 @@ import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
 import { writeMorpheusMemoryExport } from '../services/morpheus/memory/memory-export';
 
 type MorpheusCompanionSurfaceControls = {
+  show?(): MorpheusCompanionSurfaceStatus;
   wake?(): void;
   presence?(presence: MorpheusVoicePresence): void;
   level?(level: number): void;

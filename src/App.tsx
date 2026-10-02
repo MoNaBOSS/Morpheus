@@ -18,6 +18,7 @@ import { Skills } from './pages/Skills';
 import { Cron } from './pages/Cron';
 import { ImageGenerationPage } from './pages/ImageGeneration';
 import { Settings } from './pages/Settings';
+import { MorpheusSettings } from './pages/Settings/MorpheusSettings';
 import { AgentProfiles } from './pages/AgentProfiles';
 import { Workflows } from './pages/Workflows';
 import { Schedules } from './pages/Schedules';
@@ -248,7 +249,8 @@ function App() {
             <Route path="/skills" element={<Skills />} />
             <Route path="/cron" element={<Cron />} />
             <Route path="/image-generation" element={devModeUnlocked ? <ImageGenerationPage /> : <Navigate to="/" replace />} />
-            <Route path="/settings/*" element={<Settings />} />
+            <Route path="/settings/advanced/*" element={<Settings />} />
+            <Route path="/settings/*" element={<MorpheusSettings />} />
             {extraRoutes.map((r) => (
               <Route key={r.path} path={r.path} element={<r.component />} />
             ))}

@@ -1024,6 +1024,68 @@
       "active": "正在截取屏幕",
       "recent": "刚刚截取了屏幕",
       "savedTo": "保存至"
+    },
+    "experience": {
+      "history": "对话",
+      "newConversation": "新建对话",
+      "conversation": "对话",
+      "back": "返回对话",
+      "advancedSettings": "高级设置和权限",
+      "advancedChat": "完整工作区 · 附件、技能和智能体",
+      "settings": {
+        "connections": "连接",
+        "voice": "语音",
+        "personality": "个性",
+        "account": "账户与方案",
+        "advanced": "高级",
+        "connectionsBody": "安全连接您自己的任务模型 API。保留现有连接。Basic 使用您的 API；托管方案尚未开放。发送模型请求前请测试连接。",
+        "voiceBody": "设置麦克风并试听 Morpheus。标准英语语音在本机运行，无需语音 API 密钥。",
+        "personalityBody": "定制您的伙伴。对话、语音和任务模型共享这些偏好。",
+        "accountBody": "Basic 使用自带任务模型 API。Premium 和 Unrestricted 需要托管服务。目前没有价格或结账功能；NerdGPT 仍在规划中。",
+        "advancedBody": "所有现有工具仍可使用。完整工作区提供附件、技能、智能体、历史管理和技术控制。"
+      },
+      "voice": {
+        "included": "内置英语语音",
+        "localBody": "使用 Whisper 识别和 Kokoro 神经语音，音频保留在本机。无需语音订阅或 API 密钥。处理时会使用 CPU 和内存；短句响应更快。任务模型请求仍使用配置的连接。",
+        "microphone": "启用麦克风 · 关闭以停止所有录音",
+        "device": "麦克风",
+        "defaultDevice": "Windows 默认麦克风",
+        "unnamedDevice": "麦克风 {{number}}",
+        "refresh": "刷新",
+        "permission": "运行输入测试并允许麦克风访问，然后刷新设备名称。如被阻止，请在 Windows 隐私设置中允许桌面应用访问麦克风。",
+        "sound": "声音",
+        "warm": "温暖 · Michael",
+        "bright": "明亮 · Heart",
+        "wake": "监听 “Morpheus”",
+        "wakeBody": "可选的本地唤醒使用 Windows 默认麦克风。隐藏界面不停止已启用的唤醒监听；手动静音会停止监听。",
+        "advanced": "高级语音和提供商选项",
+        "engine": "语音服务",
+        "local": "内置本地语音",
+        "provider": "已配置提供商 · 可能收费",
+        "repair": "修复语音设置",
+        "checkLocal": "播放真实的本地语音样本，或测试麦克风而不执行命令。AI 生成的音频保留在本机。",
+        "providerBody": "您在高级设置中选择了 {{provider}}。音频会发送给该服务，并可能收费。可在下方切换回内置本地语音。"
+      },
+      "setup": {
+        "skip": "暂时跳过",
+        "configured": "已检测到任务模型配置。连接测试可确认服务是否可用。",
+        "unconfigured": "可在本机打开应用和网站。模型对话、研究和网站生成需要连接任务模型。可随时在设置中继续。"
+      },
+      "plans": {
+        "basic": "Basic",
+        "premium": "Premium",
+        "unrestricted": "Unrestricted",
+        "available": "自带 API 可用",
+        "planned": "计划中 · 服务未开放",
+        "basicBody": "您的任务模型 API、内置本地英语语音和现有本地工具。",
+        "premiumBody": "托管高质量模型和受支持语音。需要运营资金和账户服务。",
+        "unrestrictedBody": "Premium 功能以及未来 NerdGPT 的辛辣幽默、粗话和吐槽个性。NerdGPT 尚未连接。"
+      },
+      "personality": {
+        "gentle": "一步一步来。麻烦的部分交给我。",
+        "cheeky": "您的标签页组建了海盗团。我们来整理一下。",
+        "unfiltered": "更犀利的幽默是一种偏好。NerdGPT 吐槽功能仍在计划中。"
+      }
     }
   }
 }

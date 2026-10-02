@@ -263,6 +263,7 @@ async function launchClawXElectron(
     }
     : {};
   return await electron.launch({
+    ...(process.env.MORPHEUS_VIDEO_EVIDENCE_DIR ? { recordVideo: { dir: process.env.MORPHEUS_VIDEO_EVIDENCE_DIR, size: { width: 1280, height: 800 } } } : {}),
     executablePath: electronBinaryPath,
     args: ['--lang=en-US', ...(options.additionalArgs ?? []), electronEntry],
     env: {

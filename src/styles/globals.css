@@ -1257,17 +1257,12 @@
 }
 
 .morpheus-workspace[data-empty='true'] .morpheus-workspace-content {
-  justify-content: center;
-  padding-bottom: 11vh;
+  padding-bottom: 1rem;
 }
 
 .morpheus-workspace[data-empty='true'] .morpheus-workspace-main {
-  flex: 0 0 auto;
-  margin-top: 2.3rem;
-}
-
-.morpheus-workspace[data-empty='true'] .morpheus-workspace-messages {
-  display: none;
+  flex: 1 1 auto;
+  margin-top: 1.25rem;
 }
 
 .morpheus-workspace-messages {

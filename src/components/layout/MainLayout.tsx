@@ -18,10 +18,11 @@ export function MainLayout() {
   const isMac = platform === 'darwin';
   const isWin = platform === 'win32';
   const isWorkspace = location.pathname === '/';
+  const isSimpleSettings = location.pathname.startsWith('/settings') && !location.pathname.startsWith('/settings/advanced');
   const isMorpheusProductSurface = [
     '/', '/missions', '/systems', '/projects', '/goals', '/agent-profiles',
     '/workflows', '/schedules', '/activity',
-  ].includes(location.pathname);
+  ].includes(location.pathname) || isSimpleSettings;
 
   return (
     <div
@@ -37,7 +38,7 @@ export function MainLayout() {
       <TitleBar />
 
       <div className="flex min-h-0 flex-1 overflow-hidden bg-surface-sidebar">
-        {isWorkspace ? null : isMorpheusProductSurface ? <MorpheusProductNav /> : <Sidebar />}
+        {isWorkspace || isSimpleSettings ? null : isMorpheusProductSurface ? <MorpheusProductNav /> : <Sidebar />}
         <main
           data-testid="main-content"
           className={cn(

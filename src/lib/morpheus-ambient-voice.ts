@@ -26,6 +26,7 @@ export async function morpheusBlobToBase64(blob: Blob): Promise<string> {
 }
 
 export type MorpheusAmbientVoiceCaptureOptions = {
+  inputDeviceId?: string;
   silenceMs: number;
   maxUtteranceMs: number;
   /** Local wake mode must not record background speech before an addressed window. */
@@ -70,7 +71,7 @@ export class MorpheusAmbientVoiceCapture {
       throw new Error('Ambient voice is not supported by this Windows audio environment.');
     }
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      audio: { ...(this.options.inputDeviceId ? { deviceId: { exact: this.options.inputDeviceId } } : {}), channelCount: 1, echoCancellation: true, noiseSuppression: true },
       video: false,
     });
     if (generation !== this.generation) {

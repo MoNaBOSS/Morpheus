@@ -16,7 +16,7 @@ const PRIMARY = [
   { to: '/missions', key: 'missions', icon: Sparkles, legacyTestId: 'sidebar-nav-missions' },
   { to: '/systems', key: 'systems', icon: Network, legacyTestId: 'sidebar-nav-systems' },
   { to: '/projects', key: 'library', icon: FolderKanban, legacyTestId: 'sidebar-nav-projects' },
-  { to: '/chat', key: 'chat', icon: MessageSquare, legacyTestId: 'sidebar-nav-chat' },
+  { to: '/', key: 'chat', icon: MessageSquare, legacyTestId: 'sidebar-nav-chat' },
 ] as const;
 
 const ADVANCED = [
@@ -46,7 +46,7 @@ export function MorpheusProductNav() {
       <nav aria-label={t('morpheus.signalOs.navigation')} className="flex flex-1 flex-col items-center gap-1.5 px-2 py-4">
         {PRIMARY.map(({ to, key, icon: Icon, legacyTestId }) => (
           <NavLink
-            key={to}
+            key={key}
             to={to}
             end={to === '/'}
             data-testid={`signal-nav-${key}`}

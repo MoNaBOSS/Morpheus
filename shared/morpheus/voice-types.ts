@@ -30,6 +30,9 @@ export const MORPHEUS_VOICE_MIME_TYPES = Object.freeze([
 export type MorpheusVoiceMimeType = typeof MORPHEUS_VOICE_MIME_TYPES[number];
 
 export type MorpheusVoiceSettings = {
+  /** Included local voice is the default; preserved provider configuration is opt-in. */
+  engine?: 'local' | 'provider';
+  inputDeviceId?: string;
   v: typeof MORPHEUS_VOICE_VERSION;
   enabled: boolean;
   providerAccountId: string | null;
@@ -96,7 +99,7 @@ export type MorpheusVoiceProviderOption = {
 export type MorpheusVoiceStatus = {
   /** Managed service requires canonical WAV input and streams mono PCM output. */
   captureFormat?: 'pcm16-wav';
-  speechFormat?: 'pcm24';
+  speechFormat?: 'pcm24' | 'wav';
   availableSpeechVoices?: readonly MorpheusSpeechVoice[];
   settings: MorpheusVoiceSettings;
   presence: MorpheusVoicePresence;
@@ -112,6 +115,8 @@ export type MorpheusVoiceStatus = {
 export type MorpheusVoiceSettingsPatch = Partial<Pick<
   MorpheusVoiceSettings,
   | 'enabled'
+  | 'engine'
+  | 'inputDeviceId'
   | 'providerAccountId'
   | 'modelId'
   | 'speakResponses'
@@ -157,7 +162,7 @@ export type MorpheusSpeechChunk = { streamId: string; sequence: number; audioBas
 
 export type MorpheusSynthesizeSpeechResult = {
   audioBase64: string;
-  mimeType: 'audio/mpeg' | 'audio/pcm';
+  mimeType: 'audio/mpeg' | 'audio/pcm' | 'audio/wav';
   providerAccountId: string;
   modelId: string;
   voice: MorpheusSpeechVoice;

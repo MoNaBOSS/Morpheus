@@ -13,6 +13,7 @@ import { DesktopControlResult } from './DesktopControlResult';
 import { MatrixRain } from '@/components/morpheus/boot/MatrixRain';
 import { MorpheusFluidOrb } from '@/components/morpheus/MorpheusFluidOrb';
 import { MorpheusConversationThread } from '@/components/morpheus/MorpheusConversationThread';
+import { MorpheusConversationHistory } from '@/components/morpheus/MorpheusConversationHistory';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { useMorpheusArrivalStore } from '@/stores/morpheus-arrival';
@@ -21,12 +22,14 @@ import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { useMorpheusConversationStore } from '@/stores/morpheus-conversation';
 import { resolveMorpheusSignalState } from '@/components/morpheus/signal/signal-state';
 import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
+import { useAcpChatSessionStore } from '@/stores/acp-chat-session';
 
 /** The full workspace projects real tasks as conversation and useful results. */
 export function CommandCenter() {
   const { t } = useTranslation('dashboard');
   const [showMore, setShowMore] = useState(false);
   const [showTasks, setShowTasks] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [trayError, setTrayError] = useState(false);
   const onboarding = useMorpheusCompanionStore((state) => state.onboarding);
   const openWelcome = useMorpheusArrivalStore((state) => state.openWelcome);
@@ -36,11 +39,12 @@ export function CommandCenter() {
   const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
   const recentArtifacts = useMorpheusCommandStore((state) => state.artifacts);
   const selectedConversationId = useMorpheusConversationStore((state) => state.snapshot?.selectedConversationId ?? null);
+  const conversationWorking = useAcpChatSessionStore((state) => state.activeSessionKey === selectedConversationId && (state.sending || state.loading));
   const selectObjective = useMorpheusCommandStore((state) => state.selectObjective);
   const cancelObjective = useMorpheusCommandStore((state) => state.cancelObjective);
   const voicePhase = useMorpheusVoiceStore((state) => state.phase);
   const voicePresence = useMorpheusVoiceStore((state) => state.presence?.state);
-  const signalState = resolveMorpheusSignalState({ voicePhase, voicePresence: voicePresence === 'asleep' ? 'armed' : voicePresence, objectiveState: objectiveRun?.state });
+  const signalState = resolveMorpheusSignalState({ voicePhase, voicePresence: voicePresence === 'asleep' ? 'armed' : voicePresence, objectiveState: conversationWorking ? 'understanding' : objectiveRun?.state });
   const recentRuns = (history?.runOrder ?? []).slice(0, 8).map((id) => history?.runsById[id]).filter((run) => run != null);
   const activeCount = (history?.runOrder ?? []).filter((id) => {
     const run = history?.runsById[id];
@@ -65,14 +69,14 @@ export function CommandCenter() {
         </button>
         <nav className="flex items-center gap-1" aria-label={t('morpheus.workspace.navigation')}>
           {activeCount > 0 ? <button type="button" data-testid="workspace-tasks-button" aria-expanded={showTasks} onClick={() => setShowTasks((value) => !value)} className="morpheus-workspace-icon-button" aria-label={t('morpheus.workspace.tasks')}><List className="h-[18px] w-[18px]" strokeWidth={1.6} /><span className="sr-only">{activeCount}</span></button> : null}
-          <Link to="/chat" data-testid="signal-nav-chat" className="morpheus-workspace-icon-button" aria-label={t('morpheus.workspace.openChat')} title={t('morpheus.workspace.openChat')}><FileText data-testid="sidebar-nav-chat" className="h-[18px] w-[18px]" strokeWidth={1.6} /></Link>
+          <button type="button" data-testid="signal-nav-chat" onClick={() => setShowHistory((value) => !value)} aria-expanded={showHistory} className="morpheus-workspace-icon-button" aria-label={t('morpheus.experience.history')} title={t('morpheus.experience.history')}><FileText data-testid="sidebar-nav-chat" className="h-[18px] w-[18px]" strokeWidth={1.6} /></button>
           <button type="button" data-testid="signal-nav-presence" onClick={() => showQuickCommand()} className="morpheus-workspace-icon-button" aria-label={t('morpheus.workspace.openCompact')} title={t('morpheus.workspace.openCompact')}><Minimize2 className="h-[18px] w-[18px]" strokeWidth={1.6} /></button>
           <Link to="/settings" data-testid="sidebar-nav-settings" className="morpheus-workspace-icon-button" aria-label={t('morpheus.signalOs.nav.settings')} title={t('morpheus.signalOs.nav.settings')}><Settings2 className="h-[18px] w-[18px]" strokeWidth={1.6} /></Link>
           <div className="relative">
             <button type="button" data-testid="signal-nav-advanced" className="morpheus-workspace-icon-button" aria-label={t('morpheus.signalOs.more')} aria-expanded={showMore} onClick={() => setShowMore((value) => !value)}><MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.6} /></button>
             {showMore ? <div data-testid="signal-nav-advanced-menu" className="morpheus-workspace-more absolute right-0 top-9 z-30 max-h-[65vh] w-44 overflow-y-auto rounded-lg border border-white/15 p-1 shadow-xl">
               {([
-                ['missions', 'missions', 'missions'], ['projects', 'library', 'projects'], ['systems', 'systems', 'systems'],
+                ['chat', 'chat', 'advanced-chat'], ['settings/advanced', 'settings', 'advanced-settings'], ['missions', 'missions', 'missions'], ['projects', 'library', 'projects'], ['systems', 'systems', 'systems'],
                 ['goals', 'goals', 'goals'], ['agent-profiles', 'agentProfiles', 'agent-profiles'],
                 ['workflows', 'workflows', 'workflows'], ['schedules', 'schedules', 'schedules'],
                 ['activity', 'activity', 'activity'], ['models', 'models', 'models'], ['agents', 'agents', 'agents'],
@@ -82,12 +86,13 @@ export function CommandCenter() {
           </div>
         </nav>
       </header>
+      {showHistory ? <MorpheusConversationHistory onClose={() => setShowHistory(false)} /> : null}
 
-      <div className="morpheus-workspace-content relative z-10 mx-auto flex w-full max-w-[1150px] min-h-0 flex-1 flex-col px-7 pb-3 pt-6 max-[640px]:px-5">
+      <div className="morpheus-workspace-content relative z-10 mx-auto flex w-full max-w-[940px] min-h-0 flex-1 flex-col px-7 pb-3 pt-6 max-[640px]:px-5">
         <div className="flex shrink-0 items-center gap-4">
-          <MorpheusFluidOrb state={signalState} className="h-20 w-20 shrink-0 max-[640px]:h-16 max-[640px]:w-16" label={t(`morpheus.signalOs.signal.${signalState}`)} />
+          <MorpheusFluidOrb state={signalState} className="h-12 w-12 shrink-0" label={t(`morpheus.signalOs.signal.${signalState}`)} />
           <div className="min-w-0">
-            <h2 className="text-[clamp(22px,3vw,31px)] font-semibold leading-tight tracking-[-0.035em] text-[#edf5ef]">{preferredName ? t('morpheus.workspace.greetingNamed', { name: preferredName }) : t('morpheus.workspace.greeting')}</h2>
+            <h2 className="text-[clamp(22px,3vw,27px)] font-semibold leading-tight tracking-[-0.035em] text-[#edf5ef]">{preferredName ? t('morpheus.workspace.greetingNamed', { name: preferredName }) : t('morpheus.workspace.greeting')}</h2>
             <p className="mt-1 text-[13px] text-[#a0b6aa]">{t('morpheus.workspace.subtitle')}</p>
           </div>
         </div>

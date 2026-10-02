@@ -281,6 +281,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
       if (sessionGeneration !== ambientGeneration) return;
       set({ presence, error: null, errorKind: null });
       const controller = new MorpheusAmbientVoiceCapture({
+        inputDeviceId: status.settings.inputDeviceId,
         silenceMs: status.settings.ambientSilenceMs,
         maxUtteranceMs: status.settings.ambientMaxUtteranceMs,
         shouldCapture: () => {
@@ -543,6 +544,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
         }
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           audio: {
+            ...(status.settings.inputDeviceId ? { deviceId: { exact: status.settings.inputDeviceId } } : {}),
             channelCount: 1,
             autoGainControl: true,
             echoCancellation: true,

@@ -1268,6 +1268,7 @@ export type HostApiContract = {
     companionSurfaceStatus: () => MorpheusCompanionSurfaceStatus;
     dismissCompanionSurface: () => MorpheusCompanionSurfaceStatus;
     expandCompanionSurface: () => MorpheusCompanionSurfaceStatus;
+    showCompanionSurface: () => MorpheusCompanionSurfaceStatus;
     voiceStatus: () => MorpheusVoiceStatus;
     updateVoiceSettings: (payload: MorpheusVoiceSettingsPatch) => MorpheusVoiceStatus;
     transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => MorpheusTranscriptionResult;

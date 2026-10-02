@@ -50,7 +50,7 @@ test('the native orb edits a preserved draft and admits one turn before compact 
     await orb!.mouse.move(-10, -10);
     await expect.poll(() => app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows().find((item) => item.getTitle() === 'Morpheus presence')?.getBounds().width,
-    )).toBe(100);
+    )).toBe(56);
     await orb!.locator('.orb').hover();
     await expect(orb!.locator('.hover-composer')).toHaveCSS('opacity', '1');
 
@@ -61,7 +61,7 @@ test('the native orb edits a preserved draft and admits one turn before compact 
     await orb!.locator('#orb-input').press('Escape');
     await expect.poll(() => app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows().find((item) => item.getTitle() === 'Morpheus presence')?.getBounds().width,
-    )).toBe(100);
+    )).toBe(56);
     await expect.poll(async () => (await orbSnapshot(orb!)).draft.text).toBe(draft);
 
     await orb!.locator('.orb').click();
@@ -97,17 +97,17 @@ test('the native orb edits a preserved draft and admits one turn before compact 
       const area = screen.getDisplayMatching(orbBounds).workArea;
       return {
         mainVisible: mainWindow.isVisible(), orbVisible: orbWindow.isVisible(),
-        offsetX: compact.x - (area.x + area.width - Math.min(440, area.width - 40) - 20),
+        offsetX: compact.x - (area.x + area.width - Math.min(440, area.width - 32) - 16),
         orbRightGap: area.x + area.width - orbBounds.x - orbBounds.width,
         orbBottomGap: area.y + area.height - orbBounds.y - orbBounds.height,
         // Check the requested placement; Windows can trim native frame pixels
         // from the height reported by getBounds after making Main non-resizable.
-        offsetY: compact.y - Math.max(area.y + 20, orbBounds.y - Math.min(520, area.height - 40) - 12),
+        offsetY: compact.y - Math.max(area.y + 16, orbBounds.y - Math.min(400, area.height - 32) - 12),
         insideDisplay: compact.x >= area.x && compact.y >= area.y
           && compact.x + compact.width <= area.x + area.width
           && compact.y + compact.height <= area.y + area.height,
       };
-    })).toEqual({ mainVisible: true, orbVisible: false, offsetX: 0, offsetY: 0, orbRightGap: 20, orbBottomGap: 20, insideDisplay: true });
+    })).toEqual({ mainVisible: true, orbVisible: false, offsetX: 0, offsetY: 0, orbRightGap: 16, orbBottomGap: 16, insideDisplay: true });
 
     await main!.getByTestId('quick-command-expand').click();
     await expect(main!.getByTestId('morpheus-quick-command')).toBeHidden();

@@ -15,6 +15,28 @@ export class MorpheusWakeOrb {
   private pendingLevelTimer: ReturnType<typeof setTimeout> | null = null;
   private caption: string | null = null;
   private captionTimer: ReturnType<typeof setTimeout> | null = null;
+  private dismissTimer: ReturnType<typeof setTimeout> | null = null;
+  private fadeTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private clearDismiss(): void {
+    if (this.dismissTimer) clearTimeout(this.dismissTimer);
+    if (this.fadeTimer) clearTimeout(this.fadeTimer);
+    this.dismissTimer = null; this.fadeTimer = null;
+  }
+
+  private scheduleDismiss(): void {
+    if (this.dismissTimer || !this.wantsVisible || this.hovered
+      || ['listening', 'transcribing', 'understanding', 'preparing-speech', 'speaking', 'waiting-for-approval'].includes(this.presence)) return;
+    this.dismissTimer = setTimeout(() => {
+      this.dismissTimer = null;
+      const window = this.window;
+      if (!window || window.isDestroyed()) return;
+      void window.webContents.executeJavaScript('document.documentElement.dataset.visible = "false"', true).catch(() => undefined);
+      this.fadeTimer = setTimeout(() => { this.fadeTimer = null; this.hide(); }, 180);
+      this.fadeTimer.unref?.();
+    }, 10_000);
+    this.dismissTimer.unref?.();
+  }
 
   constructor(
     private readonly onOpen: () => void,
@@ -46,6 +68,8 @@ export class MorpheusWakeOrb {
   show(): void {
     if (process.platform !== 'win32') return;
     this.wantsVisible = true;
+    this.clearDismiss();
+    this.scheduleDismiss();
     const existing = this.window;
     if (existing && !existing.isDestroyed()) {
       this.hovered = false;
@@ -107,7 +131,9 @@ export class MorpheusWakeOrb {
   }
 
   updatePresence(presence: MorpheusVoicePresence): void {
+    const changed = this.presence !== presence.state;
     this.presence = presence.state;
+    if (changed) { this.clearDismiss(); this.applyVisibility(); this.scheduleDismiss(); }
     if (this.caption && ['listening', 'working', 'error'].includes(this.presence)) this.showCaption(null);
     if (this.presence !== 'listening' && this.presence !== 'speaking') this.updateLevel(0);
     // Ambient microphone availability is independent of the typed companion.
@@ -153,6 +179,7 @@ export class MorpheusWakeOrb {
       return;
     }
     if (action === 'hover' || action === 'focus') {
+      this.clearDismiss();
       this.hovered = true;
       window.setBounds(wakeOrbHoverBounds(this.getWorkArea()));
       this.shapeWindow();
@@ -165,12 +192,14 @@ export class MorpheusWakeOrb {
       return this.applyHover();
     }
     this.hovered = false;
+    this.scheduleDismiss();
     window.setBounds(wakeOrbBounds(this.getWorkArea()));
     this.shapeWindow();
     return this.applyHover();
   }
 
   hide(): void {
+    this.clearDismiss();
     this.showCaption(null);
     this.wantsVisible = false;
     this.hovered = false;
@@ -193,6 +222,7 @@ export class MorpheusWakeOrb {
   }
 
   dispose(): void {
+    this.clearDismiss();
     if (this.captionTimer) clearTimeout(this.captionTimer);
     this.captionTimer = null;
     this.caption = null;
@@ -247,7 +277,7 @@ export class MorpheusWakeOrb {
     const window = this.window;
     if (!window || window.isDestroyed() || process.platform !== 'win32') return;
     const bounds = window.getBounds();
-    const orbSize = Math.min(100, bounds.width, bounds.height);
+    const orbSize = Math.min(56, bounds.width, bounds.height);
     const orbX = Math.max(0, bounds.width - orbSize);
     const orbY = Math.max(0, bounds.height - orbSize);
     // Rectangular bands approximate the circular hit area and preserve the artwork's glow.
@@ -259,7 +289,7 @@ export class MorpheusWakeOrb {
         width: Math.min(orbSize, Math.ceil(half * 2)), height: Math.min(10, orbSize - y) });
     }
     const shapes = this.hovered || this.caption
-      ? [{ x: Math.max(0, bounds.width - 352), y: Math.max(0, bounds.height - 163),
+      ? [{ x: Math.max(0, bounds.width - 352), y: Math.max(0, bounds.height - 119),
         width: Math.min(344, bounds.width), height: Math.min(55, bounds.height) }, ...strips]
       : strips;
     window.setShape?.(shapes);
