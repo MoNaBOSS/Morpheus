@@ -38,7 +38,7 @@ acceptance:
   - Normal packaged startup, protected local provider, compact reply and original history pass reload and quiet restart.
   - Inspect actual screenshots and record exact EXE hash, source, notices and signature status.
   - Physical/live/installer gates stay explicit; do not turn automation into full acceptance.
-  - Limit only the tiny idle halo changes to ten updates per second; active aurora/audio and reduced-motion/hidden pause behavior remain intact.
+  - Limit only the tiny idle halo changes to five updates per second; active aurora/audio and reduced-motion/hidden pause behavior remain intact.
 docs:
   required: true
 ---

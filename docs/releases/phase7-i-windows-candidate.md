@@ -183,3 +183,13 @@ reviewed patched version and the entire suite rerun. 31 targeted runtime/install
 helper checks pass. Fifteen fresh-build native journeys pass (1.2m), including
 four-locale history/startup, Premium unavailable and shared idle/active/reduced/
 hidden motion. Still qualify the actual preview.5 package before EXE compression.
+
+The c2caf22b preview.5 package passed normal reply/reload/relaunch and controlled
+outage/local task/managed guard, but its full five-minute idle measured **1.063%**
+CPU: improved, still above the unchanged 1% target. No provider requests; memory
+1,329,573,888 → 1,290,379,264 bytes; no page/console errors. Preserve
+`E:\Morpheus-builds\p7-preview5\qualification-before-idle5hz.json` as failed
+performance evidence. The only follow-up is reducing subpixel idle halo updates
+from 10 Hz to 5 Hz; active aurora, audio response and reduced/hidden pause are
+unchanged. Fresh shared native/React motion regression passes (24.1s), harness
+validation passes. Rebuilt package measurement remains the next gate.

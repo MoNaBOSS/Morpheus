@@ -45,7 +45,8 @@ now passes normal reply/reload/full quiet restart, one local provider call total
 actual screenshots inspected. Its controlled Gateway outage/local task/restart,
 Premium guard and clean shutdown also pass. Five-minute idle makes zero model
 requests but misses the CPU target (2.406% total capacity). A/B diagnosis isolates
-the continuous idle halo. The new shared CSS bounds only idle changes to 10 Hz;
+the continuous idle halo. The first 10 Hz package measured 1.063% CPU, still above
+the 1% target; evidence is retained. The shared CSS now bounds idle changes to 5 Hz;
 active voice/working aurora stays fluid.
 
 The final dependency audit also found upstream advisories. Preview.5 source uses
@@ -57,7 +58,7 @@ Only unchanged Node/uv/agent-browser binaries and curated skill assets are reuse
 
 Preview.5 source: 3,320 units + two skips, three typechecks, zero lint errors
 (12 inherited warnings), 15 fresh native journeys, comms and narrow harness pass.
-**Next exact action:** commit/push reviewed source, qualify its freshly packaged
+**Next exact action:** qualify the 5 Hz idle refinement, commit/push reviewed source, qualify its freshly packaged
 normal/runtime/idle behavior, then compress and identify the EXE. Keep installer
 execution/hardware/live-service gates explicit.
 Preceding evidence: `E:\Morpheus-builds\phase7-20261002-0403`, source 50437715,

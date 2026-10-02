@@ -17,7 +17,7 @@ test('native and React orb share motion, pause while hidden, and retain a visibl
     await expect(orb).toHaveClass(/morpheus-motion/);
     await expect(orb).toHaveAttribute('data-motion-state', 'idle');
     await expect(orb.locator('.morpheus-motion__halo')).toHaveCSS('animation-name', 'morpheus-motion-breathe');
-    await expect(orb.locator('.morpheus-motion__halo')).toHaveCSS('animation-timing-function', 'steps(72)');
+    await expect(orb.locator('.morpheus-motion__halo')).toHaveCSS('animation-timing-function', 'steps(36)');
     expect(await orb.locator('.morpheus-motion__artwork').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
     await expect.poll(() => app.evaluate(({ BrowserWindow }) => {
       const window = BrowserWindow.getAllWindows().find((item) => item.getTitle() === 'Morpheus presence');
@@ -82,7 +82,7 @@ test('native and React orb share motion, pause while hidden, and retain a visibl
     if (evidenceDir) await main!.screenshot({ path: join(evidenceDir, 'shared-motion-react-compact.png') });
     await main!.emulateMedia({ reducedMotion: 'no-preference' });
     await expect(reactOrb.locator('.morpheus-motion__halo')).toHaveCSS('animation-name', 'morpheus-motion-breathe');
-    await expect(reactOrb.locator('.morpheus-motion__halo')).toHaveCSS('animation-timing-function', 'steps(72)');
+    await expect(reactOrb.locator('.morpheus-motion__halo')).toHaveCSS('animation-timing-function', 'steps(36)');
 
     // The tray API is guarded in E2E without a real tray. Main's hide event is
     // the same handoff used after a successful tray transfer.

@@ -66,9 +66,9 @@
 }
 
 .morpheus-motion[data-motion-state='idle'] .morpheus-motion__halo {
-  /* Idle changes by subpixel amounts: ten updates/second avoids a continuously
+  /* Idle changes by subpixel amounts: five updates/second avoids a continuously
      busy transparent-window compositor. Active aurora/audio remain fluid. */
-  animation: morpheus-motion-breathe 7.2s steps(72, end) infinite;
+  animation: morpheus-motion-breathe 7.2s steps(36, end) infinite;
 }
 
 .morpheus-motion[data-motion-state='working'] .morpheus-motion__aurora,
