@@ -836,6 +836,8 @@ export type SessionTurnTimingCandidate = {
   normalizedUserText: string;
   userOccurrenceFromTail: number;
   durationMs: number;
+  /** Original settled transcript turn start; absent when older hosts omit it. */
+  startedAtMs?: number;
 };
 export type SessionTurnTimingsResult = OptionalHostSuccess & {
   timings?: SessionTurnTimingCandidate[];

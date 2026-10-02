@@ -18,7 +18,23 @@ the first 49,152 bytes. A synthesis response can arrive before later IPC events.
 Completion must declare and await the exact bounded chunk count/byte length, then
 drain the actual player; an engine-generated WAV or a transient asleep state cannot
 prove complete playback. The rejected app.asar and evidence are preserved under
-`evidence/rejected-preview7-23d7bae9`; replacement qualification is pending.
+`evidence/rejected-preview7-23d7bae9`. The typed completion correction at `24945c32`
+passes real packaged generated-command recognition, Core execution and original
+renderer playback: all 137,626 declared PCM bytes are received, scheduled and
+naturally ended; Stop interrupts a second reply in 38 ms. No physical microphone
+was used. Its hosted install/reinstall/uninstall also passed. Final paced native
+visual review caught an older Core task appended after a newer saved ACP reply
+following restart: short-lived Main admission references had gone, and the
+existing canonical transcript timing supplement discarded original start times.
+The latest reply was outside the compact viewport although DOM/history checks
+passed. Preserve original start times through that existing bounded supplement;
+do not create another history store or infer unknown dates. A separate native
+regression confirmed automatic resize scroll events could suspend following;
+only deliberate older-history gestures may do so. The pre-scroll installer and
+recordings are preserved under
+`evidence/pre-scroll-preview7-24945c32`; its visual delivery is not accepted.
+The bounded chronology/viewport correction requires fresh native and exact
+packaged full-restart evidence.
 The preview.6 results later in this
 document are a preserved baseline; the current checklist records replacement results.
 No meaning is inferred from standalone historical A/B/C/D answers whose questions

@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { DatabaseSync } from 'node:sqlite';
@@ -166,11 +166,13 @@ describe('sessions API workspace summaries', () => {
           normalizedUserText: 'Repeat this',
           userOccurrenceFromTail: 2,
           durationMs: 5_000,
+          startedAtMs: Date.parse('2026-07-22T10:00:00.000Z'),
         },
         {
           normalizedUserText: 'Repeat this',
           userOccurrenceFromTail: 1,
           durationMs: 4_000,
+          startedAtMs: Date.parse('2026-07-22T10:01:00.000Z'),
         },
       ],
     });
@@ -214,8 +216,86 @@ describe('sessions API workspace summaries', () => {
         normalizedUserText: 'Fallback',
         userOccurrenceFromTail: 1,
         durationMs: 2_500,
+        startedAtMs: 2_000_000_001_000,
       }],
     });
+  });
+
+  it('returns original starts across fresh API reads without mutating history or shifting incomplete repeated turns', async () => {
+    seedTranscriptRecords('agent:main:session-durable-starts', [
+      {
+        type: 'message',
+        timestamp: 1_800_000_000,
+        message: { role: 'user', content: 'Repeated', timestamp: 2_000_000_000_000 },
+      },
+      {
+        type: 'message',
+        timestamp: 1_800_000_002,
+        message: { role: 'assistant', content: 'First answer' },
+      },
+      {
+        type: 'message',
+        timestamp: 'not a timestamp',
+        message: { role: 'user', content: 'Fallback', timestamp: 1_800_000_004_000 },
+      },
+      {
+        type: 'message',
+        message: { role: 'assistant', content: 'Second answer', timestamp: 1_800_000_005_000 },
+      },
+      {
+        type: 'message',
+        timestamp: 1_800_000_006,
+        message: { role: 'user', content: 'Repeated' },
+      },
+    ]);
+    const transcriptPath = join(testOpenClawDir, 'agents', 'main', 'sessions', 'timings.jsonl');
+    const original = readFileSync(transcriptPath, 'utf8');
+    const { createSessionsApi } = await import('@electron/services/sessions-api');
+    const expected = {
+      success: true,
+      timings: [
+        { normalizedUserText: 'Repeated', userOccurrenceFromTail: 2, durationMs: 2_000, startedAtMs: 1_800_000_000_000 },
+        { normalizedUserText: 'Fallback', userOccurrenceFromTail: 1, durationMs: 1_000, startedAtMs: 1_800_000_004_000 },
+      ],
+    };
+
+    await expect(createSessionsApi().turnTimings({ sessionKey: 'agent:main:session-durable-starts' })).resolves.toEqual(expected);
+    await expect(createSessionsApi().turnTimings({ sessionKey: 'agent:main:session-durable-starts' })).resolves.toEqual(expected);
+    expect(readFileSync(transcriptPath, 'utf8')).toBe(original);
+  });
+
+  it('omits untimestamped and numerically overflowing turns instead of inventing chronology', async () => {
+    seedTranscriptRecords('agent:main:session-invalid-starts', [
+      { type: 'message', message: { role: 'user', content: 'Old untimestamped history' } },
+      { type: 'message', message: { role: 'assistant', content: 'Old answer' } },
+      { type: 'message', timestamp: -Number.MAX_VALUE, message: { role: 'user', content: 'Overflowing start' } },
+      { type: 'message', timestamp: 1_800_000_000_000, message: { role: 'assistant', content: 'Answer' } },
+      { type: 'message', timestamp: 1_800_000_001_000, message: { role: 'user', content: 'Valid start' } },
+      { type: 'message', timestamp: -Number.MAX_VALUE, message: { role: 'assistant', content: 'Overflowing end' } },
+    ]);
+    const { createSessionsApi } = await import('@electron/services/sessions-api');
+
+    await expect(createSessionsApi().turnTimings({
+      sessionKey: 'agent:main:session-invalid-starts',
+    })).resolves.toEqual({ success: true, timings: [] });
+  });
+
+  it('omits finite epochs outside the actual Date range while retaining valid transcript starts', async () => {
+    seedTranscriptRecords('agent:main:session-date-range', [
+      { type: 'message', timestamp: 1e20, message: { role: 'user', content: 'Impossible start' } },
+      { type: 'message', timestamp: 1e20 + 1_000_000, message: { role: 'assistant', content: 'Impossible answer' } },
+      { type: 'message', timestamp: 1_800_000_000_000, message: { role: 'user', content: 'Impossible completion' } },
+      { type: 'message', timestamp: 1e20, message: { role: 'assistant', content: 'Impossible completion time' } },
+      { type: 'message', timestamp: 1_800_000_001_000, message: { role: 'user', content: 'Valid turn' } },
+      { type: 'message', timestamp: 1_800_000_002_000, message: { role: 'assistant', content: 'Valid answer' } },
+    ]);
+    const { createSessionsApi } = await import('@electron/services/sessions-api');
+
+    await expect(createSessionsApi().turnTimings({
+      sessionKey: 'agent:main:session-date-range',
+    })).resolves.toEqual({ success: true, timings: [{
+      normalizedUserText: 'Valid turn', userOccurrenceFromTail: 1, durationMs: 1_000, startedAtMs: 1_800_000_001_000,
+    }] });
   });
 
   it('returns OpenClaw ACP cwd as workspacePath when available', async () => {

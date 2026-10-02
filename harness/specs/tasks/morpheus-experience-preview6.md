@@ -32,6 +32,8 @@ requiredRules:
 expectedUserBehavior:
   - Ordinary conversation and contextual settings never unexpectedly expose the technical sidebar.
   - Compact and expanded surfaces preserve the selected conversation, draft, task and personality.
+  - Native compact window resizing keeps the latest reply visible unless the user deliberately scrolls to read older history.
+  - Full process restart restores chat/task chronology from original bounded transcript timing metadata when short-lived Main admission references are absent.
   - Existing technical tools remain reachable through explicit Advanced navigation.
   - Included local voice requires no voice API key; device and service failures have actionable recovery.
   - Presence respects actual work area, inactivity, reduced motion and manual microphone mute.

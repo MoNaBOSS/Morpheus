@@ -33,6 +33,7 @@ export function MorpheusConversationThread({
   const sending = useAcpChatSessionStore((state) => state.sending);
   const loading = useAcpChatSessionStore((state) => state.loading);
   const error = useAcpChatSessionStore((state) => state.error);
+  const turnTimingsByUserMessageId = useAcpChatSessionStore((state) => state.turnTimingsByUserMessageId);
   const respondPermission = useAcpChatSessionStore((state) => state.respondPermission);
   const pendingTurns = useMorpheusConversationStore((state) => state.snapshot?.pendingTurns ?? EMPTY_PENDING_TURNS);
   const turns = useMorpheusConversationStore((state) => state.snapshot?.turns ?? EMPTY_TURNS);
@@ -53,7 +54,8 @@ export function MorpheusConversationThread({
   const current = activeSessionKey === sessionKey && timeline.sessionId === sessionKey;
   const entries = useMemo(() => interleaveMorpheusConversation({
     projection, sessionKey, turns, pendingTurns, objectiveRuns,
-  }), [objectiveRuns, pendingTurns, projection, sessionKey, turns]);
+    turnTimingsByUserMessageId: current ? turnTimingsByUserMessageId : undefined,
+  }), [current, objectiveRuns, pendingTurns, projection, sessionKey, turnTimingsByUserMessageId, turns]);
   const threadRef = useRef<HTMLDivElement>(null);
   // Follow new work until the reader deliberately scrolls into older history.
   // A newly submitted request returns to the live end; passive chunks do not.
@@ -62,13 +64,49 @@ export function MorpheusConversationThread({
   useEffect(() => {
     const scroller = threadRef.current?.parentElement?.closest<HTMLElement>('[role="log"]');
     if (!scroller) return;
-    const onScroll = () => { followLatest.current = scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop <= 40; };
+    // Resize, scroll anchoring and our own scroll-to-end also emit scroll events.
+    // Only an older-history gesture may stop following; native compact resize
+    // must not mistake an intermediate full-size layout for a reader's choice.
+    const readOlder = () => { if (scroller.scrollHeight > scroller.clientHeight) followLatest.current = false; };
+    const onScroll = () => {
+      if (scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop <= 40) followLatest.current = true;
+    };
+    const onWheel = (event: WheelEvent) => { if (event.deltaY < 0) readOlder(); };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.target as HTMLElement).closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (['ArrowUp', 'PageUp', 'Home'].includes(event.key) || event.key === ' ' && event.shiftKey) readOlder();
+    };
+    let touchY: number | undefined;
+    const onTouchStart = (event: TouchEvent) => { touchY = event.touches[0]?.clientY; };
+    const onTouchMove = (event: TouchEvent) => {
+      const nextY = event.touches[0]?.clientY;
+      if (touchY !== undefined && nextY !== undefined && nextY > touchY) readOlder();
+      touchY = nextY;
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      // Native/custom scrollbar dragging is also an explicit reading gesture.
+      const right = scroller.getBoundingClientRect().right;
+      if (event.target === scroller && event.clientX >= right - Math.max(12, scroller.offsetWidth - scroller.clientWidth)) readOlder();
+    };
     const onResize = () => { if (followLatest.current) scroller.scrollTop = scroller.scrollHeight; };
     scroller.addEventListener('scroll', onScroll, { passive: true });
+    scroller.addEventListener('wheel', onWheel, { passive: true });
+    scroller.addEventListener('keydown', onKeyDown);
+    scroller.addEventListener('touchstart', onTouchStart, { passive: true });
+    scroller.addEventListener('touchmove', onTouchMove, { passive: true });
+    scroller.addEventListener('pointerdown', onPointerDown);
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onResize);
     observer?.observe(scroller);
     if (threadRef.current) observer?.observe(threadRef.current);
-    return () => { scroller.removeEventListener('scroll', onScroll); observer?.disconnect(); };
+    return () => {
+      scroller.removeEventListener('scroll', onScroll);
+      scroller.removeEventListener('wheel', onWheel);
+      scroller.removeEventListener('keydown', onKeyDown);
+      scroller.removeEventListener('touchstart', onTouchStart);
+      scroller.removeEventListener('touchmove', onTouchMove);
+      scroller.removeEventListener('pointerdown', onPointerDown);
+      observer?.disconnect();
+    };
   }, [compact, sessionKey]);
   useLayoutEffect(() => {
     const input = [...entries].reverse().find((entry) => entry.kind !== 'message' || entry.message.role === 'user');

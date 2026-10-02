@@ -1,6 +1,7 @@
 import type { AcpTimelineSnapshot, MessageSegmentItem, PermissionItem } from '@/lib/acp/timeline-types';
 import type { MorpheusAssistantPendingTurn, MorpheusAssistantTurn } from '@shared/morpheus/assistant-session-types';
 import type { MorpheusObjectiveRun } from '@shared/morpheus/core/objective-types';
+import type { AcpTurnTiming } from '@/lib/acp/turn-timings';
 
 export type MorpheusConversationMessage = {
   id: string;
@@ -25,19 +26,28 @@ export type MorpheusConversationEntry =
 
 /** Join existing owners for display without moving a task when it finishes. */
 export function interleaveMorpheusConversation({
-  projection, sessionKey, turns, pendingTurns, objectiveRuns,
+  projection, sessionKey, turns, pendingTurns, objectiveRuns, turnTimingsByUserMessageId = {},
 }: {
   projection: MorpheusConversationProjection;
   sessionKey: string | null;
   turns: readonly MorpheusAssistantTurn[];
   pendingTurns: readonly MorpheusAssistantPendingTurn[];
   objectiveRuns: readonly MorpheusObjectiveRun[];
+  /** Existing canonical timing map for this projection's current ACP session. */
+  turnTimingsByUserMessageId?: Readonly<Record<string, AcpTurnTiming>>;
 }): MorpheusConversationEntry[] {
   const admittedAt = new Map(turns.filter((turn) => turn.conversationId === sessionKey)
     .map((turn) => [turn.turnId, Date.parse(turn.admittedAt)]));
   let currentTurnTime: number | undefined;
   const entries: { entry: MorpheusConversationEntry; time?: number }[] = projection.messages.map((message) => {
-    if (message.turnId || message.role === 'user') currentTurnTime = admittedAt.get(message.turnId ?? message.messageId);
+    if (message.turnId || message.role === 'user') {
+      const turnId = message.turnId ?? message.messageId;
+      const admission = admittedAt.get(turnId);
+      const timing = turnTimingsByUserMessageId[turnId];
+      const transcriptStart = timing?.source === 'transcript' && timing.status === 'complete' ? timing.startedAtMs : undefined;
+      currentTurnTime = admission !== undefined && Number.isFinite(admission) ? admission
+        : transcriptStart !== undefined && transcriptStart > 0 && Number.isFinite(new Date(transcriptStart).getTime()) ? transcriptStart : undefined;
+    }
     return { entry: { kind: 'message', message }, time: currentTurnTime };
   });
   for (const turn of pendingTurns) {

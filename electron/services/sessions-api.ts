@@ -171,11 +171,20 @@ function extractTranscriptTurnTimings(records: TranscriptMessageRecord[]): Sessi
     const turn = turns[index]!;
     const userOccurrenceFromTail = (occurrences.get(turn.normalizedUserText) ?? 0) + 1;
     occurrences.set(turn.normalizedUserText, userOccurrenceFromTail);
-    if (turn.startedAt == null || turn.completedAt == null || turn.completedAt < turn.startedAt) continue;
+    if (
+      turn.startedAt == null || turn.completedAt == null
+      || !Number.isFinite(turn.startedAt) || !Number.isFinite(turn.completedAt)
+      || !Number.isFinite(new Date(turn.startedAt).getTime())
+      || !Number.isFinite(new Date(turn.completedAt).getTime())
+      || turn.completedAt < turn.startedAt
+    ) continue;
+    const durationMs = turn.completedAt - turn.startedAt;
+    if (!Number.isFinite(durationMs)) continue;
     candidates[index] = {
       normalizedUserText: turn.normalizedUserText,
       userOccurrenceFromTail,
-      durationMs: turn.completedAt - turn.startedAt,
+      durationMs,
+      startedAtMs: turn.startedAt,
     };
   }
   return candidates.filter((candidate): candidate is SessionTurnTimingCandidate => candidate != null);
@@ -503,8 +512,8 @@ async function loadSessionTurnTimingsByKey(
     if (!transcriptPath) return null;
 
     // ACP session/load is authoritative for history content, but its updates omit the
-    // original timestamps needed to calculate a whole-turn duration. Read only bounded
-    // transcript timing metadata here; this must never become a second history source.
+    // original timestamps needed for whole-turn duration and chronological placement.
+    // Read only bounded transcript timing metadata; this must never become a second history source.
     return extractTranscriptTurnTimings(readRecentTranscriptRecords(transcriptPath, limit));
   } catch {
     return null;

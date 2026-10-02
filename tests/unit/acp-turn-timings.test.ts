@@ -26,8 +26,9 @@ function timing(
   normalizedUserText: string,
   userOccurrenceFromTail: number,
   durationMs: number,
+  startedAtMs?: number,
 ): SessionTurnTimingCandidate {
-  return { normalizedUserText, userOccurrenceFromTail, durationMs };
+  return { normalizedUserText, userOccurrenceFromTail, durationMs, ...(startedAtMs !== undefined ? { startedAtMs } : {}) };
 }
 
 describe('ACP historical turn timing alignment', () => {
@@ -75,5 +76,43 @@ describe('ACP historical turn timing alignment', () => {
       timing('Hello', 1, Number.NaN),
       timing('Hello', 1, -1),
     ])).toEqual({});
+  });
+
+  it('retains original starts for repeated prompts using their existing tail occurrence', () => {
+    const snapshot = timeline([
+      { userId: 'old', text: 'Repeat this' },
+      { userId: 'new', text: 'Repeat this' },
+    ]);
+    expect(alignHistoricalTurnTimings(snapshot, [
+      timing('Repeat this', 1, 4_000, 2_000),
+      timing('Repeat this', 2, 5_000, 1_000),
+    ])).toEqual({
+      new: { source: 'transcript', status: 'complete', durationMs: 4_000, startedAtMs: 2_000 },
+      old: { source: 'transcript', status: 'complete', durationMs: 5_000, startedAtMs: 1_000 },
+    });
+  });
+
+  it('keeps valid durations but rejects invalid or reversed chronological evidence', () => {
+    const snapshot = timeline([{ userId: 'old', text: 'Old' }, { userId: 'new', text: 'New' }]);
+    expect(alignHistoricalTurnTimings(snapshot, [
+      timing('Old', 1, 5_000, 2_000), timing('New', 1, 4_000, 1_000),
+    ])).toEqual({
+      old: { source: 'transcript', status: 'complete', durationMs: 5_000 },
+      new: { source: 'transcript', status: 'complete', durationMs: 4_000 },
+    });
+    for (const startedAtMs of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, 1e20]) {
+      expect(alignHistoricalTurnTimings(snapshot, [timing('Old', 1, 5_000, startedAtMs)]))
+        .toEqual({ old: { source: 'transcript', status: 'complete', durationMs: 5_000 } });
+    }
+  });
+
+  it('rejects a reused ACP user identity across distinct correlated turns', () => {
+    const snapshot = timeline([{ userId: 'reused', text: 'First' }, { userId: 'other', text: 'Other' }, { userId: 'reused', text: 'Last' }]);
+    // Give the first and last occurrence distinct segment IDs while preserving
+    // the malformed repeated owner ID; an identity must never date two turns.
+    snapshot.itemOrder[0] = 'reused:first';
+    snapshot.itemsById['reused:first'] = { ...snapshot.itemsById['reused:0']!, id: 'reused:first', parts: [{ kind: 'markdown', text: 'First' }] } as typeof snapshot.itemsById[string];
+    expect(alignHistoricalTurnTimings(snapshot, [timing('First', 1, 1_000, 1_000), timing('Last', 1, 1_000, 3_000)]))
+      .toEqual({});
   });
 });

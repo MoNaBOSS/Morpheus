@@ -30,9 +30,19 @@ accepting a replacement. Finish the scoped regressions and exact preview.7 packa
 in the same spec/checklist. The reload correction at `23d7bae9` passes normal packaged
 recovery, but exact native audio observation found incomplete speech playback:
 three generated PCM chunks, only the first scheduled. Await the Main-declared
-bounded stream count/length before finishing and requalify all played bytes. Its
-successful hosted install/reinstall/uninstall run remains historical evidence of
-installation only. Never execute NSIS against the owner's existing Windows
+bounded stream count/length before finishing. The correction at `24945c32` passes
+actual packaged generated speech -> STT -> Core execution -> complete native
+playback (137,626 bytes declared/received/scheduled/naturally ended) and 38 ms Stop;
+its hosted installation/reinstall/uninstall passed. Final paced native visual
+review found an older Core task appended after a newer saved ACP reply on restart;
+the existing bounded transcript timing supplement discarded original start times
+after short-lived Main admission references disappeared. The latest reply was
+outside the compact viewport, and separate native resize regression also failed.
+Its pre-scroll EXE/recordings are preserved, not delivered as the final experience.
+Carry original start times through the existing supplement without another history
+store, distinguish deliberate history scrolling from automatic native resize
+events, then qualify the exact replacement package and installer.
+Never execute NSIS against the owner's existing Windows
 registration/profile; the CI test uses its own clean hosted runner. External hosted,
 billing, signing and actual physical hardware acceptance are separate gates.
 Build artifacts stay on E: after storage checks. Preview.6 remains preserved;

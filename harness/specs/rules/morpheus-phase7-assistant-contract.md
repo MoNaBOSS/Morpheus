@@ -92,3 +92,12 @@ Generated persona input is model context, not the user's displayed utterance.
 Tag it in the existing ACP ledger and suppress only the recognized user-role
 display part. Preserve raw matching/provenance and all untagged user text. Visual
 inspection must precede packaging; text-presence assertions alone are insufficient.
+Native compact/full resizing must preserve following the latest reply. Only a
+deliberate older-history gesture may suspend that following; automatic resize
+scroll events cannot be mistaken for user intent. Native regression checks must
+measure the reply inside the actual conversation viewport after the window settles.
+After process restart, missing Main admission references may use original settled
+turn start times from the existing bounded transcript timing supplement. Preserve
+its user-text/reverse-occurrence identity and stale-generation guards. Missing,
+invalid or ambiguous timing stays unknown; never invent dates or persist another
+conversation history merely to position a task.

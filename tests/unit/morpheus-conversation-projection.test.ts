@@ -98,6 +98,46 @@ describe('continuous conversation/task display', () => {
     expect(summarize(entries)).toEqual(['middle task', 'newer reply']);
   });
 
+  it('restores task chronology after Main admission refs are absent using canonical transcript starts', () => {
+    const entries = interleaveMorpheusConversation({
+      projection: projectMorpheusConversation(history, 'agent:main:main'), sessionKey: 'agent:main:main',
+      turns: [], pendingTurns: [], objectiveRuns: [objective('middle task', times[1])],
+      turnTimingsByUserMessageId: {
+        older: { source: 'transcript', status: 'complete', durationMs: 2_000, startedAtMs: Date.parse(times[0]) },
+        newer: { source: 'transcript', status: 'complete', durationMs: 2_000, startedAtMs: Date.parse(times[2]) },
+      },
+    });
+    expect(summarize(entries)).toEqual(['older question', 'older reply', 'middle task', 'newer question', 'newer reply']);
+  });
+
+  it('prefers original Main admission over a historical fallback and keeps bounded reply anchors', () => {
+    const entries = interleaveMorpheusConversation({
+      projection: projectMorpheusConversation(history, 'agent:main:main', { messageLimit: 1 }), sessionKey: 'agent:main:main',
+      turns: [turn('newer', times[2])], pendingTurns: [], objectiveRuns: [objective('middle task', times[1])],
+      turnTimingsByUserMessageId: { newer: { source: 'transcript', status: 'complete', durationMs: 2_000, startedAtMs: Date.parse(times[0]) } },
+    });
+    expect(summarize(entries)).toEqual(['middle task', 'newer reply']);
+    expect(summarize(interleaveMorpheusConversation({
+      projection: projectMorpheusConversation(history, 'agent:main:main', { messageLimit: 1 }), sessionKey: 'agent:main:main',
+      turns: [], pendingTurns: [], objectiveRuns: [objective('middle task', times[1])],
+      turnTimingsByUserMessageId: { newer: { source: 'transcript', status: 'complete', durationMs: 2_000, startedAtMs: Date.parse(times[2]) } },
+    }))).toEqual(['middle task', 'newer reply']);
+  });
+
+  it('never uses invalid or running live metadata to invent missing historical chronology', () => {
+    for (const timing of [
+      { source: 'transcript' as const, status: 'complete' as const, durationMs: 2_000 },
+      { source: 'transcript' as const, status: 'complete' as const, durationMs: 2_000, startedAtMs: 1e20 },
+      { source: 'live' as const, status: 'running' as const, startedAtMs: Date.parse(times[2]) },
+    ]) {
+      expect(summarize(interleaveMorpheusConversation({
+        projection: projectMorpheusConversation(history, 'agent:main:main'), sessionKey: 'agent:main:main',
+        turns: [], pendingTurns: [], objectiveRuns: [objective('middle task', times[1])],
+        turnTimingsByUserMessageId: { newer: timing },
+      }))).toEqual(['older question', 'older reply', 'newer question', 'newer reply', 'middle task']);
+    }
+  });
+
   it('keeps undated historical ACP messages in their original order without invented chronology', () => {
     const entries = interleaveMorpheusConversation({
       projection: projectMorpheusConversation(history, 'agent:main:main'), sessionKey: 'agent:main:main',
