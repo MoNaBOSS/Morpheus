@@ -39,6 +39,17 @@ test('the native orb edits a preserved draft and admits one turn before compact 
     const evidenceDir = process.env.MORPHEUS_VISUAL_EVIDENCE_DIR;
     if (evidenceDir) await orb!.screenshot({ path: join(evidenceDir, 'native-wake-orb.png') });
 
+    // Ambient-off is honestly quiet, but visible presentation must still move.
+    const aurora = orb!.locator('.morpheus-motion__aurora');
+    await expect(aurora).toHaveCSS('animation-name', 'morpheus-motion-orbit');
+    await expect(orb!.locator('html')).toHaveAttribute('data-window-visible', 'true');
+    await expect(orb!.locator('.orb')).toHaveAttribute('data-motion-paused', 'false');
+    const initialOrbit = await aurora.evaluate((node) => getComputedStyle(node).transform);
+    await expect.poll(() => aurora.evaluate((node) => getComputedStyle(node).transform)).not.toBe(initialOrbit);
+    await orb!.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(aurora).toHaveCSS('animation-name', 'none');
+    await orb!.emulateMedia({ reducedMotion: 'no-preference' });
+
     await orb!.locator('.orb').hover();
     await expect(orb!.locator('.hover-composer')).toHaveCSS('opacity', '1');
     await expect(orb!.locator('#orb-input')).toBeEnabled();
@@ -114,6 +125,15 @@ test('the native orb edits a preserved draft and admits one turn before compact 
     await expect.poll(() => app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus')?.getBounds().width,
     )).toBeGreaterThanOrEqual(960);
+
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.getTitle() === 'Morpheus')?.hide());
+    await expect(orb!.locator('html')).toHaveAttribute('data-visible', 'true');
+    await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.getTitle() === 'Morpheus presence')?.isVisible()), { timeout: 15_000 }).toBe(false);
+    await expect(orb!.locator('.orb')).toHaveAttribute('data-motion-paused', 'true');
+    await app.evaluate(({ BrowserWindow }) => { const window = BrowserWindow.getAllWindows().find(w => w.getTitle() === 'Morpheus'); window?.show(); window?.hide(); });
+    await expect(orb!.locator('html')).toHaveAttribute('data-visible', 'true');
+    await expect(orb!.locator('body')).toHaveCSS('opacity', '1');
+    await expect(orb!.locator('.orb')).toHaveAttribute('data-motion-paused', 'false');
   } finally {
     await closeElectronApp(app);
   }

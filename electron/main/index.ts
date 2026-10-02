@@ -375,7 +375,7 @@ function createMainWindow(): BrowserWindow {
       true,
     ).catch(() => undefined);
   };
-  win.webContents.on('did-finish-load', syncPresentationVisibility);
+  win.webContents.on('did-stop-loading', syncPresentationVisibility);
 
   win.once('ready-to-show', async () => {
     if (mainWindow !== win) {

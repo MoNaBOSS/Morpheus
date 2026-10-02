@@ -40,7 +40,8 @@ vi.mock('electron', async () => {
     getBounds() { return { ...this.bounds }; }
     loadFile() { return Promise.resolve(); }
     close() { this.destroyed = true; this.emit('closed'); }
-    finishLoad() { this.loading = false; this.webContents.emit('did-finish-load'); }
+    // Actual Electron emits finish-load while isLoading still reports true.
+    finishLoad() { this.webContents.emit('did-finish-load'); this.loading = false; this.webContents.emit('did-stop-loading'); }
   }
   return {
     BrowserWindow: Window,

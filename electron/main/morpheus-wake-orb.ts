@@ -237,7 +237,7 @@ export class MorpheusWakeOrb {
 
   private applyPresence(): void {
     const window = this.window;
-    if (!window || window.isDestroyed() || window.webContents.isLoading()) return;
+    if (!window || window.isDestroyed() || !this.ready) return;
     // Only a fixed Main-owned enum enters this script; no transcript or provider data.
     const state = JSON.stringify(this.presence);
     void window.webContents.executeJavaScript(`document.documentElement.dataset.state = ${state}`, true)
@@ -246,7 +246,7 @@ export class MorpheusWakeOrb {
 
   private applyHover(): void | Promise<void> {
     const window = this.window;
-    if (!window || window.isDestroyed() || window.webContents.isLoading()) return;
+    if (!window || window.isDestroyed() || !this.ready) return;
     return window.webContents.executeJavaScript(
       `document.documentElement.dataset.hover = ${JSON.stringify(String(this.hovered))}; document.querySelector('.hover-composer').inert = ${!this.hovered}`,
       true,
@@ -255,17 +255,17 @@ export class MorpheusWakeOrb {
 
   private applyVisibility(): void {
     const window = this.window;
-    if (!window || window.isDestroyed() || window.webContents.isLoading()) return;
+    if (!window || window.isDestroyed() || !this.ready) return;
     // BrowserWindow.hide() does not always update document.hidden in Electron.
     void window.webContents.executeJavaScript(
-      `document.documentElement.dataset.windowVisible = '${String(this.wantsVisible)}'`,
+      `document.documentElement.dataset.windowVisible = '${String(this.wantsVisible)}'; document.documentElement.dataset.visible = '${String(this.wantsVisible)}'`,
       true,
     ).catch(() => undefined);
   }
 
   private applyLevel(): void {
     const window = this.window;
-    if (!this.wantsVisible || !window || window.isDestroyed() || window.webContents.isLoading()) return;
+    if (!this.wantsVisible || !window || window.isDestroyed() || !this.ready) return;
     const level = this.presentationLevel.toFixed(3);
     void window.webContents.executeJavaScript(
       `document.querySelector('.orb')?.style.setProperty('--morpheus-audio-level', '${level}')`,

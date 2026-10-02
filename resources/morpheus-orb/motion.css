@@ -69,6 +69,7 @@
 }
 
 .morpheus-motion[data-motion-state='idle'] .morpheus-motion__halo {
+  inset: 6%;
   /* Idle changes by subpixel amounts: five updates/second avoids a continuously
      busy transparent-window compositor. Active aurora/audio remain fluid. */
   animation: morpheus-motion-breathe 7.2s steps(36, end) infinite;
@@ -85,6 +86,19 @@
   opacity: 0.7;
   border-left-color: transparent;
   animation: morpheus-motion-work 2.4s linear infinite;
+}
+
+/* Quiet means the microphone is asleep. A visible companion still has life;
+   this presentation motion never suggests capture or changes audio authority. */
+.morpheus-motion[data-motion-state='idle'] .morpheus-motion__aurora,
+.morpheus-motion[data-motion-state='quiet'] .morpheus-motion__aurora {
+  animation: morpheus-motion-orbit 8s steps(40, end) infinite;
+  opacity: 0.75;
+}
+
+.morpheus-motion[data-motion-state='quiet'] .morpheus-motion__aurora { opacity: 0.48; }
+.morpheus-motion[data-motion-state='quiet'] .morpheus-motion__halo {
+  animation: morpheus-motion-quiet-breathe 7.2s steps(36, end) infinite;
 }
 
 @keyframes morpheus-motion-work { to { transform: rotate(360deg); } }
@@ -130,8 +144,18 @@
 }
 
 @keyframes morpheus-motion-breathe {
-  0%, 100% { transform: scale(1); opacity: 0.45; }
-  50% { transform: scale(1.035); opacity: 0.62; }
+  0%, 100% { transform: scale(1); opacity: 0.40; }
+  50% { transform: scale(1.075); opacity: 0.85; }
+}
+
+@keyframes morpheus-motion-quiet-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.28; }
+  50% { transform: scale(1.04); opacity: 0.65; }
+}
+
+@keyframes morpheus-motion-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @keyframes morpheus-motion-flow {

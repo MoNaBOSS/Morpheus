@@ -256,6 +256,13 @@ pointer, keyboard and scrolling refresh compact inactivity. Listening, speech,
 active answers and questions hold it open. Explicit full workspace stays open.
 Hidden motion pauses; reduced motion is respected. Aurora/halo now sit visibly
 around the preserved artwork, with actual microphone/playback audio levels.
+Visible idle and quiet states both breathe and orbit; quiet keeps the microphone
+asleep. Native Electron evidence exposed a load-order bug: `isLoading()` remains
+true inside `did-finish-load`, which skipped initial state/visibility projection.
+The orb now uses its established DOM-ready flag; Main visibility sync waits for
+`did-stop-loading`. Fade restoration resets opacity as well as visibility.
+The native regression verifies advancing transforms, reduced motion, the actual
+ten-second hide and visible reappearance. No global throttling override is used.
 Display changes reposition the active compact window as well as the orb; pure
 layout tests cover changed work areas, while physical DPI/taskbar-edge tests remain open.
 
@@ -265,6 +272,15 @@ journeys cover setup, persisted personality, same conversation/draft through
 compact/full/reload, four-language history and explicit Advanced access. Model
 answers in fixture journeys are simulated and do not certify live model quality.
 Real generated English voice samples are separate, not simulated audio.
+Normal packaged qualification at `d67f5980` passed real Gateway startup, included
+voice playback/cancel control, local task execution, protected loopback provider,
+original ACP compact reply and history/draft persistence through full/settings/
+reload/restart. The loopback model reply is simulated; the speech engine is real.
+The 25-word UI sample took about 16 seconds including generation and playback.
+Separate 21-word Michael/Heart samples used about 317/310 MiB peak working set;
+generation took 12.8/13.7 seconds during concurrent checks on i5-14600K. These are
+scoped observations, not minimum-hardware promises or approved naturalness.
+Final motion-corrected package qualification follows this source checkpoint.
 
 **Exact next step:** qualify the fresh preview.6 Windows payload in a normal,
 isolated profile, record short native motion and real voice samples, then produce
