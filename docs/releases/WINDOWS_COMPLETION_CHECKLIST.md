@@ -29,7 +29,7 @@ without reducing capabilities. Separate component review pauses are superseded.
 | Continuous conversation | VERIFIED in native fixture journeys: original Main/ACP session and draft persist compact -> full -> back, reload and four-language history. The CSS hiding ordinary replies is removed. Model replies are SIMULATED by isolated fixtures. |
 | First launch | VERIFIED native journey: name -> secure Connections -> included Voice controls -> personality -> first command; skip/persistence/restart. API testing UI reuses existing protected owner; live account test OPEN. |
 | Contextual Settings | VERIFIED native UI: Connections, Voice, Personality, Account & Plan, Advanced. Ordinary conversation/history stays simple; full technical Chat/settings/tools remain available explicitly under Advanced. |
-| Appearance / motion taste | Short native recordings and real voice samples prepared for combined review. Owner visual/voice acceptance OPEN. Reduced motion and hidden motion ownership retained. |
+| Appearance / motion taste | Actual packaged native recording VERIFIED: breathing/orbit, partial fade, hidden animation pause, restored opacity/motion and reduced motion. Mic/ambient stayed muted. The 16-second enlarged clip labels native hidden padding and isolated Main restoration. Real Michael/Heart WAV samples delivered. Owner visual/voice acceptance OPEN. |
 
 ## C — real first journey
 
@@ -38,8 +38,8 @@ without reducing capabilities. Separate component review pauses are superseded.
 | API setup | Protected provider implementation preserved, configured accounts detected, secure form and connection testing exposed. No keys requested in chat; no live paid-provider request made in qualification. |
 | Included speech | IMPLEMENTED and real engine VERIFIED: pinned static sherpa-onnx, Whisper tiny.en int8, Kokoro v1.0 int8. Default English Michael / alternate Heart. No voice key or hosted account. Actual synthesis, exact generated-command transcription and cancellation cleanup passed. |
 | Mic / audible output | Device selection, real input test, output sample and specific repair guidance implemented. Physical microphone accuracy, naturalness, speaker echo, same-breath wake and spoken execution OPEN owner gates. Samples are real neural audio, not Windows narrator or simulated sound. |
-| Persistence / routing | Existing personality/context model owners retained. Native tests verify profile changes, restart and draft/history; normal packaged runtime qualification pending below. |
-| Disappear / wake / mute | Ten-second completed-idle fade; busy audio/question states hold, hidden tasks continue. Input mute wins; local wake opt-in uses Windows default mic. Tray/shortcut routes retained. Native timer/work-area tests pass; physical wake/lock/sleep OPEN. |
+| Persistence / routing | Existing personality/context model owners retained. Native tests verify profile changes, restart and draft/history. Normal packaged runtime verified original ACP reply, full/settings/compact continuity, reload and restart without a fresh inference. The model answer is a loopback fixture. |
+| Disappear / wake / mute | Ten-second completed-idle fade; busy audio/question states hold, hidden tasks continue. Typed clarification stays open with mic muted. Repeated show rearms the idle timer. Input mute wins; local wake opt-in uses Windows default mic. Native timer/work-area tests and actual muted orb recording pass; physical wake/lock/sleep OPEN. |
 
 ## D — retained product
 
@@ -54,15 +54,21 @@ without reducing capabilities. Separate component review pauses are superseded.
 
 | Gate | Result |
 | --- | --- |
-| Source regression | VERIFIED: 324 unit files, 3,336 passed and two skipped. Real bundled voice tests included. Typecheck passed; lint zero errors / 12 existing warnings. Comms replay/compare and harness CI/task validation/dry-run passed. Native journeys: 12 initial passes, one old overlay expectation corrected for intentional Windows compact behavior and targeted retest passed. |
-| Fresh package | NEXT: produce fresh preview.6 Windows payload with pinned voice/notices, then run normal isolated startup, local execution, secure loopback provider, conversation/persistence and voice playback/cancellation checks. |
-| Identified EXE | NEXT: compile NSIS from qualified payload, inspect exact artifact/version/hashes and deliver. Unsigned; no owned update feed. |
+| Source regression | VERIFIED at stated boundaries: full implementation baseline `d67f5980` passed 324 unit files / 3,336 tests (two skipped), including real engines. Subsequent voice/presence checks passed, including a 16-test wake suite. Typecheck passed; lint zero errors / 12 existing warnings. Comms replay/compare after Main fixes and harness CI/task validation/dry-run passed. Native setup/history/locales/Advanced journeys passed; final three-test navigation/typed-question/motion run passed, plus the explicit pointer-leave retest. An exact-link test selector and a native hover precondition were corrected; earlier failure evidence is retained. |
+| Fresh package | VERIFIED at application source `12a3689806d6bfe87cdc63f4b6600ecea21c2093`: normal packaged startup, real Gateway, local execution, real local neural playback/cancel control, protected synthetic loopback provider, original ACP compact reply, full/settings/compact draft/history, reload and quiet restart. No E2E mode, owner profile, paid provider, physical mic or installer execution. Gateway 20.183 s on this launch; returning window 2.691 s / Gateway 7.615 s; UI sample generation + playback 19.085 s. |
+| Identified EXE | VERIFIED: `E:\Morpheus-builds\experience-preview6\source\release\Morpheus-1.2.0-preview.6-win-x64.exe`, 477,650,761 bytes; SHA256 `599f8d29628efcfafdfe7837cf72dabb7ab8bbf99efa1af8704e5416a83cb07e`. All 40,896 embedded paths/sizes, archive integrity and 44 selected hashes match the qualified payload. EXE/app.asar/orb/motion hashes also match normal qualification. Voice notices/source provenance included. Unsigned; no owned update feed. |
 | Installed upgrade / hardware | OPEN: installer execution, upgrade/uninstall with owner profile, physical mic/echo/interruption, DPI/taskbar positions/display removal/sleep, live paid provider/publication and long mixed-use session. Do not label source or fixtures as installed acceptance. |
 
 ## Current record and exact next step
 
-All implementation stays in the E: worktree; no owner installation/profile is replaced.
-Qualify the fresh packaged preview.6 using an isolated normal runtime, record actual
-UI transitions plus independently generated voice samples, then deliver the exact
-EXE, package identity, limitations and one short combined PC acceptance checklist.
-Update this E record with actual outcomes before handoff. No separate competing plan.
+All implementation stays in the E: worktree; original checkouts remain clean at
+`fa988f06` and `3bcad683`, and no owner installation/profile is replaced. The exact
+verified EXE, specification/checklist exports, motion/transition recordings, real
+voice samples, package identity and one short PC acceptance checklist are delivered
+under the current chat's `outputs` directory. Application source is `12a36898`;
+subsequent handoff commits change documentation only.
+
+**Exact next step:** the owner performs the combined PC acceptance checklist,
+starting with installer upgrade/profile preservation and physical voice/display
+behavior. Address demonstrated failures in small changes. Hosted billing/NerdGPT
+and signing remain external service gates. No separate competing plan.

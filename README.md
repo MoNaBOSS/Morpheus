@@ -1,6 +1,10 @@
 Preview.6 experience correction: ordinary conversation keeps the same session and draft, history opens in a drawer, and Settings groups Connections, Voice, Personality, Account & Plan and Advanced. The full workspace and all existing tools remain under Advanced. Windows standard English voice is included locally (Whisper tiny.en / Kokoro), without a voice API key; microphone checks and neural samples are in Voice. Wake listening is opt-in, manual mute stops capture, and idle compact presence fades after about ten seconds. Hosted plans, checkout and NerdGPT remain unavailable until their external services are configured. See [current requirements](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) and [Windows checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) for evidence boundaries.
 
 
+The preview.6 package at application source `12a36898` passed normal isolated
+runtime and exact installer-payload checks. Real motion/voice media and the unsigned
+EXE are delivered; installed-profile and physical Windows acceptance remain open.
+
 <p align="center">
   <img src="src/assets/morpheus-logo.svg" width="128" height="128" alt="Morpheus Logo" />
 </p>

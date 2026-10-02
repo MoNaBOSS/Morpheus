@@ -1,6 +1,9 @@
 Preview.6 简化了日常对话与设置：对话和草稿保持连续，历史以抽屉显示，设置分为连接、语音、个性、账户与方案和高级。完整工作区与现有工具保留在高级入口。Windows 内置本地英语语音（Whisper tiny.en / Kokoro），无需语音 API 密钥；语音设置提供麦克风测试与真实样本。唤醒监听需主动启用，手动静音停止录音，空闲紧凑界面约十秒后消失。托管方案、结账和 NerdGPT 仍需外部服务。验证范围见 [当前体验规范](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) 和 [Windows 清单](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md)。
 
 
+应用源码 `12a36898` 的 Preview.6 已通过隔离的正常运行与安装包内容核验。
+真实动画、语音样本和未签名 EXE 已交付；现有配置升级及真实 Windows 硬件验收仍待完成。
+
 <p align="center">
   <img src="src/assets/morpheus-logo.svg" width="128" height="128" alt="Morpheus Logo" />
 </p>

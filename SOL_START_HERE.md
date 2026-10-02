@@ -13,11 +13,16 @@ voice key. Preserve all existing work, runtime owners and profiles.
 Checkpoint A verified clean `4a9f25e9` / matching fetched origin branch and installed
 preview.5 payload hashes, and reproduced navigation/continuity/spacing/error gaps.
 Checkpoint A is complete at `3bcad683`. Implementation is authorized in the isolated
-worktree `E:\Morpheus-builds\experience-preview6\source`. Next: simplify conversation,
-connected settings and compact presentation, retaining the inherited tools under
-Advanced; then integrate included local voice and qualify a fresh candidate. Existing
-100-DIP bounds and earlier "approved" screenshots are not current owner acceptance.
-Build on E: after checking current storage. No new EXE or live voice is accepted.
+worktree `E:\Morpheus-builds\experience-preview6\source`. Preview.6 is implemented
+and packaged from application source `12a3689806d6bfe87cdc63f4b6600ecea21c2093`:
+simplified conversation/settings, retained Advanced capabilities, animated 56-DIP
+orb, ten-second fade and included local English speech. Normal isolated packaged
+qualification and static NSIS identity checks passed. The current checklist records
+their exact scope and EXE hash. Original sources and installed preview.5 are untouched.
+Next: the owner's single combined PC acceptance checklist delivered with the EXE,
+real motion recording and real voice samples. Installation/upgrade, physical voice,
+display behavior and live-service acceptance remain open. Build artifacts stay on E:
+after storage checks; subsequent handoff commits change documentation only.
 
 ---
 

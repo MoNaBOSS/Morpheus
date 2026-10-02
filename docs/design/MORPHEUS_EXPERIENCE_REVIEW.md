@@ -277,20 +277,33 @@ journeys cover setup, persisted personality, same conversation/draft through
 compact/full/reload, four-language history and explicit Advanced access. Model
 answers in fixture journeys are simulated and do not certify live model quality.
 Real generated English voice samples are separate, not simulated audio.
-Normal packaged qualification at `d67f5980` passed real Gateway startup, included
+Normal packaged qualification at final application source `12a36898` passed real Gateway startup, included
 voice playback/cancel control, local task execution, protected loopback provider,
 original ACP compact reply and history/draft persistence through full/settings/
 reload/restart. The loopback model reply is simulated; the speech engine is real.
-The 25-word UI sample took about 16 seconds including generation and playback.
+The 25-word UI sample took 19.085 seconds including generation and playback on
+the final run; an earlier qualified run took about 16 seconds.
 Separate 21-word Michael/Heart samples used about 317/310 MiB peak working set;
 generation took 12.8/13.7 seconds during concurrent checks on i5-14600K. These are
 scoped observations, not minimum-hardware promises or approved naturalness.
-Final motion-corrected package qualification follows this source checkpoint.
+The final native motion recording verifies real quiet breathing/orbit, partial
+fade, hidden pause, restored visibility and reduced motion. Its 16-second clip
+enlarges the 56-DIP orb for review, explicitly labels hidden-window padding and
+uses an isolated Main show/hide for restoration. It does not claim physical wake.
+Both microphone input and ambient listening remained muted.
 
-**Exact next step:** qualify the fresh preview.6 Windows payload in a normal,
-isolated profile, record short native motion and real voice samples, then produce
-and statically verify its identified NSIS EXE. Update the checklist with actual
-package evidence and deliver one combined PC acceptance checklist. Installed
-upgrade, physical mic/echo/interruption, voice taste, DPI/sleep and live provider/
-publication acceptance remain explicit owner/external gates; no automated count
-can mark them accepted.
+The compiled preview.6 NSIS EXE is 477,650,761 bytes, SHA256
+`599f8d29628efcfafdfe7837cf72dabb7ab8bbf99efa1af8704e5416a83cb07e`.
+Static verification passed all 40,896 embedded file paths/sizes and archive CRCs,
+plus 44 extracted identity hashes. Exact EXE/app.asar/motion/orb hashes match the
+normal-runtime qualification at `12a3689806d6bfe87cdc63f4b6600ecea21c2093`.
+The installer is unsigned and no owned update feed is configured. Included voice
+models, notices and corresponding upstream source archives are verified payload.
+
+**Exact next step:** the owner runs the single combined PC acceptance checklist
+delivered with the identified EXE, actual recordings and real voice samples.
+Installed upgrade/profile preservation, physical mic/echo/interruption, voice
+taste, DPI/sleep and live provider/publication acceptance remain explicit owner
+gates. Hosted accounts, pricing/funding, Stripe/crypto, NerdGPT and signing require
+external inputs. No automated count or static installer inspection marks those
+accepted; subsequent handoff commits modify documentation only.
