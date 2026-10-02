@@ -1,6 +1,6 @@
 # Current Windows experience completion checklist
 
-Updated 2026-10-02, Asia/Dhaka. Preview.6 implementation; **owner acceptance remains open**.
+Updated 2026-10-02, Asia/Dhaka. Preview.7 qualification in progress; **commercial release is not yet qualified**.
 This is the single current checklist. Requirements and baseline evidence live in
 [the experience specification](../design/MORPHEUS_EXPERIENCE_REVIEW.md). Previous
 checklist detail is recoverable at `3bcad683`; historical preview.5 evidence is
@@ -12,6 +12,11 @@ requires external inputs. Automated counts never imply physical PC acceptance.
 The owner authorized a combined final review and then autonomous completion/testing:
 complete the work and simplify without reducing capabilities. Separate component
 review pauses are superseded. Preview.6 evidence below remains a preserved baseline.
+An end-of-work preservation recheck confirms both historical source checkouts are
+still clean at `fa988f06` and `3bcad683`. The historical Program Files and per-user
+Morpheus installation paths and uninstall registration are now absent; the cause
+is unknown. This task has not executed an installer/uninstaller on the owner host.
+Historical preview.5 installed identity remains baseline evidence, not current state.
 
 ## Preview.7 current autonomous qualification
 
@@ -22,13 +27,19 @@ review pauses are superseded. Preview.6 evidence below remains a preserved basel
 | Conversation ordering | VERIFIED in four actual localized native views: compact and expanded chat/task exchanges share Main admission/creation chronology; tasks retain their request position. Latest replies are in the viewport on open/send; intentional scroll-up remains fixed during passive reply updates. Existing selection/stop controls remain. Older undated ACP history retains its original order. Screenshot inspection caught both the missing scroll behavior and a fixture that had forced English; these were corrected and final en/zh/ja/ru cases pass. ACP replies are fixtures; the intervening system-information task is real. |
 | Public capabilities | VERIFIED: actual pinned HTTPS GETs retrieved Example/IANA pages, generated source-bound citations and saved/reopened the report through real file.create. Real native Chromium observed IANA controls and clicked its public Reserved Domains link without owner cookies/host bridge. Seven native browser/site cases and two affected final Main artifact journeys pass: create/revise/preview/reopen/rollback/manual-edit protection. Other control/planning cases use explicitly bounded network/synthesis fixtures, not paid models. Publication remains untested. |
 | Recovery/network | IMPLEMENTED: reject research URLs with credentials before dispatch, bounded validated-address retries only on connection errors, incomplete website marker survives cancellation or external edits during final verification. No TLS/HTTP-content retries or overwritten manual changes. |
+| Reload during an active reply | REJECTED `5b93a145`: a real packaged renderer reload failed to restore its live ACP session and sent the same admission twice. Its EXE/logs are preserved under `E:\Morpheus-builds\experience-preview6\evidence\rejected-preview7-5b93a145`. Replacement VERIFIED in 149 focused checks and seven fresh native cases: Main consumes matching completed/cancelled/uncertain-failed dispatch independently of renderer lifetime; bounded recent settled receipts do not rewind generation, active receipts are never evicted. Fresh renderer restores original pending authority cards and Stop, then replays original existing history after completion; recovery cannot create an empty session before list hydration. Switching conversations supersedes old recovery waits. Compact/full/Advanced answer and Stop each consume the original admission once; changed-content identity fails, same-content retry sends no inference. These cases use actual Main service/admission/access owners with a bounded fake connection. Real packaged replacement still pending; every previous live stream chunk is not replayed. |
+| Required checks actually execute on Windows | VERIFIED: replay/compare previously exited zero without invoking their entry point because file-URL pathname handling was wrong on Windows. All three communication scripts now resolve with `fileURLToPath`; real metrics and comparison were generated, all thresholds pass, three focused checks pass, and the checked-in reference baseline is unchanged. Earlier Windows zero-exit invocations are not treated as executed replay evidence. |
 | Installation/update safety | IMPLEMENTED: uninstall verifies product markers before recursive removal; updater requires credential-free HTTPS and independent signing readiness. Signature checks enabled; feed remains absent. Guarded hosted Windows NSIS install/reinstall/uninstall qualification prepared; no owner installation is modified. Actual run pending. |
 | External service gates | BLOCKED: owned signing/update infrastructure, task-model live credentials, hosted funding/operations, pricing/business country, Stripe/crypto merchant services and NerdGPT integration. No false checkout or entitlement. Physical voice/DPI/display taste and previous-version owner upgrade remain unverified. |
 
-The exact next step is to finish native regressions, run disposable installation
-qualification, then build and qualify the distinct preview.7 EXE. New results and
-identity will replace pending states here. The owner host and existing EXE/profile
-remain preserved; only isolated test profiles and reversible source changes are used.
+The exact next step is to correct the observed reload failure, finish its focused
+native regressions, then rebuild and qualify the replacement preview.7 EXE and
+disposable installation. The first hosted installer run built successfully but
+stopped before installation because the runner already had `.openclaw` data;
+runtime qualification will use a fresh isolated profile and preserve that data.
+New results and
+identity will replace pending states here. No installer/uninstaller is executed on
+the owner host; only isolated test profiles and reversible source changes are used.
 
 ## A — preserved baseline
 
@@ -86,7 +97,8 @@ voice samples, package identity and one short PC acceptance checklist are delive
 under the current chat's `outputs` directory. Application source is `12a36898`;
 subsequent handoff commits change documentation only.
 
-**Exact next step:** the owner performs the combined PC acceptance checklist,
-starting with installer upgrade/profile preservation and physical voice/display
-behavior. Address demonstrated failures in small changes. Hosted billing/NerdGPT
-and signing remain external service gates. No separate competing plan.
+**Exact next step:** finish autonomous preview.7 packaged, generated-speech and
+disposable installation qualification. The preserved preview.6 results above are
+a historical baseline, not acceptance of the rejected preview.7 candidate.
+Physical microphone/display taste, owner-profile upgrade and external service
+inputs remain explicitly unverified. No separate competing plan.

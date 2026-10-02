@@ -71,14 +71,22 @@ const machine = JSON.parse(powershell(`
   @{model=$computer.Model;hypervisor=$computer.HypervisorPresent;desktop=[Environment]::GetFolderPath('DesktopDirectory')} | ConvertTo-Json -Compress
 `));
 assert.deepEqual(registrations(), [], 'Existing Morpheus registration; refuse installation');
-const userHome = homedir();
-const userData = join(process.env.APPDATA, 'morpheus');
-const state = join(userHome, '.openclaw');
+const runnerHome = homedir();
+const defaultUserData = join(process.env.APPDATA, 'morpheus');
+const defaultState = join(runnerHome, '.openclaw');
 const shortcuts = [join(machine.desktop, `${product}.lnk`), join(process.env.APPDATA, 'Microsoft/Windows/Start Menu/Programs', `${product}.lnk`)];
-for (const path of [userData, state, join(process.env.APPDATA, 'ClawX'), join(process.env.LOCALAPPDATA, 'Programs/Morpheus'),
+for (const path of [defaultUserData, join(process.env.APPDATA, 'ClawX'), join(process.env.LOCALAPPDATA, 'Programs/Morpheus'),
   join(process.env.ProgramFiles, 'Morpheus'), ...shortcuts]) assert(!existsSync(path), `Existing product data/install/shortcut: ${path}`);
-assert.equal(userHome.toLowerCase(), resolve(process.env.USERPROFILE).toLowerCase());
-assert(!/[\\/]monir(?:[\\/]|$)/i.test(userHome), 'Owner profile is forbidden');
+assert.equal(runnerHome.toLowerCase(), resolve(process.env.USERPROFILE).toLowerCase());
+assert(!/[\\/]monir(?:[\\/]|$)/i.test(runnerHome), 'Owner profile is forbidden');
+// The build or hosted image may have its own OpenClaw state. Preserve it and
+// qualify the installed application with a fresh normal profile, without E2E mode.
+const userHome = join(root, 'runtime-profile/home');
+const roaming = join(userHome, 'AppData/Roaming');
+const local = join(userHome, 'AppData/Local');
+const userData = join(roaming, 'morpheus');
+const state = join(userHome, '.openclaw');
+for (const path of [userHome, userData, state]) { assertInside(root, path); assert(!existsSync(path), `Runtime profile already exists: ${path}`); }
 
 await mkdir(evidence, { recursive: true });
 const pkg = JSON.parse(await readFile(join(source, 'package.json'), 'utf8'));
@@ -92,7 +100,10 @@ const digest = async (path) => {
 const record = {
   source: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: source, encoding: 'utf8' }).trim(),
   version: pkg.version, machine, installer: { path: installer, sha256: await digest(installer) },
-  scope: 'Actual unsigned x64 NSIS install, installed normal runtime, same-version reinstall and default uninstall on a clean disposable hosted Windows VM.',
+  scope: 'Actual unsigned x64 NSIS install, installed normal runtime with an isolated synthetic profile, same-version reinstall and default uninstall on a clean disposable hosted Windows VM.',
+  runtimeProfile: { mode: 'Normal application; E2E unset; fresh HOME and AppData beneath guarded RUNNER_TEMP', home: userHome, userData, state },
+  installerEnvironment: 'Normal disposable runner; real per-user registration and shortcuts',
+  defaultState: { path: defaultState, existedBefore: existsSync(defaultState), handling: 'Preserved; no reads, writes or deletion' },
   exclusions: ['Previous-version upgrade', 'Owner installation/profile', 'Physical microphone/audio/wake', 'SmartScreen or interactive UAC', 'Signing, hosted accounts, live provider or payment'],
   checks: {}, runs: [], errors: [],
 };
@@ -133,7 +144,10 @@ const port = async () => {
   const value = server.address().port; await new Promise((done) => server.close(done)); return value;
 };
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/(SECRET|TOKEN|PASSWORD|API_KEY|AUTH)/i.test(key) && !/^(CLAWX_|OPENCLAW_|MORPHEUS_|VITE_)/.test(key)));
-Object.assign(env, { CLAWX_PORT_CLAWX_HOST_API: String(await port()), CLAWX_PORT_OPENCLAW_GATEWAY: String(await port()) });
+Object.assign(env, { HOME: userHome, USERPROFILE: userHome, APPDATA: roaming, LOCALAPPDATA: local,
+  XDG_CONFIG_HOME: join(userHome, '.config'), OPENCLAW_HOME: userHome, OPENCLAW_STATE_DIR: state,
+  OPENCLAW_CONFIG_PATH: join(state, 'openclaw.json'),
+  CLAWX_PORT_CLAWX_HOST_API: String(await port()), CLAWX_PORT_OPENCLAW_GATEWAY: String(await port()) });
 let active;
 const runtime = async (returning) => {
   const { _electron, expect } = await import('@playwright/test');
@@ -143,10 +157,14 @@ const runtime = async (returning) => {
     for (const candidate of active.windows()) { if (await candidate.title() === 'Morpheus') { page = candidate; return true; } }
     return false;
   }, 'Main application window');
-  const identity = await active.evaluate(({ app }) => ({ packaged: app.isPackaged, version: app.getVersion(), executable: process.execPath, userData: app.getPath('userData'), e2e: process.env.CLAWX_E2E || null }));
+  const identity = await active.evaluate(({ app }) => ({ packaged: app.isPackaged, version: app.getVersion(), executable: process.execPath,
+    userData: app.getPath('userData'), home: process.mainModule.require('node:os').homedir(), state: process.env.OPENCLAW_STATE_DIR,
+    e2e: process.env.CLAWX_E2E || null }));
   assert(identity.packaged && !identity.e2e, 'Installed normal application required'); assert.equal(identity.version, pkg.version);
   assert.equal(identity.executable.toLowerCase(), join(install, 'Morpheus.exe').toLowerCase());
   assert.equal(identity.userData.toLowerCase(), userData.toLowerCase());
+  assert.equal(identity.home.toLowerCase(), userHome.toLowerCase());
+  assert.equal(identity.state.toLowerCase(), state.toLowerCase());
   const invoke = (module, action, payload) => page.evaluate(async ({ module, action, payload }) => {
     const response = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module, action, ...(payload === undefined ? {} : { payload }) });
     if (!response.ok) throw new Error(response.error?.message || `Host request failed: ${module}.${action}`);
@@ -196,10 +214,14 @@ try {
   record.checks.installedHashes = await verifyPayload(); record.checks.installRegistration = registrations();
   assert(record.checks.installRegistration.some((entry) => entry.kind === 'uninstall' && entry.version === pkg.version), 'Uninstall registration missing');
   assert(shortcuts.every(existsSync), 'Installed shortcuts missing');
-  await mkdir(userData, { recursive: true });
+  for (const path of [userData, local, env.XDG_CONFIG_HOME]) await mkdir(path, { recursive: true });
   await writeFile(join(userData, 'settings.json'), JSON.stringify({ language: 'en', telemetryEnabled: false, launchAtStartup: false, gatewayAutoStart: true, autoCheckUpdate: false, startMinimized: false, gatewayPort: Number(env.CLAWX_PORT_OPENCLAW_GATEWAY) }));
   record.checks.firstInstalledRuntime = await runtime(false); await persist();
-  const markers = [join(userData, 'morpheus/qualification-marker.json'), join(state, 'qualification-marker.json')];
+  // The default-AppData sentinel additionally verifies real NSIS profile retention.
+  // It is newly created synthetic data, not a copy of any existing guest profile.
+  const markers = [join(userData, 'morpheus/qualification-marker.json'), join(state, 'qualification-marker.json'),
+    join(defaultUserData, 'qualification-marker.json')];
+  record.profileMarkers = markers;
   for (const path of markers) { await mkdir(dirname(path), { recursive: true }); await writeFile(path, '{"synthetic":true,"keep":"same-version reinstall and default uninstall"}\n'); }
   const markerHashes = await Promise.all(markers.map(digest));
   await run(installer, ['/S', '/currentuser', `/D=${install}`], 'same-version-reinstall');

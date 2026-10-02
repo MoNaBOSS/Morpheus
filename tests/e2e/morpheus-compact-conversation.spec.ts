@@ -114,13 +114,15 @@ test.describe('Morpheus compact conversation continuity', () => {
   });
 });
 
-for (const language of ['en', 'zh', 'ja', 'ru']) {
+const HISTORY_GREETINGS = { en: "What's next?", zh: '接下来做什么？', ja: '次は何をしましょう？', ru: 'Что дальше?' };
+for (const language of ['en', 'zh', 'ja', 'ru'] as const) {
   test(`restores existing ${language} history without a new admission or prompt`, async ({ launchElectronApp, userDataDir }, testInfo) => {
     await writeFile(join(userDataDir, 'settings.json'), JSON.stringify({ language }));
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const fixture = await installAttachmentHostFixture(app, {
         sessions: [{ key: SESSION_KEY, title: 'Saved conversation' }],
+        language,
       });
       await fixture.setSessionReplay(SESSION_KEY, [{
         sessionUpdate: 'user_message_chunk', messageId: 'saved-user',
@@ -140,8 +142,10 @@ for (const language of ['en', 'zh', 'ja', 'ru']) {
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.reload();
       await expect(page).toHaveTitle('Morpheus');
+      await expect(page.getByRole('heading', { name: HISTORY_GREETINGS[language], exact: true })).toBeVisible();
       await expect(page.getByTestId('workspace-conversation')).toContainText('Your original saved reply is still here.');
       await page.getByTestId('signal-nav-presence').click();
+      await expect(page.getByTestId('morpheus-quick-command').getByText(HISTORY_GREETINGS[language], { exact: true })).toBeVisible();
       await expect(page.getByTestId('quick-command-conversation')).toContainText('Your original saved reply is still here.');
       await expect(page.getByTestId('quick-command-conversation')).toContainText('How are you today?');
       await expect(page.getByTestId('quick-command-conversation')).not.toContainText('Morpheus companion presentation context');

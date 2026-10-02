@@ -187,7 +187,7 @@
     },
     "conversation": {
       "waiting": "Думаю…",
-      "queued": "Ожидает отправки",
+      "queued": "Запрос получен",
       "retry": "Повторить",
       "mediaCount": "Вложения: {{count}}",
       "workspaceUnavailable": "Рабочая папка беседы недоступна.",

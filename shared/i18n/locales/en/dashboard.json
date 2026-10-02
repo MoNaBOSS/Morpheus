@@ -187,7 +187,7 @@
     },
     "conversation": {
       "waiting": "Thinking…",
-      "queued": "Waiting to send",
+      "queued": "Request received",
       "retry": "Retry",
       "mediaCount": "Attachments: {{count}}",
       "workspaceUnavailable": "Conversation workspace is unavailable.",

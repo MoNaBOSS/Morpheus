@@ -187,7 +187,7 @@
     },
     "conversation": {
       "waiting": "正在思考…",
-      "queued": "等待发送",
+      "queued": "请求已收到",
       "retry": "重试",
       "mediaCount": "附件：{{count}}",
       "workspaceUnavailable": "对话工作区不可用。",

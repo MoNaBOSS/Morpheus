@@ -5,6 +5,15 @@ This is the single current experience specification, reconciled from the existin
 design review and the owner's October 2 correction. The single current execution
 checklist is [WINDOWS_COMPLETION_CHECKLIST.md](../releases/WINDOWS_COMPLETION_CHECKLIST.md).
 Historical plans, prototypes and automated results remain evidence, not approval.
+Preview.7 autonomous qualification is current. A real packaged active-reply reload
+failure at `5b93a145` prevents accepting that candidate; its installer and evidence
+are preserved. The correction passes focused service/store and fresh native
+compact/full/Advanced permission and Stop checks; exact packaged qualification
+of the replacement is next. Main owns admission settlement, bounds same-identity
+receipts, and restores original authority cards/history without new empty sessions
+or automatic approval. It does not replay every missed live stream chunk.
+The preview.6 results later in this
+document are a preserved baseline; the current checklist records replacement results.
 No meaning is inferred from standalone historical A/B/C/D answers whose questions
 are unavailable. The original design review is recoverable in Git at `4a9f25e9`.
 
@@ -313,10 +322,11 @@ normal-runtime qualification at `12a3689806d6bfe87cdc63f4b6600ecea21c2093`.
 The installer is unsigned and no owned update feed is configured. Included voice
 models, notices and corresponding upstream source archives are verified payload.
 
-**Exact next step:** the owner runs the single combined PC acceptance checklist
-delivered with the identified EXE, actual recordings and real voice samples.
-Installed upgrade/profile preservation, physical mic/echo/interruption, voice
-taste, DPI/sleep and live provider/publication acceptance remain explicit owner
-gates. Hosted accounts, pricing/funding, Stripe/crypto, NerdGPT and signing require
-external inputs. No automated count or static installer inspection marks those
-accepted; subsequent handoff commits modify documentation only.
+**Exact next step:** finish the requested autonomous preview.7 qualification:
+correct the demonstrated active-reply reload regression, test the real packaged
+replacement through speech, local execution, reply, typed follow-up, persistence
+and actual motion, and qualify installation/reinstall/uninstall in a disposable
+Windows VM. Preserve the owner's installed app and profiles. Physical mic/echo,
+voice taste, DPI/sleep and previous-version owner upgrade remain unverified where
+no safe autonomous test exists. Hosted accounts, pricing/funding, Stripe/crypto,
+NerdGPT and signing require external inputs. Do not call those services live.

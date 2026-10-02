@@ -140,6 +140,12 @@ async function drainPendingTurns(): Promise<void> {
         const loaded = await loadSelectedAcpSession(conversationId);
         if (!loaded) return;
         if (useMorpheusConversationStore.getState().snapshot?.selectedConversationId !== conversationId) return;
+        // Main may have consumed this admission while a fresh renderer awaited
+        // the original prompt's history. Re-read its owner before dispatching.
+        await useMorpheusConversationStore.getState().refresh();
+        if (!useMorpheusConversationStore.getState().snapshot?.pendingTurns.some((turn) =>
+          turn.conversationId === conversationId && turn.turnId === pending.turnId
+          && turn.generation === pending.generation && turn.text === pending.text)) continue;
         const success = await useAcpChatSessionStore.getState().sendPrompt({
           sessionKey: conversationId,
           cwd: loaded.cwd,

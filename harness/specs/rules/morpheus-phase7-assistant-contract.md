@@ -78,6 +78,11 @@ Companion restoration must replay the original ACP history even after every
 admission has been acknowledged. It must not send inference, create empty sessions
 on quiet first run, duplicate compact/full loads or overwrite a newly selected
 conversation with stale failure state.
+Main must consume a matching admitted turn after actual prompt delivery independently
+of the renderer lifetime. Same-identity retries coalesce without replaying effects
+or rewinding the current generation; receipt retention is bounded. Fresh reload
+during an authority question must retain the original permission request or provide
+safe cancellation, without automatic approval or a wait cycle that hides both controls.
 Generated persona input is model context, not the user's displayed utterance.
 Tag it in the existing ACP ledger and suppress only the recognized user-role
 display part. Preserve raw matching/provenance and all untagged user text. Visual

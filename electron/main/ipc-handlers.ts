@@ -56,7 +56,7 @@ import { createLogsApi } from '../services/logs-api';
 import { createSettingsApi } from '../services/settings-api';
 import { createChannelsApi } from '../services/channels-api';
 import { createAgentsApi } from '../services/agents-api';
-import { createChatApi } from '../services/chat-api';
+import { createChatApi, createMorpheusAcpAdmissionHook } from '../services/chat-api';
 import { createMorpheusService } from '../services/morpheus';
 import { createMorpheusApi } from '../services/morpheus-api';
 import { createPublicationOwner } from '../services/site-publication/owner';
@@ -348,6 +348,7 @@ function registerTypedHostHandlers(
             && turn.turnId === payload.messageId && turn.text === payload.message);
         return pending ? morpheusService.getPersonaContext() : undefined;
       },
+      onPromptDispatched: createMorpheusAcpAdmissionHook(assistantSession),
     }),
     cron: createCronApi({ gatewayManager }),
     skills: createSkillsApi({ clawHubService, gatewayManager }),

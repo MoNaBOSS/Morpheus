@@ -166,6 +166,49 @@ describe('ACP Chat store', () => {
     hostEventsMock.onChatRuntimeEvent.mockClear();
   });
 
+  it.each(['answer', 'cancel'] as const)('fresh renderer restores original permission generation and can %s while waiting for original history', async (mode) => {
+    const replay = createDeferred<{ success: boolean; generation: number; sessionUpdates: unknown[] }>();
+    const input = { sessionKey: 'agent:pi:s1', workspaceRoot: '/repo', cwd: '/repo', createIfMissing: true };
+    hostApiMock.loadAcpSession.mockResolvedValueOnce({
+      success: true, generation: 7, resumedActivePrompt: true,
+      pendingPermissions: [{ sessionKey: input.sessionKey, generation: 7, requestId: 'original-permission', request: {
+        sessionId: input.sessionKey,
+        toolCall: { toolCallId: 'tool-1', title: 'Original edit', status: 'pending' },
+        options: [{ optionId: 'allow-once', name: 'Allow once', kind: 'allow_once' }],
+      } }],
+    }).mockReturnValueOnce(replay.promise);
+    const { useAcpChatSessionStore } = await importStore();
+    const load = useAcpChatSessionStore.getState().loadSession(input);
+    await vi.waitFor(() => expect(hostApiMock.loadAcpSession).toHaveBeenCalledTimes(2));
+    expect(hostApiMock.loadAcpSession).toHaveBeenLastCalledWith({ ...input, createIfMissing: false, waitForActivePrompt: true });
+    expect(useAcpChatSessionStore.getState()).toMatchObject({ generation: 7, loading: false, sending: true });
+    expect(useAcpChatSessionStore.getState().timeline.itemsById['permission:original-permission']).toMatchObject({ kind: 'permission', title: 'Original edit', status: 'pending' });
+    // Later authority cards reach the same established generation while waiting.
+    useAcpChatSessionStore.getState().applyPermissionRequest({ sessionKey: input.sessionKey, generation: 7, requestId: 'later-permission', request: { sessionId: input.sessionKey, toolCall: { toolCallId: 'tool-2', title: 'Later edit', status: 'pending' }, options: [] } });
+    expect(useAcpChatSessionStore.getState().timeline.itemsById['permission:later-permission']).toBeDefined();
+    if (mode === 'answer') {
+      await useAcpChatSessionStore.getState().respondPermission('original-permission', 'allow-once');
+      expect(hostApiMock.respondAcpPermission).toHaveBeenCalledExactlyOnceWith({ sessionKey: input.sessionKey, requestId: 'original-permission', outcome: { outcome: 'selected', optionId: 'allow-once' } });
+    } else {
+      await useAcpChatSessionStore.getState().cancel();
+      expect(hostApiMock.cancelAcpSession).toHaveBeenCalledExactlyOnceWith({ sessionKey: input.sessionKey });
+    }
+    replay.resolve({ success: true, generation: 8, sessionUpdates: [{ sessionKey: input.sessionKey, generation: 8, historical: true, notification: { sessionId: input.sessionKey, update: { sessionUpdate: 'agent_message_chunk', messageId: 'original-answer', content: { type: 'text', text: 'Original history' } } } }] });
+    await expect(load).resolves.toBe(true);
+    expect(useAcpChatSessionStore.getState()).toMatchObject({ generation: 8, sending: false, loading: false, error: null });
+    expect(useAcpChatSessionStore.getState().timeline.itemsById['original-answer:0']).toMatchObject({ parts: [{ kind: 'markdown', text: 'Original history' }] });
+    expect(hostApiMock.sendAcpPrompt).not.toHaveBeenCalled();
+  });
+
+  it('a cached receipt without generation preserves the current replay generation', async () => {
+    hostApiMock.loadAcpSession.mockResolvedValueOnce({ success: true, generation: 8 });
+    hostApiMock.sendAcpPrompt.mockResolvedValueOnce({ success: true });
+    const { useAcpChatSessionStore } = await importStore();
+    await useAcpChatSessionStore.getState().loadSession({ sessionKey: 'agent:pi:s1', workspaceRoot: '/repo', cwd: '/repo' });
+    await useAcpChatSessionStore.getState().sendPrompt({ sessionKey: 'agent:pi:s1', cwd: '/repo', message: 'same delivered turn', messageId: 'same' });
+    expect(useAcpChatSessionStore.getState().generation).toBe(8);
+  });
+
   it('projects cron history when ACP replay is empty', async () => {
     hostApiMock.cronSessionHistory.mockResolvedValue({
       messages: [

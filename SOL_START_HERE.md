@@ -23,7 +23,10 @@ The owner subsequently requested autonomous completion and testing. Preview.7 no
 refines speech responsiveness, chronological conversation/viewport continuity,
 public research/browser reliability and recoverable website completion. Focused
 native voice/capability tests pass; guarded disposable Windows NSIS qualification
-is prepared. Finish the scoped regressions and exact preview.7 packaged evidence
+is prepared. The real packaged `5b93a145` candidate revealed an active ACP reply
+reload failure and duplicate admission dispatch; its rejected EXE/evidence are
+preserved. Fix Main completion settlement and fresh-renderer recovery before
+accepting a replacement. Finish the scoped regressions and exact preview.7 packaged evidence
 in the same spec/checklist. Never execute NSIS against the owner's existing Windows
 registration/profile; the CI test uses its own clean hosted runner. External hosted,
 billing, signing and actual physical hardware acceptance are separate gates.

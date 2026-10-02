@@ -187,7 +187,7 @@
     },
     "conversation": {
       "waiting": "考えています…",
-      "queued": "送信待ち",
+      "queued": "リクエストを受け取りました",
       "retry": "再試行",
       "mediaCount": "添付：{{count}}",
       "workspaceUnavailable": "会話のワークスペースを利用できません。",

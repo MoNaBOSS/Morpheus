@@ -38,6 +38,7 @@ expectedUserBehavior:
   - Included speech begins with real bounded local PCM segments and cannot reopen recording during generation gaps.
   - Public research rejects credential-bearing URLs and retries only validated transport connection failures.
   - Completed task exchanges stay beside their original request in the continuous conversation.
+  - Reloading an active reply restores original ACP history without duplicating the admitted turn; Main settles successful delivery independently of the renderer.
 requiredTests:
   - pnpm run typecheck
   - pnpm run lint:check

@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MorpheusAssistantSnapshot } from '@shared/morpheus/assistant-session-types';
 
 const mocks = vi.hoisted(() => ({
-  workspace: vi.fn(), load: vi.fn(), send: vi.fn(),
+  workspace: vi.fn(), load: vi.fn(), send: vi.fn(), snapshot: vi.fn(), ack: vi.fn(),
   sessions: [] as Array<{ key: string; createdLocally?: boolean }>,
 }));
-vi.mock('@/lib/host-api', () => ({ hostApi: { files: { resolveWorkspaceContext: mocks.workspace } } }));
+vi.mock('@/lib/host-api', () => ({ hostApi: { files: { resolveWorkspaceContext: mocks.workspace }, morpheus: { assistantSnapshot: mocks.snapshot, ackAssistantTurn: mocks.ack } } }));
 vi.mock('@/lib/host-events', () => ({ hostEvents: {} }));
 vi.mock('@/lib/workspace-context', () => ({ resolveEffectiveWorkspace: () => ({ cwd: '/fixture' }) }));
 vi.mock('@/i18n', () => ({ default: { t: (key: string) => key } }));
@@ -82,5 +82,20 @@ describe('Morpheus original-history recovery', () => {
     reject(new Error('Old failure'));
     await pending;
     expect(store.getState().dispatchError).toBeNull();
+  });
+
+  it('rechecks Main after reload recovery and never dispatches its already-consumed admission', async () => {
+    const current = snapshot();
+    current.pendingTurns.push({ conversationId: current.conversationId, turnId: 'turn', clientRequestId: 'request',
+      source: 'compact', status: 'admitted', generation: 1, admittedAt: '2026-10-02T00:00:00Z', text: 'Hello' });
+    store.setState({ snapshot: current });
+    // The original Main prompt completed while the new renderer awaited history.
+    mocks.snapshot.mockResolvedValue({ ...snapshot(), sequence: 2 });
+    store.getState().retryPending();
+    await vi.waitFor(() => expect(mocks.snapshot).toHaveBeenCalledTimes(1));
+    expect(mocks.load).toHaveBeenCalledTimes(1);
+    expect(mocks.send).not.toHaveBeenCalled();
+    expect(mocks.ack).not.toHaveBeenCalled();
+    expect(store.getState().snapshot?.pendingTurns).toHaveLength(0);
   });
 });

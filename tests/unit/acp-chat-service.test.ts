@@ -84,7 +84,7 @@ function createPassthroughAccessRegistry() {
   };
 }
 
-async function createService(connection = createConnection(), accessRegistry = createPassthroughAccessRegistry(), getPersona?: ConstructorParameters<typeof import('../../electron/services/acp-chat-service').AcpChatService>[4]) {
+async function createService(connection = createConnection(), accessRegistry = createPassthroughAccessRegistry(), getPersona?: ConstructorParameters<typeof import('../../electron/services/acp-chat-service').AcpChatService>[4], onDispatched?: ConstructorParameters<typeof import('../../electron/services/acp-chat-service').AcpChatService>[5]) {
   const send = vi.fn();
   const { AcpChatService } = await import('../../electron/services/acp-chat-service');
   const service = new AcpChatService(
@@ -93,6 +93,7 @@ async function createService(connection = createConnection(), accessRegistry = c
     connection as never,
     undefined,
     getPersona,
+    onDispatched,
   );
   return { service, connection, send, accessRegistry };
 }
@@ -150,6 +151,158 @@ describe('AcpChatService', () => {
     vi.clearAllMocks();
     acpSdkMock.state.connectionForSpawn = undefined;
     childProcessMock.state.child = undefined;
+  });
+
+  it('coalesces active identities, rejects changed payload, and replays settled receipts without old generation', async () => {
+    const completion = createDeferred<{ stopReason: 'end_turn' }>();
+    const connection = createConnection();
+    connection.prompt.mockReturnValueOnce(completion.promise);
+    const settled = vi.fn();
+    const dispatched = vi.fn(() => settled);
+    const { service } = await createService(connection, undefined, undefined, dispatched);
+    const load = { sessionKey: 'agent:pi:s1', workspaceRoot: '/repo', cwd: '/repo' };
+    await service.loadSession(load);
+    const payload = { sessionKey: load.sessionKey, cwd: '/repo', message: 'original', messageId: 'stable-1' };
+    const original = service.sendPrompt(payload);
+    expect(service.sendPrompt(payload)).toBe(original);
+    await vi.waitFor(() => expect(connection.prompt).toHaveBeenCalledTimes(1));
+    for (const changed of [{ message: 'changed' }, { cwd: '/other' }, { media: [{ filePath: '/x', stagingId: 'x' }] }]) {
+      await expect(service.sendPrompt({ ...payload, ...changed })).resolves.toMatchObject({ success: false, error: expect.stringContaining('different content') });
+    }
+    completion.resolve({ stopReason: 'end_turn' });
+    await expect(original).resolves.toEqual({ success: true, generation: 1 });
+    await service.loadSession(load);
+    await expect(service.sendPrompt(payload)).resolves.toEqual({ success: true });
+    expect(connection.prompt).toHaveBeenCalledTimes(1);
+    expect(dispatched).toHaveBeenCalledTimes(1);
+    expect(settled).toHaveBeenCalledExactlyOnceWith({ outcome: 'completed' });
+  });
+
+  it('retries known pre-dispatch failures but caches unknown post-dispatch effects and cancellation', async () => {
+    const { service, connection } = await createService();
+    const payload = { sessionKey: 'agent:pi:s1', cwd: '/repo', message: 'original', messageId: 'retry-1' };
+    await expect(service.sendPrompt(payload)).resolves.toMatchObject({ success: false, error: 'No active ACP session' });
+    await service.loadSession({ sessionKey: payload.sessionKey, workspaceRoot: '/repo', cwd: '/repo' });
+    await expect(service.sendPrompt(payload)).resolves.toMatchObject({ success: true });
+    connection.prompt.mockRejectedValueOnce(new Error('transport closed after dispatch'));
+    const uncertain = { ...payload, messageId: 'uncertain' };
+    await expect(service.sendPrompt(uncertain)).resolves.toMatchObject({ success: false, error: 'transport closed after dispatch' });
+    await expect(service.sendPrompt(uncertain)).resolves.toMatchObject({ success: false, error: 'transport closed after dispatch' });
+    connection.prompt.mockResolvedValueOnce({ stopReason: 'cancelled' });
+    const cancelled = { ...payload, messageId: 'cancelled' };
+    await expect(service.sendPrompt(cancelled)).resolves.toMatchObject({ success: false, error: 'ACP prompt was cancelled' });
+    await expect(service.sendPrompt(cancelled)).resolves.toMatchObject({ success: false, error: 'ACP prompt was cancelled' });
+    expect(connection.prompt).toHaveBeenCalledTimes(3);
+  });
+
+  it('retains only 256 settled receipts while never evicting an active identity', async () => {
+    const completion = createDeferred<{ stopReason: 'end_turn' }>();
+    const { service, connection } = await createService();
+    await service.loadSession({ sessionKey: 'agent:pi:s1', workspaceRoot: '/repo', cwd: '/repo' });
+    connection.prompt.mockReturnValueOnce(completion.promise);
+    const activePayload = { sessionKey: 'agent:pi:s1', cwd: '/repo', message: 'hold', messageId: 'held' };
+    const active = service.sendPrompt(activePayload);
+    await vi.waitFor(() => expect(connection.prompt).toHaveBeenCalledTimes(1));
+    await service.loadSession({ sessionKey: 'agent:pi:s2', workspaceRoot: '/repo', cwd: '/repo' });
+    const otherPayload = { ...activePayload, sessionKey: 'agent:pi:s2', message: 'other' };
+    for (let index = 0; index < 270; index += 1) {
+      await expect(service.sendPrompt({ ...otherPayload, messageId: `other-${index}` })).resolves.toMatchObject({ success: true });
+    }
+    expect(service.sendPrompt(activePayload)).toBe(active);
+    await expect(service.sendPrompt({ ...activePayload, message: 'altered' })).resolves.toMatchObject({ success: false });
+    await expect(service.sendPrompt({ ...otherPayload, messageId: 'other-269' })).resolves.toEqual({ success: true });
+    expect(connection.prompt).toHaveBeenCalledTimes(271);
+    // This Main-process receipt window deliberately no longer remembers oldest
+    // settled requests. Morpheus's consumed Main admission prevents re-draining.
+    await service.sendPrompt({ ...otherPayload, messageId: 'other-0' });
+    expect(connection.prompt).toHaveBeenCalledTimes(272);
+    completion.resolve({ stopReason: 'end_turn' });
+    await active;
+  });
+
+  it.each(['answer', 'cancel'] as const)('restores a retained authority request on fresh reload and can %s it before history replay', async (mode) => {
+    const { service, connection } = await createService();
+    const load = { sessionKey: 'agent:pi:s1', workspaceRoot: '/repo', cwd: '/repo' };
+    await service.loadSession(load);
+    connection.prompt.mockImplementationOnce(async () => {
+      const response = await service.client.requestPermission({ sessionId: load.sessionKey, toolCall: { toolCallId: 'tool-1', title: 'Edit file', status: 'pending' }, options: [{ optionId: 'allow-once', name: 'Allow once', kind: 'allow_once' }] });
+      return { stopReason: response.outcome.outcome === 'cancelled' ? 'cancelled' : 'end_turn' };
+    });
+    const original = service.sendPrompt({ sessionKey: load.sessionKey, cwd: '/repo', message: 'needs permission', messageId: 'permission-turn' });
+    await vi.waitFor(() => expect(connection.prompt).toHaveBeenCalledTimes(1));
+    const resumed = await service.loadSession(load);
+    expect(resumed).toMatchObject({ success: true, generation: 1, resumedActivePrompt: true, pendingPermissions: [{ generation: 1, request: { toolCall: { title: 'Edit file' } } }] });
+    let replayed = false;
+    const replay = service.loadSession({ ...load, createIfMissing: true, waitForActivePrompt: true }).then((value) => { replayed = true; return value; });
+    await Promise.resolve();
+    expect(replayed).toBe(false);
+    if (mode === 'answer') await service.respondPermission({ sessionKey: load.sessionKey, requestId: resumed.pendingPermissions![0].requestId, outcome: { outcome: 'selected', optionId: 'allow-once' } });
+    else await service.cancelSession({ sessionKey: load.sessionKey });
+    await expect(original).resolves.toMatchObject({ success: mode === 'answer' });
+    await expect(replay).resolves.toMatchObject({ success: true, generation: 2 });
+    expect(connection.prompt).toHaveBeenCalledTimes(1);
+    expect(connection.newSession).not.toHaveBeenCalled();
+    expect(connection.loadSession).toHaveBeenCalledTimes(2);
+  });
+
+  it('settles only the exact text admission and protects canceled, media, and unrelated owners', async () => {
+    const { MorpheusAssistantSession } = await import('../../electron/services/morpheus-assistant-session');
+    const { createMorpheusAcpAdmissionHook } = await import('../../electron/services/chat-api');
+    const owner = new MorpheusAssistantSession();
+    const hook = createMorpheusAcpAdmissionHook(owner);
+    const admit = (request: string) => owner.admitTurn({ conversationId: 'agent:main:main', clientRequestId: request, text: 'hello', source: 'compact' });
+    const payload = (turnId: string) => ({ sessionKey: 'agent:main:main', cwd: '/repo', message: 'hello', messageId: turnId });
+    const first = admit('one');
+    const settle = hook(payload(first.turnId))!;
+    expect(owner.snapshot().pendingTurns).toHaveLength(1);
+    await settle({ outcome: 'completed' });
+    expect(owner.snapshot().pendingTurns).toHaveLength(0);
+    expect(owner.snapshot().turns[0].status).toBe('dispatched');
+    await settle({ outcome: 'failed' });
+    expect(owner.snapshot().turns[0].status).toBe('dispatched');
+    const second = admit('two');
+    const stale = hook(payload(second.turnId))!;
+    owner.invalidateTurn({ conversationId: second.conversationId, turnId: second.turnId });
+    await stale({ outcome: 'completed' });
+    expect(owner.snapshot().turns[1].status).toBe('cancelled');
+    const third = admit('three');
+    expect(hook({ ...payload(third.turnId), media: [{ filePath: '/x', stagingId: 'x' }] })).toBeUndefined();
+    expect(hook({ ...payload(third.turnId), message: 'different' })).toBeUndefined();
+    await hook(payload(third.turnId))!({ outcome: 'failed' });
+    expect(owner.snapshot().turns[2].status).toBe('failed');
+    expect(owner.snapshot().pendingTurns).toHaveLength(0);
+  });
+
+  it('a recovery wait permits navigation and cannot reactivate a superseded session on completion', async () => {
+    const completion = createDeferred<{ stopReason: 'end_turn' }>();
+    const { service, connection } = await createService();
+    const first = { sessionKey: 'agent:pi:s1', workspaceRoot: '/repo', cwd: '/repo' };
+    const second = { ...first, sessionKey: 'agent:pi:s2' };
+    await service.loadSession(first);
+    connection.prompt.mockReturnValueOnce(completion.promise);
+    const original = service.sendPrompt({ sessionKey: first.sessionKey, cwd: '/repo', message: 'hold', messageId: 'hold' });
+    await vi.waitFor(() => expect(connection.prompt).toHaveBeenCalledTimes(1));
+    const recovery = service.loadSession({ ...first, waitForActivePrompt: true });
+    await expect(service.loadSession(second)).resolves.toMatchObject({ success: true, generation: 2 });
+    // Exact live-session cancellation remains valid after navigating elsewhere.
+    await expect(service.cancelSession({ sessionKey: first.sessionKey })).resolves.toMatchObject({ success: true, generation: 1 });
+    expect(connection.cancel).toHaveBeenCalledWith({ sessionId: first.sessionKey });
+    completion.resolve({ stopReason: 'end_turn' });
+    await original;
+    await expect(recovery).resolves.toMatchObject({ success: false, error: expect.stringContaining('superseded') });
+    await expect(service.sendPrompt({ sessionKey: second.sessionKey, cwd: '/repo', message: 'still B', messageId: 'B' })).resolves.toMatchObject({ success: true, generation: 2 });
+    expect(connection.loadSession).toHaveBeenCalledTimes(2);
+  });
+
+  it('recovery never creates an empty session even when the original prompt has already finished', async () => {
+    const { service, connection } = await createService();
+    const load = { sessionKey: 'agent:pi:s1', workspaceRoot: '/repo', cwd: '/repo' };
+    await service.loadSession(load);
+    await service.sendPrompt({ sessionKey: load.sessionKey, cwd: '/repo', message: 'finished', messageId: 'settled' });
+    await expect(service.loadSession({ ...load, createIfMissing: true, waitForActivePrompt: true })).resolves.toMatchObject({ success: true, generation: 2 });
+    expect(connection.newSession).not.toHaveBeenCalled();
+    expect(connection.loadSession).toHaveBeenCalledTimes(2);
+    expect(connection.prompt).toHaveBeenCalledTimes(1);
   });
 
   it('forks the embedded OpenClaw entry for ACP instead of spawning a public CLI wrapper', async () => {

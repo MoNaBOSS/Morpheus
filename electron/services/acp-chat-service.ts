@@ -1,6 +1,6 @@
 import type { BrowserWindow } from 'electron';
 import { fork, type ChildProcess } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Readable, Writable } from 'node:stream';
 import {
   ClientSideConnection,
@@ -41,6 +41,7 @@ type MainWindowLike = {
 type PermissionWaiter = {
   sessionKey: string;
   generation: number;
+  envelope: AcpPermissionRequestEnvelope;
   resolve: (response: RequestPermissionResponse) => void;
 };
 type AcpSessionLoadBatch = {
@@ -56,7 +57,17 @@ type AcpLivePromptContext = {
   acpSessionId: string;
   generation: number;
   accessGrant: AcpSessionAccessContext;
+  completed: Promise<void>;
+  finish: () => void;
 };
+// Recent Main-process receipts suppress renderer retries. Durable admissions and
+// ACP history remain their owners; this cache is not permanent conversation storage.
+const MAX_SETTLED_PROMPT_RECEIPTS = 256;
+const MAX_ACTIVE_PROMPT_RECEIPTS = 32;
+type AcpPromptReceipt = { fingerprint: string; promise?: Promise<AcpChatOperationResult>; dispatched: boolean; inFlight: boolean };
+export type AcpPromptSettlement = { outcome: 'completed' | 'cancelled' | 'failed' };
+export type AcpPromptDispatchHook = (payload: AcpChatPromptPayload) =>
+  ((settlement: AcpPromptSettlement) => void | Promise<void>) | undefined;
 type AcpChildProcess = ChildProcess & {
   stdin: NonNullable<ChildProcess['stdin']>;
   stdout: NonNullable<ChildProcess['stdout']>;
@@ -143,8 +154,10 @@ export class AcpChatService {
   private historicalGeneration: number | null = null;
   private permissionsEnabled = false;
   private loadQueue: Promise<void> | null = null;
+  private loadRequestSeq = 0;
   private activeLoadBatch: AcpSessionLoadBatch | null = null;
   private readonly livePrompts = new Map<string, AcpLivePromptContext>();
+  private readonly promptReceipts = new Map<string, AcpPromptReceipt>();
   private permissionSeq = 0;
   private readonly permissionWaiters = new Map<string, PermissionWaiter>();
   readonly client: Client;
@@ -155,6 +168,7 @@ export class AcpChatService {
     injectedConnection?: AcpConnection,
     private readonly gateway?: GatewayPairingRpcClient,
     private readonly getCompanionPersona?: (payload: AcpChatPromptPayload) => MorpheusPersonaContext | undefined,
+    private readonly onPromptDispatched?: AcpPromptDispatchHook,
   ) {
     this.connection = injectedConnection ?? null;
     this.client = {
@@ -186,6 +200,14 @@ export class AcpChatService {
   }
 
   loadSession(payload: AcpChatLoadPayload): Promise<AcpChatOperationResult> {
+    const requestSeq = ++this.loadRequestSeq;
+    const loadPayload = payload.waitForActivePrompt === true ? { ...payload, createIfMissing: false } : payload;
+    // Waiting for another owner's prompt must not occupy the global load slot:
+    // the user can navigate elsewhere and return to answer its authority card.
+    const activePrompt = loadPayload.waitForActivePrompt === true ? this.livePrompts.get(loadPayload.sessionKey) : undefined;
+    if (activePrompt) return activePrompt.completed.then(() => this.loadRequestSeq === requestSeq
+      ? this.loadSession({ ...loadPayload, waitForActivePrompt: false })
+      : fail('ACP session recovery was superseded by another load'));
     const previousLoad = this.loadQueue;
     let releaseLoad!: () => void;
     const currentLoad = new Promise<void>((resolve) => {
@@ -196,7 +218,7 @@ export class AcpChatService {
     const run = async () => {
       if (previousLoad) await previousLoad;
       try {
-        return await this.performLoadSession(payload);
+        return await this.performLoadSession(loadPayload);
       } finally {
         releaseLoad();
         if (this.loadQueue === currentLoad) this.loadQueue = null;
@@ -208,6 +230,9 @@ export class AcpChatService {
   private async performLoadSession(payload: AcpChatLoadPayload): Promise<AcpChatOperationResult> {
     if (!isValidSessionKey(payload.sessionKey) || !payload.workspaceRoot || !payload.cwd) {
       return fail('Invalid ACP session load payload');
+    }
+    if (payload.waitForActivePrompt !== undefined && typeof payload.waitForActivePrompt !== 'boolean') {
+      return fail('Invalid ACP prompt recovery control');
     }
     const previousPermissionsEnabled = this.permissionsEnabled;
     this.permissionsEnabled = false;
@@ -262,6 +287,9 @@ export class AcpChatService {
           success: true,
           generation: livePrompt.generation,
           resumedActivePrompt: true,
+          ...([...this.permissionWaiters.values()].some((waiter) => waiter.sessionKey === livePrompt.sessionKey)
+            ? { pendingPermissions: [...this.permissionWaiters.values()].filter((waiter) => waiter.sessionKey === livePrompt.sessionKey).map((waiter) => waiter.envelope) }
+            : {}),
         };
       }
       previousSessionKey = this.activeSessionKey;
@@ -358,7 +386,49 @@ export class AcpChatService {
     }
   }
 
-  async sendPrompt(payload: AcpChatPromptPayload): Promise<AcpChatOperationResult> {
+  sendPrompt(payload: AcpChatPromptPayload): Promise<AcpChatOperationResult> {
+    if (!payload.messageId) return this.performSendPrompt(payload);
+    if (typeof payload.messageId !== 'string' || payload.messageId.length > 256) return Promise.resolve(fail('Invalid ACP message identity'));
+    const key = `${payload.sessionKey}\0${payload.messageId}`;
+    const fingerprint = createHash('sha256').update(JSON.stringify([payload.cwd, payload.message ?? '', payload.media ?? []])).digest('hex');
+    let receipt = this.promptReceipts.get(key);
+    if (receipt && receipt.fingerprint !== fingerprint) return Promise.resolve(fail('ACP message identity was reused with different content'));
+    if (receipt?.promise) {
+      if (receipt.inFlight) return receipt.promise;
+      // A replayed receipt confirms dispatch only. Its original projection
+      // generation must not rewind a renderer which has since replayed history.
+      return receipt.promise.then((result) => { const replay = { ...result }; delete replay.generation; return replay; });
+    }
+    if ([...this.promptReceipts.values()].filter((entry) => entry.inFlight).length >= MAX_ACTIVE_PROMPT_RECEIPTS) {
+      return Promise.resolve(fail('Too many ACP prompts are active; wait for one to finish'));
+    }
+    if (!receipt) {
+      receipt = { fingerprint, dispatched: false, inFlight: false };
+      this.promptReceipts.set(key, receipt);
+    }
+    const ownedReceipt = receipt;
+    ownedReceipt.inFlight = true;
+    ownedReceipt.promise = Promise.resolve().then(() => this.performSendPrompt(payload, () => { ownedReceipt.dispatched = true; }))
+      .then((result) => {
+        // A proven pre-dispatch failure can be explicitly retried with the same
+        // identity. Successful or uncertain effects remain protected from replay.
+        if (!result.success && !ownedReceipt.dispatched) ownedReceipt.promise = undefined;
+        ownedReceipt.inFlight = false;
+        // Completion order determines the recent retention window. Active
+        // receipts are never evicted, including while other sessions complete.
+        this.promptReceipts.delete(key);
+        this.promptReceipts.set(key, ownedReceipt);
+        let settledCount = [...this.promptReceipts.values()].filter((entry) => !entry.inFlight).length;
+        for (const [oldKey, oldReceipt] of this.promptReceipts) {
+          if (settledCount <= MAX_SETTLED_PROMPT_RECEIPTS) break;
+          if (!oldReceipt.inFlight) { this.promptReceipts.delete(oldKey); settledCount -= 1; }
+        }
+        return result;
+      });
+    return ownedReceipt.promise;
+  }
+
+  private async performSendPrompt(payload: AcpChatPromptPayload, onDispatched?: () => void): Promise<AcpChatOperationResult> {
     if (!isValidSessionKey(payload.sessionKey) || !payload.cwd) return fail('Invalid ACP prompt payload');
     if (!this.activeSessionKey) return fail('No active ACP session');
     if (payload.sessionKey !== this.activeSessionKey) return fail('ACP prompt session is not active');
@@ -368,13 +438,20 @@ export class AcpChatService {
     const acpSessionId = this.loadedAcpSessionId;
     const accessGrant = this.accessRegistry.get(payload.sessionKey, generation);
     if (!accessGrant) return fail('ACP session access grant is not active');
+    let finish!: () => void;
+    const completed = new Promise<void>((resolve) => { finish = resolve; });
     const promptContext: AcpLivePromptContext = {
       sessionKey: payload.sessionKey,
       acpSessionId,
       generation,
       accessGrant,
+      completed,
+      finish,
     };
     this.livePrompts.set(payload.sessionKey, promptContext);
+    let settleAdmission: ReturnType<AcpPromptDispatchHook>;
+    let dispatched = false;
+    let admissionSettled = false;
     try {
       const promptCwd = payload.cwd === accessGrant.executionCwd
         ? payload.cwd
@@ -398,7 +475,11 @@ export class AcpChatService {
       this.permissionsEnabled = true;
       const messageId = payload.messageId ?? randomUUID();
       const isSlashCommand = payload.message?.trimStart().startsWith('/') === true;
-      await connection.prompt({
+      // The Main adapter binds the admission now, not after a renderer reload.
+      settleAdmission = this.onPromptDispatched?.(payload);
+      onDispatched?.();
+      dispatched = true;
+      const response = await connection.prompt({
         sessionId: acpSessionId,
         prompt,
         // ACP 1.1 removed messageId from the PromptRequest wire shape. Keep
@@ -407,13 +488,22 @@ export class AcpChatService {
         // so the Gateway can classify and fold command replies into chat final.
         _meta: { sessionKey: payload.sessionKey, prefixCwd: !isSlashCommand, messageId },
       });
-      this.trace('session/prompt:success', {
+      const cancelled = response.stopReason === 'cancelled';
+      this.trace(cancelled ? 'session/prompt:cancelled' : 'session/prompt:success', {
         sessionKey: payload.sessionKey,
         generation,
         details: { blockCount: prompt.length, acpSessionId },
       });
-      return ok(generation);
+      admissionSettled = true;
+      await settleAdmission?.({ outcome: cancelled ? 'cancelled' : 'completed' });
+      return cancelled ? { ...fail('ACP prompt was cancelled'), generation } : ok(generation);
     } catch (error) {
+      if (dispatched && !admissionSettled) {
+        // A transport failure after dispatch has unknown effects. Consume the
+        // bound admission as failed rather than automatically sending it again.
+        try { await settleAdmission?.({ outcome: 'failed' }); }
+        catch (settlementError) { logger.error(`[acp-chat] admission settlement failed: ${String(settlementError)}`); }
+      }
       logger.error(`[acp-chat] prompt failed: ${String(error)}`);
       this.trace('session/prompt:failed', {
         sessionKey: payload.sessionKey,
@@ -426,21 +516,24 @@ export class AcpChatService {
         this.resolvePermissionWaitersForSession(payload.sessionKey, cancelledPermissionResponse());
       }
       this.permissionsEnabled = this.activeSessionKey != null && this.livePrompts.has(this.activeSessionKey);
+      promptContext.finish();
     }
   }
 
   async cancelSession(payload: AcpChatCancelPayload): Promise<AcpChatOperationResult> {
     if (!isValidSessionKey(payload.sessionKey)) return fail('Invalid ACP cancel payload');
-    if (payload.sessionKey !== this.activeSessionKey || !this.loadedAcpSessionId) return fail('ACP session is not loaded');
+    const livePrompt = this.livePrompts.get(payload.sessionKey);
+    const sessionId = livePrompt?.acpSessionId ?? (payload.sessionKey === this.activeSessionKey ? this.loadedAcpSessionId : null);
+    if (!sessionId) return fail('ACP session is not loaded');
 
     try {
       this.trace('session/cancel:start', { sessionKey: payload.sessionKey });
       const connection = await this.ensureConnection();
-      await connection.cancel({ sessionId: this.loadedAcpSessionId });
-      this.permissionsEnabled = false;
+      await connection.cancel({ sessionId });
+      if (payload.sessionKey === this.activeSessionKey) this.permissionsEnabled = false;
       this.resolvePermissionWaitersForSession(payload.sessionKey, cancelledPermissionResponse());
       this.trace('session/cancel:success', { sessionKey: payload.sessionKey });
-      return ok(this.generation);
+      return ok(livePrompt?.generation ?? this.generation);
     } catch (error) {
       logger.error(`[acp-chat] cancel failed: ${String(error)}`);
       this.trace('session/cancel:failed', {
@@ -613,6 +706,7 @@ export class AcpChatService {
     this.historicalSessionKey = null;
     this.historicalGeneration = null;
     this.permissionsEnabled = false;
+    for (const context of this.livePrompts.values()) context.finish();
     this.livePrompts.clear();
   }
 
@@ -711,15 +805,13 @@ export class AcpChatService {
       requestId,
       request: { ...request, sessionId: sessionKey },
     };
-    this.mainWindow.webContents.send(HOST_EVENT_CHANNELS.chat.acpPermissionRequest, envelope);
-    this.trace('permission:forwarded', {
-      direction: 'downstream',
-      sessionKey,
-      details: { requestId, acpSessionId, optionCount: request.options.length },
-    });
-
     return new Promise((resolve) => {
-      this.permissionWaiters.set(requestId, { sessionKey, generation, resolve });
+      this.permissionWaiters.set(requestId, { sessionKey, generation, envelope, resolve });
+      this.mainWindow.webContents.send(HOST_EVENT_CHANNELS.chat.acpPermissionRequest, envelope);
+      this.trace('permission:forwarded', {
+        direction: 'downstream', sessionKey,
+        details: { requestId, acpSessionId, optionCount: request.options.length },
+      });
     });
   }
 
@@ -790,6 +882,7 @@ export function createAcpChatService(
   accessRegistry: AcpSessionAccessRegistry,
   gateway?: GatewayPairingRpcClient,
   getCompanionPersona?: (payload: AcpChatPromptPayload) => MorpheusPersonaContext | undefined,
+  onPromptDispatched?: AcpPromptDispatchHook,
 ): AcpChatService {
-  return new AcpChatService(mainWindow, accessRegistry, undefined, gateway, getCompanionPersona);
+  return new AcpChatService(mainWindow, accessRegistry, undefined, gateway, getCompanionPersona, onPromptDispatched);
 }

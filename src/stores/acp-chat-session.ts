@@ -1036,6 +1036,7 @@ export const useAcpChatSessionStore = create<AcpChatSessionState>((set, get) => 
 
     try {
       let result = await hostApi.chat.loadAcpSession(input);
+      let recoveredActivePrompt = false;
       let state = get();
       if (
         loadRequestSeq !== requestId
@@ -1059,7 +1060,21 @@ export const useAcpChatSessionStore = create<AcpChatSessionState>((set, get) => 
         ? liveSessionSnapshots.get(input.sessionKey)
         : undefined;
       if (result.resumedActivePrompt && resumedSnapshot?.generation !== result.generation) {
-        result = await hostApi.chat.loadAcpSession(input);
+        recoveredActivePrompt = true;
+        // A new renderer has no streaming projection. Restore original pending
+        // authority cards with their generation before awaiting history, so the
+        // owner can answer or stop a permission-blocked prompt after reload.
+        const activeGeneration = result.generation ?? state.generation;
+        let recoveringTimeline = createEmptyAcpTimeline(input.sessionKey, activeGeneration);
+        for (const permission of result.pendingPermissions ?? []) {
+          if (permission.sessionKey === input.sessionKey && permission.generation === activeGeneration) {
+            recoveringTimeline = applyPermissionRequestToTimeline(recoveringTimeline, permission);
+          }
+        }
+        set({ generation: activeGeneration, timeline: recoveringTimeline, sending: true, loading: false });
+        // Session-list hydration can lag Main on reload. Once Main reports a
+        // live session, recovering it must replay history rather than create one.
+        result = await hostApi.chat.loadAcpSession({ ...input, createIfMissing: false, waitForActivePrompt: true });
         state = get();
         if (
           loadRequestSeq !== requestId
@@ -1168,7 +1183,7 @@ export const useAcpChatSessionStore = create<AcpChatSessionState>((set, get) => 
         const evidence = extractImageGenerationCompletionFromAcpEnvelope(event);
         if (evidence) void get().projectImageGenerationCompletion(evidence);
       }
-      if (!input.createIfMissing) {
+      if (!input.createIfMissing || recoveredActivePrompt) {
         startHistoricalTranscriptSupplement(input.sessionKey, generation);
       }
       return true;

@@ -37,6 +37,9 @@ export function MorpheusQuickCommand() {
   const submitConversation = useMorpheusConversationStore((s) => s.submit);
   const conversationSubmitting = useMorpheusConversationStore((s) => s.submitting);
   const conversationWorking = useAcpChatSessionStore((s) => s.sending || s.loading);
+  const conversationCanStop = useAcpChatSessionStore((s) => s.sending);
+  const cancelConversation = useAcpChatSessionStore((s) => s.cancel);
+  const conversationCancelling = useAcpChatSessionStore((s) => s.cancelling);
   const conversationError = useMorpheusConversationStore((s) => s.dispatchError);
   const blockedTurnId = useMorpheusConversationStore((s) => s.blockedTurnId);
   const retryConversation = useMorpheusConversationStore((s) => s.retryPending);
@@ -151,7 +154,7 @@ export function MorpheusQuickCommand() {
         </div>
         <p data-testid="quick-command-objective-state" className="sr-only">{objectiveRun ? `${objectiveRun.objective} ${t(`morpheus.objective.states.${objectiveRun.state}`)}` : ''}</p>
         <span data-testid="quick-command-transcript" className="sr-only">{objectiveRun?.objective ?? objective}</span>
-        <form className="morpheus-setup-composer mt-4 flex shrink-0 items-center gap-1" onSubmit={(event) => { event.preventDefault(); void submit(); }}><MorpheusVoiceButton source="quick-command" className="!h-8 !w-8 !rounded-full !border-0 !bg-transparent !text-[#a0b6aa]" /><input ref={inputRef} data-testid="quick-command-input" value={objective} disabled={busy} onChange={(event) => { setObjective(event.target.value); clearClarification(); }} placeholder={t('morpheus.workspace.placeholder')} className="min-w-0 flex-1 bg-transparent text-sm text-[#edf5ef] outline-none placeholder:text-[#a0b6aa]" />{objectiveActive ? <button type="button" data-testid="quick-command-cancel-objective" aria-label={t('morpheus.signalOs.stop')} onClick={() => void cancelObjective()} className="p-2 text-red-300"><Square size={14} /></button> : null}<button type="submit" data-testid="quick-command-submit" aria-label={t('morpheus.command.run')} disabled={!objective.trim() || busy} className="p-2 text-[#53edb4] disabled:opacity-40"><ArrowRight size={18} /></button></form>
+        <form className="morpheus-setup-composer mt-4 flex shrink-0 items-center gap-1" onSubmit={(event) => { event.preventDefault(); void submit(); }}><MorpheusVoiceButton source="quick-command" className="!h-8 !w-8 !rounded-full !border-0 !bg-transparent !text-[#a0b6aa]" /><input ref={inputRef} data-testid="quick-command-input" value={objective} disabled={busy} onChange={(event) => { setObjective(event.target.value); clearClarification(); }} placeholder={t('morpheus.workspace.placeholder')} className="min-w-0 flex-1 bg-transparent text-sm text-[#edf5ef] outline-none placeholder:text-[#a0b6aa]" />{conversationCanStop ? <button type="button" data-testid="quick-command-stop-conversation" disabled={conversationCancelling} aria-label={t('morpheus.signalOs.stop')} onClick={() => void cancelConversation()} className="p-2 text-red-300 disabled:opacity-40"><Square size={14} /></button> : null}{objectiveActive ? <button type="button" data-testid="quick-command-cancel-objective" aria-label={t('morpheus.signalOs.stop')} onClick={() => void cancelObjective()} className="p-2 text-red-300"><Square size={14} /></button> : null}<button type="submit" data-testid="quick-command-submit" aria-label={t('morpheus.command.run')} disabled={!objective.trim() || busy} className="p-2 text-[#53edb4] disabled:opacity-40"><ArrowRight size={18} /></button></form>
       </div>
       <footer className="relative z-10 flex h-10 shrink-0 items-center justify-end border-t border-white/10 px-4 text-[11px] text-[#a0b6aa]">{t('morpheus.workspace.typing')}</footer>
     </section>

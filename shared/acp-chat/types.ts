@@ -15,6 +15,8 @@ export type AcpChatLoadPayload = AcpSessionKeyPayload & {
   workspaceRoot: string;
   cwd: string;
   createIfMissing?: boolean;
+  /** Fresh renderers have no live projection; wait for the original owner's replay. */
+  waitForActivePrompt?: boolean;
 };
 
 export type AcpPromptMediaItem = {
@@ -44,6 +46,8 @@ export type AcpChatOperationResult = {
   generation?: number;
   /** The requested session still has a live prompt and was reactivated without history replay. */
   resumedActivePrompt?: boolean;
+  /** Original Main-owned authority requests still awaiting an explicit answer. */
+  pendingPermissions?: AcpPermissionRequestEnvelope[];
   /** Raw notifications collected while session/load is in progress. */
   sessionUpdates?: AcpSessionUpdateEnvelope[];
 };
