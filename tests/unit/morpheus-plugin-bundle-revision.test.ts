@@ -32,6 +32,10 @@ describe('managed plugin dependency revisions', () => {
     writeFileSync(join(root, 'pnpm-lock.yaml'), 'image-size: 2.0.2\npatch: updated\n');
     expect(stampPluginBundleRevision(source, root)).not.toBe(revision);
     expect(needsPluginBundleRefresh(source, target)).toBe(true);
+    const beforeBackport = stampPluginBundleRevision(source, root);
+    const patched = JSON.parse(readFileSync(join(source, 'package.json'), 'utf8'));
+    writeFileSync(join(source, 'package.json'), JSON.stringify({ ...patched, morpheusBundledOverrides: { undici: '8.10.2' } }));
+    expect(stampPluginBundleRevision(source, root)).not.toBe(beforeBackport);
     writeFileSync(join(source, 'package.json'), '{"morpheusBundleRevision":"untrusted/path"}');
     expect(needsPluginBundleRefresh(source, target)).toBe(false);
   });

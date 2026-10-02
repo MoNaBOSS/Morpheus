@@ -11,6 +11,12 @@ touchedAreas:
   - tests/unit/openclaw-bundle-config.test.ts
   - resources/morpheus-orb/motion.css
   - tests/e2e/morpheus-shared-orb-motion.spec.ts
+  - scripts/patch-bundled-plugin-dependencies.mjs
+  - scripts/bundle-openclaw-plugins.mjs
+  - scripts/after-pack.cjs
+  - scripts/plugin-bundle-revision.mjs
+  - tests/unit/morpheus-bundled-plugin-dependencies.test.ts
+  - tests/unit/morpheus-plugin-bundle-revision.test.ts
   - harness/specs/tasks/morpheus-windows-release-qualification.md
   - docs/releases/WINDOWS_COMPLETION_CHECKLIST.md
   - docs/releases/phase7-i-windows-candidate.md

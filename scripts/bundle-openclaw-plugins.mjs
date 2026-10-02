@@ -22,6 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stampPluginBundleRevision } from './plugin-bundle-revision.mjs';
+import { patchBundledPluginDependencies } from './patch-bundled-plugin-dependencies.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -183,6 +184,8 @@ function bundleOnePlugin({ npmName, pluginId }) {
   //    their JS output than what openclaw.plugin.json declares.  The Gateway
   //    validates that these match, so we fix it post-copy.
   patchPluginId(outputDir, pluginId);
+  const dependencyBackports = patchBundledPluginDependencies(outputDir, ROOT);
+  if (dependencyBackports.length) echo`   🩹 Applied ${dependencyBackports.length} locked bundled dependency backport(s)`;
   stampPluginBundleRevision(outputDir, ROOT);
 
   echo`   ✅ ${pluginId}: copied ${copiedCount} deps (skipped dupes: ${skippedDupes})`;

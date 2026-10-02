@@ -6,9 +6,10 @@ import { join } from 'node:path';
 export function stampPluginBundleRevision(pluginDir, repositoryRoot) {
   const app = JSON.parse(readFileSync(join(repositoryRoot, 'package.json'), 'utf8'));
   const lock = readFileSync(join(repositoryRoot, 'pnpm-lock.yaml'), 'utf8').replaceAll('\r\n', '\n');
-  const revision = createHash('sha256').update(`${app.version}\n${lock}`).digest('hex');
   const path = join(pluginDir, 'package.json');
   const plugin = JSON.parse(readFileSync(path, 'utf8'));
+  const bundledOverrides = JSON.stringify(plugin.morpheusBundledOverrides || {});
+  const revision = createHash('sha256').update(`${app.version}\n${lock}\n${bundledOverrides}`).digest('hex');
   writeFileSync(path, `${JSON.stringify({ ...plugin, morpheusBundleRevision: revision }, null, 2)}\n`);
   return revision;
 }

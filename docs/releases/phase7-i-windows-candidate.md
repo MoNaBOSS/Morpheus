@@ -193,3 +193,40 @@ performance evidence. The only follow-up is reducing subpixel idle halo updates
 from 10 Hz to 5 Hz; active aurora, audio response and reduced/hidden pause are
 unchanged. Fresh shared native/React motion regression passes (24.1s), harness
 validation passes. Rebuilt package measurement remains the next gate.
+
+### Exact 50231971 payload qualified
+
+Preview.5 source 5023197175b6b08dad8cad4703e06661c5354f03 passes normal packaged
+welcome/local task, protected synthetic provider, original compact reply, reload
+and quiet relaunch; one free local inference total, none for recovery. The actual
+restored UI was visually inspected. Gateway first copied-payload startup 45.19s;
+returning window 2.59s / Gateway 7.51s (observations, not closed startup targets).
+Final full source run: 3,320 units / two platform skips / 322 files / 63.13s.
+
+The exact payload's controlled outage/local task/recovery, Premium Main/UI guard,
+no duplicate/queued history, clean console and owned-process shutdown pass.
+Five-minute unarmed idle (312.437s) is **0.9064% total CPU**, below the unchanged
+1% target, stable process set, working set 1,329,209,344 → 1,308,626,944 bytes,
+zero provider calls. Electron/Main hidden, orb visible, microphone unarmed; includes
+Gateway/ACP descendants. It does not certify voice/loaded/60-minute performance.
+All test homes are synthetic; no owner account, paid request or installation used.
+
+Evidence: `E:\Morpheus-builds\p7-preview5\normal-runtime-evidence.json` and
+`qualification-result.json`; native screenshots and logs live beside them.
+The same tested payload is now eligible for prepackaged NSIS compression.
+
+### Final payload audit catch — do not distribute 50231971's EXE
+
+NSIS compression succeeded, but the post-compression dependency inventory failed:
+upstream Discord embeds undici 8.5.0; Discord/QQ/WhatsApp embed ws 8.21.0 and
+WhatsApp embeds protobufjs 7.6.3. These npm bundledDependencies bypass pnpm's
+normal override/audit graph. The source audit was not proof of their actual bytes.
+That compiled EXE is rejected, not delivered. All runtime/idle evidence above is
+retained as evidence of that payload, not retroactively reassigned to a new build.
+
+Both plugin bundlers now backport those reviewed majors from the exact installed
+lock, retain upstream plugin versions/licenses, and fail before compression on
+missing/wrong versions or changed dependency closures. The mirror revision also
+includes the applied override identities so existing same-version plugin caches
+refresh. Focused packaging/revision/notice regressions pass (18 checks). Rebuild,
+inventory the payload before compression, and rerun normal packaged integration.

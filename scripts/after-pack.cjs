@@ -26,6 +26,7 @@ const { patchNsisExtractTemplate } = require('./patch-nsis-extract.mjs');
 const { patchNsisInstallSectionTemplate } = require('./patch-nsis-install-section.mjs');
 const { patchNsisUninstallTemplate } = require('./patch-nsis-uninstall.mjs');
 const { stampPluginBundleRevision } = require('./plugin-bundle-revision.mjs');
+const { patchBundledPluginDependencies } = require('./patch-bundled-plugin-dependencies.mjs');
 const { isPackageNoticeFile, pruneDirectoryPreservingNotices } = require('./package-notice-guards.cjs');
 
 // On Windows, paths in pnpm's virtual store can exceed the default MAX_PATH
@@ -714,6 +715,8 @@ exports.default = async function afterPack(context) {
     console.log(`[after-pack] Bundling plugin ${npmName} -> ${pluginDestDir}`);
     const ok = bundlePlugin(nodeModulesRoot, npmName, pluginDestDir);
     if (ok) {
+      const backports = patchBundledPluginDependencies(pluginDestDir, join(__dirname, '..'));
+      if (backports.length) console.log(`[after-pack] Applied ${backports.length} locked bundled dependency backport(s) to ${pluginId}`);
       const pluginNM = join(pluginDestDir, 'node_modules');
       cleanupUnnecessaryFiles(pluginDestDir);
       if (existsSync(pluginNM)) {

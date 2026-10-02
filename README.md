@@ -21,6 +21,8 @@ not live voice/provider, installer-upgrade or public-release acceptance.
 Preview.5 applies same-major dependency security updates, retaining the original
 runtime and interface. Its new packaged evidence and remaining gates are recorded
 in the current checkpoint; older preview installers are not the final handoff.
+Plugin tarball-embedded dependencies are backported from the locked graph too;
+their actual packaged copies and cache-refresh identities are checked separately.
 Upgrade preparation preserves recoverable backups and never kills unrelated
 instances or erases profiles. Presentation never implicitly enables the microphone.
 
