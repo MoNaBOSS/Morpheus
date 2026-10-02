@@ -1,3 +1,10 @@
+> **Current continuation, 2026-10-02:** preview.5 is rejected by the owner. Follow
+> the reconciled [experience specification](../design/MORPHEUS_EXPERIENCE_REVIEW.md)
+> and single [completion checklist](../releases/WINDOWS_COMPLETION_CHECKLIST.md),
+> Checkpoints A-E with one component accepted before proceeding. The rows below
+> retain historical implementation/evidence, not a competing execution queue or
+> product approval. Included standard voice is a current requirement for Basic too.
+
 # Phase 7 — finish the Windows assistant
 
 Updated: 2026-09-30. Owner handoff: Astra architecture → Sol implementation.

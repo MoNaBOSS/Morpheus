@@ -17,6 +17,13 @@ Chat is one interface into Morpheus, not the product itself.
 
 ## Canonical documents — read before non-trivial work
 
+**Current owner correction, 2026-10-02:** follow the single
+[experience specification](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) and
+[current Windows checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md).
+Preview.5 was installed and rejected. Preserve existing architecture; proceed
+through A-E in separately reviewed components. Historical campaign instructions
+below do not override included standard voice or current acceptance gates.
+
 **Current campaign, 2026-09-30:** start with [SOL_START_HERE.md](SOL_START_HERE.md)
 and the [Phase 7 execution plan](docs/roadmap/MORPHEUS_PHASE7_EXECUTION_PLAN.md).
 The [assistant architecture](docs/architecture/MORPHEUS_ASSISTANT_ARCHITECTURE.md)

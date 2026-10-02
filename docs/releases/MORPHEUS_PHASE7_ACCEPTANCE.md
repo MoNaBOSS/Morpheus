@@ -1,3 +1,9 @@
+> **Current acceptance, 2026-10-02:** owner rejected installed preview.5. The
+> [experience specification](../design/MORPHEUS_EXPERIENCE_REVIEW.md) and single
+> [Windows checklist](WINDOWS_COMPLETION_CHECKLIST.md) govern current A-E work.
+> This ledger preserves historical evidence; automated/source results do not close
+> observed product failures or physical/live gates.
+
 # Phase 7 acceptance and evidence
 
 Created 2026-09-30. **NOT ACCEPTED.** This file defines tests and keeps the evidence

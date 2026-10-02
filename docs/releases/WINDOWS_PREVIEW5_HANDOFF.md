@@ -1,3 +1,11 @@
+> **Owner outcome, 2026-10-02: experience REJECTED.** Installed preview.5 executable,
+> app archive, motion and runtime-manifest hashes match this candidate. The current
+> [specification](../design/MORPHEUS_EXPERIENCE_REVIEW.md) and
+> [checklist](WINDOWS_COMPLETION_CHECKLIST.md) record reproduced product failures
+> and the small-component correction sequence. "Approved" below describes prior
+> fixture inspection, not current owner approval. This handoff remains historical
+> artifact/evidence; do not treat its PC checklist as the next assignment.
+
 # Morpheus Windows acceptance candidate — preview.5
 
 This is the local Windows/BYOK candidate, **not a signed public release or completed

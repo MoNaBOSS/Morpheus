@@ -1,3 +1,24 @@
+# Current continuation — owner experience correction, 2026-10-02
+
+Preview.5 was installed and rejected by the owner. Continue **Checkpoint A -> B ->
+C -> D -> E**, one reviewable component and acceptance gate at a time. The current
+[experience specification](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) and
+[completion checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) supersede
+historical next-action/no-redesign/voice-provider instructions below. AGENTS.md
+still governs mechanics. Included standard voice cannot require a separate user
+voice key. Preserve all existing work, runtime owners and profiles.
+
+Checkpoint A verified clean `4a9f25e9` / matching fetched origin branch and installed
+preview.5 payload hashes, and reproduced navigation/continuity/spacing/error gaps.
+Only documentation changes are authorized for this checkpoint. Next: owner reviews
+the proposed small orb/upward compact component before B implementation. Existing
+100-DIP bounds and earlier "approved" screenshots are not current owner acceptance.
+Build on E: after checking current storage. No new EXE or live voice is accepted.
+
+---
+
+Historical preview.5 handoff follows; keep its evidence boundaries, not its queue.
+
 # Sol: continue Morpheus Phase 7
 
 Application repository: `https://github.com/MoNaBOSS/Morpheus.git`.

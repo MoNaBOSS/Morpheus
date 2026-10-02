@@ -1,3 +1,10 @@
+> **Requirements archive:** current October 2 owner corrections are reconciled in
+> the single [experience specification](../design/MORPHEUS_EXPERIENCE_REVIEW.md)
+> and [completion checklist](../releases/WINDOWS_COMPLETION_CHECKLIST.md).
+> Historical A/B/C/D shorthand below cannot establish an approved layout when
+> its original question/reference is unavailable. Historical speech-provider and
+> placement defaults do not override included standard voice or current review gates.
+
 # Morpheus experience and implementation plan
 
 Current implementation handoff (2026-09-30): [Phase 7 execution plan](MORPHEUS_PHASE7_EXECUTION_PLAN.md).

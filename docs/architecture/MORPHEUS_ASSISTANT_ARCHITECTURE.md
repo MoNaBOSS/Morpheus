@@ -1,3 +1,11 @@
+> **2026-10-02 owner correction:** the single current
+> [experience specification](../design/MORPHEUS_EXPERIENCE_REVIEW.md) and
+> [completion checklist](../releases/WINDOWS_COMPLETION_CHECKLIST.md) govern the
+> experience and A-E acceptance sequence. Preserve the ownership architecture
+> below. Its 100-DIP sizing, first-run order, optional speech-provider setup and
+> earlier visual approval wording are historical; standard voice must be included
+> without a separate user voice API key, and the owner rejected preview.5.
+
 # Morpheus assistant architecture — Phase 7
 
 Decision date: 2026-09-30. Source inspected: `32badea9c792863cbc9248100025f18f83d26e00`
