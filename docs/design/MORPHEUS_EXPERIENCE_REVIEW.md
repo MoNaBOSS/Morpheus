@@ -5,38 +5,42 @@ This is the single current experience specification, reconciled from the existin
 design review and the owner's October 2 correction. The single current execution
 checklist is [WINDOWS_COMPLETION_CHECKLIST.md](../releases/WINDOWS_COMPLETION_CHECKLIST.md).
 Historical plans, prototypes and automated results remain evidence, not approval.
-Preview.7 autonomous qualification is current. A real packaged active-reply reload
-failure at `5b93a145` prevents accepting that candidate; its installer and evidence
-are preserved. The correction at `23d7bae9` passes focused service/store, fresh native
-compact/full/Advanced permission and Stop checks, and actual normal packaged
-active-reply reload and quiet restart with exactly one inference. Main owns admission settlement, bounds same-identity
-receipts, and restores original authority cards/history without new empty sessions
-or automatic approval. It does not replay every missed live stream chunk.
-Actual native audio observation then rejected complete speech acceptance at
-`23d7bae9`: three PCM chunks contained 137,654 bytes, but playback scheduled only
-the first 49,152 bytes. A synthesis response can arrive before later IPC events.
-Completion must declare and await the exact bounded chunk count/byte length, then
-drain the actual player; an engine-generated WAV or a transient asleep state cannot
-prove complete playback. The rejected app.asar and evidence are preserved under
-`evidence/rejected-preview7-23d7bae9`. The typed completion correction at `24945c32`
-passes real packaged generated-command recognition, Core execution and original
-renderer playback: all 137,626 declared PCM bytes are received, scheduled and
-naturally ended; Stop interrupts a second reply in 38 ms. No physical microphone
-was used. Its hosted install/reinstall/uninstall also passed. Final paced native
-visual review caught an older Core task appended after a newer saved ACP reply
-following restart: short-lived Main admission references had gone, and the
-existing canonical transcript timing supplement discarded original start times.
-The latest reply was outside the compact viewport although DOM/history checks
-passed. Preserve original start times through that existing bounded supplement;
-do not create another history store or infer unknown dates. A separate native
-regression confirmed automatic resize scroll events could suspend following;
-only deliberate older-history gestures may do so. The pre-scroll installer and
-recordings are preserved under
-`evidence/pre-scroll-preview7-24945c32`; its visual delivery is not accepted.
-The bounded chronology/viewport correction requires fresh native and exact
-packaged full-restart evidence.
-The preview.6 results later in this
-document are a preserved baseline; the current checklist records replacement results.
+Final autonomous candidate is **1.2.0-preview.7**, application source
+`757f71c5f7e98d560624657a12875dba4330c7ac`. Actual normal packaged startup, held
+active-reply reload with exactly one inference, full restart, original tagged-persona
+history, canonical task/chat chronology, visible latest compact reply, draft and
+contextual settings passed. The model reply is a bounded loopback fixture; original
+Gateway/ACP/Core/history and native controllers are real. No new conversation owner.
+Main owns admission settlement and retained authority; it does not replay every
+missed live stream chunk or automatically approve an unanswered permission.
+
+Real generated English speech -> Main STT -> Core execution -> original renderer
+playback passed. All 137,640 declared PCM bytes were received, scheduled and
+naturally ended; typed Stop interrupted another reply in 82 ms. This tests generated
+input, not physical recording-owner dispatch, microphone, wake or speaker audibility.
+Actual muted native motion and continuous-interface recordings are 16/20 seconds;
+simulation, hidden padding and isolated Main restoration boundaries are labelled.
+Scope-specific installed Windows install/reinstall/uninstall passed on a disposable
+runner; the CI EXE differs from the statically verified local delivery EXE.
+
+The local EXE is 480,418,659 bytes, SHA256
+`19a0bafe7e9c8d1792876d127dc05d63962142938464fddcd6b72b0fa70a82e2`.
+Archive integrity, all 40,896 paths/sizes and 44 selected hashes match qualification.
+It is unsigned. **Commercial launch is not qualified**: signing/update, hosted
+operations/funding and payment setup are absent; NerdGPT is deferred. Physical
+hardware/owner upgrade/live paid-provider/publication and long-session gates remain
+open. Fresh Gateway startup was 62.827 s; returning window/Gateway 2.756/7.679 s.
+Local CPU speech can leave generation gaps; no low-power latency/quality promise.
+
+Rejected candidates remain evidence: `5b93a145` duplicate reload dispatch,
+`23d7bae9` truncated playback and `24945c32` restart chronology/viewport failure.
+Their EXEs/payloads/logs are preserved under the corresponding rejected/pre-scroll
+directories in `E:\Morpheus-builds\experience-preview6\evidence`. The correction
+uses original settled start times from the existing bounded transcript supplement;
+invalid, reversed or ambiguous dates remain unknown. Only deliberate reading
+gestures suspend following, and native regression measures the clipped viewport.
+Preview.6 results below are a preserved baseline; the current checklist records
+the final candidate and exact evidence boundaries.
 No meaning is inferred from standalone historical A/B/C/D answers whose questions
 are unavailable. The original design review is recoverable in Git at `4a9f25e9`.
 
@@ -166,8 +170,9 @@ and https://github.com/k2-fsa/sherpa-onnx/releases/tag/v1.13.8 .
 The owner subsequently authorized autonomous completion and testing. Preview.7
 addresses demonstrated speech delay, misordered task exchanges, credential-bearing
 public-research links, pinned connection fallback and cancellation during final
-website verification. An isolated hosted Windows runner will qualify the installer
-without writing the owner's existing Windows registration. Evidence is recorded in
+website verification. An isolated hosted Windows runner qualified install, runtime,
+same-version reinstall and default uninstall at final source `757f71c5`, without
+writing the owner's Windows registration. Evidence is recorded in
 the same current checklist; no new competing experience plan is introduced.
 
 | Candidate | Required evidence and tradeoffs |
@@ -195,7 +200,10 @@ Use deterministic dispatch and capable inexpensive routes for simple work; bound
 stronger routes for complex work. Preserve context/personality across routing and
 keep unknown usage distinct from zero. Do not add an extra model pass for humor.
 
-| Capability group | Existing owners to reuse | Current evidence boundary |
+The following inventory records Checkpoint A's historical preview.5 findings.
+Current preview.7 verification is in the single completion checklist.
+
+| Capability group | Existing owners to reuse | Checkpoint A / preview.5 evidence boundary |
 | --- | --- | --- |
 | App/website actions; window/media/volume; files/clipboard/reminders/system checks | `shared/morpheus/actions/registry.ts`, `electron/services/morpheus/index.ts`, Win32 adapters and Core | Implemented source; prior synthetic/local qualification. This inspection did not execute commands or approve all hardware effects. |
 | Conversation, draft, tasks and history | Main assistant-session, original ACP/history, conversation/command stores | Prior packaged fixture evidence; installed compact turn became hidden on expansion in this inspection. |
@@ -280,7 +288,8 @@ not the installed app, real voice or current visual approval.
 **Current authorization:** the owner changed the schedule on October 2 to complete
 the job and review everything together: "Simplify but don't reduce capabilities."
 This supersedes separate B/C owner gates, not preservation or truthful acceptance.
-Checkpoint A is complete. Implementation proceeds in the separate E: worktree at
+Implementation and autonomous candidate qualification completed at the stated
+boundaries in the separate E: worktree at
 `E:\Morpheus-builds\experience-preview6\source`, based on `3bcad683`. The original
 checkout and prior application worktree remain untouched. No owner profile is used
 for testing and no installer is run over the owner app.
@@ -320,13 +329,13 @@ bundled voices and disclose Windows-default-microphone wake behavior.
 Display changes reposition the active compact window as well as the orb; pure
 layout tests cover changed work areas, while physical DPI/taskbar-edge tests remain open.
 
-Verification so far: 324 unit files passed, 3,336 tests passed and two skipped,
+Preserved preview.6 verification: 324 unit files passed, 3,336 tests passed and two skipped,
 including real bundled synthesis/transcription and cancellation. Native Electron
 journeys cover setup, persisted personality, same conversation/draft through
 compact/full/reload, four-language history and explicit Advanced access. Model
 answers in fixture journeys are simulated and do not certify live model quality.
 Real generated English voice samples are separate, not simulated audio.
-Normal packaged qualification at final application source `12a36898` passed real Gateway startup, included
+Normal preview.6 packaged qualification at application source `12a36898` passed real Gateway startup, included
 voice playback/cancel control, local task execution, protected loopback provider,
 original ACP compact reply and history/draft persistence through full/settings/
 reload/restart. The loopback model reply is simulated; the speech engine is real.
@@ -349,11 +358,12 @@ normal-runtime qualification at `12a3689806d6bfe87cdc63f4b6600ecea21c2093`.
 The installer is unsigned and no owned update feed is configured. Included voice
 models, notices and corresponding upstream source archives are verified payload.
 
-**Exact next step:** finish the requested autonomous preview.7 qualification:
-correct the demonstrated active-reply reload regression, test the real packaged
-replacement through speech, local execution, reply, typed follow-up, persistence
-and actual motion, and qualify installation/reinstall/uninstall in a disposable
-Windows VM. Preserve the owner's installed app and profiles. Physical mic/echo,
-voice taste, DPI/sleep and previous-version owner upgrade remain unverified where
-no safe autonomous test exists. Hosted accounts, pricing/funding, Stripe/crypto,
-NerdGPT and signing require external inputs. Do not call those services live.
+**Exact next step:** the owner's combined appearance/physical acceptance of the
+identified preview.7 candidate, using the four-step `Morpheus-PC-Acceptance.md`
+delivered beside the EXE and real media. The checklist identifies every autonomous
+test boundary and open gate. Fix demonstrated regressions without redoing approved
+work. Physical microphone/wake/echo/audibility, other DPI/taskbar/display/sleep,
+owner-profile previous-version upgrade, live provider/publication and long mixed-use
+performance are not declared passed. Hosted pricing/funding, Stripe/crypto merchant
+services, signing/update and deferred NerdGPT require external inputs; their UI is
+honest and unavailable, not a fake working commercial service.

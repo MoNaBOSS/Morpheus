@@ -7,6 +7,10 @@ Preview.7 保留简洁对话、上下文设置、全部高级工具、内置本�
 Preview.7 增加能力、语音、对话及临时 Windows 安装验证；准确身份与结果见当前清单。
 模拟测试不代表真实硬件、签名或托管商业服务已验收。
 
+最终候选版为 `1.2.0-preview.7`，应用源码 `757f71c5`。已标识的未签名 EXE
+及同源码临时 Windows 安装、重装、卸载均通过各自记录的检查。真实语音、显示、旧版本升级验收，
+较慢的 Gateway 冷启动和外部商业服务仍是发布门槛。
+
 <p align="center">
   <img src="src/assets/morpheus-logo.svg" width="128" height="128" alt="Morpheus Logo" />
 </p>

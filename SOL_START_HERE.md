@@ -18,35 +18,43 @@ and packaged from application source `12a3689806d6bfe87cdc63f4b6600ecea21c2093`:
 simplified conversation/settings, retained Advanced capabilities, animated 56-DIP
 orb, ten-second fade and included local English speech. Normal isolated packaged
 qualification and static NSIS identity checks passed. The current checklist records
-their exact scope and EXE hash. Original sources and installed preview.5 are untouched.
-The owner subsequently requested autonomous completion and testing. Preview.7 now
-refines speech responsiveness, chronological conversation/viewport continuity,
-public research/browser reliability and recoverable website completion. Focused
-native voice/capability tests pass; guarded disposable Windows NSIS qualification
-is prepared. The real packaged `5b93a145` candidate revealed an active ACP reply
-reload failure and duplicate admission dispatch; its rejected EXE/evidence are
-preserved. Fix Main completion settlement and fresh-renderer recovery before
-accepting a replacement. Finish the scoped regressions and exact preview.7 packaged evidence
-in the same spec/checklist. The reload correction at `23d7bae9` passes normal packaged
-recovery, but exact native audio observation found incomplete speech playback:
-three generated PCM chunks, only the first scheduled. Await the Main-declared
-bounded stream count/length before finishing. The correction at `24945c32` passes
-actual packaged generated speech -> STT -> Core execution -> complete native
-playback (137,626 bytes declared/received/scheduled/naturally ended) and 38 ms Stop;
-its hosted installation/reinstall/uninstall passed. Final paced native visual
-review found an older Core task appended after a newer saved ACP reply on restart;
-the existing bounded transcript timing supplement discarded original start times
-after short-lived Main admission references disappeared. The latest reply was
-outside the compact viewport, and separate native resize regression also failed.
-Its pre-scroll EXE/recordings are preserved, not delivered as the final experience.
-Carry original start times through the existing supplement without another history
-store, distinguish deliberate history scrolling from automatic native resize
-events, then qualify the exact replacement package and installer.
-Never execute NSIS against the owner's existing Windows
-registration/profile; the CI test uses its own clean hosted runner. External hosted,
-billing, signing and actual physical hardware acceptance are separate gates.
-Build artifacts stay on E: after storage checks. Preview.6 remains preserved;
-preview.7 has a distinct version and source/build identity.
+their exact scope and EXE hash. Original sources and owner profiles are preserved;
+this task has not run an installer or uninstaller on the owner host.
+The owner subsequently requested autonomous completion and testing. Final candidate
+is **1.2.0-preview.7**, application source `757f71c5f7e98d560624657a12875dba4330c7ac`,
+pushed to the authorized branch. Normal packaged startup, real Core execution,
+held active ACP reply/reload with exactly one inference, quiet full restart and
+original tagged-persona history passed. Canonical existing transcript start times
+restore task/chat order after Main's short-lived refs disappear; the latest reply
+remains visible through actual compact/full/settings/back, with draft/history intact.
+Deliberate reading gestures survive passive updates. No second history store.
+
+Actual generated speech -> Main STT/Core -> original renderer playback received,
+scheduled and naturally ended all 137,640 declared PCM bytes; typed Stop took 82 ms.
+No physical microphone/recording-owner/wake/echo/audibility acceptance is implied.
+Real muted orb and transition recordings (16/20 s), included Michael/Heart and
+fully played reply samples are exported. Exact-source hosted install/runtime/
+same-version reinstall/uninstall passed, preserving synthetic profiles and rollback.
+Its separately rebuilt CI EXE is distinct from local delivery. No owner installer ran.
+
+Local verified EXE: `E:\Morpheus-builds\experience-preview6\source\release\Morpheus-1.2.0-preview.7-win-x64.exe`,
+480,418,659 bytes, SHA256 `19a0bafe7e9c8d1792876d127dc05d63962142938464fddcd6b72b0fa70a82e2`.
+All 40,896 paths/sizes, archive CRCs and 44 selected hashes pass and match exact
+normal-runtime bytes. The identical copy and current spec/checklist/evidence/media
+are delivered in this chat's `outputs\preview7`; later commits change docs only.
+Rejected reload/speech/chronology candidates stay preserved, as does preview.6.
+Original source checkouts remain clean at `fa988f06`/`3bcad683`. Previously installed
+Program Files/per-user paths are currently absent for an unknown reason; no task
+installer/uninstaller caused this and historical preview.5 identity is not current.
+
+**Current next action:** owner's combined physical/appearance review from the short
+PC checklist. Commercial launch remains unqualified: unsigned installer/no owned
+update feed, hosted funding/operations, pricing/business country and Stripe/crypto
+setup are missing; NerdGPT intentionally deferred. Physical voice, other DPI/taskbar/
+display/sleep, owner previous-version upgrade, live paid-provider/publication and
+long mixed-use performance remain open. Cold Gateway startup 62.827 s was slow;
+returning UI/Gateway 2.756/7.679 s. Keep the canonical spec/checklist evidence limits.
+No new discovery or open-ended finish-everything campaign. Build artifacts stay on E:.
 
 ---
 

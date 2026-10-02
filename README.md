@@ -9,6 +9,11 @@ speech, conversation and disposable installed-Windows qualification. Current bui
 identity and actual results are recorded in the single checklist; physical acceptance,
 signing and hosted commercial operations must not be inferred from fixtures.
 
+Final candidate: `1.2.0-preview.7`, application source `757f71c5`. The identified
+unsigned EXE and exact-source disposable Windows install/reinstall/uninstall pass
+their recorded checks. Physical voice/display/previous-version upgrade acceptance,
+slow cold Gateway startup and external commercial services remain release gates.
+
 <p align="center">
   <img src="src/assets/morpheus-logo.svg" width="128" height="128" alt="Morpheus Logo" />
 </p>

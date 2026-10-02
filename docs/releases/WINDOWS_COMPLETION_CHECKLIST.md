@@ -1,6 +1,6 @@
 # Current Windows experience completion checklist
 
-Updated 2026-10-03, Asia/Dhaka. Preview.7 qualification in progress; **commercial release is not yet qualified**.
+Updated 2026-10-03, Asia/Dhaka. Preview.7 autonomous candidate qualification complete at the boundaries below; **commercial release is not yet qualified**.
 This is the single current checklist. Requirements and baseline evidence live in
 [the experience specification](../design/MORPHEUS_EXPERIENCE_REVIEW.md). Previous
 checklist detail is recoverable at `3bcad683`; historical preview.5 evidence is
@@ -18,35 +18,37 @@ Morpheus installation paths and uninstall registration are now absent; the cause
 is unknown. This task has not executed an installer/uninstaller on the owner host.
 Historical preview.5 installed identity remains baseline evidence, not current state.
 
-## Preview.7 current autonomous qualification
+## Preview.7 final candidate — application source 757f71c5
 
 | Component | Current evidence |
 | --- | --- |
-| Included speech responsiveness | VERIFIED at `24945c32`: typed Main stream completion waits for every bounded ordered PCM chunk. Actual generated-command STT -> Core execution -> original renderer reply received, scheduled and naturally ended all 137,626 declared bytes / three chunks, with no premature stop/close. Playback duration 2,867 ms; first PCM 3,510 ms, first actual speaking 3,546 ms, total generation/playback 6,398 ms on this run. Typed Stop interrupted a second reply in 38 ms. Earlier `23d7bae9` played only 49,152 of 137,654 bytes and was rejected; evidence is retained. Eight-thread segmented CPU synthesis may still leave audible gaps on slower hardware. Exact final scroll-corrected package must requalify. |
+| Included speech / real command | VERIFIED on the exact `757f71c5` normal package: real included synthesis generated a 1,615-ms command; Main recognition took 706 ms and routed it to real Core system.report. Two voice-origin runs and one typed follow-up completed. Original renderer playback received, scheduled and naturally ended all 137,640 declared PCM bytes / three chunks, with no premature stop/close. PCM duration 2,868 ms; first PCM 4,128 ms, first actual speaking 4,164 ms, total generation/playback 7,019 ms. Typed Stop interrupted the second reply in 82 ms and stopped all scheduled sources. Input was generated speech through Main; physical recording-owner dispatch, microphone, echo and audibility are not qualified. |
 | Honest voice guidance | VERIFIED in native Windows: real progressive included PCM sample completes with microphone muted, without a provider/account; ordered segments arrive before completion and actual presence reports speaking, never listening. Local engine identity is independent of WAV/PCM format; local errors direct to speakers/installation repair. Four locale strings supplied. |
-| Conversation ordering | VERIFIED bounded correction: carry original settled start times through the existing transcript timing supplement when Main admission refs are absent; no new history store. Invalid/reversed/ambiguous dates stay unknown. Twelve Main timing checks, fifteen timing/projection checks and five fresh native cases pass. Empty-ref replay restores real Core -> fixture ACP user -> fixture reply order; native compact/full/settings/back keeps the latest reply fully visible, and deliberate real wheel-up remains on older history during passive updates. Pre-fix tests reproduced both outside-viewport scrolling and ACP-before-older-Core ordering. Other three localized native cases plus English pass. OPEN exact normal packaged full restart with original tagged-persona transcript and actual controller, then replacement EXE. |
+| Continuous conversation / restart | VERIFIED: twelve Main timing checks, fifteen timing/projection checks and five fresh native cases pass; pre-fix tests reproduced both failures. Actual normal packaged full restart restores original Core -> original ACP user -> original reply, using canonical transcript starts with zero short-lived admission refs. Original tagged-persona input aligns without exposing its context. Compact/full/Voice Settings/back keeps the latest reply in the actual clipped viewport, with settled native bounds/opacity; the draft and exact original history bytes, including the trajectory file, remain unchanged. Deliberate real wheel-up stays on old history during passive updates. Four localized views pass. The model answer is a loopback fixture; Core execution, controllers and history are real. |
 | Public capabilities | VERIFIED: actual pinned HTTPS GETs retrieved Example/IANA pages, generated source-bound citations and saved/reopened the report through real file.create. Real native Chromium observed IANA controls and clicked its public Reserved Domains link without owner cookies/host bridge. Seven native browser/site cases and two affected final Main artifact journeys pass: create/revise/preview/reopen/rollback/manual-edit protection. Other control/planning cases use explicitly bounded network/synthesis fixtures, not paid models. Publication remains untested. |
 | Recovery/network | IMPLEMENTED: reject research URLs with credentials before dispatch, bounded validated-address retries only on connection errors, incomplete website marker survives cancellation or external edits during final verification. No TLS/HTTP-content retries or overwritten manual changes. |
 | Reload during an active reply | REJECTED `5b93a145`: a real packaged renderer reload failed to restore its live ACP session and sent the same admission twice. Its EXE/logs are preserved under `E:\Morpheus-builds\experience-preview6\evidence\rejected-preview7-5b93a145`. Replacement VERIFIED at `23d7bae9` in 149 focused checks, seven fresh native cases and actual normal packaged runtime: Main consumes matching completed/cancelled/uncertain-failed dispatch independently of renderer lifetime; bounded recent settled receipts do not rewind generation, active receipts are never evicted. Fresh renderer restores original pending authority cards and Stop, then replays original existing history after completion; recovery cannot create an empty session before list hydration. Switching conversations supersedes old recovery waits. Compact/full/Advanced answer and Stop each consume the original admission once; changed-content identity fails, same-content retry sends no inference. Focused native cases use actual Main owners with a bounded fake connection. The normal package uses the real Gateway and a held loopback model stream: one Main admission before reload, zero afterward, exactly one model request/user turn, intact history on settled reload and quiet full restart. Every previous live stream chunk is not replayed. |
 | Required checks actually execute on Windows | VERIFIED: replay/compare previously exited zero without invoking their entry point because file-URL pathname handling was wrong on Windows. All three communication scripts now resolve with `fileURLToPath`; real metrics and comparison were generated, all thresholds pass, three focused checks pass, and the checked-in reference baseline is unchanged. Earlier Windows zero-exit invocations are not treated as executed replay evidence. |
-| Installation/update safety | IMPLEMENTED: uninstall verifies product markers before recursive removal; updater requires credential-free HTTPS and independent signing readiness. Signature checks enabled; feed remains absent. VERIFIED exact `24945c32` hosted Windows NSIS install/normal-runtime/same-version reinstall/default uninstall, preserving synthetic profile markers and rollback, with no owner installation changes. CI installer SHA256 `4fcf24b390319b63210a96b95fdf66eab0ab286654e8d6e09a6b98c58f323c0f`; its bytes differ from the local candidate. Final scroll-corrected source requires its own installed run. Audio readiness is distinct from the separately observed whole native playback. |
-| External service gates | BLOCKED: owned signing/update infrastructure, task-model live credentials, hosted funding/operations, pricing/business country, Stripe/crypto merchant services and NerdGPT integration. No false checkout or entitlement. Physical voice/DPI/display taste and previous-version owner upgrade remain unverified. |
+| Exact package / installation | VERIFIED local EXE: version `1.2.0-preview.7`, 480,418,659 bytes, SHA256 `19a0bafe7e9c8d1792876d127dc05d63962142938464fddcd6b72b0fa70a82e2`. Archive CRCs, all 40,896 file paths/sizes and 44 selected identity hashes pass; EXE/app.asar/orb/motion match the exact normal/voice/recording payload. Actual hosted Windows install/runtime/same-version reinstall/default uninstall pass for source `757f71c5`, preserving synthetic profiles/settings and rollback. CI run `37050843303` rebuilt a distinct EXE, SHA256 `fad8cd751585b0d6376741a0dc9ac593516403dc0301a85060c04c1e6443a59b`; it is source-level installed evidence, not execution of the local delivery EXE. No owner-host installer ran. |
+| Motion / resource observations | VERIFIED actual 56-DIP native orb: quiet breathing/orbit, partial fade, hidden animation pause, restoration and reduced motion; 16-DIP work-area inset at 1920x1080 / 100% scaling. Restoration uses isolated Main show/hide, not a physical shortcut/tray/wake test. Short no-capture observations with Gateway autostart off and mic/ambient muted: hidden 5.661 s / 8.56% of one core, visible 5.509 s / 16.17% of one core; stable five-process set. Summed working sets 986.8/989.9 MiB can double-count shared pages. These do not qualify long-run/loaded performance. |
+| Startup / local voice cost | OBSERVED exact package: fresh Gateway 62.827 s; returning window 2.756 s / Gateway 7.679 s; 25-word UI sample generation/playback 18.077 s, first PCM 4.275 s. Cold startup is slow. Included offline English voice has no per-utterance service charge or separate API key, but adds install size, CPU/RAM use and possible generation gaps; lower-power hardware and naturalness remain unverified. |
+| External / physical gates | BLOCKED commercial services: owned signing/update infrastructure, hosted funding/operations, pricing/business country and Stripe/crypto merchant services are absent; NerdGPT is intentionally deferred. No false checkout or entitlement. Live paid-provider/publication acceptance, physical microphone/wake/echo/audibility, other taskbar edges/DPI/autohide/display/sleep, previous-version owner upgrade and long mixed-use performance remain unverified. |
 
-The corrected reload and complete native speech passed at `24945c32`, including
-137,626 declared PCM bytes received, scheduled and naturally ended, plus 38 ms
-Stop on a second reply. Exact-source hosted install/reinstall/uninstall passed.
-Final paced visual review then caught an older Core task appended after the newer
-saved ACP reply on restart, because short-lived admission references had gone and
-the existing transcript timing supplement discarded original start times.
-The reply was outside the compact viewport; DOM/history assertions missed this.
-A separate controlled native resize also proved automatic scroll could suspend
-following. Preserve canonical timing metadata and deliberate reading intent.
-Its EXE and
-recordings are preserved under `evidence/pre-scroll-preview7-24945c32` and are not
-the final visual delivery. Scoped source/native correction passes. Verify chronological full-restart replay and reply
-visibility after actual native resizing before replacing the pending identity.
-No installer/uninstaller is executed on
-the owner host; only isolated test profiles and reversible source changes are used.
+Final application identity is `757f71c5f7e98d560624657a12875dba4330c7ac` on
+`codex/morpheus-phase6-managed-layer`. Node/web/managed types, scoped lint, real
+Windows comms replay/compare and diff-aware harness validation/dry-run pass; the
+reference comms baseline is unchanged. Prior full lint had zero errors / twelve
+existing warnings; the preserved full-suite count below is not a new final rerun.
+Actual motion and conversation review clips are 16 and 20 seconds, with fixture,
+native-padding and restoration boundaries labelled. Real Michael/Heart samples
+and the fully played command reply are supplied. Rejected `5b93a145` reload,
+`23d7bae9` truncated speech and `24945c32` pre-chronology EXEs/evidence stay preserved.
+The recorder's flight-recorder filename preflight error was corrected before any
+app launch; it is a harness failure, not a product acceptance result.
+No installer/uninstaller ran on the owner host, and no owner profile or credential
+was used. Signing is `NotSigned`; the updater stays unconfigured with signature
+verification enabled. Hosted installation ZIP SHA256 is
+`7adc602433610471ce21d15f83fda4fc31cdda13121d03e3eb628c42c19a1007`.
 
 ## A — preserved baseline
 
@@ -81,7 +83,7 @@ the owner host; only isolated test profiles and reversible source changes are us
 
 | Item | Result |
 | --- | --- |
-| Capabilities/results | Existing action registry, Objective Core, browser, research citations, website create/revise/preview/publication, artifacts and tasks preserved. Full technical tools/agents/channels/schedules/skills remain accessible. No speculative income claims or guaranteed autonomous success. Live provider/research/publication acceptance OPEN. |
+| Capabilities/results | Existing action registry, Objective Core, browser, research citations, website create/revise/preview/publication, artifacts and tasks preserved. Full technical tools/agents/channels/schedules/skills remain accessible. No speculative income claims or guaranteed autonomous success. Preview.7 public research/browser/local website evidence is recorded above; live paid-provider and publication acceptance remain OPEN. |
 | Recovery | Voice failure -> Voice settings -> same conversation/draft. Existing task cancellation, clarification and recovery owners retained. Contextual navigation verified; physical mic unplug/permission repair OPEN. |
 | Plans | Basic BYOK + included local voice available. Premium hosted and future Unrestricted/NerdGPT presented separately as unavailable/planned. Account entitlement, personality and actual service availability remain distinct. No invented prices, subscriptions or checkout. |
 | External blockers | Pricing/business country, server/domain/payment accounts, Stripe/crypto setup and hosted funding/operations absent. NerdGPT API deferred. They block their own service gates, not local BYOK or included voice. |
@@ -97,15 +99,20 @@ the owner host; only isolated test profiles and reversible source changes are us
 
 ## Current record and exact next step
 
-All implementation stays in the E: worktree; original checkouts remain clean at
-`fa988f06` and `3bcad683`, and no owner installation/profile is replaced. The exact
-verified EXE, specification/checklist exports, motion/transition recordings, real
-voice samples, package identity and one short PC acceptance checklist are delivered
-under the current chat's `outputs` directory. Application source is `12a36898`;
-subsequent handoff commits change documentation only.
+Implementation stays in `E:\Morpheus-builds\experience-preview6\source`; original
+checkouts remain clean at `fa988f06` and `3bcad683`. Verified local build:
+`E:\Morpheus-builds\experience-preview6\source\release\Morpheus-1.2.0-preview.7-win-x64.exe`.
+The identical delivery copy, build identity, this checklist/specification, real
+voice samples and recordings are exported to
+`C:\Users\monir\Documents\Codex\2026-10-02\continue-morpheus-from-the-existing-project\outputs\preview7`.
+Application source is `757f71c5`; later handoff changes are documentation only.
+Evidence root is `E:\Morpheus-builds\experience-preview6`: `installer-inspection.json`,
+`normal-runtime-evidence.json`, `evidence/packaged-voice-command-qualification.json`,
+`evidence/packaged-conversation-preview7.json`, `evidence/native-orb-motion.json`
+and `evidence/hosted-install-37050843303/installed-app-qualification.json`.
 
-**Exact next step:** finish autonomous preview.7 packaged, generated-speech and
-disposable installation qualification. The preserved preview.6 results above are
-a historical baseline, not acceptance of the rejected preview.7 candidate.
-Physical microphone/display taste, owner-profile upgrade and external service
-inputs remain explicitly unverified. No separate competing plan.
+**Exact next step:** the owner's combined appearance/physical-PC review using
+`Morpheus-PC-Acceptance.md` in the delivery folder. Fix demonstrated regressions
+without repeating approved work. Commercial launch requires the external service
+and physical/performance gates above; automated or generated-input evidence does
+not close them. No new open-ended implementation campaign or competing plan.
