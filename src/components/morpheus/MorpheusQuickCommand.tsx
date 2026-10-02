@@ -57,6 +57,7 @@ export function MorpheusQuickCommand() {
   const [answerFor, setAnswerFor] = useState<string | null>(null);
   const voiceBusy = ['requesting', 'listening', 'transcribing'].includes(voicePhase);
   const objectiveActive = Boolean(objectiveRun && !isObjectiveTerminalState(objectiveRun.state));
+  const awaitingAnswer = Boolean(clarification) || objectiveRun?.state === 'needs-clarification' || objectiveRun?.state === 'waiting-for-approval';
   const busy = submitting || conversationSubmitting || voiceBusy;
   const compact = trigger !== null;
   const signalState = resolveMorpheusSignalState({ voicePhase, voicePresence: voicePresence === 'asleep' ? 'armed' : voicePresence, objectiveState: conversationWorking || conversationSubmitting ? 'understanding' : objectiveRun?.state });
@@ -84,7 +85,7 @@ export function MorpheusQuickCommand() {
     hide(); navigate('/');
   };
   useEffect(() => {
-    if (!open || !compact || busy || conversationWorking || ['speaking', 'preparing-speech', 'waiting-for-approval'].includes(voicePresence ?? '')) return;
+    if (!open || !compact || busy || conversationWorking || awaitingAnswer || ['speaking', 'preparing-speech', 'waiting-for-approval'].includes(voicePresence ?? '')) return;
     let timer: number;
     const reset = () => {
       window.clearTimeout(timer);
@@ -93,7 +94,7 @@ export function MorpheusQuickCommand() {
     reset();
     window.addEventListener('keydown', reset); window.addEventListener('pointerdown', reset); window.addEventListener('wheel', reset);
     return () => { window.clearTimeout(timer); window.removeEventListener('keydown', reset); window.removeEventListener('pointerdown', reset); window.removeEventListener('wheel', reset); };
-  }, [open, compact, busy, conversationWorking, voicePresence, hide]);
+  }, [open, compact, busy, conversationWorking, awaitingAnswer, voicePresence, hide]);
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {

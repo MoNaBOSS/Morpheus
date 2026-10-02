@@ -91,6 +91,7 @@ describe('Morpheus voice settings', () => {
 
     fireEvent.change(provider, { target: { value: 'openai' } });
     await waitFor(() => expect(mocks.updateVoiceSettings).toHaveBeenCalledWith({
+      engine: 'provider',
       providerAccountId: 'openai',
     }));
   });
@@ -100,6 +101,7 @@ describe('Morpheus voice settings', () => {
     fireEvent.click(await screen.findByTestId('morpheus-voice-preset-efficient'));
 
     await waitFor(() => expect(mocks.updateVoiceSettings).toHaveBeenCalledWith({
+      engine: 'provider',
       enabled: true,
       providerAccountId: 'openrouter',
       modelId: 'openai/whisper-large-v3-turbo',
@@ -116,6 +118,7 @@ describe('Morpheus voice settings', () => {
     fireEvent.click(await screen.findByTestId('morpheus-voice-preset-expressive'));
 
     await waitFor(() => expect(mocks.updateVoiceSettings).toHaveBeenCalledWith(expect.objectContaining({
+      engine: 'provider',
       providerAccountId: 'openrouter',
       modelId: 'openai/whisper-large-v3-turbo',
       speechProviderAccountId: 'openrouter',
@@ -130,6 +133,7 @@ describe('Morpheus voice settings', () => {
     fireEvent.change(model, { target: { value: 'gpt-4o-mini-transcribe' } });
     fireEvent.blur(model);
     await waitFor(() => expect(mocks.updateVoiceSettings).toHaveBeenCalledWith({
+      engine: 'provider',
       modelId: 'gpt-4o-mini-transcribe',
     }));
 
@@ -137,5 +141,46 @@ describe('Morpheus voice settings', () => {
     await waitFor(() => expect(mocks.updateVoiceSettings).toHaveBeenCalledWith({
       autoSubmitTranscript: false,
     }));
+  });
+
+  it('describes included speech honestly and offers only its real voices while keeping provider setup deliberate', async () => {
+    mocks.voiceStatus.mockResolvedValue({
+      ...STATUS,
+      speechFormat: 'wav',
+      availableSpeechVoices: ['cedar', 'coral'],
+      settings: { ...STATUS.settings, engine: 'local', localWakeEnabled: true },
+    });
+    render(<MorpheusVoiceSettings />);
+    const engine = await screen.findByTestId('morpheus-voice-engine');
+    expect(engine).toHaveValue('local');
+    expect(document.body.textContent).toContain('morpheus.experience.voice.localBody');
+    expect(document.body.textContent).toContain('morpheus.experience.voice.wakeBody');
+    expect(document.body.textContent).not.toContain('morpheus.voice.localWake.disclosure');
+    expect(document.body.textContent).not.toContain('morpheus.voice.settings.ambientDisclosure');
+    expect(document.body.textContent).not.toContain('morpheus.voice.settings.neuralSpeechFallback');
+    expect(screen.queryByTestId('morpheus-voice-provider')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('morpheus-local-wake')).not.toBeInTheDocument();
+    const voice = screen.getByTestId('morpheus-speech-voice');
+    expect(voice).toHaveValue('cedar');
+    expect([...voice.querySelectorAll('option')].map((option) => option.value)).toEqual(['cedar', 'coral']);
+    fireEvent.change(engine, { target: { value: 'provider' } });
+    await waitFor(() => expect(mocks.updateVoiceSettings).toHaveBeenCalledWith({ engine: 'provider' }));
+  });
+
+  it('switches an explicitly chosen provider preset out of included local speech', async () => {
+    mocks.voiceStatus.mockResolvedValue({
+      ...STATUS,
+      speechFormat: 'wav',
+      availableSpeechVoices: ['cedar', 'coral'],
+      settings: { ...STATUS.settings, engine: 'local', localWakeEnabled: true },
+    });
+    render(<MorpheusVoiceSettings />);
+    fireEvent.click(await screen.findByTestId('morpheus-voice-preset-efficient'));
+    await waitFor(() => expect(mocks.updateVoiceSettings).toHaveBeenCalledWith(expect.objectContaining({
+      engine: 'provider',
+      providerAccountId: 'openrouter',
+      speechProviderAccountId: 'openrouter',
+    })));
+    expect(document.body.textContent).not.toContain('sk-');
   });
 });

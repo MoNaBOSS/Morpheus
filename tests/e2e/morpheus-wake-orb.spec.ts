@@ -126,9 +126,16 @@ test('the native orb edits a preserved draft and admits one turn before compact 
       BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus')?.getBounds().width,
     )).toBeGreaterThanOrEqual(960);
 
+    // Inactivity starts after leaving the companion; hovering intentionally holds it open.
+    await main!.mouse.move(100, 100);
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.getTitle() === 'Morpheus')?.hide());
     await expect(orb!.locator('html')).toHaveAttribute('data-visible', 'true');
-    await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.getTitle() === 'Morpheus presence')?.isVisible()), { timeout: 15_000 }).toBe(false);
+    await orb!.mouse.move(-10, -10);
+    await expect(orb!.locator('html')).toHaveAttribute('data-hover', 'false');
+    await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.getTitle() === 'Morpheus presence')?.isVisible()), { timeout: 15_000 }).toBe(false).catch(async (error) => {
+      console.log('Native fade diagnostic', await orb!.locator('html').evaluate(node => ({ ...node.dataset })));
+      throw error;
+    });
     await expect(orb!.locator('.orb')).toHaveAttribute('data-motion-paused', 'true');
     await app.evaluate(({ BrowserWindow }) => { const window = BrowserWindow.getAllWindows().find(w => w.getTitle() === 'Morpheus'); window?.show(); window?.hide(); });
     await expect(orb!.locator('html')).toHaveAttribute('data-visible', 'true');

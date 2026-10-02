@@ -38,22 +38,25 @@ export function MorpheusVoiceSettings() {
 
   const settings = status.settings;
   const managed = status.speechFormat === 'pcm24';
+  const local = status.speechFormat === 'wav';
+  const provider = !managed && !local;
   const selectedProvider = settings.providerAccountId ?? '';
   const openRouterProvider = status.providers.find((provider) => (
     provider.vendorId === 'openrouter' && provider.configured
   ));
-  const recommendedVoices = managed ? status.availableSpeechVoices ?? [] : speechVoicesForModel(settings.speechModelId);
-  const speechVoices = recommendedVoices.includes(settings.speechVoice)
+  const recommendedVoices = managed || local ? status.availableSpeechVoices ?? [] : speechVoicesForModel(settings.speechModelId);
+  const speechVoices = local || recommendedVoices.includes(settings.speechVoice)
     ? recommendedVoices
     : [settings.speechVoice, ...recommendedVoices];
   const commitModel = (value: string): void => {
     const next = value.trim();
-    if (next && next !== settings.modelId) void updateSettings({ modelId: next });
+    if (next && next !== settings.modelId) void updateSettings({ engine: 'provider', modelId: next });
   };
   const applyOpenRouterPreset = (presetId: MorpheusVoicePresetId): void => {
     if (!openRouterProvider) return;
     const preset = getMorpheusVoicePreset(presetId);
     void updateSettings({
+      engine: 'provider',
       enabled: true,
       providerAccountId: openRouterProvider.accountId,
       modelId: preset.transcriptionModelId,
@@ -79,7 +82,7 @@ export function MorpheusVoiceSettings() {
             <StatusDot tone={status.transcriptionAvailable ? 'ok' : settings.enabled ? 'warn' : 'idle'} />
           </div>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            {status.transcriptionAvailable
+            {local ? status.reason ?? t('morpheus.experience.voice.localBody') : status.transcriptionAvailable
               ? t('morpheus.voice.settings.ready', { provider: status.providerLabel })
               : managed ? t('morpheus.voice.settings.unavailable') : status.reason ?? t('morpheus.voice.settings.unavailable')}
           </p>
@@ -89,6 +92,7 @@ export function MorpheusVoiceSettings() {
       <div className="space-y-4">
         <label className="block space-y-2 text-sm"><span>{t('morpheus.experience.voice.engine')}</span><select data-testid="morpheus-voice-engine" className="block w-full rounded-lg border border-border bg-surface-input px-3 py-2" value={settings.engine ?? (status.speechFormat === 'wav' ? 'local' : 'provider')} onChange={(event) => void updateSettings({ engine: event.target.value as 'local' | 'provider' })}><option value="local">{t('morpheus.experience.voice.local')}</option><option value="provider">{t('morpheus.experience.voice.provider')}</option></select></label>
         <MorpheusVoiceCheck status={status} key={JSON.stringify([
+          settings.engine, settings.inputDeviceId, settings.enabled,
           settings.providerAccountId, settings.modelId, settings.speechProviderAccountId,
           settings.speechModelId, settings.speechVoice,
         ])} />
@@ -151,15 +155,15 @@ export function MorpheusVoiceSettings() {
                 testId="morpheus-voice-ambient"
                 onChange={(ambientEnabled) => void updateSettings({ ambientEnabled })}
               />
-              <div className="mt-3">
+              {!local ? <div className="mt-3">
                 <SettingToggle label={t('morpheus.voice.localWake.title')}
                   description={t('morpheus.voice.localWake.description')}
                   checked={settings.localWakeEnabled === true} testId="morpheus-local-wake"
                   onChange={(localWakeEnabled) => void updateSettings({ localWakeEnabled })} />
-              </div>
+              </div> : null}
               <div className="mt-3 flex items-start gap-2 rounded border border-border/50 bg-black/10 px-2.5 py-2 text-2xs leading-relaxed text-muted-foreground">
                 <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(var(--morpheus-accent))]" aria-hidden />
-                <span>{t(settings.localWakeEnabled ? 'morpheus.voice.localWake.disclosure' : 'morpheus.voice.settings.ambientDisclosure', { provider: status.providerLabel ?? t('morpheus.voice.settings.selectedProvider') })}</span>
+                <span>{t(local ? 'morpheus.experience.voice.wakeBody' : settings.localWakeEnabled ? 'morpheus.voice.localWake.disclosure' : 'morpheus.voice.settings.ambientDisclosure', { provider: status.providerLabel ?? t('morpheus.voice.settings.selectedProvider') })}</span>
               </div>
               {settings.ambientEnabled ? (
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -195,7 +199,7 @@ export function MorpheusVoiceSettings() {
           </div>
         </div>
 
-        {!managed ? <div className="grid gap-4 sm:grid-cols-2">
+        {provider ? <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="morpheus-voice-provider" className="text-xs text-foreground/80">
               {t('morpheus.voice.settings.provider')}
@@ -205,7 +209,7 @@ export function MorpheusVoiceSettings() {
               data-testid="morpheus-voice-provider"
               value={selectedProvider}
               disabled={!settings.enabled}
-              onChange={(event) => void updateSettings({ providerAccountId: event.target.value || null })}
+              onChange={(event) => void updateSettings({ engine: 'provider', providerAccountId: event.target.value || null })}
               className="h-10 w-full rounded-lg border border-border bg-surface-input px-3 text-sm text-foreground outline-none focus:border-[hsl(var(--morpheus-accent-dim))] disabled:opacity-50"
             >
               <option value="">{t('morpheus.voice.settings.providerAutomatic')}</option>
@@ -263,7 +267,7 @@ export function MorpheusVoiceSettings() {
               <div>
                 <p className="text-sm font-medium text-foreground">{t('morpheus.voice.settings.neuralSpeech')}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {status.neuralSpeechAvailable
+                  {local ? status.reason ?? t('morpheus.experience.voice.localBody') : status.neuralSpeechAvailable
                     ? t('morpheus.voice.settings.neuralSpeechReady', { provider: status.speechProviderLabel })
                     : t(managed ? 'morpheus.voice.settings.unavailable' : 'morpheus.voice.settings.neuralSpeechFallback')}
                 </p>
@@ -273,11 +277,11 @@ export function MorpheusVoiceSettings() {
             {speechFailure ? (
               <p role="status" data-testid="morpheus-speech-failure"
                 className="mb-3 text-xs text-[hsl(var(--morpheus-warn))]">
-                {t(`morpheus.voice.speechFailure.${speechFailure}`)}
+                {t(local ? 'morpheus.experience.voice.repair' : `morpheus.voice.speechFailure.${speechFailure}`)}
               </p>
             ) : null}
             <div className="grid gap-3 sm:grid-cols-3">
-              {!managed ? <div className="space-y-2">
+              {provider ? <div className="space-y-2">
                 <Label htmlFor="morpheus-speech-provider" className="text-xs text-foreground/80">
                   {t('morpheus.voice.settings.speechProvider')}
                 </Label>
@@ -285,7 +289,7 @@ export function MorpheusVoiceSettings() {
                   id="morpheus-speech-provider"
                   data-testid="morpheus-speech-provider"
                   value={settings.speechProviderAccountId ?? ''}
-                  onChange={(event) => void updateSettings({ speechProviderAccountId: event.target.value || null })}
+                  onChange={(event) => void updateSettings({ engine: 'provider', speechProviderAccountId: event.target.value || null })}
                   className="h-10 w-full rounded-lg border border-border bg-surface-input px-3 text-sm text-foreground outline-none focus:border-[hsl(var(--morpheus-accent-dim))]"
                 >
                   <option value="">{t('morpheus.voice.settings.speechProviderAutomatic')}</option>
@@ -296,7 +300,7 @@ export function MorpheusVoiceSettings() {
                   ))}
                 </select>
               </div> : null}
-              {!managed ? <div className="space-y-2">
+              {provider ? <div className="space-y-2">
                 <Label htmlFor="morpheus-speech-model" className="text-xs text-foreground/80">
                   {t('morpheus.voice.settings.speechModel')}
                 </Label>
@@ -308,7 +312,7 @@ export function MorpheusVoiceSettings() {
                   maxLength={200}
                   onBlur={(event) => {
                     const value = event.currentTarget.value.trim();
-                    if (value && value !== settings.speechModelId) void updateSettings({ speechModelId: value });
+                    if (value && value !== settings.speechModelId) void updateSettings({ engine: 'provider', speechModelId: value });
                   }}
                   className="h-10 rounded-lg bg-surface-input font-mono text-sm"
                 />
@@ -320,12 +324,12 @@ export function MorpheusVoiceSettings() {
                 <select
                   id="morpheus-speech-voice"
                   data-testid="morpheus-speech-voice"
-                  value={settings.speechVoice}
-                  disabled={managed && recommendedVoices.length === 0}
+                  value={local ? settings.speechVoice === 'coral' ? 'coral' : 'cedar' : settings.speechVoice}
+                  disabled={(managed || local) && recommendedVoices.length === 0}
                   onChange={(event) => void updateSettings({ speechVoice: event.target.value as typeof settings.speechVoice })}
                   className="h-10 w-full rounded-lg border border-border bg-surface-input px-3 text-sm text-foreground outline-none focus:border-[hsl(var(--morpheus-accent-dim))]"
                 >
-                  {speechVoices.map((voice) => <option key={voice} value={voice}>{voice}</option>)}
+                  {speechVoices.map((voice) => <option key={voice} value={voice}>{local ? t(voice === 'coral' ? 'morpheus.experience.voice.bright' : 'morpheus.experience.voice.warm') : voice}</option>)}
                 </select>
               </div>
             </div>

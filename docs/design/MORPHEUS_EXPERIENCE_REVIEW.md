@@ -263,6 +263,11 @@ The orb now uses its established DOM-ready flag; Main visibility sync waits for
 `did-stop-loading`. Fade restoration resets opacity as well as visibility.
 The native regression verifies advancing transforms, reduced motion, the actual
 ten-second hide and visible reappearance. No global throttling override is used.
+Typed clarification and pending authority also hold compact open when the
+microphone is muted. Advanced voice distinguishes the included local engine from
+an explicitly configured provider; changing a provider or preset selects that
+engine while preserving saved accounts. Local voice controls show only its two
+bundled voices and disclose Windows-default-microphone wake behavior.
 Display changes reposition the active compact window as well as the orb; pure
 layout tests cover changed work areas, while physical DPI/taskbar-edge tests remain open.
 
