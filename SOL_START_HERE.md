@@ -13,15 +13,15 @@ Verify remote, current commit and dirty files before editing. Never reset, clean
 overwrite or automatically stash work/profiles/providers. Fetch only the verified
 origin. Reviewed checkpoints are pushed to the authorized branch without force.
 
-Latest committed source: **50437715**, after 3fe59e0c, e7636b70, 1fbea5b9,
-208eff4d and 37095e95. The current follow-up corrects persona display metadata.
+Latest application source: **59ea1b06**, after 50437715, 3fe59e0c, e7636b70,
+1fbea5b9, 208eff4d and 37095e95. Persona display metadata is committed.
 Those changes fix the real welcome, quiet returning startup/tray separation,
 Electron Gateway environment and original ACP endpoint/authentication. A normal
 packaged smoke exposed bugs that simplified UI fixtures missed. In particular,
 OpenClaw ignores env credentials with CLI `--url`; both owner URL and token now
 travel in the child environment. Forty-four focused tests include the actual
 pinned bootstrap, not just a mocked fork. Node types/lint/comms/harness pass.
-Full suite at 50437715: **3,312 passes plus two inherited skips** (67.82s).
+Full suite at 59ea1b06: **3,320 passes plus two inherited skips** (68.61s).
 
 The 3fe59e0c normal smoke now proves real Gateway → protected local provider →
 original ACP compact reply. It exposed one further gap: no history replay after
@@ -35,16 +35,38 @@ persona instructions rendered as a user message. New source tags the generated
 ACP block and suppresses only that annotated display part; original ledger/prompt
 matching remain intact. Untagged user/legacy text is not guessed at or rewritten.
 
-**Next exact action:** qualify this persona display correction, commit, build
-**1.2.0-preview.4** unpacked and rerun the normal/relaunch smoke. Inspect screenshots
-and reject internal context in visible messages BEFORE NSIS compression.
+**Current release scope:** follow the owner's
+[fixed Windows checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md).
+Finish the existing local Windows candidate; hosted Premium remains unavailable,
+NerdGPT deferred. Do not restart feature discovery or claim full Phase 7 acceptance.
+
+**Current work:** preview.4 at `E:\Morpheus-builds\phase7-20261002-0418`
+now passes normal reply/reload/full quiet restart, one local provider call total;
+actual screenshots inspected. Its controlled Gateway outage/local task/restart,
+Premium guard and clean shutdown also pass. Five-minute idle makes zero model
+requests but misses the CPU target (2.406% total capacity). A/B diagnosis isolates
+the continuous idle halo. The new shared CSS bounds only idle changes to 10 Hz;
+active voice/working aurora stays fluid.
+
+The final dependency audit also found upstream advisories. Preview.5 source uses
+same-major fixed versions (Electron 41.10.6, Vitest 4.1.11 and HTTP/parser patches).
+Fresh dependency/bundle preparation is at `E:\Morpheus-builds\p7-preview5`;
+the updated registry audit has zero unresolved advisories, with the existing
+image-size patch verified. Never reuse old runtime/plugin bundles under this lock.
+Only unchanged Node/uv/agent-browser binaries and curated skill assets are reused.
+
+Preview.5 source: 3,320 units + two skips, three typechecks, zero lint errors
+(12 inherited warnings), 15 fresh native journeys, comms and narrow harness pass.
+**Next exact action:** commit/push reviewed source, qualify its freshly packaged
+normal/runtime/idle behavior, then compress and identify the EXE. Keep installer
+execution/hardware/live-service gates explicit.
 Preceding evidence: `E:\Morpheus-builds\phase7-20261002-0403`, source 50437715,
 preview.3 (compiled, but not the final handoff due to that display flaw).
 The reusable script is
 `E:\Morpheus-builds\phase7-20261002-0253\normal-runtime-smoke.mjs`;
 arguments: the new base directory and `--companion --relaunch`. It uses an isolated home,
 real Gateway/ACP and a free local provider, not E2E-mode or an owner's account.
-Qualify welcome → local task → compact reply → reload before compressing the EXE.
+Qualify welcome → local task → compact reply → reload/relaunch before compressing the EXE.
 If another real failure appears, preserve evidence, fix its owner and add a
 targeted regression; do not keep compressing installers between source edits.
 

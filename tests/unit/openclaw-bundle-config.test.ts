@@ -16,7 +16,7 @@ describe('openclaw bundle config', () => {
     expect(packageJson.dependencies?.['@agentclientprotocol/sdk']).toBe('1.1.0');
     expect(packageJson.devDependencies).toMatchObject({
       openclaw: '2026.7.1',
-      electron: '41.10.3',
+      electron: '41.10.6',
       '@openclaw/discord': '2026.7.1',
       '@openclaw/qqbot': '2026.7.1',
       '@openclaw/whatsapp': '2026.7.1',

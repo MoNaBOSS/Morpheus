@@ -1,6 +1,7 @@
 # I Windows candidate — preparation, not acceptance
 
-2026-10-02. A fresh EXE is still to be built from this source checkpoint.
+2026-10-02. Current status is in the [fixed Windows checklist](WINDOWS_COMPLETION_CHECKLIST.md);
+the sections below retain historical evidence, not independent next-action queues.
 The old `6e19fadc` installer is not the current product.
 
 Pre-build review found inherited installation cleanup that killed globally named
@@ -140,3 +141,45 @@ Six fresh-build Electron journeys pass (21.5s), including four-locale tagged
 history with the actual user question visible and internal context absent.
 Page/console errors and overlay checks pass; English screenshot inspected.
 Evidence: `E:\Morpheus-builds\phase7-persona-display-evidence-20261002`.
+
+## Fixed release qualification — 2026-10-02
+
+Preview.4 / 59ea1b06 normal package now passes welcome/local task, protected
+synthetic provider, original compact ACP reply, renderer reload and full quiet
+restart, using one local inference total. The ambiguous test locator was scoped
+to compact; no product change was needed. Screenshots of actual first-run and
+restored compact history were inspected, including absence of internal context.
+Evidence: `E:\Morpheus-builds\phase7-20261002-0418\normal-runtime-evidence.json`.
+
+Same package: Main rejects Premium activation and Settings visibly disables it;
+local system information completes while Gateway is stopped; controlled restart
+works; original history has no duplicate/queued turn; page/console errors are empty;
+all owned processes exit. Five-minute unarmed idle has zero provider requests,
+stable process set and working set 1,337,704,448 → 1,308,991,488 bytes, but CPU is
+2.406% of total capacity, above the 1% target. This is NOT a passed performance
+gate. A/B motion diagnosis isolates the halo compositor; stepped tiny idle changes
+reduce its activity without changing active aurora/audio. Final package remeasurement
+is required. Evidence: `qualification-result.json` and `idle-steps-diagnosis.log`
+in the same directory. Some dependency preparation overlapped the initial idle
+sample; whole-PC uncontended latency is not inferred.
+
+Dependency audit at this boundary failed on registry advisories; do not distribute
+preview.4 as the final product. Preview.5 applies same-major patch/minor fixes and
+keeps the OpenClaw runtime pinned. Maintainer evidence includes
+[Electron sandbox fix](https://github.com/electron/electron/security/advisories/GHSA-gr2m-v5gq-v685),
+[Undici TLS fix](https://github.com/nodejs/undici/security/advisories/GHSA-w293-vg96-wgc3)
+and [Axios redirect fix](https://github.com/axios/axios/security/advisories/GHSA-r4gj-5m52-g5wh).
+Fresh lock SHA256: `9B2B93BBD50221B363D6ED940BFBBFD9833E42E07D6F761BD457EA30E7C8B44B`.
+Updated audit has zero unresolved advisories; 142 installed image-size patch checks
+pass (two advisories remain explicitly locally patched, not ignored).
+Fresh runtime/plugin bundles are rebuilt from that graph; only unchanged binary
+tools/curated skills reuse caches. No paid model or owner account is used.
+
+Preview.5 source validation: **3,320 passes + two inherited skips**, 322 files,
+63.77s; all three typechecks; lint zero errors / 12 inherited Fast Refresh warnings;
+comms replay/compare and diff-aware harness validate/dry-run pass. The first full
+run failed only the old exact Electron version assertion; it was updated to the
+reviewed patched version and the entire suite rerun. 31 targeted runtime/installer
+helper checks pass. Fifteen fresh-build native journeys pass (1.2m), including
+four-locale history/startup, Premium unavailable and shared idle/active/reduced/
+hidden motion. Still qualify the actual preview.5 package before EXE compression.

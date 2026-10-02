@@ -10,28 +10,19 @@ Returning greetings respect quiet settings and saved daily history; companion ch
 and neural speech share saved personality preferences. Full Phase 7 acceptance is
 still in progress; see [the current checkpoint](SOL_START_HERE.md).
 
-Native click/Escape/reload recovery now has repeated Windows checks and a recorded
-warm interaction baseline. Upgrade preparation preserves recoverable installation
-backups and no longer kills other instances or erases user profiles. These are
-source/helper results; a fresh packaged candidate is still under qualification.
-Fresh profiles now enter the approved name/welcome scene directly, with trapped
-keyboard focus. Returning profiles do not repeat the legacy setup wizard when
-renderer storage is missing. Ten fresh/returning Windows journeys pass; the
-installer containing this correction is `1.2.0-preview.2`, pending qualification.
-Normal packaged startup also exposed a Gateway environment failure missed by
-reduced UI tests. The launch boundary is corrected and real child-process tested;
-the rebuilt candidate still needs normal runtime acceptance.
-Returning startup now stays at the quiet orb; explicit tray handoff no longer
-immediately reopens the orb. Neither presentation choice enables the microphone.
-The original ACP bridge now uses Main's actual local endpoint, including isolated
-ports, with URL/token paired in its owned environment (the pinned runtime suppresses
-environment authentication with a CLI URL). The real bootstrap is regression-tested.
-Preview.3 contains these source fixes; packaged conversation qualification
-is separate from the passing unit checks.
-Compact/full reload now restores the original saved ACP history without repeating
-the request. Normal packaged reply/reload/relaunch pass. Preview.4 also keeps
-annotated personality context out of restored user bubbles; untagged history is
-preserved. Exact rebuilt visual qualification remains required.
+The [fixed Windows checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) is the
+current delivery scope. Preview.4 passed normal packaged welcome, a real local
+task, protected synthetic provider, original ACP compact reply, reload and quiet
+restart without another model request. Screenshots confirm that internal personality
+context is not shown as a user message. Existing untagged history is preserved.
+Local work also passes a controlled Gateway outage/restart; Premium activation is
+rejected in Main and visibly unavailable. These are isolated local-fixture results,
+not live voice/provider, installer-upgrade or public-release acceptance.
+Preview.5 applies same-major dependency security updates, retaining the original
+runtime and interface. Its new packaged evidence and remaining gates are recorded
+in the current checkpoint; older preview installers are not the final handoff.
+Upgrade preparation preserves recoverable backups and never kills unrelated
+instances or erases profiles. Presentation never implicitly enables the microphone.
 
 New source checkpoints add inspectable/exportable local memory, quiet orb check-ins,
 bounded public-page retrieval, recoverable static-site revisions and restored site
