@@ -8,7 +8,7 @@ export function createMorpheusPcmPlayback(onSpeaking: (value: boolean) => void) 
   const analyser = context.createAnalyser(); analyser.fftSize = 512; analyser.connect(context.destination);
   const level = createMorpheusAudioLevelSource();
   const samples = new Uint8Array(analyser.fftSize);
-  const sources = new Set<AudioBufferSourceNode>();
+  const sources = new Map<AudioBufferSourceNode, { start: number; end: number }>();
   let bytes = 0, carry: number | null = null, nextAt = 0, ended = false, disposed = false, speaking = false;
   let ready = Promise.resolve();
   let resolve!: () => void, reject!: (error: Error) => void;
@@ -16,17 +16,17 @@ export function createMorpheusPcmPlayback(onSpeaking: (value: boolean) => void) 
   void completed.catch(() => undefined);
   const timer = window.setInterval(() => {
     if (disposed) return;
-    if (!sources.size || context.state !== 'running') { level.update(0); return; }
-    if (!speaking && context.currentTime >= firstAt) { speaking = true; onSpeaking(true); }
+    const playing = context.state === 'running' && [...sources.values()].some(({ start, end }) => context.currentTime >= start && context.currentTime < end);
+    if (playing !== speaking) { speaking = playing; onSpeaking(playing); }
+    if (!playing) { level.update(0); return; }
     analyser.getByteTimeDomainData(samples);
     let energy = 0; for (const sample of samples) energy += ((sample - 128) / 128) ** 2;
     level.update(Math.sqrt(energy / samples.length));
   }, 50);
-  let firstAt = Number.POSITIVE_INFINITY;
   const dispose = () => {
     if (disposed) return;
     disposed = true; window.clearInterval(timer); level.dispose();
-    for (const source of sources) { source.onended = null; try { source.stop(); } catch { /* Already ended. */ } source.disconnect(); }
+    for (const source of sources.keys()) { source.onended = null; try { source.stop(); } catch { /* Already ended. */ } source.disconnect(); }
     sources.clear(); analyser.disconnect(); void context.close().catch(() => undefined);
     if (speaking) onSpeaking(false); speaking = false; resolve();
   };
@@ -52,7 +52,7 @@ export function createMorpheusPcmPlayback(onSpeaking: (value: boolean) => void) 
         if (context.state !== 'running') throw new Error('Speech output is unavailable.');
         const source = context.createBufferSource(); source.buffer = buffer; source.connect(analyser);
         const start = Math.max(context.currentTime + 0.02, nextAt);
-        firstAt = Math.min(firstAt, start); nextAt = start + buffer.duration; sources.add(source);
+        nextAt = start + buffer.duration; sources.set(source, { start, end: nextAt });
         source.onended = () => { sources.delete(source); source.disconnect(); checkEnd(); };
         source.start(start);
       }).catch(fail);

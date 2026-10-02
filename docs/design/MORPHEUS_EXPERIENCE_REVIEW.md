@@ -89,7 +89,7 @@ keyboard/IME, screen readers, readable contrast and high text scaling. Motion sh
 be noticeable during active interaction and quiet while idle. Hidden animation costs
 must be measured across the process tree.
 
-## Included voice architecture — preview.6
+## Included voice architecture — preview.6, refined in preview.7
 
 Preview.6 bundles sherpa-onnx 1.13.8 static Windows executables, Whisper tiny.en
 int8 recognition and Kokoro v1.0 int8 synthesis. English is the included standard;
@@ -106,8 +106,14 @@ applies to command/test capture. Manual mute blocks both wake and input. Output
 samples remain usable while input is muted. Recording tests never execute commands.
 
 This CPU implementation trades install size and startup latency for offline privacy
-and zero per-utterance service cost. Neural speech is generated before WAV playback;
-it does not promise realtime streaming. Tiny English recognition can mishear accents,
+and zero per-utterance service cost. Preview.7 generates a short first phrase followed
+by bounded sentence groups and streams validated 24 kHz PCM through the existing
+audio player. Up to eight available CPU threads replace the fixed four-thread TTS
+setting after a real sequential engine benchmark (25-word baseline: 13.075 s at four,
+9.508 s at eight). This is segmented speech, not token-by-token model streaming;
+generation can still outlast playback on slow CPUs. Genuine gaps show zero audio
+activity and do not reopen microphone capture while synthesis continues.
+Tiny English recognition can mishear accents,
 noise and speaker echo. Actual microphone accuracy, naturalness, echo/interruption
 and low-power hardware acceptance remain owner tests. Hosted speech could offer
 stronger recognition or faster streaming, but no service account, funded allowance,
@@ -120,6 +126,13 @@ corresponding upstream source/build archives ship with the executables. Source i
 unmodified. These records identify distribution inputs, not a legal certification.
 Primary documentation: https://k2-fsa.github.io/sherpa/onnx/tts/pretrained_models/kokoro.html
 and https://github.com/k2-fsa/sherpa-onnx/releases/tag/v1.13.8 .
+
+The owner subsequently authorized autonomous completion and testing. Preview.7
+addresses demonstrated speech delay, misordered task exchanges, credential-bearing
+public-research links, pinned connection fallback and cancellation during final
+website verification. An isolated hosted Windows runner will qualify the installer
+without writing the owner's existing Windows registration. Evidence is recorded in
+the same current checklist; no new competing experience plan is introduced.
 
 | Candidate | Required evidence and tradeoffs |
 | --- | --- |

@@ -56,6 +56,14 @@ Var /GLOBAL clawxRollbackDir
 !macroend
 
 !macro customUnInstall
+  ; Multi-user initialization has now resolved the actual removal directory.
+  ; Validate product markers again before the inherited recursive binary removal.
+  !insertmacro morpheusInstallGuard CheckUninstall "$INSTDIR._rollback_0"
+  ${if} $R0 != 0
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Cannot safely uninstall Morpheus.$\r$\n$R1$\r$\nNo files have been removed." /SD IDOK
+    SetErrorLevel 2
+    Quit
+  ${endIf}
   ; Only remove the CLI entry associated with this exact installation.
   InitPluginsDir
   File "/oname=$PLUGINSDIR\update-user-path.ps1" "${PROJECT_DIR}\resources\cli\win32\update-user-path.ps1"

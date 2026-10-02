@@ -33,6 +33,15 @@ describe('task browser public network boundary', () => {
     expect((await network.handle(new Request('https://example.com/next'))).status).toBe(403);
     expect(transport).toHaveBeenCalledTimes(1);
   });
+  it('reaches a second validated public address after an unavailable network path', async () => {
+    const { network, resolveAddresses, transport } = setup();
+    resolveAddresses.mockResolvedValue([{ address: '93.184.216.34', family: 4 }, { address: '8.8.8.8', family: 4 }]);
+    transport.mockRejectedValueOnce(Object.assign(new Error('Network unavailable'), { code: 'EHOSTUNREACH' }));
+    expect((await network.handle(new Request('https://example.com/'))).status).toBe(200);
+    expect(resolveAddresses).toHaveBeenCalledTimes(1);
+    expect(transport.mock.calls.map((call) => call[1].address)).toEqual(['93.184.216.34', '8.8.8.8']);
+    expect(network.stats()).toEqual({ requests: 1, bytes: 17, blocked: 0 });
+  });
   it('permits only same-origin redirects without forwarding server cookies', async () => {
     const { network, transport } = setup({ status: 302, headers: { location: '/next', 'set-cookie': 'x=y' }, body: Buffer.alloc(0) });
     const response = await network.handle(new Request('https://example.com/'));

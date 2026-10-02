@@ -1,8 +1,9 @@
-Preview.6 は会話と設定を簡素化します。同じ会話と下書きを維持し、履歴はドロワーで表示します。設定は接続、音声、個性、アカウントとプラン、詳細に分かれます。既存の全ツールとフルワークスペースは詳細から利用できます。Windows の標準英語音声（Whisper tiny.en / Kokoro）はローカルで動作し、音声 API キーは不要です。マイクテストと実際の音声サンプルを音声設定で提供します。起動検出は任意で、手動ミュートで録音を停止し、コンパクト画面は約十秒のアイドル後に消えます。ホスト型プラン、決済、NerdGPT は外部サービスの準備が必要です。[現在の仕様](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) と [Windows チェックリスト](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) に検証範囲を記載します。
+Preview.7 は簡潔な会話、状況に合う設定、全詳細ツール、標準ローカル英語音声、動くコンパニオンを維持します。会話とタスクはコンパクト・展開画面で同じ時系列を使い、ニューラル音声はサイズ制限付き PCM 区間を順次再生します。音声状態は実際の再生に連動し、キャンセルできます。公開調査は認証情報付き URL を拒否し、検証済み接続失敗だけ再試行します。サイトの最終検証までは復旧マーカーを残します。ホスト型プラン、決済、NerdGPT は外部サービスの準備が必要です。[現在の仕様](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) と [Windows チェックリスト](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) に検証範囲を記載します。
 
 
-アプリソース `12a36898` の Preview.6 は、隔離した通常実行とインストーラー内容の照合に合格しました。
-実際の動作動画、音声サンプル、未署名 EXE を提供します。既存プロファイルの更新と実機 Windows の承認は未完了です。
+保存した Preview.6 基準 `12a36898` は隔離した通常実行とインストーラー照合に合格しました。
+Preview.7 は能力、音声、会話、一時 Windows でのインストール検証を追加します。正確な識別と結果は現在のチェックリストを参照してください。
+模擬テストから実機、署名、ホスト型商用サービスの承認を推定してはいけません。
 
 <p align="center">
   <img src="src/assets/morpheus-logo.svg" width="128" height="128" alt="Morpheus Logo" />
@@ -10,7 +11,7 @@ Preview.6 は会話と設定を簡素化します。同じ会話と下書きを�
 
 <h1 align="center">Morpheus</h1>
 
-Windows preview.5 は所有者の PC 受け入れ確認に進めます。正確な EXE・ハッシュ・制限は[現在の引き継ぎ](docs/releases/WINDOWS_PREVIEW5_HANDOFF.md)を参照してください。Phase 7 全体や公開 Premium の承認ではありません。
+[Preview.5 の引き継ぎ](docs/releases/WINDOWS_PREVIEW5_HANDOFF.md)は履歴です。現在のチェックリストで交付識別と未完了の承認を確認してください。
 
 プラグインに同梱された依存関係もロック済みの修正版へ置き換え、実際の配布内容とキャッシュ更新識別子を別途確認します。
 

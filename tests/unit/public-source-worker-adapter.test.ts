@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createPublicSourceWorkerAdapter, isPublicSourceAddress, resolvePublicSourceUrl, publicSourceText } from '@electron/services/public-source-worker-adapter';
+import { createPublicSourceWorkerAdapter, isPublicSourceAddress, resolvePublicSourceUrl, publicSourceText, retrievePinnedPublicSource } from '@electron/services/public-source-worker-adapter';
 import type { MorpheusWorkerRequest } from '@shared/morpheus/worker-types';
 
 const worker = (url = 'https://example.com/start'): MorpheusWorkerRequest => ({
@@ -18,8 +18,42 @@ describe('actual public source adapter boundaries', () => {
   it.each(['8.8.8.8', '93.184.216.34', '2001:4860:4860::8888', '2606:4700:4700::1111'])('accepts public address %s', (address) => {
     expect(isPublicSourceAddress(address)).toBe(true);
   });
-  it.each(['http://example.com', 'https://user:password@example.com', 'https://localhost', 'https://127.1', 'https://example.com:8443', 'file:///C:/secret', 'https://host.local', 'https://host.internal'])('rejects invalid source URL %s', (url) => {
+  it.each(['http://example.com', 'https://user:password@example.com', 'https://localhost', 'https://127.1', 'https://example.com:8443', 'file:///C:/secret', 'https://host.local', 'https://host.internal', 'https://example.com/?access_token=secret', 'https://example.com/?X-Amz-Signature=secret'])('rejects invalid source URL %s', (url) => {
     expect(() => resolvePublicSourceUrl(url)).toThrow();
+  });
+  it('rejects credential query URLs before resolution or dispatch without changing ordinary queries', async () => {
+    const dns = vi.fn(), transport = vi.fn();
+    await expect(createPublicSourceWorkerAdapter({ resolveAddresses: dns, transport }).run(worker('https://example.com/?api_key=private'), new AbortController().signal, async () => {})).rejects.toThrow('without credentials');
+    expect(dns).not.toHaveBeenCalled(); expect(transport).not.toHaveBeenCalled();
+    expect(resolvePublicSourceUrl('https://example.com/search?q=books#results').href).toBe('https://example.com/search?q=books');
+  });
+  it('tries another pinned public address after a connection failure without resolving again', async () => {
+    const addresses = [{ address: '2001:4860:4860::8888', family: 6 }, { address: '93.184.216.34', family: 4 }];
+    const dns = vi.fn(async () => addresses);
+    const transport = vi.fn().mockRejectedValueOnce(Object.assign(new Error('IPv6 unavailable'), { code: 'ENETUNREACH' })).mockResolvedValueOnce(textResponse());
+    const result = await createPublicSourceWorkerAdapter({ resolveAddresses: dns, transport }).run(worker(), new AbortController().signal, async () => {});
+    expect(result.source.excerpt).toContain('Actual page text.');
+    expect(dns).toHaveBeenCalledTimes(1);
+    expect(transport.mock.calls.map((call) => call[1])).toEqual(addresses);
+  });
+  it('caps failed connection attempts at three distinct already-pinned addresses', async () => {
+    const addresses = ['8.8.8.8', '8.8.8.8', '1.1.1.1', '9.9.9.9', '8.8.4.4'].map((address) => ({ address, family: 4 }));
+    const transport = vi.fn().mockRejectedValue(Object.assign(new Error('Network path unavailable'), { code: 'ENETUNREACH' }));
+    await expect(retrievePinnedPublicSource(new URL('https://example.com/'), addresses, transport, new AbortController().signal, 1024)).rejects.toThrow('Network path unavailable');
+    expect(transport.mock.calls.map((call) => call[1].address)).toEqual(['8.8.8.8', '1.1.1.1', '9.9.9.9']);
+  });
+  it('stops address retries on cancellation and never retries HTTP or TLS failures', async () => {
+    const dns = async () => [{ address: '93.184.216.34', family: 4 }, { address: '8.8.8.8', family: 4 }];
+    const controller = new AbortController();
+    const cancelled = vi.fn(async () => { controller.abort(new DOMException('Cancelled', 'AbortError')); throw Object.assign(new Error('Reset'), { code: 'ECONNRESET' }); });
+    await expect(createPublicSourceWorkerAdapter({ resolveAddresses: dns, transport: cancelled }).run(worker(), controller.signal, async () => {})).rejects.toThrow('Cancelled');
+    expect(cancelled).toHaveBeenCalledTimes(1);
+    const tls = vi.fn().mockRejectedValue(Object.assign(new Error('Certificate invalid'), { code: 'ERR_TLS_CERT_ALTNAME_INVALID' }));
+    await expect(createPublicSourceWorkerAdapter({ resolveAddresses: dns, transport: tls }).run(worker(), new AbortController().signal, async () => {})).rejects.toThrow('Certificate invalid');
+    expect(tls).toHaveBeenCalledTimes(1);
+    const http = vi.fn().mockResolvedValue({ ...textResponse(), status: 503 });
+    await expect(createPublicSourceWorkerAdapter({ resolveAddresses: dns, transport: http }).run(worker(), new AbortController().signal, async () => {})).rejects.toThrow('HTTP 503');
+    expect(http).toHaveBeenCalledTimes(1);
   });
   it('revalidates DNS and pins the actual chosen public address for each same-origin redirect', async () => {
     const dns = vi.fn().mockResolvedValueOnce([{ address: '93.184.216.34', family: 4 }]).mockResolvedValueOnce([{ address: '8.8.8.8', family: 4 }]);

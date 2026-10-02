@@ -61,7 +61,7 @@ export function MorpheusQuickCommand() {
   const busy = submitting || conversationSubmitting || voiceBusy;
   const compact = trigger !== null;
   const signalState = resolveMorpheusSignalState({ voicePhase, voicePresence: voicePresence === 'asleep' ? 'armed' : voicePresence, objectiveState: conversationWorking || conversationSubmitting ? 'understanding' : objectiveRun?.state });
-  const recentRuns = (history?.runOrder ?? []).slice(0, 2).map((id) => history?.runsById[id]).filter((run) => run != null).reverse();
+  const recentRuns = (history?.runOrder ?? []).slice(0, 2).map((id) => history?.runsById[id]).filter((run) => run != null);
 
   useEffect(() => hostEvents.onMorpheusQuickCommand((payload) => show(payload.trigger)), [show]);
   useEffect(() => {
@@ -138,8 +138,8 @@ export function MorpheusQuickCommand() {
       <div className="relative z-10 flex min-h-0 flex-1 flex-col px-4 py-3">
         <div className="flex items-center gap-3"><MorpheusFluidOrb state={signalState} className="h-11 w-11" label={t(`morpheus.signalOs.signal.${signalState}`)} /><div><p className="text-lg font-semibold text-[#edf5ef]">{t('morpheus.workspace.greeting')}</p><p data-testid="quick-command-live-state" className="text-xs text-[#a0b6aa]">{voiceBusy ? t(`morpheus.voice.states.${voicePhase}`) : t('morpheus.workspace.subtitle')}</p></div></div>
         <div className="mt-3 min-h-0 flex-1 space-y-4 overflow-y-auto pr-2" role="log" aria-label={t('morpheus.workspace.conversation')}>
-          <MorpheusConversationThread sessionKey={selectedConversationId} compact />
-          {recentRuns.map((run) => <div key={run.objectiveRunId} className="space-y-3"><div className="ml-6 rounded-xl bg-[#14231a] p-3 text-sm text-[#edf5ef]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.workspace.you')}</span>{run.objective}</div><div className="text-sm leading-relaxed text-[#d8e7dd]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.title')}</span>{run.clarification ?? run.error?.message ?? run.summary ?? t('morpheus.workspace.working')}</div></div>)}
+          <MorpheusConversationThread sessionKey={selectedConversationId} compact objectiveRuns={recentRuns}
+            renderObjective={(run) => <div className="space-y-3"><div className="ml-6 rounded-xl bg-[#14231a] p-3 text-sm text-[#edf5ef]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.workspace.you')}</span>{run.objective}</div><div className="text-sm leading-relaxed text-[#d8e7dd]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.title')}</span>{run.clarification ?? run.error?.message ?? run.summary ?? t('morpheus.workspace.working')}</div></div>} />
           {conversationError ? <div role="alert" className="rounded-xl border border-red-500/30 bg-red-950/30 p-3 text-sm text-red-200">{conversationError}{blockedTurnId ? <button type="button" onClick={retryConversation} className="ml-2 underline">{t('morpheus.conversation.retry')}</button> : null}</div> : null}
           {clarification ? <p className="rounded-xl border border-[#345341] bg-[#0e1b15] p-3 text-sm text-[#edf5ef]">{clarification}</p> : null}
           {open && objectiveRun?.state === 'needs-clarification' ? <MorpheusQuestionAnswers

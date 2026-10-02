@@ -42,4 +42,17 @@ describe.skipIf(process.platform !== 'win32' || !root)('real included voice engi
       expect(await readdir(temporary)).toEqual([]);
     } finally { await rm(temporary, { recursive: true, force: true }); }
   });
+  it('streams real validated PCM before the complete reply and cancels between phrases without retaining audio', async () => {
+    const temporary = await mkdtemp(join(tmpdir(), 'local-voice-stream-'));
+    try {
+      const voice = createMorpheusLocalVoice(root!, temporary), controller = new AbortController();
+      const parts: Buffer[] = [];
+      const pending = voice.synthesizeStream!('I am Morpheus. Tell me what you need, and I will get moving. A little humor, a little Matrix, and useful results.', 'cedar', controller.signal, pcm => {
+        parts.push(pcm); controller.abort();
+      });
+      await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+      expect(parts).toHaveLength(1); expect(parts[0].length).toBeGreaterThan(24_000);
+      expect(parts[0].length % 2).toBe(0); expect(await readdir(temporary)).toEqual([]);
+    } finally { await rm(temporary, { recursive: true, force: true }); }
+  }, 30_000);
 });

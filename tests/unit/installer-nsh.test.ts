@@ -26,4 +26,11 @@ describe('recoverable Windows installer', () => {
   it('does not weaken system protection or silently enable CLI integration', () => {
     expect(installer).not.toMatch(/Add-MpPreference|Remove-MpPreference|LongPathsEnabled|-Action add/);
   });
+  it('checks the final uninstall directory before CLI changes or inherited file removal', () => {
+    const uninstall = installer.slice(installer.indexOf('!macro customUnInstall'));
+    expect(uninstall).toContain('morpheusInstallGuard CheckUninstall');
+    expect(uninstall.indexOf('CheckUninstall')).toBeLessThan(uninstall.indexOf('-Action remove'));
+    expect(uninstall).toContain('SetErrorLevel 2');
+    expect(uninstall).toContain('No files have been removed');
+  });
 });

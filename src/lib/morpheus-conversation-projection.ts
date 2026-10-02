@@ -1,8 +1,12 @@
 import type { AcpTimelineSnapshot, MessageSegmentItem, PermissionItem } from '@/lib/acp/timeline-types';
+import type { MorpheusAssistantPendingTurn, MorpheusAssistantTurn } from '@shared/morpheus/assistant-session-types';
+import type { MorpheusObjectiveRun } from '@shared/morpheus/core/objective-types';
 
 export type MorpheusConversationMessage = {
   id: string;
   messageId: string;
+  /** Existing ACP user message anchor, retained when bounded history starts at a reply. */
+  turnId?: string;
   role: MessageSegmentItem['role'];
   text: string;
   mediaCount: number;
@@ -13,6 +17,43 @@ export type MorpheusConversationProjection = {
   messages: MorpheusConversationMessage[];
   permissions: PermissionItem[];
 };
+
+export type MorpheusConversationEntry =
+  | { kind: 'message'; message: MorpheusConversationMessage }
+  | { kind: 'queued'; turn: MorpheusAssistantPendingTurn }
+  | { kind: 'objective'; run: MorpheusObjectiveRun };
+
+/** Join existing owners for display without moving a task when it finishes. */
+export function interleaveMorpheusConversation({
+  projection, sessionKey, turns, pendingTurns, objectiveRuns,
+}: {
+  projection: MorpheusConversationProjection;
+  sessionKey: string | null;
+  turns: readonly MorpheusAssistantTurn[];
+  pendingTurns: readonly MorpheusAssistantPendingTurn[];
+  objectiveRuns: readonly MorpheusObjectiveRun[];
+}): MorpheusConversationEntry[] {
+  const admittedAt = new Map(turns.filter((turn) => turn.conversationId === sessionKey)
+    .map((turn) => [turn.turnId, Date.parse(turn.admittedAt)]));
+  let currentTurnTime: number | undefined;
+  const entries: { entry: MorpheusConversationEntry; time?: number }[] = projection.messages.map((message) => {
+    if (message.turnId || message.role === 'user') currentTurnTime = admittedAt.get(message.turnId ?? message.messageId);
+    return { entry: { kind: 'message', message }, time: currentTurnTime };
+  });
+  for (const turn of pendingTurns) {
+    if (turn.conversationId !== sessionKey || projection.messages.some((message) => message.messageId === turn.turnId || message.turnId === turn.turnId)) continue;
+    entries.push({ entry: { kind: 'queued', turn }, time: Date.parse(turn.admittedAt) });
+  }
+  // Old ACP histories can lack an admission reference. Keep their original order;
+  // do not manufacture dates or let missing dates reorder the known conversation.
+  const runs = [...objectiveRuns].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+  for (const run of runs) {
+    const time = Date.parse(run.createdAt);
+    const next = entries.findIndex((item) => typeof item.time === 'number' && Number.isFinite(item.time) && item.time > time);
+    entries.splice(next < 0 ? entries.length : next, 0, { entry: { kind: 'objective', run }, time });
+  }
+  return entries.map(({ entry }) => entry);
+}
 
 const DEFAULT_MESSAGE_LIMIT = 12;
 const DEFAULT_TEXT_LIMIT = 4_000;
@@ -32,6 +73,7 @@ export function projectMorpheusConversation(
   const messages: MorpheusConversationMessage[] = [];
   const messagesByKey = new Map<string, MorpheusConversationMessage>();
   const permissions: PermissionItem[] = [];
+  let turnId: string | undefined;
 
   for (const itemId of timeline.itemOrder) {
     const item = timeline.itemsById[itemId];
@@ -40,11 +82,12 @@ export function projectMorpheusConversation(
       continue;
     }
     if (item?.kind !== 'message-segment') continue;
+    if (item.role === 'user') turnId = item.messageId;
 
     const key = `${item.role}\0${item.messageId}`;
     let message = messagesByKey.get(key);
     if (!message) {
-      message = { id: item.id, messageId: item.messageId, role: item.role, text: '', mediaCount: 0, truncated: false };
+      message = { id: item.id, messageId: item.messageId, turnId, role: item.role, text: '', mediaCount: 0, truncated: false };
       messagesByKey.set(key, message);
       messages.push(message);
     }

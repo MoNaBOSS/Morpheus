@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { RawMessage } from '../../../shared/chat/types';
+import type { LanguageCode } from '../../../shared/language';
 
 export type LaunchElectronOptions = {
   skipSetup?: boolean;
@@ -708,7 +709,7 @@ function stableStringify(value: unknown): string {
 
 export async function installAttachmentHostFixture(
   app: ElectronApplication,
-  options: { sessions: AttachmentFixtureSession[] },
+  options: { sessions: AttachmentFixtureSession[]; language?: LanguageCode },
 ): Promise<AttachmentHostFixture> {
   if (options.sessions.length === 0) throw new Error('Attachment fixture requires at least one session');
   const homeDir = await app.evaluate(async () => process.env.HOME || process.env.USERPROFILE || '');
@@ -748,7 +749,7 @@ export async function installAttachmentHostFixture(
     },
     hostApi: {
       [stableStringify(['settings', 'getAll', null])]: {
-        language: 'en',
+        language: options.language ?? 'en',
         setupComplete: true,
         chatWorkspacePath: workspaceDir,
         recentWorkspacePaths: [workspaceDir],

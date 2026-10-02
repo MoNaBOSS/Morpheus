@@ -31,12 +31,23 @@ describe('bounded PCM output at the existing speech owner', () => {
     expect([...context.buffers[0], ...context.buffers[1]]).toEqual([0.5, -1, 32767 / 32768]);
     expect(context.sources[0].start).toHaveBeenCalledWith(0.02);
     expect(context.sources[1].start).toHaveBeenCalledWith(0.02 + 1 / 24000);
-    context.currentTime = 0.03; await vi.advanceTimersByTimeAsync(50);
+    context.currentTime = 0.02002; await vi.advanceTimersByTimeAsync(50);
     expect(speaking).toHaveBeenCalledWith(true); expect(levels.mock.calls.some(([value]) => value > 0)).toBe(true);
     for (const source of context.sources) source.onended?.(); await player.completed;
     await vi.advanceTimersByTimeAsync(50);
     expect(speaking).toHaveBeenLastCalledWith(false); expect(context.close).toHaveBeenCalledOnce(); expect(levels).toHaveBeenLastCalledWith(0); expect(vi.getTimerCount()).toBe(0);
     unsubscribe();
+  });
+  it('reports a real generation gap as silence and resumes with the next audible segment', async () => {
+    const speaking = vi.fn(), player = createMorpheusPcmPlayback(speaking), context = Context.latest;
+    player.push(new Uint8Array(48_000)); await Promise.resolve(); await Promise.resolve();
+    context.currentTime = 0.1; await vi.advanceTimersByTimeAsync(50); expect(speaking).toHaveBeenLastCalledWith(true);
+    context.currentTime = 1.1; context.sources[0].onended?.(); await vi.advanceTimersByTimeAsync(50);
+    expect(speaking).toHaveBeenLastCalledWith(false);
+    player.push(new Uint8Array(48_000)); await Promise.resolve(); await Promise.resolve();
+    context.currentTime = 1.2; await vi.advanceTimersByTimeAsync(50); expect(speaking).toHaveBeenLastCalledWith(true);
+    await player.finish(); context.sources[1].onended?.(); await player.completed;
+    expect(speaking).toHaveBeenLastCalledWith(false); expect(vi.getTimerCount()).toBe(0);
   });
   it('cancellation during resume prevents late playback', async () => {
     const player = createMorpheusPcmPlayback(vi.fn()), context = Context.latest; context.state = 'suspended';

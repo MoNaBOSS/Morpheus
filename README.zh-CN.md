@@ -1,8 +1,9 @@
-Preview.6 简化了日常对话与设置：对话和草稿保持连续，历史以抽屉显示，设置分为连接、语音、个性、账户与方案和高级。完整工作区与现有工具保留在高级入口。Windows 内置本地英语语音（Whisper tiny.en / Kokoro），无需语音 API 密钥；语音设置提供麦克风测试与真实样本。唤醒监听需主动启用，手动静音停止录音，空闲紧凑界面约十秒后消失。托管方案、结账和 NerdGPT 仍需外部服务。验证范围见 [当前体验规范](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) 和 [Windows 清单](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md)。
+Preview.7 保留简洁对话、上下文设置、全部高级工具、内置本地英语语音和动态伙伴。紧凑与展开视图按时间排列对话及任务；神经语音以有界 PCM 片段逐步播放，真实反映音频状态并支持取消。公开研究拒绝含凭据的链接，仅对已验证的连接失败安全重试；网站最终验证完成前保留恢复标记。托管方案、结账与 NerdGPT 仍需外部服务。验证范围见 [当前体验规范](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) 和 [Windows 清单](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md)。
 
 
-应用源码 `12a36898` 的 Preview.6 已通过隔离的正常运行与安装包内容核验。
-真实动画、语音样本和未签名 EXE 已交付；现有配置升级及真实 Windows 硬件验收仍待完成。
+保留的 Preview.6 基线 `12a36898` 已通过隔离正常运行与安装包核验。
+Preview.7 增加能力、语音、对话及临时 Windows 安装验证；准确身份与结果见当前清单。
+模拟测试不代表真实硬件、签名或托管商业服务已验收。
 
 <p align="center">
   <img src="src/assets/morpheus-logo.svg" width="128" height="128" alt="Morpheus Logo" />
@@ -10,7 +11,7 @@ Preview.6 简化了日常对话与设置：对话和草稿保持连续，历史�
 
 <h1 align="center">Morpheus</h1>
 
-Windows preview.5 已准备好供用户进行 PC 验收。准确 EXE、哈希及限制见[当前交接](docs/releases/WINDOWS_PREVIEW5_HANDOFF.md)；这不代表完整 Phase 7 或公开 Premium 已验收。
+[Preview.5 交接](docs/releases/WINDOWS_PREVIEW5_HANDOFF.md) 属于历史记录；交付身份与未完成验收以当前清单为准。
 
 插件压缩包内嵌依赖也采用锁定版本修复，并单独检查安装包中的实际副本和缓存刷新标识。
 

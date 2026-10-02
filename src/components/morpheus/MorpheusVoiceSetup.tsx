@@ -15,7 +15,7 @@ export function MorpheusVoiceSetup() {
   const refresh = useCallback(async () => { try { setDevices((await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput')); } catch { setDevices([]); } }, []);
   useEffect(() => { void load(); void Promise.resolve().then(refresh); navigator.mediaDevices?.addEventListener('devicechange', refresh); return () => navigator.mediaDevices?.removeEventListener('devicechange', refresh); }, [load, refresh]);
   if (!status) return <p role="status">{t('morpheus.voice.settings.loading')}</p>;
-  const local = status.speechFormat === 'wav';
+  const local = status.settings.engine === 'local' || status.speechFormat === 'wav';
   return <section data-testid="morpheus-voice-setup" className="space-y-5">
     <div className="rounded-xl border border-border bg-surface-input p-4"><p className="text-sm font-medium">{t(local ? 'morpheus.experience.voice.included' : 'morpheus.experience.voice.engine')}</p><p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t(local ? 'morpheus.experience.voice.localBody' : 'morpheus.experience.voice.providerBody', { provider: status.providerLabel ?? '' })}</p>{!local ? <button type="button" onClick={() => void update({ engine: 'local' })} className="mt-3 text-sm underline">{t('morpheus.experience.voice.local')}</button> : null}</div>
     {status.reason ? <p role="status" className="text-sm text-muted-foreground">{status.reason}</p> : null}

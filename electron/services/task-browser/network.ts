@@ -1,7 +1,7 @@
 import { lookup } from 'node:dns/promises';
 import { createServer, isIP } from 'node:net';
 import type { Session } from 'electron';
-import { isPublicSourceAddress, requestPinnedPublicSource, resolvePublicSourceUrl, type PublicAddress, type PublicSourceTransport } from '../public-source-worker-adapter';
+import { isPublicSourceAddress, requestPinnedPublicSource, resolvePublicSourceUrl, retrievePinnedPublicSource, type PublicAddress, type PublicSourceTransport } from '../public-source-worker-adapter';
 
 export function publicBrowserUrl(value: string, origin?: string): URL {
   const url = resolvePublicSourceUrl(value);
@@ -51,7 +51,7 @@ export function createTaskBrowserNetwork(origin: string, signal: AbortSignal, de
         });
         signal.throwIfAborted();
         if (!addresses.length || addresses.some((entry) => !isPublicSourceAddress(entry.address))) return fail();
-        const response = await transport(url, addresses[0], signal, reservation);
+        const response = await retrievePinnedPublicSource(url, addresses, transport, signal, reservation);
         signal.throwIfAborted();
         bytes += response.body.byteLength;
         if (response.body.byteLength > reservation || bytes > 8 * 1024 * 1024) return fail();

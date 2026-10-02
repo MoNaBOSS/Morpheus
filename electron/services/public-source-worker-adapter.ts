@@ -36,8 +36,39 @@ export function resolvePublicSourceUrl(value: string): URL {
   if (!host || host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local')
     || host.endsWith('.internal') || host.endsWith('.') || !host.includes('.') && !isIP(host)
     || isIP(host) && !isPublicSourceAddress(host)) throw new Error('Private and local targets are unavailable for public research.');
+  // Public retrieval must use the same disclosure boundary as browser navigation
+  // and exported citations, before resolving DNS or sending a credential URL.
+  for (const key of url.searchParams.keys()) {
+    if (/(?:token|password|passwd|secret|signature|credential|api[-_]?key|authorization|session|oauth|code|jwt)/i.test(key)) {
+      throw new Error('A public HTTPS URL without credentials is required.');
+    }
+  }
   url.hash = '';
   return url;
+}
+
+const RETRYABLE_CONNECTION_ERRORS = new Set([
+  'ECONNREFUSED', 'ECONNRESET', 'EHOSTUNREACH', 'ENETUNREACH', 'ETIMEDOUT', 'ERR_SOCKET_CONNECTION_TIMEOUT',
+]);
+
+/** Try only already validated addresses from this DNS answer. A failed network
+ * path (for example unavailable IPv6) must not discard a reachable public host.
+ * HTTP/TLS/content errors are not retries; the Core-owned abort/deadline still wins. */
+export async function retrievePinnedPublicSource(url: URL, addresses: readonly PublicAddress[], transport: PublicSourceTransport, signal: AbortSignal, maxBytes: number): Promise<PublicResponse> {
+  if (!addresses.length || addresses.some((entry) => !isPublicSourceAddress(entry.address) || isIP(entry.address) !== entry.family)) {
+    throw new Error('The source resolved to an unavailable network address.');
+  }
+  const candidates = addresses.filter((entry, index) => addresses.findIndex((item) => item.address === entry.address) === index).slice(0, 3);
+  for (let index = 0; index < candidates.length; index += 1) {
+    signal.throwIfAborted();
+    try { return await transport(url, candidates[index], signal, maxBytes); }
+    catch (error) {
+      signal.throwIfAborted();
+      const code = error && typeof error === 'object' && 'code' in error ? error.code : null;
+      if (index === candidates.length - 1 || typeof code !== 'string' || !RETRYABLE_CONNECTION_ERRORS.has(code)) throw error;
+    }
+  }
+  throw new Error('The source resolved to an unavailable network address.');
 }
 
 export const requestPinnedPublicSource: PublicSourceTransport = (url, address, signal, maxBytes) => new Promise((resolve, reject) => {
@@ -122,7 +153,7 @@ export function createPublicSourceWorkerAdapter(options: {
         const addresses = isIP(host) ? [{ address: host, family: isIP(host) }] : await abortable(resolveAddresses(host), signal);
         signal.throwIfAborted();
         if (!addresses.length || addresses.some((entry) => !isPublicSourceAddress(entry.address))) throw new Error('The source resolved to an unavailable network address.');
-        const response = await transport(current, addresses[0], signal, 512 * 1024);
+        const response = await retrievePinnedPublicSource(current, addresses, transport, signal, 512 * 1024);
         signal.throwIfAborted();
         if (response.body.byteLength > 512 * 1024) throw new Error('The source exceeds the bounded retrieval size.');
         if ([301, 302, 303, 307, 308].includes(response.status)) {

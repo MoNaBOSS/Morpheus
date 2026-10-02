@@ -2,12 +2,16 @@ import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
+import { availableParallelism } from 'node:os';
 import type { MorpheusSpeechVoice } from '@shared/morpheus/voice-types';
+import { MORPHEUS_SPEECH_MAX_AUDIO_BYTES } from '@shared/morpheus/voice-types';
+import { localSpeechPcm, localSpeechSegments } from './local-speech';
 
 export interface MorpheusLocalVoice {
   ready(): boolean;
   transcribe(audio: Buffer, signal: AbortSignal): Promise<string>;
   synthesize(text: string, voice: MorpheusSpeechVoice, signal: AbortSignal): Promise<Buffer>;
+  synthesizeStream?(text: string, voice: MorpheusSpeechVoice, signal: AbortSignal, onPcm: (audio: Buffer) => void): Promise<void>;
 }
 
 /** Fixed bundled executables only. No shell, network, persistent transcript or idle worker. */
@@ -20,6 +24,7 @@ export function createMorpheusLocalVoice(root: string, temporaryRoot: string): M
     join(sttRoot, 'tiny.en-encoder.int8.onnx'), join(sttRoot, 'tiny.en-decoder.int8.onnx'), join(sttRoot, 'tiny.en-tokens.txt'),
     join(ttsRoot, 'model.int8.onnx'), join(ttsRoot, 'voices.bin'), join(ttsRoot, 'tokens.txt'), join(ttsRoot, 'espeak-ng-data')];
   const ready = () => process.platform === 'win32' && required.every((path) => existsSync(path));
+  const speechThreads = Math.min(8, availableParallelism());
   const run = (exe: string, args: string[], signal: AbortSignal): Promise<string> => new Promise((resolve, reject) => {
     if (signal.aborted) { reject(new DOMException('Voice cancelled', 'AbortError')); return; }
     const child = spawn(exe, args, { windowsHide: true, shell: false, stdio: ['ignore', 'pipe', 'ignore'] });
@@ -48,6 +53,17 @@ export function createMorpheusLocalVoice(root: string, temporaryRoot: string): M
     try { return await operation(dir); }
     finally { await rm(dir, { recursive: true, force: true }); }
   };
+  const synthesize = (text: string, voice: MorpheusSpeechVoice, signal: AbortSignal) => temporary(signal, async (dir) => {
+    const path = join(dir, 'reply.wav');
+    await run(tts, ['--debug=0', `--kokoro-model=${join(ttsRoot, 'model.int8.onnx')}`, `--kokoro-voices=${join(ttsRoot, 'voices.bin')}`,
+      `--kokoro-tokens=${join(ttsRoot, 'tokens.txt')}`, `--kokoro-data-dir=${join(ttsRoot, 'espeak-ng-data')}`,
+      `--kokoro-lexicon=${join(ttsRoot, 'lexicon-us-en.txt')}`, `--num-threads=${speechThreads}`, `--sid=${voice === 'coral' ? 3 : 16}`,
+      `--output-filename=${path}`, text], signal);
+    const audio = await readFile(path);
+    if (audio.length > 20_000_000) throw new Error('Local voice returned too much audio.');
+    localSpeechPcm(audio);
+    return audio;
+  });
   return {
     ready,
     transcribe: (audio, signal) => temporary(signal, async (dir) => {
@@ -67,15 +83,25 @@ export function createMorpheusLocalVoice(root: string, temporaryRoot: string): M
       }
       throw new Error('Local voice returned no transcript. Speak clearly and retry the microphone test.');
     }),
-    synthesize: (text, voice, signal) => temporary(signal, async (dir) => {
-      const path = join(dir, 'reply.wav');
-      await run(tts, ['--debug=0', `--kokoro-model=${join(ttsRoot, 'model.int8.onnx')}`, `--kokoro-voices=${join(ttsRoot, 'voices.bin')}`,
-        `--kokoro-tokens=${join(ttsRoot, 'tokens.txt')}`, `--kokoro-data-dir=${join(ttsRoot, 'espeak-ng-data')}`,
-        `--kokoro-lexicon=${join(ttsRoot, 'lexicon-us-en.txt')}`, '--num-threads=4', `--sid=${voice === 'coral' ? 3 : 16}`,
-        `--output-filename=${path}`, text], signal);
-      const audio = await readFile(path);
-      if (audio.length < 44 || audio.length > 20_000_000 || audio.toString('ascii', 0, 4) !== 'RIFF') throw new Error('Local voice returned invalid audio.');
-      return audio;
-    }),
+    synthesize,
+    async synthesizeStream(text, voice, signal, onPcm) {
+      const controller = new AbortController();
+      const abort = () => controller.abort(signal.reason);
+      if (signal.aborted) abort(); else signal.addEventListener('abort', abort, { once: true });
+      let timedOut = false, bytes = 0;
+      const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 90_000); timer.unref();
+      try {
+        for (const segment of localSpeechSegments(text)) {
+          const pcm = localSpeechPcm(await synthesize(segment, voice, controller.signal));
+          if (controller.signal.aborted) throw new DOMException('Voice cancelled', 'AbortError');
+          bytes += pcm.length;
+          if (bytes > MORPHEUS_SPEECH_MAX_AUDIO_BYTES) throw new Error('Local voice returned too much audio.');
+          onPcm(pcm);
+        }
+      } catch (error) {
+        if (timedOut) throw new Error('Local voice took too long. Try a shorter sentence.', { cause: error });
+        throw error;
+      } finally { clearTimeout(timer); signal.removeEventListener('abort', abort); }
+    },
   };
 }

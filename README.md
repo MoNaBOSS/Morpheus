@@ -1,9 +1,11 @@
-Preview.6 experience correction: ordinary conversation keeps the same session and draft, history opens in a drawer, and Settings groups Connections, Voice, Personality, Account & Plan and Advanced. The full workspace and all existing tools remain under Advanced. Windows standard English voice is included locally (Whisper tiny.en / Kokoro), without a voice API key; microphone checks and neural samples are in Voice. Wake listening is opt-in, manual mute stops capture, and idle compact presence fades after about ten seconds. Hosted plans, checkout and NerdGPT remain unavailable until their external services are configured. See [current requirements](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) and [Windows checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) for evidence boundaries.
+Preview.7 retains the simplified conversation and contextual settings, all Advanced tools, included local English voice and animated companion. Chat and task exchanges now share chronological compact/expanded views. Local neural replies begin in bounded PCM segments, with genuine audio feedback and cancellation. Public research rejects credential-bearing URLs and safely retries validated connection failures; website completion stays recoverable until final verification passes. Hosted plans, checkout and NerdGPT remain unavailable until their external services are configured. See [current requirements](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) and [Windows checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) for evidence boundaries.
 
 
-The preview.6 package at application source `12a36898` passed normal isolated
-runtime and exact installer-payload checks. Real motion/voice media and the unsigned
-EXE are delivered; installed-profile and physical Windows acceptance remain open.
+The preserved preview.6 baseline at application source `12a36898` passed normal
+isolated runtime and exact installer-payload checks. Preview.7 adds scoped capability,
+speech, conversation and disposable installed-Windows qualification. Current build
+identity and actual results are recorded in the single checklist; physical acceptance,
+signing and hosted commercial operations must not be inferred from fixtures.
 
 <p align="center">
   <img src="src/assets/morpheus-logo.svg" width="128" height="128" alt="Morpheus Logo" />
@@ -11,9 +13,8 @@ EXE are delivered; installed-profile and physical Windows acceptance remain open
 
 <h1 align="center">Morpheus</h1>
 
-Windows preview.5 is ready for owner PC acceptance. Use the exact EXE/hash and
-remaining limits in the [current handoff](docs/releases/WINDOWS_PREVIEW5_HANDOFF.md).
-This is not full Phase 7 or public Premium acceptance.
+The [preview.5 handoff](docs/releases/WINDOWS_PREVIEW5_HANDOFF.md) is historical.
+Use the current checklist for delivery identity and outstanding acceptance gates.
 
 The current Phase 7 source uses the bottom-right companion with an upward composer.
 Returning greetings respect quiet settings and saved daily history; companion chat

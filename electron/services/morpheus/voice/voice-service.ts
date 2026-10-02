@@ -402,8 +402,8 @@ export function createMorpheusVoiceService(options: {
   const status = async (): Promise<MorpheusVoiceStatus> => {
     if (options.localVoice && settings.engine !== 'provider') {
       const ready = options.localVoice.ready();
-      return { settings: structuredClone(settings), presence: structuredClone(currentPresence), providers: [],
-        transcriptionAvailable: settings.enabled && ready, neuralSpeechAvailable: ready, captureFormat: 'pcm16-wav', speechFormat: 'wav',
+      return { settings: { ...structuredClone(settings), engine: 'local' }, presence: structuredClone(currentPresence), providers: [],
+        transcriptionAvailable: settings.enabled && ready, neuralSpeechAvailable: ready, captureFormat: 'pcm16-wav', speechFormat: options.localVoice.synthesizeStream ? 'pcm24' : 'wav',
         availableSpeechVoices: ['cedar', 'coral'], providerLabel: 'Included local English voice', speechProviderLabel: 'Included local neural voice',
         ...(!ready || !settings.enabled ? { reason: !settings.enabled ? 'Microphone is muted. Enable it in Voice settings.' : 'Included voice files are missing. Repair the Morpheus installation.' } : {}) };
     }
@@ -621,11 +621,27 @@ export function createMorpheusVoiceService(options: {
       const started = performance.now();
       try {
         checkCurrent(); publish('preparing-speech');
-        const audio = await options.localVoice.synthesize(text, settings.speechVoice, controller.signal);
+        const streaming = Boolean(payload.streamId && options.localVoice.synthesizeStream);
+        let firstAudioByteMs: number | undefined, sequence = 0, bytes = 0;
+        const collected: Buffer[] = [];
+        let audio: Buffer;
+        if (streaming) {
+          await options.localVoice.synthesizeStream!(text, settings.speechVoice, controller.signal, (pcm) => {
+            checkCurrent();
+            bytes += pcm.length;
+            if (bytes > MORPHEUS_SPEECH_MAX_AUDIO_BYTES || pcm.length % 2) throw new Error('Included speech exceeded its audio limit.');
+            firstAudioByteMs ??= Math.round(performance.now() - started);
+            if (!options.emitSpeechChunk) { collected.push(pcm); return; }
+            for (let offset = 0; offset < pcm.length; offset += 48 * 1024) {
+              options.emitSpeechChunk({ streamId: payload.streamId!, sequence: sequence++, mimeType: 'audio/pcm', audioBase64: pcm.subarray(offset, offset + 48 * 1024).toString('base64') });
+            }
+          });
+          audio = Buffer.concat(collected);
+        } else audio = await options.localVoice.synthesize(text, settings.speechVoice, controller.signal);
         checkCurrent(); speechFailure = undefined;
         await options.audit.recordControl({ category: 'voice', event: 'speech-completed', subjectId: 'included-local',
-          details: { modelId: 'kokoro-int8', providerLatencyMs: Math.round(performance.now() - started), costStatus: 'local' }, appVersion: options.appVersion });
-        return { audioBase64: audio.toString('base64'), mimeType: 'audio/wav', providerAccountId: 'included-local', modelId: 'kokoro-int8', voice: settings.speechVoice, providerLatencyMs: Math.round(performance.now() - started) };
+          details: { modelId: 'kokoro-int8', providerLatencyMs: Math.round(performance.now() - started), ...(firstAudioByteMs !== undefined ? { firstAudioByteMs } : {}), costStatus: 'local' }, appVersion: options.appVersion });
+        return { audioBase64: audio.toString('base64'), mimeType: streaming ? 'audio/pcm' : 'audio/wav', providerAccountId: 'included-local', modelId: 'kokoro-int8', voice: settings.speechVoice, providerLatencyMs: Math.round(performance.now() - started), ...(firstAudioByteMs !== undefined ? { firstAudioByteMs } : {}) };
       } catch (error) { if (generation === speechGeneration) speechFailure = 'unavailable'; throw error; }
       finally { if (speechController === controller) speechController = null; if (generation === speechGeneration && currentPresence.state === 'preparing-speech') publish(ambientSession ? 'armed' : 'asleep'); }
     }
@@ -975,6 +991,8 @@ export function createMorpheusVoiceService(options: {
         clearFollowUp();
         return publish('speaking');
       }
+      // A real output gap is still synthesis, not an invitation to record speaker echo.
+      if (speechController && !speechController.signal.aborted) return publish('preparing-speech');
       const next = publish(settings.ambientEnabled ? 'armed' : 'asleep');
       if (followUpPending && ambientSession) {
         followUpPending = false;

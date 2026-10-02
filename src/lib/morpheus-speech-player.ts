@@ -105,7 +105,7 @@ async function playNeuralSpeech(text: string, id: number, format?: 'pcm24' | 'wa
       await Promise.race([Promise.all([request, player.completed]), failed, cancelled]);
     } finally {
       window.clearTimeout(timer); unsubscribe(); player.dispose();
-      if (id === generation) { releaseAudio(); cancelPlayback = null; }
+      if (id === generation) { setSpeaking(false); releaseAudio(); cancelPlayback = null; }
     }
     return;
   }

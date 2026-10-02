@@ -38,7 +38,7 @@ export function MorpheusVoiceSettings() {
 
   const settings = status.settings;
   const managed = status.speechFormat === 'pcm24';
-  const local = status.speechFormat === 'wav';
+  const local = status.settings.engine === 'local' || status.speechFormat === 'wav';
   const provider = !managed && !local;
   const selectedProvider = settings.providerAccountId ?? '';
   const openRouterProvider = status.providers.find((provider) => (
@@ -90,7 +90,7 @@ export function MorpheusVoiceSettings() {
       </div>
 
       <div className="space-y-4">
-        <label className="block space-y-2 text-sm"><span>{t('morpheus.experience.voice.engine')}</span><select data-testid="morpheus-voice-engine" className="block w-full rounded-lg border border-border bg-surface-input px-3 py-2" value={settings.engine ?? (status.speechFormat === 'wav' ? 'local' : 'provider')} onChange={(event) => void updateSettings({ engine: event.target.value as 'local' | 'provider' })}><option value="local">{t('morpheus.experience.voice.local')}</option><option value="provider">{t('morpheus.experience.voice.provider')}</option></select></label>
+        <label className="block space-y-2 text-sm"><span>{t('morpheus.experience.voice.engine')}</span><select data-testid="morpheus-voice-engine" className="block w-full rounded-lg border border-border bg-surface-input px-3 py-2" value={settings.engine ?? (local ? 'local' : 'provider')} onChange={(event) => void updateSettings({ engine: event.target.value as 'local' | 'provider' })}><option value="local">{t('morpheus.experience.voice.local')}</option><option value="provider">{t('morpheus.experience.voice.provider')}</option></select></label>
         <MorpheusVoiceCheck status={status} key={JSON.stringify([
           settings.engine, settings.inputDeviceId, settings.enabled,
           settings.providerAccountId, settings.modelId, settings.speechProviderAccountId,

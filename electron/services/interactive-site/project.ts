@@ -6,6 +6,7 @@ import { buildInteractiveSite, type MorpheusInteractiveBuild } from './template'
 
 const FILENAMES = ['README.md', 'app.js', 'index.html', 'morpheus.build.json', 'morpheus.site.json', 'styles.css'];
 const MAX_FILE_BYTES = 128 * 1024;
+const INCOMPLETE_MARKER = '.morpheus-incomplete';
 
 function projectPath(roots: MorpheusRootProvider, path: string, mustExist = false) {
   // Windows device names, alternate streams and ambiguous trailing characters
@@ -27,7 +28,7 @@ export async function createInteractiveProject(roots: MorpheusRootProvider, path
   if (target.exists) throw new Error('Project folder already exists. Choose a new folder; existing files were preserved.');
   // Parent must already exist within the approved root. No broad recursive mkdir.
   await fs.mkdir(target.absolute);
-  const marker = join(target.absolute, '.morpheus-incomplete');
+  const marker = join(target.absolute, INCOMPLETE_MARKER);
   try {
     await fs.writeFile(marker, 'Creation interrupted unless the final manifest is complete. Files are preserved.\n', { flag: 'wx' });
     for (const [name, content] of Object.entries(build.files)) {
@@ -38,8 +39,11 @@ export async function createInteractiveProject(roots: MorpheusRootProvider, path
       try { await file.writeFile(content, 'utf8'); await file.sync(); } finally { await file.close(); }
     }
     signal?.throwIfAborted();
+    // Completion is committed only after the written bytes pass verification.
+    // Cancellation or a changed file during that check leaves the marker intact.
+    await verifyInteractiveProjectSnapshot(roots, path, build.revision, true);
+    signal?.throwIfAborted();
     await fs.unlink(marker);
-    await verifyInteractiveProject(roots, path, build.revision);
     return { path: target.absolute, relativePath: path, revision: build.revision, fileCount: FILENAMES.length, totalBytes: build.totalBytes };
   } catch (error) {
     throw new Error('Interactive project creation did not complete. Its files were preserved; choose a new folder or inspect the incomplete project.', { cause: error });
@@ -49,10 +53,15 @@ export async function createInteractiveProject(roots: MorpheusRootProvider, path
 /** Return verified immutable bytes, not file URLs. Preview never rereads the disk
  * after this check, so later edits cannot change the running approved snapshot. */
 export async function verifyInteractiveProject(roots: MorpheusRootProvider, path: string, expectedRevision?: string): Promise<MorpheusInteractiveBuild> {
+  return verifyInteractiveProjectSnapshot(roots, path, expectedRevision);
+}
+
+async function verifyInteractiveProjectSnapshot(roots: MorpheusRootProvider, path: string, expectedRevision?: string, completing = false): Promise<MorpheusInteractiveBuild> {
   const target = projectPath(roots, path, true);
   if (!(await fs.lstat(target.absolute)).isDirectory()) throw new Error('Interactive project must be a folder.');
+  const expectedNames = completing ? [...FILENAMES, INCOMPLETE_MARKER].sort() : FILENAMES;
   const names = (await fs.readdir(target.absolute)).sort();
-  if (JSON.stringify(names) !== JSON.stringify(FILENAMES)) throw new Error('Interactive project is incomplete or contains unreviewed files. Existing files were preserved.');
+  if (JSON.stringify(names) !== JSON.stringify(expectedNames)) throw new Error('Interactive project is incomplete or contains unreviewed files. Existing files were preserved.');
   const files: Record<string, string> = {};
   for (const name of FILENAMES) {
     const filePath = join(target.absolute, name);
@@ -81,6 +90,6 @@ export async function verifyInteractiveProject(roots: MorpheusRootProvider, path
   if (FILENAMES.some((name) => files[name] !== build.files[name])) throw new Error('Interactive project differs from its pinned build. Existing edits were preserved.');
   // Recheck root and inventory after reads. Bytes below are already isolated.
   projectPath(roots, path, true);
-  if (JSON.stringify((await fs.readdir(target.absolute)).sort()) !== JSON.stringify(FILENAMES)) throw new Error('Interactive project changed while being verified.');
+  if (JSON.stringify((await fs.readdir(target.absolute)).sort()) !== JSON.stringify(expectedNames)) throw new Error('Interactive project changed while being verified.');
   return build;
 }

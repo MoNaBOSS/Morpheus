@@ -19,10 +19,16 @@ simplified conversation/settings, retained Advanced capabilities, animated 56-DI
 orb, ten-second fade and included local English speech. Normal isolated packaged
 qualification and static NSIS identity checks passed. The current checklist records
 their exact scope and EXE hash. Original sources and installed preview.5 are untouched.
-Next: the owner's single combined PC acceptance checklist delivered with the EXE,
-real motion recording and real voice samples. Installation/upgrade, physical voice,
-display behavior and live-service acceptance remain open. Build artifacts stay on E:
-after storage checks; subsequent handoff commits change documentation only.
+The owner subsequently requested autonomous completion and testing. Preview.7 now
+refines speech responsiveness, chronological conversation/viewport continuity,
+public research/browser reliability and recoverable website completion. Focused
+native voice/capability tests pass; guarded disposable Windows NSIS qualification
+is prepared. Finish the scoped regressions and exact preview.7 packaged evidence
+in the same spec/checklist. Never execute NSIS against the owner's existing Windows
+registration/profile; the CI test uses its own clean hosted runner. External hosted,
+billing, signing and actual physical hardware acceptance are separate gates.
+Build artifacts stay on E: after storage checks. Preview.6 remains preserved;
+preview.7 has a distinct version and source/build identity.
 
 ---
 

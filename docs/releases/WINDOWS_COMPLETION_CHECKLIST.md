@@ -9,8 +9,26 @@ retained in [its handoff](WINDOWS_PREVIEW5_HANDOFF.md).
 `VERIFIED` applies only to the stated test boundary. `IMPLEMENTED` is source,
 `SIMULATED` is fixture behavior, `OPEN` is untested or unaccepted, and `BLOCKED`
 requires external inputs. Automated counts never imply physical PC acceptance.
-The owner authorized a combined final review: complete the work and simplify
-without reducing capabilities. Separate component review pauses are superseded.
+The owner authorized a combined final review and then autonomous completion/testing:
+complete the work and simplify without reducing capabilities. Separate component
+review pauses are superseded. Preview.6 evidence below remains a preserved baseline.
+
+## Preview.7 current autonomous qualification
+
+| Component | Current evidence |
+| --- | --- |
+| Included speech responsiveness | IMPLEMENTED: short first phrase, bounded sentence groups, validated PCM24 playback and up to eight available CPU threads. 69 focused voice checks passed, including actual engine transcription, cancellation and first-segment cleanup. Actual UI/package timing qualification is pending; segmented CPU synthesis may leave audible gaps on slower hardware. |
+| Honest voice guidance | VERIFIED in native Windows: real progressive included PCM sample completes with microphone muted, without a provider/account; ordered segments arrive before completion and actual presence reports speaking, never listening. Local engine identity is independent of WAV/PCM format; local errors direct to speakers/installation repair. Four locale strings supplied. |
+| Conversation ordering | VERIFIED in four actual localized native views: compact and expanded chat/task exchanges share Main admission/creation chronology; tasks retain their request position. Latest replies are in the viewport on open/send; intentional scroll-up remains fixed during passive reply updates. Existing selection/stop controls remain. Older undated ACP history retains its original order. Screenshot inspection caught both the missing scroll behavior and a fixture that had forced English; these were corrected and final en/zh/ja/ru cases pass. ACP replies are fixtures; the intervening system-information task is real. |
+| Public capabilities | VERIFIED: actual pinned HTTPS GETs retrieved Example/IANA pages, generated source-bound citations and saved/reopened the report through real file.create. Real native Chromium observed IANA controls and clicked its public Reserved Domains link without owner cookies/host bridge. Seven native browser/site cases and two affected final Main artifact journeys pass: create/revise/preview/reopen/rollback/manual-edit protection. Other control/planning cases use explicitly bounded network/synthesis fixtures, not paid models. Publication remains untested. |
+| Recovery/network | IMPLEMENTED: reject research URLs with credentials before dispatch, bounded validated-address retries only on connection errors, incomplete website marker survives cancellation or external edits during final verification. No TLS/HTTP-content retries or overwritten manual changes. |
+| Installation/update safety | IMPLEMENTED: uninstall verifies product markers before recursive removal; updater requires credential-free HTTPS and independent signing readiness. Signature checks enabled; feed remains absent. Guarded hosted Windows NSIS install/reinstall/uninstall qualification prepared; no owner installation is modified. Actual run pending. |
+| External service gates | BLOCKED: owned signing/update infrastructure, task-model live credentials, hosted funding/operations, pricing/business country, Stripe/crypto merchant services and NerdGPT integration. No false checkout or entitlement. Physical voice/DPI/display taste and previous-version owner upgrade remain unverified. |
+
+The exact next step is to finish native regressions, run disposable installation
+qualification, then build and qualify the distinct preview.7 EXE. New results and
+identity will replace pending states here. The owner host and existing EXE/profile
+remain preserved; only isolated test profiles and reversible source changes are used.
 
 ## A — preserved baseline
 

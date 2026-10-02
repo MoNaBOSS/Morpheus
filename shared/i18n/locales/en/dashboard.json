@@ -1420,7 +1420,9 @@
         "provider": "Configured provider · may incur charges",
         "repair": "Repair voice setup",
         "checkLocal": "Play a real local voice sample, or test the microphone without sending a command. Audio is AI-generated and stays on this PC.",
-        "providerBody": "You chose {{provider}} in Advanced. Audio is sent to that service and may incur charges. You can return to included local voice below."
+        "providerBody": "You chose {{provider}} in Advanced. Audio is sent to that service and may incur charges. You can return to included local voice below.",
+        "notTested": "Included voice is available. Play a sample to test your speakers.",
+        "sampleFailed": "Local voice could not play. Check your speakers or headphones and retry. If it fails again, repair the Morpheus installation."
       },
       "setup": {
         "skip": "Skip for now",

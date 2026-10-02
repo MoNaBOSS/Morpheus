@@ -114,9 +114,9 @@ dmg:
 
 # Windows Configuration
 win:
-  # No update provider is configured. Before enabling updates, production
-  # signing and update signature verification must be enabled together.
-  verifyUpdateCodeSignature: false
+  # No update provider is configured. Signature checks must remain enabled;
+  # updater-policy separately blocks activation until signing/publisher readiness.
+  verifyUpdateCodeSignature: true
   extraResources:
     - from: build/local-voice/
       to: resources/local-voice/

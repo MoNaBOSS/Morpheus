@@ -1,6 +1,6 @@
 param(
   [Parameter(Mandatory = $true)]
-  [ValidateSet('Check', 'Prepare', 'Restore')][string]$Action,
+  [ValidateSet('Check', 'CheckUninstall', 'Prepare', 'Restore')][string]$Action,
   [Parameter(Mandatory = $true)][string]$InstallDir,
   [string]$BackupDir
 )
@@ -58,6 +58,10 @@ try {
   $target = Get-SafeInstallPath $InstallDir
   Assert-Closed $target
   if ($Action -eq 'Check') { exit 0 }
+  if ($Action -eq 'CheckUninstall') {
+    Assert-Product $target
+    exit 0
+  }
   $backup = Get-SafeInstallPath $BackupDir
   if ($backup -notmatch ('^' + [regex]::Escape($target) + '\._rollback_[0-9]+$')) {
     throw 'Invalid installation backup target.'

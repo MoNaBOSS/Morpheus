@@ -105,8 +105,8 @@ export function CommandCenter() {
         <div className={`morpheus-workspace-main mt-5 grid min-h-0 flex-1 gap-7 ${hasResult ? 'grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]' : 'grid-cols-1'}`}>
           <section className="morpheus-workspace-thread flex min-h-0 min-w-0 flex-col" aria-label={t('morpheus.workspace.conversation')}>
             <div className="morpheus-workspace-messages min-h-0 flex-1 overflow-y-auto pr-3" role="log" aria-label={t('morpheus.workspace.conversation')}>
-              <MorpheusConversationThread sessionKey={selectedConversationId} compact={false} />
-              {recentRuns.map((run) => <div key={run.objectiveRunId} className="morpheus-workspace-exchange">
+              <MorpheusConversationThread sessionKey={selectedConversationId} compact={false} objectiveRuns={recentRuns}
+                renderObjective={(run) => <div className="morpheus-workspace-exchange">
                 <button type="button" data-testid={objectiveRun?.objectiveRunId === run.objectiveRunId ? 'workspace-selected-task' : undefined} onClick={() => selectObjective(run.objectiveRunId)} className={`morpheus-workspace-message morpheus-workspace-user-message text-left ${objectiveRun?.objectiveRunId === run.objectiveRunId ? 'is-selected' : ''}`}>
                   <span className="morpheus-workspace-speaker">{t('morpheus.workspace.you')}</span>
                   <span className="block text-sm leading-relaxed text-[#edf5ef]">{run.objective}</span>
@@ -116,7 +116,7 @@ export function CommandCenter() {
                   <p data-testid={objectiveRun?.objectiveRunId === run.objectiveRunId ? 'command-center-objective-summary' : undefined} className="text-sm leading-relaxed text-[#edf5ef]">{run.clarification ?? run.error?.message ?? run.summary ?? t('morpheus.workspace.working')}</p>
                   {objectiveRun?.objectiveRunId === run.objectiveRunId && !isObjectiveTerminalState(run.state) ? <button type="button" data-testid="plan-cancel-objective" onClick={() => void cancelObjective()} className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#b8c9be] hover:text-white"><Square className="h-3 w-3 fill-current" />{t('morpheus.signalOs.stop')}</button> : null}
                 </div>
-              </div>)}
+              </div>} />
             </div>
             <CommandBar />
           </section>

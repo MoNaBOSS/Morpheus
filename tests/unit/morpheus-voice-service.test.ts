@@ -105,6 +105,34 @@ function createHarness(options?: {
 }
 
 describe('Morpheus voice service', () => {
+  it('streams included PCM in bounded ordered events before completion without sending secrets or opening input in a generation gap', async () => {
+    let finish!: () => void, chunk!: (pcm: Buffer) => void;
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Open YouTube.'), synthesize: vi.fn(),
+      synthesizeStream: vi.fn((_text, _voice, _signal, onPcm: (pcm: Buffer) => void) => new Promise<void>(resolve => { finish = resolve; chunk = onPcm; })) };
+    const emitSpeechChunk = vi.fn(), h = createHarness({ localVoice, emitSpeechChunk, apiKey: null });
+    expect((await h.service.status()).speechFormat).toBe('pcm24');
+    const pending = h.service.synthesize({ text: 'private spoken answer', streamId: 'local-stream' });
+    chunk(Buffer.alloc(96_000));
+    expect(emitSpeechChunk).toHaveBeenCalledTimes(2);
+    expect(emitSpeechChunk.mock.calls.map(([value]) => [value.streamId, value.sequence, value.mimeType])).toEqual([
+      ['local-stream', 0, 'audio/pcm'], ['local-stream', 1, 'audio/pcm'],
+    ]);
+    h.service.setSpeaking(true); expect(h.service.setSpeaking(false).state).toBe('preparing-speech');
+    expect(h.recordControl).not.toHaveBeenCalledWith(expect.objectContaining({ event: 'speech-completed' }));
+    finish(); await expect(pending).resolves.toMatchObject({ audioBase64: '', mimeType: 'audio/pcm', firstAudioByteMs: expect.any(Number) });
+    expect(h.providerService.getAccountRuntimeApiKey).not.toHaveBeenCalled(); expect(h.fetchImpl).not.toHaveBeenCalled();
+    expect(JSON.stringify(h.recordControl.mock.calls)).not.toContain('private'); h.service.dispose();
+  });
+  it('cannot emit a late included speech segment after cancellation', async () => {
+    let finish!: () => void, chunk!: (pcm: Buffer) => void;
+    const emitSpeechChunk = vi.fn();
+    const localVoice = { ready: () => true, transcribe: vi.fn(), synthesize: vi.fn(),
+      synthesizeStream: vi.fn((_text, _voice, _signal, onPcm: (pcm: Buffer) => void) => new Promise<void>(resolve => { finish = resolve; chunk = onPcm; })) };
+    const h = createHarness({ localVoice, emitSpeechChunk });
+    const pending = h.service.synthesize({ text: 'Cancelled.', streamId: 'local-cancel' });
+    h.service.cancelSpeech(); expect(() => chunk(Buffer.alloc(2))).toThrow(/cancelled/i); finish();
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' }); expect(emitSpeechChunk).not.toHaveBeenCalled(); h.service.dispose();
+  });
   it('uses included voice without consulting provider keys and keeps manual mute authoritative', async () => {
     const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Open YouTube.'), synthesize: vi.fn(async () => Buffer.from('local speech')) };
     const { service, providerService, fetchImpl } = createHarness({ apiKey: null, localVoice });

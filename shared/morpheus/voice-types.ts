@@ -167,4 +167,6 @@ export type MorpheusSynthesizeSpeechResult = {
   modelId: string;
   voice: MorpheusSpeechVoice;
   providerLatencyMs: number;
+  /** First real generated segment, not fabricated playback progress. */
+  firstAudioByteMs?: number;
 };

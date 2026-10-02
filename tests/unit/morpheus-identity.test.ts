@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   MORPHEUS_UPDATE_FEED,
+  MORPHEUS_UPDATE_SIGNING_READY,
   isForbiddenUpdateFeed,
   isUpdateFeedConfigured,
   resolveUpdateConfiguration,
@@ -18,7 +19,7 @@ describe('package identity', () => {
 
   it('is named and versioned as the Morpheus 1.2.0 preview candidate', () => {
     expect(pkg.name).toBe('morpheus');
-    expect(pkg.version).toBe('1.2.0-preview.6');
+    expect(pkg.version).toBe('1.2.0-preview.7');
     expect(pkg.description).toContain('Morpheus');
     expect(pkg.description).not.toContain('ClawX');
   });
@@ -57,6 +58,7 @@ describe('installer identity', () => {
 describe('update feed', () => {
   it('ships with no update feed configured', () => {
     expect(MORPHEUS_UPDATE_FEED).toBeNull();
+    expect(MORPHEUS_UPDATE_SIGNING_READY).toBe(false);
     expect(isUpdateFeedConfigured()).toBe(false);
     expect(resolveUpdateConfiguration()).toEqual({ configured: false, reason: 'not-configured' });
   });
@@ -74,10 +76,22 @@ describe('update feed', () => {
     }
   });
 
-  it('accepts a genuine Morpheus endpoint', () => {
+  it('requires independently verified signing readiness before accepting a future endpoint', () => {
     expect(resolveUpdateConfiguration('https://updates.morpheus.example/latest')).toEqual({
+      configured: false, reason: 'signing-not-ready',
+    });
+    expect(resolveUpdateConfiguration('https://updates.morpheus.example/latest', true)).toEqual({
       configured: true, feedUrl: 'https://updates.morpheus.example/latest',
     });
+    expect(read('electron-builder.yml')).toContain('verifyUpdateCodeSignature: true');
+  });
+
+  it('rejects invalid, insecure and credential-bearing endpoints even when signing is ready', () => {
+    for (const endpoint of ['not a URL', 'http://updates.morpheus.example', 'file:///C:/update.exe',
+      'https://user:password@updates.morpheus.example', 'https://updates.morpheus.example?token=secret',
+      'https://updates.morpheus.example#fragment']) {
+      expect(resolveUpdateConfiguration(endpoint, true), endpoint).toEqual({ configured: false, reason: 'invalid-feed' });
+    }
   });
 
   it('removes the inherited publish targets from packaging config', () => {

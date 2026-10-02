@@ -60,6 +60,18 @@ describe.skipIf(process.platform !== 'win32')('actual PowerShell installation gu
     expect(run('Prepare', actual).status).toBe(2);
   }, 20_000);
 
+  it('authorizes uninstall only for a recognized closed product and never modifies fixtures', () => {
+    const parent = root(), app = join(parent, 'app'), unrelated = join(parent, 'personal');
+    product(app); mkdirSync(unrelated); writeFileSync(join(unrelated, 'keep.txt'), 'keep');
+    expect(run('CheckUninstall', app).status).toBe(0);
+    expect(readFileSync(join(app, 'resources/app.asar'), 'utf8')).toBe('previous bytes');
+    expect(run('CheckUninstall', unrelated).status).toBe(2);
+    expect(readFileSync(join(unrelated, 'keep.txt'), 'utf8')).toBe('keep');
+    expect(run('CheckUninstall', join(parent, 'absent')).status).toBe(2);
+    mkdirSync(join(app, '.git'));
+    expect(run('CheckUninstall', app).status).toBe(2);
+  }, 20_000);
+
   it('uses a directory separator boundary and never stops a running fixture', async () => {
     const parent = root(), target = join(parent, 'app'), neighbor = `${target}-neighbor`;
     mkdirSync(target); mkdirSync(neighbor);

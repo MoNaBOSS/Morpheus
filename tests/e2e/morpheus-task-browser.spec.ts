@@ -1,5 +1,6 @@
 import { build } from 'esbuild';
 import { join, resolve } from 'node:path';
+import { mkdir, writeFile } from 'node:fs/promises';
 import type { MorpheusTaskBrowser } from '../../electron/services/task-browser/session';
 import type { MorpheusBrowserCommand, MorpheusBrowserSnapshot } from '../../shared/morpheus/browser-types';
 import { closeElectronApp, expect, getStableWindow, test } from './fixtures/electron';
@@ -14,6 +15,59 @@ const HTML = `<!doctype html><title>Public library</title><h1>Public library</h1
 <label>Password<input name="password" type="password"></label>
 <select aria-label="Genre"><option value="all">All</option><option value="fiction">Fiction</option></select>
 <button onclick="window.open('/popup'); fetch('/write',{method:'POST',body:'bad'}).catch(()=>{}); fetch('http://127.0.0.1/private').catch(()=>{}); fetch('https://other.example/private').catch(()=>{});">Boundary checks</button>`;
+
+test('opt-in real public Chromium GET uses the production network with no profile, bridge or cookies', async ({ launchElectronApp, userDataDir }, testInfo) => {
+  test.skip(process.env.MORPHEUS_PUBLIC_QUALIFICATION !== '1', 'Explicit public network qualification only');
+  const bundle = join(userDataDir, 'browser-public-production.cjs');
+  await build({ stdin: { contents: `export { createTaskBrowser } from './electron/services/task-browser/session'; export { requestPinnedPublicSource } from './electron/services/public-source-worker-adapter';`, resolveDir: process.cwd(), loader: 'ts' }, outfile: bundle, bundle: true, platform: 'node', format: 'cjs', external: ['electron'], tsconfig: resolve('tsconfig.node.json') });
+  const app = await launchElectronApp({ skipSetup: true });
+  try {
+    await getStableWindow(app);
+    const result = await app.evaluate(async ({ BrowserWindow, webContents }, bundle) => {
+      const { createTaskBrowser, requestPinnedPublicSource } = process.mainModule!.require(bundle) as typeof import('../../electron/services/task-browser/session') & typeof import('../../electron/services/public-source-worker-adapter');
+      const controller = new AbortController();
+      const network = { requests: 0, bytes: 0 };
+      const browser = await createTaskBrowser({ url: 'https://example.org/', signal: controller.signal, lifetimeMs: 30_000 }, {
+        // Observe real production transport; no response, DNS or TLS fixture.
+        transport: async (...args) => {
+          network.requests += 1;
+          const response = await requestPinnedPublicSource(...args);
+          network.bytes += response.body.length;
+          return response;
+        },
+      });
+      try {
+        const observation = await browser.snapshot();
+        const guest = webContents.getAllWebContents().find((wc) => wc.getURL() === observation.url)!;
+        const publicGuide = await createTaskBrowser({ url: 'https://www.iana.org/help/example-domains', signal: controller.signal, lifetimeMs: 30_000 });
+        try {
+          const before = await publicGuide.snapshot();
+          const link = before.controls.find((control) => control.kind === 'link' && control.name === 'IANA-managed Reserved Domains');
+          if (!link) throw new Error('The public reference link changed; inspect the source before changing this qualification');
+          const after = await publicGuide.act({ kind: 'click', revision: before.revision, ref: link.ref });
+          return { observation, network, cookies: await guest.session.cookies.get({}), visible: BrowserWindow.fromWebContents(guest)!.isVisible(),
+            privileges: await guest.executeJavaScript('({node:typeof process,require:typeof require,bridge:typeof window.clawx})'),
+            interaction: { kind: 'click', control: link.name, beforeUrl: before.url, afterUrl: after.url, title: after.title, text: after.text } };
+        } finally { await publicGuide.close(); }
+      } finally { await browser.close(); }
+    }, bundle);
+    expect(result.observation.url).toBe('https://example.org/');
+    expect(result.observation.title).toBe('Example Domain');
+    expect(result.observation.text).toContain('documentation');
+    expect(result.network.requests).toBeGreaterThan(0);
+    expect(result.network.bytes).toBeGreaterThan(0);
+    expect(result.cookies).toEqual([]);
+    expect(result.visible).toBe(false);
+    expect(result.privileges).toEqual({ node: 'undefined', require: 'undefined', bridge: 'undefined' });
+    expect(result.interaction).toMatchObject({ kind: 'click', beforeUrl: 'https://www.iana.org/help/example-domains', afterUrl: 'https://www.iana.org/domains/reserved' });
+    expect(result.interaction.title).toBe('IANA-managed Reserved Domains');
+    expect(result.interaction.text).toContain('example');
+    expect(await app.evaluate(({ webContents }) => webContents.getAllWebContents().filter((wc) => ['https://example.org', 'https://www.iana.org'].some((origin) => wc.getURL().startsWith(origin))).length)).toBe(0);
+    await mkdir(testInfo.outputDir, { recursive: true });
+    await writeFile(testInfo.outputPath('public-browser-qualification.json'), JSON.stringify({ passed: true, realPublicNetwork: true,
+      providerCalls: 0, verifiedAt: new Date().toISOString(), ...result }, null, 2));
+  } finally { await closeElectronApp(app); }
+});
 
 test('task-owned Chromium observes and operates real controls without personal account or host access', async ({ launchElectronApp, userDataDir }) => {
   const bundle = join(userDataDir, 'browser-production.cjs');

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mkdtemp, mkdir, readFile, rm, writeFile, symlink } from 'node:fs/promises';
+import { existsSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseInteractiveSiteSpec } from '../../shared/morpheus/interactive-site-types';
@@ -94,6 +95,42 @@ describe('project files and preservation', () => {
     const controller = new AbortController(); controller.abort();
     await expect(createInteractiveProject(roots, 'cancelled', spec, controller.signal)).rejects.toThrow();
     await expect(readFile(join(root, 'cancelled', 'index.html'))).rejects.toThrow();
+  });
+  it('keeps the incomplete marker when cancelled during final on-disk verification', async () => {
+    const { root } = await setup();
+    const controller = new AbortController();
+    const files = Object.keys(buildInteractiveSite(spec).files);
+    const roots: MorpheusRootProvider = {
+      resolve: () => {
+        if (files.every((name) => existsSync(join(root, 'studio', name)))) controller.abort();
+        return root;
+      },
+      forWorkspace: () => roots,
+    };
+    await expect(createInteractiveProject(roots, 'studio', spec, controller.signal)).rejects.toThrow('did not complete');
+    expect(files.every((name) => existsSync(join(root, 'studio', name)))).toBe(true);
+    expect(await readFile(join(root, 'studio', '.morpheus-incomplete'), 'utf8')).toContain('Files are preserved');
+    await expect(verifyInteractiveProject(roots, 'studio')).rejects.toThrow('incomplete');
+    await expect(createInteractiveProject(roots, 'studio', spec)).rejects.toThrow('preserved');
+  });
+  it('retains both the marker and an external edit when final written-byte verification fails', async () => {
+    const { root } = await setup();
+    const files = Object.keys(buildInteractiveSite(spec).files);
+    let edited = false;
+    const roots: MorpheusRootProvider = {
+      resolve: () => {
+        if (!edited && files.every((name) => existsSync(join(root, 'studio', name)))) {
+          edited = true;
+          writeFileSync(join(root, 'studio', 'app.js'), 'External edit preserved');
+        }
+        return root;
+      },
+      forWorkspace: () => roots,
+    };
+    await expect(createInteractiveProject(roots, 'studio', spec)).rejects.toThrow('did not complete');
+    expect(await readFile(join(root, 'studio', 'app.js'), 'utf8')).toBe('External edit preserved');
+    expect(existsSync(join(root, 'studio', '.morpheus-incomplete'))).toBe(true);
+    await expect(verifyInteractiveProject(roots, 'studio')).rejects.toThrow('incomplete');
   });
 });
 
