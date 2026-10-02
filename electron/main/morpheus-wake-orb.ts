@@ -68,11 +68,11 @@ export class MorpheusWakeOrb {
   show(): void {
     if (process.platform !== 'win32') return;
     this.wantsVisible = true;
+    this.hovered = false;
     this.clearDismiss();
     this.scheduleDismiss();
     const existing = this.window;
     if (existing && !existing.isDestroyed()) {
-      this.hovered = false;
       this.reposition();
       this.applyVisibility();
       this.applyHover();

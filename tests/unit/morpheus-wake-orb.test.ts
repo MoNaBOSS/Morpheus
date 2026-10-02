@@ -240,6 +240,22 @@ describe.skipIf(process.platform !== 'win32')('native orb visibility across dela
     ]));
   });
 
+  it('starts a fresh idle dismissal when waking an existing hovered orb', () => {
+    vi.useFakeTimers();
+    const orb = new MorpheusWakeOrb(vi.fn());
+    try {
+      orb.show();
+      const window = mock.windows[0];
+      window.finishLoad();
+      orb.present('hover');
+      vi.advanceTimersByTime(20_000);
+      expect(window.hide).not.toHaveBeenCalled();
+      orb.show();
+      vi.advanceTimersByTime(10_180);
+      expect(window.hide).toHaveBeenCalledOnce();
+    } finally { orb.dispose(); vi.useRealTimers(); }
+  });
+
   it('waits for loading after repeated wakes and ignores a disposed window', () => {
     const orb = new MorpheusWakeOrb(vi.fn());
     orb.show();
