@@ -16,6 +16,13 @@ is the corrected running shell and short recording, not another broad redesign.
 Source remains `E:\Morpheus-builds\experience-preview6\source`, now on local
 `codex/morpheus-preview9-shell-recovery`, branched from verified `48480850`.
 The historical application-branch checkout and its divergent work are untouched.
+Preview.9 application source is `4b9e251931447fabdf8f2638a343104a75c27000`.
+The review EXE is `E:\Morpheus-builds\experience-preview9-review\win-unpacked\Morpheus.exe`.
+Normal isolated packaged startup, real Core and included output, continuity and
+ASAR/build identity passed; the recording and PCM sample are in this task's
+`outputs\preview9`. Owner preview.8 remains installed unchanged. Cold voice
+delay and unexplained source-Electron hidden CPU remain open; this is not a
+production/sale handoff. See the current checklist for exact evidence and limits.
 
 ## Previous candidate handoff — retained as evidence
 

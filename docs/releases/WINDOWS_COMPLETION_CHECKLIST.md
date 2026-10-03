@@ -1,6 +1,15 @@
 # Current Windows experience completion checklist
 
-## Preview.9 bounded correction — qualification in progress
+## Preview.9 bounded correction — ready for owner review
+
+Application source: `4b9e251931447fabdf8f2638a343104a75c27000`, local branch
+`codex/morpheus-preview9-shell-recovery`; no push or owner installation performed.
+Review application (run from its folder; this is not an installer):
+`E:\Morpheus-builds\experience-preview9-review\win-unpacked\Morpheus.exe`.
+Runtime version: **1.2.0-preview.9**; unsigned. EXE SHA256:
+`3a724298b6c56c3f7938f771bed6156927b181797abaf970e1bc4ad06acfac83`.
+`resources/app.asar` SHA256:
+`07783ffc58c1d865ed61de000beb6aa29d1d73a6341e74c6e48afd26da83c588`.
 
 Implemented: discoverable labeled Settings; in-flow ambient/active/error status;
 consistent full/compact conversation and Core result alignment; connected settings
@@ -27,15 +36,32 @@ real Core system-information result appeared. Wake states and chat replies in
 these rendered journeys are explicitly seeded fixtures. Real local output played
 all 364,160 PCM bytes across ten chunks; the observed maximum scheduled generation
 gap was 1.52 seconds. This is not seamless or physical audio acceptance.
-Normal packaged qualification is being recorded against frozen source.
-Only completed evidence may be described as verified. Preview.8 remains
-installed; no owner-host installer or profile migration has been run this turn.
+Normal packaged qualification PASSED against the identified payload: all 518
+regular build files matched ASAR and 12 external resources matched source inputs.
+Actual packaged version, normal startup (E2E unset), synthetic first-run flow,
+animated welcome, Voice settings/output sample, real Core system information and
+compact/settings/Advanced return with retained draft passed. No provider accounts,
+physical capture requests or renderer errors; microphone capture remained disabled and the
+test Gateway/app closed. The owner startup registration check stayed unchanged.
+Preview.8 remains installed with its original ASAR hash. Historical checkouts
+remain clean at `fa988f06` and `3bcad683`; no owner-host installer or migration ran.
 
-Next: finish the corrected native/rendered checks and isolated normal packaged
-smoke, identify the review EXE and recording, then obtain the owner's visual
-acceptance. Physical microphone/accent/noise, wake, speaker/echo and acoustic
+Next: obtain the owner's visual acceptance of the corrected running shell before
+broader integration. Quit installed Morpheus from the tray, run the review EXE in
+its folder, type a draft, and check compact → Settings → back; then use Voice →
+Preview selected voice. Keep the folder intact. This is a short review, not full
+hardware/release acceptance. Physical microphone/accent/noise, wake, speaker/echo and acoustic
 interruption remain open. Paid hosted services, signing/update and payment setup
 remain external release blockers. Preview.9 is a review build, not a sale release.
+
+Actual normal packaged voice sample: 364,670 PCM bytes, first PCM 5.929 s,
+speaking state 6.433 s, total 18.963 s. Fresh Gateway became ready in 59.385 s.
+These are cold observations on this PC; latency and synthesis gaps remain open.
+The standalone WAV contains actual generated PCM without generation waits and
+does not prove physical audibility. The 31-second app-window clip is a continuous
+chronological excerpt at normal speed, without an audio track or generated frames.
+Package evidence: `E:\Morpheus-builds\experience-shell-recovery-evidence\package\normal-1791041593358`.
+User-facing media/handoff: this task's `outputs\preview9` folder.
 
 Motion verification: original central artwork moves in actual native pixels;
 header M movement, reduced motion, covered/full restoration and native hide/show
@@ -73,12 +99,13 @@ application branch were clean at `48480850` before this documentation correction
 - [x] VIDEO + LIVE: raw non-speech recognition output reaches the interface.
 - [x] VIDEO + SOURCE: outer contour motion exists but the center/header identity
   stays static; visible-motion satisfaction is rejected, not accepted by CSS tests.
-- [ ] Repair and test one common shell with wake enabled, including settings
+- [x] Implement and test one common shell with simulated wake enabled, including settings
   discovery, content/composer alignment, compact/full return and errors.
-- [ ] Reject local non-speech recognition artifacts before drafting/routing;
+- [x] Reject local non-speech recognition artifacts before drafting/routing;
   validate silence/noise recovery and valid spoken commands independently.
-- [ ] Qualify perceptible motion at actual sizes, including reduced-motion and
-  hidden behavior, then obtain visual acceptance of the running implementation.
+- [x] Verify actual central pixel movement and hidden/reduced-motion behavior.
+- [ ] Obtain the owner's visual acceptance of the running implementation;
+  measured movement is not a substitute for that review.
 
 Local video-analysis evidence: `E:\Morpheus-builds\experience-owner-review-20261003`.
 The supplied video is 162.93 seconds, 1918×1078 at 30 fps. Frames were examined
