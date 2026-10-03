@@ -22,6 +22,7 @@ Historical preview.5 installed identity remains baseline evidence, not current s
 
 | Component | Current evidence |
 | --- | --- |
+| Spoken general conversation | OPEN — confirmed source gap during the owner's October 3 follow-up: `src/stores/morpheus-voice.ts` can route a voice turn to the original ACP conversation, but `MorpheusVoiceRuntime.tsx` observes only voice-origin Core objective summaries/clarification. There is no automatic ACP assistant-reply speech subscriber. A text answer therefore does not establish a spoken answer or follow-up continuation. The generated system.report qualification below covers Core outcomes only. No live microphone reproduction is claimed by this audit. |
 | Included speech / real command | VERIFIED on the exact `757f71c5` normal package: real included synthesis generated a 1,615-ms command; Main recognition took 706 ms and routed it to real Core system.report. Two voice-origin runs and one typed follow-up completed. Original renderer playback received, scheduled and naturally ended all 137,640 declared PCM bytes / three chunks, with no premature stop/close. PCM duration 2,868 ms; first PCM 4,128 ms, first actual speaking 4,164 ms, total generation/playback 7,019 ms. Typed Stop interrupted the second reply in 82 ms and stopped all scheduled sources. Input was generated speech through Main; physical recording-owner dispatch, microphone, echo and audibility are not qualified. |
 | Honest voice guidance | VERIFIED in native Windows: real progressive included PCM sample completes with microphone muted, without a provider/account; ordered segments arrive before completion and actual presence reports speaking, never listening. Local engine identity is independent of WAV/PCM format; local errors direct to speakers/installation repair. Four locale strings supplied. |
 | Continuous conversation / restart | VERIFIED: twelve Main timing checks, fifteen timing/projection checks and five fresh native cases pass; pre-fix tests reproduced both failures. Actual normal packaged full restart restores original Core -> original ACP user -> original reply, using canonical transcript starts with zero short-lived admission refs. Original tagged-persona input aligns without exposing its context. Compact/full/Voice Settings/back keeps the latest reply in the actual clipped viewport, with settled native bounds/opacity; the draft and exact original history bytes, including the trajectory file, remain unchanged. Deliberate real wheel-up stays on old history during passive updates. Four localized views pass. The model answer is a loopback fixture; Core execution, controllers and history are real. |
@@ -111,8 +112,12 @@ Evidence root is `E:\Morpheus-builds\experience-preview6`: `installer-inspection
 `evidence/packaged-conversation-preview7.json`, `evidence/native-orb-motion.json`
 and `evidence/hosted-install-37050843303/installed-app-qualification.json`.
 
-**Exact next step:** the owner's combined appearance/physical-PC review using
-`Morpheus-PC-Acceptance.md` in the delivery folder. Fix demonstrated regressions
-without repeating approved work. Commercial launch requires the external service
+**Exact next correction:** connect one ordinary voice-origin ACP reply to the
+existing speech and follow-up owners, with original turn identity, cancellation,
+mute and duplicate/reload safeguards. Qualify a complete conversational turn;
+the passing Core command test is not that evidence. Also address warm synthesis
+and generation gaps before claiming fluid dialogue. Preserve existing capabilities.
+The owner's combined appearance/physical-PC review uses `Morpheus-PC-Acceptance.md`
+in the delivery folder. Commercial launch requires the external service
 and physical/performance gates above; automated or generated-input evidence does
 not close them. No new open-ended implementation campaign or competing plan.

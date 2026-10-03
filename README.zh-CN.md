@@ -10,6 +10,8 @@ Preview.7 增加能力、语音、对话及临时 Windows 安装验证；准确�
 最终候选版为 `1.2.0-preview.7`，应用源码 `757f71c5`。已标识的未签名 EXE
 及同源码临时 Windows 安装、重装、卸载均通过各自记录的检查。真实语音、显示、旧版本升级验收，
 较慢的 Gateway 冷启动和外部商业服务仍是发布门槛。
+已知语音缺口：自动朗读覆盖语音发起的 Core 任务结果，普通 ACP 对话回复尚未连接朗读与后续聆听。
+内置本地语音逐段启动新引擎；完整、流畅的语音对话尚未验收。
 
 <p align="center">
   <img src="src/assets/morpheus-logo.svg" width="128" height="128" alt="Morpheus Logo" />

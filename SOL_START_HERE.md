@@ -47,7 +47,12 @@ Original source checkouts remain clean at `fa988f06`/`3bcad683`. Previously inst
 Program Files/per-user paths are currently absent for an unknown reason; no task
 installer/uninstaller caused this and historical preview.5 identity is not current.
 
-**Current next action:** owner's combined physical/appearance review from the short
+**Current next correction:** October 3 source audit confirmed voice-origin ACP
+chat replies are not automatically spoken; VoiceRuntime watches Core outcomes only.
+Connect one ordinary conversational reply through existing speech/follow-up owners,
+retaining identity, cancellation, mute and reload safeguards. Warm synthesis/gap
+latency and fluid audio-reactive motion remain experience work. Passing Core tests
+do not qualify general spoken chat. Owner physical/appearance review uses the short
 PC checklist. Commercial launch remains unqualified: unsigned installer/no owned
 update feed, hosted funding/operations, pricing/business country and Stripe/crypto
 setup are missing; NerdGPT intentionally deferred. Physical voice, other DPI/taskbar/

@@ -13,6 +13,9 @@ Final candidate: `1.2.0-preview.7`, application source `757f71c5`. The identifie
 unsigned EXE and exact-source disposable Windows install/reinstall/uninstall pass
 their recorded checks. Physical voice/display/previous-version upgrade acceptance,
 slow cold Gateway startup and external commercial services remain release gates.
+Known voice gap: automatic replies speak voice-origin Core outcomes, but ordinary
+ACP chat answers are not yet connected to speech/follow-up. Included local speech
+uses freshly started phrase engines; full conversational fluency is not qualified.
 
 <p align="center">
   <img src="src/assets/morpheus-logo.svg" width="128" height="128" alt="Morpheus Logo" />

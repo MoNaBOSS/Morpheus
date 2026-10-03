@@ -18,6 +18,18 @@ Real generated English speech -> Main STT -> Core execution -> original renderer
 playback passed. All 137,640 declared PCM bytes were received, scheduled and
 naturally ended; typed Stop interrupted another reply in 82 ms. This tests generated
 input, not physical recording-owner dispatch, microphone, wake or speaker audibility.
+October 3 source audit confirms a missing product connection: voice-origin ACP
+conversation can receive a text answer, but automatic speech watches Core objective
+summaries/clarification only. Ordinary ACP replies and their spoken follow-up are
+not connected. The successful Core command test does not qualify general voice chat.
+Included synthesis starts a fresh offline engine for each phrase, then emits the
+finished phrase's PCM; it is not continuous synthesis from incoming model tokens.
+Motion preserves static artwork with CSS light/halo movement. Quiet motion updates
+five times per second and audio drives a modest halo scale/opacity, not organic
+artwork deformation. These are implementation limits, not proof of the owner's
+current microphone/device failure. Standalone voice samples join actual PCM without
+live generation gaps; the orb review clip enlarges 56 DIP sixfold. Neither proves
+ordinary desktop conversational fluency.
 Actual muted native motion and continuous-interface recordings are 16/20 seconds;
 simulation, hidden padding and isolated Main restoration boundaries are labelled.
 Scope-specific installed Windows install/reinstall/uninstall passed on a disposable
@@ -358,10 +370,13 @@ normal-runtime qualification at `12a3689806d6bfe87cdc63f4b6600ecea21c2093`.
 The installer is unsigned and no owned update feed is configured. Included voice
 models, notices and corresponding upstream source archives are verified payload.
 
-**Exact next step:** the owner's combined appearance/physical acceptance of the
-identified preview.7 candidate, using the four-step `Morpheus-PC-Acceptance.md`
-delivered beside the EXE and real media. The checklist identifies every autonomous
-test boundary and open gate. Fix demonstrated regressions without redoing approved
+**Exact next correction:** connect one ordinary voice-origin ACP reply to existing
+speech/follow-up owners with original turn identity, cancellation, mute and reload
+safeguards. Then qualify actual general spoken conversation and reduce warm/phrase
+generation gaps. Review fluid state transitions at the real 56-DIP size, with audio
+feedback from actual input/output. The four-step `Morpheus-PC-Acceptance.md` remains
+beside the identified preview.7 EXE and real media. The checklist identifies every
+autonomous test boundary and open gate. Fix demonstrated gaps without redoing approved
 work. Physical microphone/wake/echo/audibility, other DPI/taskbar/display/sleep,
 owner-profile previous-version upgrade, live provider/publication and long mixed-use
 performance are not declared passed. Hosted pricing/funding, Stripe/crypto merchant
