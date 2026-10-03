@@ -19,6 +19,20 @@ test('invocation motion preserves focus, repeat opening, execution and reduced m
         await page.screenshot({ path: join(process.env.MORPHEUS_VISUAL_EVIDENCE_DIR, 'polished-presence-1280x800.png') });
       }
       await page.keyboard.press('Escape');
+      if (process.platform === 'win32') {
+        // Compact dismissal hides the native window. Hidden Chromium may pause
+        // AnimatePresence before its DOM exit completes, so removal alone is
+        // not proof of the real user-visible dismissal. Restore explicitly to
+        // simulate a tray entry; this does not qualify the physical tray click.
+        await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()
+          .find((window) => window.getTitle() === 'Morpheus')?.isVisible())).toBe(false);
+        await app.evaluate(({ BrowserWindow }) => {
+          const main = BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus');
+          if (!main) throw new Error('Main window missing');
+          main.show();
+          main.focus();
+        });
+      }
       await expect(dialog).toHaveCount(0);
     }
     await page.emulateMedia({ reducedMotion: 'reduce' });

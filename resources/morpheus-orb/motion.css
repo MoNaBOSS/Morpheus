@@ -66,6 +66,36 @@
   object-fit: contain;
   clip-path: circle(34.48% at center);
   user-select: none;
+  transform-origin: center;
+  transition: transform 90ms linear;
+}
+
+/* The original orb artwork moves as one identity. At 56 DIP the old thin
+   contour was effectively invisible: this four-pixel breath and gentle tilt
+   make presence legible without adding a synthetic waveform or redrawing it. */
+.morpheus-motion[data-motion-state='idle'] .morpheus-motion__artwork,
+.morpheus-motion[data-motion-state='quiet'] .morpheus-motion__artwork {
+  animation: morpheus-motion-core-presence 5.6s steps(84, end) infinite;
+}
+.morpheus-motion[data-motion-state='working'] .morpheus-motion__artwork {
+  animation: morpheus-motion-core-work 3.2s steps(48, end) infinite;
+}
+.morpheus-motion[data-motion-state='understanding'] .morpheus-motion__artwork {
+  animation: morpheus-motion-core-recognize 520ms ease-out both;
+}
+.morpheus-motion[data-motion-state='complete'] .morpheus-motion__artwork {
+  animation: morpheus-motion-core-complete 650ms ease-out both;
+}
+.morpheus-motion[data-motion-state='attention'] .morpheus-motion__artwork {
+  animation: morpheus-motion-core-attention 500ms ease-out both;
+}
+/* Silent capture and playback have no invented pulse. These transforms change
+   only when the existing microphone/PCM meter supplies a real amplitude. */
+.morpheus-motion[data-motion-state='listening'] .morpheus-motion__artwork {
+  transform: scale(calc(.91 + var(--morpheus-audio-level, 0) * .09)) rotate(calc(var(--morpheus-audio-level, 0) * 4deg));
+}
+.morpheus-motion[data-motion-state='speaking'] .morpheus-motion__artwork {
+  transform: scale(calc(.94 + var(--morpheus-audio-level, 0) * .06), calc(.94 - var(--morpheus-audio-level, 0) * .06)) rotate(calc(var(--morpheus-audio-level, 0) * -5deg));
 }
 
 .morpheus-motion[data-motion-state='idle'] .morpheus-motion__halo {
@@ -73,11 +103,11 @@
   animation: morpheus-motion-breathe 5.6s steps(84, end) infinite;
 }
 
-.morpheus-motion[data-motion-state='working'] .morpheus-motion__aurora,
 .morpheus-motion[data-motion-state='listening'] .morpheus-motion__aurora,
 .morpheus-motion[data-motion-state='speaking'] .morpheus-motion__aurora {
-  animation: morpheus-motion-flow 7.2s ease-in-out infinite alternate;
-  opacity: 0.62;
+  opacity: calc(.5 + var(--morpheus-audio-level, 0) * .4);
+  transform: rotate(calc(-15deg + var(--morpheus-audio-level, 0) * 40deg)) scale(calc(.97 + var(--morpheus-audio-level, 0) * .08));
+  transition: transform 90ms linear, opacity 90ms linear;
 }
 
 .morpheus-motion[data-motion-state='working'] .morpheus-motion__halo {
@@ -89,7 +119,7 @@
 .morpheus-motion[data-motion-state='idle'] .morpheus-motion__aurora,
 .morpheus-motion[data-motion-state='complete'] .morpheus-motion__aurora,
 .morpheus-motion[data-motion-state='quiet'] .morpheus-motion__aurora {
-  animation: morpheus-motion-contour 5.6s steps(168, end) infinite alternate;
+  transform: rotate(-12deg) scale(.99, .98);
   opacity: 0.75;
 }
 
@@ -98,13 +128,18 @@
   animation: morpheus-motion-quiet-breathe 5.6s steps(84, end) infinite;
 }
 
-/* A 200 Hz display otherwise repaints the organic mask at every refresh.
-   Keep its shape static and composite bounded travel instead. Quiet travel has
-   one 5.6s segment (168 steps); breathing has two 2.8s segments (84 steps each):
-   both update at 30/s. Real audio response and finite arrival/ack motion retain
-   their existing interpolation. Hidden surfaces never reserve these layers. */
-.morpheus-motion[data-motion-paused='false'] .morpheus-motion__aurora,
-.morpheus-motion[data-motion-paused='false'] .morpheus-motion__halo {
+/* Two moving quiet layers only: original artwork and halo. The perimeter stays
+   still so more perceptible center motion does not add a third animation layer.
+   Each breath has two 2.8s segments (84 steps each), bounded to 30/s even on a
+   200 Hz display. Hidden surfaces never reserve these layers. */
+.morpheus-motion[data-motion-paused='false'] .morpheus-motion__halo,
+.morpheus-motion[data-motion-paused='false'] .morpheus-motion__artwork {
+  will-change: transform, opacity;
+}
+.morpheus-motion[data-motion-paused='false'][data-motion-state='working'] .morpheus-motion__aurora,
+.morpheus-motion[data-motion-paused='false'][data-motion-state='understanding'] .morpheus-motion__aurora,
+.morpheus-motion[data-motion-paused='false'][data-motion-state='listening'] .morpheus-motion__aurora,
+.morpheus-motion[data-motion-paused='false'][data-motion-state='speaking'] .morpheus-motion__aurora {
   will-change: transform, opacity;
 }
 
@@ -143,18 +178,34 @@
   opacity: 0.28;
 }
 
-.morpheus-motion[data-motion-paused='true'] .morpheus-motion__aurora,
-.morpheus-motion[data-motion-paused='true'] .morpheus-motion__halo,
-.morpheus-motion[data-motion-paused='true'] .morpheus-motion__cue {
-  animation-play-state: paused;
-  transition: none;
-}
-
 @keyframes morpheus-motion-breathe {
   0%, 100% { transform: scale(1); opacity: 0.40; }
   50% { transform: scale(1.075); opacity: 0.85; }
 }
-.morpheus-motion[data-motion-paused='true'] .morpheus-motion__mark { animation-play-state: paused; }
+@keyframes morpheus-motion-core-presence {
+  0%, 100% { transform: translateY(1px) rotate(-4deg) scale(.92); }
+  50% { transform: translateY(-1px) rotate(3deg) scale(1); }
+}
+@keyframes morpheus-motion-core-work {
+  0%, 100% { transform: scale(.94) rotate(-5deg); }
+  50% { transform: scale(.98) rotate(5deg); }
+}
+@keyframes morpheus-motion-core-recognize {
+  0% { transform: scale(.94); }
+  38% { transform: translateY(2px) scale(.85); }
+  72% { transform: translateY(-1px) scale(1); }
+  100% { transform: scale(.96); }
+}
+@keyframes morpheus-motion-core-complete {
+  0% { transform: scale(.88) rotate(-5deg); }
+  55% { transform: translateY(-2px) scale(1) rotate(3deg); }
+  100% { transform: scale(.96); }
+}
+@keyframes morpheus-motion-core-attention {
+  0% { transform: scale(.96); }
+  40% { transform: rotate(-9deg) scale(.92); }
+  100% { transform: rotate(-4deg) scale(.96); }
+}
 
 /* Presence travel is independent of sound. Only the real RMS meter changes
    listening/speaking deformation: silent capture never fabricates activity. */
@@ -172,13 +223,9 @@
 .morpheus-motion[data-motion-state='working'] .morpheus-motion__aurora {
   border-color: rgb(133 245 185 / .25);
   background: conic-gradient(transparent 0deg, transparent 225deg, rgb(191 255 225 / .75) 302deg, transparent 355deg);
-  animation: morpheus-motion-work 1.6s linear infinite;
+  animation: morpheus-motion-work 1.6s steps(48, end) infinite;
 }
 .morpheus-motion[data-motion-state='complete'] .morpheus-motion__halo { animation: morpheus-motion-complete .8s ease-out both; }
-@keyframes morpheus-motion-contour {
-  from { transform: rotate(-15deg) scale(.99, .98); }
-  to { transform: rotate(35deg) scale(1.1, 1.06); }
-}
 @keyframes morpheus-motion-recognize { 0% { transform: scale(1); } 40% { transform: scale(.87); } 75% { transform: scale(1.1); } 100% { transform: scale(1); } }
 @keyframes morpheus-motion-complete { 0% { opacity: .4; transform: scale(.95); } 35% { opacity: 1; } 100% { opacity: .55; transform: scale(1.12); } }
 
@@ -192,21 +239,34 @@
   to { transform: rotate(360deg); }
 }
 
-@keyframes morpheus-motion-flow {
-  from { transform: rotate(-15deg) scale(0.94); }
-  to { transform: rotate(18deg) scale(1.08); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .morpheus-motion[data-motion-state] .morpheus-motion__aurora,
   .morpheus-motion[data-motion-state] .morpheus-motion__halo,
+  .morpheus-motion[data-motion-state] .morpheus-motion__artwork,
   .morpheus-motion[data-motion-state] .morpheus-motion__cue {
     animation: none;
     transition: none;
     transform: none;
+    will-change: auto;
   }
   .morpheus-motion[data-motion-state='listening'] .morpheus-motion__halo,
   .morpheus-motion[data-motion-state='speaking'] .morpheus-motion__halo {
     opacity: 0.7;
   }
+  .morpheus-motion[data-motion-paused][data-motion-state] .morpheus-motion__aurora {
+    will-change: auto;
+  }
+}
+
+/* Electron can report a paused CSS animation while its compositor clock keeps
+   advancing after native hide. Remove decorative animations entirely while
+   hidden or covered; showing restores the declared idle/state animation. */
+.morpheus-motion[data-motion-paused='true'][data-motion-state] .morpheus-motion__aurora,
+.morpheus-motion[data-motion-paused='true'][data-motion-state] .morpheus-motion__halo,
+.morpheus-motion[data-motion-paused='true'][data-motion-state] .morpheus-motion__artwork,
+.morpheus-motion[data-motion-paused='true'][data-motion-state] .morpheus-motion__mark,
+.morpheus-motion[data-motion-paused='true'][data-motion-state] .morpheus-motion__cue {
+  animation: none;
+  transition: none;
+  will-change: auto;
 }

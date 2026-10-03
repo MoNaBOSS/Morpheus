@@ -44,6 +44,7 @@ import { startWindowsWake, type LocalWakeController } from './windows-wake';
 import type { ManagedRuntimeBridge } from '../managed/runtime-bridge';
 import { createManagedVoiceOperation, managedVoiceAvailability } from './managed-voice';
 import type { MorpheusLocalVoice } from './local-voice';
+import { MorpheusNoSpeechError, validateMorpheusLocalTranscript } from './local-input';
 
 const DEFAULT_VOICE_SETTINGS: MorpheusVoiceSettings = Object.freeze({
   v: MORPHEUS_VOICE_VERSION,
@@ -477,13 +478,26 @@ export function createMorpheusVoiceService(options: {
         checkInput();
         if (ambient) publish('transcribing');
         else if (settings.speakResponses) void options.localVoice.warm?.().catch(() => undefined);
-        const transcript = await options.localVoice.transcribe(audio, controller.signal);
+        const decoded = await options.localVoice.transcribe(audio, controller.signal);
         checkInput();
-        if (!transcript) throw new Error("I couldn't hear anything clearly. Please try again.");
+        const transcript = validateMorpheusLocalTranscript(decoded);
         await options.audit.recordControl({ category: 'voice', event: 'transcription-completed', subjectId: 'included-local',
           details: { durationMs: payload.durationMs, providerLatencyMs: Math.round(performance.now() - started), ambient, modelId: 'whisper-tiny.en', costStatus: 'local' }, appVersion: options.appVersion });
+        checkInput();
         if (ambient) publish('armed');
         return { transcript, providerAccountId: 'included-local', modelId: 'whisper-tiny.en', durationMs: payload.durationMs, providerLatencyMs: Math.round(performance.now() - started) };
+      } catch (error) {
+        checkInput();
+        if (error instanceof MorpheusNoSpeechError) {
+          await options.audit.recordControl({ category: 'voice', event: 'transcription-rejected', subjectId: 'included-local',
+            details: { durationMs: payload.durationMs, providerLatencyMs: Math.round(performance.now() - started), ambient,
+              modelId: 'whisper-tiny.en', costStatus: 'local', reason: 'no-speech' }, appVersion: options.appVersion });
+          checkInput();
+          // Keep the next consented wake available; do not leave the companion
+          // claiming to transcribe after a rejected recording. UI owns recovery.
+          if (ambient) publish('armed');
+        }
+        throw error;
       } finally { transcriptions.delete(controller); }
     }
     const managed = options.getManagedRuntime?.();

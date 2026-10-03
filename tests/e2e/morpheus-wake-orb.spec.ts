@@ -48,14 +48,14 @@ test('the native orb edits a preserved draft and admits one turn before compact 
     if (evidenceDir) await orb!.screenshot({ path: join(evidenceDir, 'native-wake-orb.png') });
 
     // Ambient-off is honestly quiet, but visible presentation must still move.
-    const aurora = orb!.locator('.morpheus-motion__aurora');
-    await expect(aurora).toHaveCSS('animation-name', 'morpheus-motion-contour');
+    const artwork = orb!.locator('.morpheus-motion__artwork');
+    await expect(artwork).toHaveCSS('animation-name', 'morpheus-motion-core-presence');
     await expect(orb!.locator('html')).toHaveAttribute('data-window-visible', 'true');
     await expect(orb!.locator('.orb')).toHaveAttribute('data-motion-paused', 'false');
-    const initialOrbit = await aurora.evaluate((node) => getComputedStyle(node).transform);
-    await expect.poll(() => aurora.evaluate((node) => getComputedStyle(node).transform)).not.toBe(initialOrbit);
+    const initialOrbit = await artwork.evaluate((node) => getComputedStyle(node).transform);
+    await expect.poll(() => artwork.evaluate((node) => getComputedStyle(node).transform)).not.toBe(initialOrbit);
     await orb!.emulateMedia({ reducedMotion: 'reduce' });
-    await expect(aurora).toHaveCSS('animation-name', 'none');
+    await expect(artwork).toHaveCSS('animation-name', 'none');
     await orb!.emulateMedia({ reducedMotion: 'no-preference' });
 
     await orb!.locator('.orb').hover();

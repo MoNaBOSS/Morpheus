@@ -7,6 +7,7 @@ import type { MorpheusSpeechVoice } from '@shared/morpheus/voice-types';
 import { MORPHEUS_SPEECH_MAX_AUDIO_BYTES, MORPHEUS_SPEECH_MAX_TEXT_CHARS } from '@shared/morpheus/voice-types';
 import { localSpeechSegments, localSpeechWav } from './local-speech';
 import { createMorpheusSpeechWorker } from './local-voice-worker';
+import { validateMorpheusLocalRecording } from './local-input';
 
 export interface MorpheusLocalVoice {
   ready(): boolean;
@@ -94,11 +95,7 @@ export function createMorpheusLocalVoice(root: string, temporaryRoot: string): M
   return {
     ready,
     transcribe: (audio, signal) => temporary(signal, async (dir) => {
-      // Canonical WAV is produced by the existing renderer capture converter.
-      if (audio.length < 44 || audio.toString('ascii', 0, 4) !== 'RIFF' || audio.toString('ascii', 8, 12) !== 'WAVE'
-        || audio.readUInt16LE(20) !== 1 || audio.readUInt16LE(22) !== 1 || audio.readUInt32LE(24) !== 16000
-        || audio.readUInt16LE(34) !== 16 || audio.toString('ascii', 36, 40) !== 'data'
-        || audio.readUInt32LE(40) !== audio.length - 44) throw new Error('Local voice needs a valid mono 16 kHz recording. Retry the microphone test.');
+      validateMorpheusLocalRecording(audio);
       const path = join(dir, 'input.wav'); await writeFile(path, audio, { mode: 0o600 });
       const output = await run(asr, ['--debug=0', `--whisper-encoder=${join(sttRoot, 'tiny.en-encoder.int8.onnx')}`,
         `--whisper-decoder=${join(sttRoot, 'tiny.en-decoder.int8.onnx')}`, `--tokens=${join(sttRoot, 'tiny.en-tokens.txt')}`,

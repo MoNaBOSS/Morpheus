@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { createMorpheusLocalVoice } from '../../electron/services/morpheus/voice/local-voice';
+import { MorpheusNoSpeechError, validateMorpheusLocalTranscript } from '../../electron/services/morpheus/voice/local-input';
 
 const root = process.env.MORPHEUS_LOCAL_VOICE_TEST_ROOT;
 function pcm16k(source: Buffer): Buffer {
@@ -22,6 +23,35 @@ function pcm16k(source: Buffer): Buffer {
 }
 
 describe.skipIf(process.platform !== 'win32' || !root)('real included voice engine', () => {
+  it('rejects silence before decoding, then recognizes short real synthesized answers through the gate', async () => {
+    const temporary = await mkdtemp(join(tmpdir(), 'local-voice-input-gate-'));
+    const voice = createMorpheusLocalVoice(root!, temporary);
+    try {
+      const signal = new AbortController().signal;
+      const sample = pcm16k(await voice.synthesize('Yes.', 'cedar', signal));
+      const silent = Buffer.from(sample); silent.fill(0, 44);
+      await expect(voice.transcribe(silent, signal)).rejects.toThrow(MorpheusNoSpeechError);
+      // Real ASR still runs for audible noise: energy is not proof of speech.
+      // A deterministic broadband sample tests the independent semantic gate.
+      const noise = Buffer.from(sample);
+      let seed = 17;
+      for (let i = 44; i < noise.length; i += 2) {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        noise.writeInt16LE(Math.round((seed / 0xffffffff * 2 - 1) * 2600), i);
+      }
+      const noiseTranscript = await voice.transcribe(noise, signal);
+      expect(() => validateMorpheusLocalTranscript(noiseTranscript), `Noise decoded as ${JSON.stringify(noiseTranscript)}`).toThrow(MorpheusNoSpeechError);
+      const quiet = Buffer.from(sample);
+      for (let i = 44; i < quiet.length; i += 2) quiet.writeInt16LE(Math.round(quiet.readInt16LE(i) * 0.2), i);
+      expect(validateMorpheusLocalTranscript(await voice.transcribe(quiet, signal)).toLowerCase()).toMatch(/^yes[.!]?$/);
+      for (const command of ['No.', 'Stop.']) {
+        const audio = pcm16k(await voice.synthesize(command, 'cedar', signal));
+        expect(validateMorpheusLocalTranscript(await voice.transcribe(audio, signal)).toLowerCase().replace(/[.!]$/, ''))
+          .toBe(command.toLowerCase().replace('.', ''));
+      }
+      expect(await readdir(temporary)).toEqual([]);
+    } finally { voice.dispose?.(); await rm(temporary, { recursive: true, force: true }); }
+  }, 45_000);
   it('synthesizes and recognizes a real command without a provider and removes audio after success', async () => {
     const temporary = await mkdtemp(join(tmpdir(), 'local-voice-'));
     const voice = createMorpheusLocalVoice(root!, temporary);

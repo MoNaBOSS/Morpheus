@@ -1,4 +1,23 @@
-# Current continuation — approved experience integration, 2026-10-03
+# Current continuation — preview.9 shell correction, 2026-10-03
+
+**The owner rejected the installed preview.8 experience.** Live inspection and
+their recording confirm hidden navigation, weakly perceptible contour motion,
+inconsistent layout and non-speech recognition artifacts in the UI. The installed
+payload matches preview.8; do not blame an old installer. See the updated single
+[experience specification](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) and
+[completion checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) first.
+The owner authorized one coherent shell/voice-recovery correction. Its source is
+implemented as preview.9: visible Settings, in-flow voice status, shared alignment,
+actual identity movement and local non-speech rejection. Review its scoped Windows
+verification and exact executable in the current checklist before proceeding.
+Preserve the backend and profiles. Historical qualification below is scoped
+evidence, not user acceptance or production readiness. The next acceptance gate
+is the corrected running shell and short recording, not another broad redesign.
+Source remains `E:\Morpheus-builds\experience-preview6\source`, now on local
+`codex/morpheus-preview9-shell-recovery`, branched from verified `48480850`.
+The historical application-branch checkout and its divergent work are untouched.
+
+## Previous candidate handoff — retained as evidence
 
 **Current candidate: 1.2.0-preview.8.** The approved arrival, movable animated
 companion, conversation card and contextual settings are integrated. Ordinary

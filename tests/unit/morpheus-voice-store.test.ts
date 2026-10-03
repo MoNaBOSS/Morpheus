@@ -121,6 +121,27 @@ beforeEach(() => {
 });
 
 describe('Morpheus renderer voice controller', () => {
+  it('keeps failed microphone recovery through a settings refresh until deliberate retry', async () => {
+    getUserMedia.mockRejectedValueOnce(new DOMException('Requested device not found', 'NotFoundError'));
+    await useMorpheusVoiceStore.getState().startListening('quick-command');
+    const failure = useMorpheusVoiceStore.getState().error;
+    expect(useMorpheusVoiceStore.getState()).toMatchObject({ phase: 'error', errorKind: 'device' });
+    await useMorpheusVoiceStore.getState().loadStatus();
+    expect(useMorpheusVoiceStore.getState()).toMatchObject({ phase: 'error', errorKind: 'device', error: failure });
+    expect(getUserMedia).toHaveBeenCalledOnce();
+    await useMorpheusVoiceStore.getState().startListening('quick-command');
+    expect(useMorpheusVoiceStore.getState()).toMatchObject({ phase: 'listening', error: null, errorKind: null });
+    useMorpheusVoiceStore.getState().cancel();
+  });
+
+  it('settles a cleared error to idle after explicit settings repair without claiming capture success', async () => {
+    useMorpheusVoiceStore.setState({ phase: 'error', errorKind: 'device', error: 'Requested device not found' });
+    mocks.updateVoiceSettings.mockResolvedValue(await mocks.voiceStatus());
+    await useMorpheusVoiceStore.getState().updateSettings({ inputDeviceId: 'new-device' });
+    expect(useMorpheusVoiceStore.getState()).toMatchObject({ phase: 'idle', error: null, errorKind: null });
+    expect(getUserMedia).not.toHaveBeenCalled();
+  });
+
   it('binds spoken conversation only to the exact Main admission before reply dispatch', async () => {
     mocks.routeInteraction.mockResolvedValue({ route: 'conversation', text: 'How are you?', confidence: 'high' });
     const turn = { conversationId: 'chat', turnId: 'admitted-voice', clientRequestId: 'request', source: 'voice', status: 'admitted', generation: 1, admittedAt: '2026-10-03T00:00:00Z' };

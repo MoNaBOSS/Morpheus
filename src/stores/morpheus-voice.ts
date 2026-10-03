@@ -437,7 +437,10 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
         if (status.transcriptionAvailable && previousStatus?.transcriptionAvailable !== true) {
           ambientAutoStartBlocked = false;
         }
-        set({ status, presence: status.presence, error: null, errorKind: null });
+        // Reading configuration does not retest a failed microphone. Preserve
+        // its actionable recovery when Settings mounts or refreshes status.
+        set((state) => ({ status, presence: status.presence,
+          ...(state.phase === 'error' ? {} : { error: null, errorKind: null }) }));
         return status;
       } catch (error) {
         if (generation !== operationGeneration) return get().status;
@@ -516,7 +519,8 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
         const status = await hostApi.morpheus.updateVoiceSettings(patch);
         stopAmbientLocal(); // closures must not retain an old wake phrase/provider
         ambientAutoStartBlocked = false;
-        set({ status, presence: status.presence, error: null, errorKind: null });
+        set((state) => ({ status, presence: status.presence, error: null, errorKind: null,
+          phase: state.phase === 'error' ? 'idle' : state.phase }));
         if (status.settings.enabled && status.settings.ambientEnabled) await startAmbientCapture(status);
         else stopAmbientLocal();
       } catch (error) {

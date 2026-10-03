@@ -47,10 +47,18 @@ expectedUserBehavior:
   - Contextual settings return to the interrupted compact or expanded conversation.
   - Companion drag and keyboard placement stay within actual display work areas and survive display changes safely.
   - Included local speech reuses a bounded warm engine when enabled, with measurable latency, cancellation and shutdown.
+  - Wake and active voice status reserve shell space and never cover navigation, at full and narrow window sizes.
+  - Full and compact conversation expose a labeled Settings control; contextual return preserves the draft and conversation.
+  - Original M and orb identity have perceptible bounded motion at actual size, with real audio-driven response and hidden/reduced-motion guards.
+  - Local silence and standalone recognition annotations are rejected before draft or command admission; short valid commands remain usable.
+  - Opening Voice settings preserves actionable capture errors; a configuration refresh is not represented as a successful input test.
+  - Hidden or covered identity surfaces remove their decorative animations, since a reported paused state alone may leave Chromium clocks advancing.
 requiredTests:
   - pnpm run typecheck
   - pnpm run lint:check
   - pnpm exec playwright test tests/e2e/morpheus-experience.spec.ts --workers=1
+  - pnpm exec playwright test tests/e2e/morpheus-shell-recovery.spec.ts --workers=1
+  - pnpm exec playwright test tests/e2e/morpheus-brand-motion.spec.ts tests/e2e/morpheus-shared-orb-motion.spec.ts --workers=1
   - pnpm run comms:replay
   - pnpm run comms:compare
 acceptance:
@@ -76,3 +84,10 @@ full integration/qualification with substantial voice improvement and connected
 settings. The earlier design-only hold is superseded. Suggestions are considered
 within this coherent experience; no speculative service or unimplemented action
 is advertised. Keep actual package, physical audio and hosted-service gates distinct.
+
+October 3 owner rejection of preview.8 supersedes candidate acceptance. Correct
+the integrated shell, original identity motion and local non-speech recovery in a
+bounded review candidate. Runtime effects remain globally owned; visual status
+belongs to the in-flow shell. No owner profile or installed payload is replaced by
+test runs. The next acceptance artifact is recorded actual Windows rendering;
+any seeded wake/microphone states must be explicitly described as simulated.

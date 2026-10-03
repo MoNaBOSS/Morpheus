@@ -1,5 +1,93 @@
 # Current Windows experience completion checklist
 
+## Preview.9 bounded correction — qualification in progress
+
+Implemented: discoverable labeled Settings; in-flow ambient/active/error status;
+consistent full/compact conversation and Core result alignment; connected settings
+palette and contextual Voice return; original M/orb artwork movement with real
+audio response and hidden/reduced-motion guards. Existing backend, Advanced,
+profiles, providers and history remain in their original owners.
+
+Verified input scope: 84 focused tests, including real bundled local engines with
+generated Open YouTube/Yes/No/Stop, quiet Yes, silence and seeded broadband noise.
+Noise produced `(wind howling`, which the new semantic gate rejected. No physical
+microphone claim. Known decoder annotations cannot enter the draft or routing;
+this does not guarantee rejection of every possible noise hallucination.
+
+Source checks passed: full typecheck, lint (12 existing warnings), focused voice
+playback/settings/state tests, comms replay/compare and diff-aware harness checks.
+Two additional capture-error recovery regressions passed within 26 voice-store/
+settings tests: a settings refresh retains the failure and successful explicit
+configuration settles a cleared error to idle without claiming capture success.
+Final rendered qualification passed seven tests across the shell, existing
+experience, silence and real local speech specs. New shell journeys recorded zero
+console/page errors; navigation remained reachable at 1280/640/320 widths, full
+and compact preserved context/draft, original Advanced stayed reachable, and the
+real Core system-information result appeared. Wake states and chat replies in
+these rendered journeys are explicitly seeded fixtures. Real local output played
+all 364,160 PCM bytes across ten chunks; the observed maximum scheduled generation
+gap was 1.52 seconds. This is not seamless or physical audio acceptance.
+Normal packaged qualification is being recorded against frozen source.
+Only completed evidence may be described as verified. Preview.8 remains
+installed; no owner-host installer or profile migration has been run this turn.
+
+Next: finish the corrected native/rendered checks and isolated normal packaged
+smoke, identify the review EXE and recording, then obtain the owner's visual
+acceptance. Physical microphone/accent/noise, wake, speaker/echo and acoustic
+interruption remain open. Paid hosted services, signing/update and payment setup
+remain external release blockers. Preview.9 is a review build, not a sale release.
+
+Motion verification: original central artwork moves in actual native pixels;
+header M movement, reduced motion, covered/full restoration and native hide/show
+pass. The final two identity tests assert empty animation instances and stable
+hidden transforms. Earlier in this correction, CSS reported `paused` while clocks
+still advanced, so that check was replaced. Direct final inspection confirms both
+hidden window animation lists empty, including Main's repeated sample 700 ms later.
+
+**Resource budget remains OPEN.** Three 15-second source-Electron observations,
+no screen capture during sampling, stable PIDs: native orb plus blank hover composer
+17.56% of one core / 923.9 MiB summed working sets; full conversation 26.16% /
+819.9 MiB; all windows hidden 13.07% / 635.3 MiB. The CSS loops are removed, but
+remaining hidden CPU is unexplained. These are short source-E2E measurements on
+this 200 Hz display, not packaged/long-session performance acceptance; working
+sets may double-count shared pages. Do not re-use preview.8's 0.20% hidden figure
+to describe this build.
+
+Current evidence root: `E:\Morpheus-builds\experience-shell-recovery-evidence`.
+The before-correction samples remain under `*-before-hidden-removal.json`;
+`hidden-animation-diagnostic.json` and `motion-resource-samples.json` describe the
+final hidden-animation removal. Further performance profiling is deferred while
+this scoped visual checkpoint is reviewed; it remains an acceptance limitation.
+
+## Owner review supersedes candidate status — 2026-10-03
+
+**Preview.8 is rejected for product experience; not ready for release or sale.**
+Installed version is now verified as preview.8. Its `resources/app.asar` SHA256 is
+`CFF9694AA37468E57DF3233E30D1181A270D095CD1F21C057A524E13ADB44D2A`, matching
+the delivered payload. This is not an old-installer explanation. Source and fetched
+application branch were clean at `48480850` before this documentation correction.
+
+- [x] LIVE: reproduced the ambient badge obscuring full conversation navigation.
+- [x] LIVE: shortcut opened compact; compact Settings opened Voice; Advanced
+  exposed the original settings/workspace links. No configuration changed.
+- [x] VIDEO + LIVE: raw non-speech recognition output reaches the interface.
+- [x] VIDEO + SOURCE: outer contour motion exists but the center/header identity
+  stays static; visible-motion satisfaction is rejected, not accepted by CSS tests.
+- [ ] Repair and test one common shell with wake enabled, including settings
+  discovery, content/composer alignment, compact/full return and errors.
+- [ ] Reject local non-speech recognition artifacts before drafting/routing;
+  validate silence/noise recovery and valid spoken commands independently.
+- [ ] Qualify perceptible motion at actual sizes, including reduced-motion and
+  hidden behavior, then obtain visual acceptance of the running implementation.
+
+Local video-analysis evidence: `E:\Morpheus-builds\experience-owner-review-20261003`.
+The supplied video is 162.93 seconds, 1918×1078 at 30 fps. Frames were examined
+throughout, with a contiguous 74–77.5-second motion sample. Audio content was not
+auditioned or transcribed. Current inspection made no microphone capture/model
+request and does not verify physical speech quality. Previous fixture, generated
+audio, packaging and timing results below retain only their stated scope.
+The exact next component is defined in the current experience specification.
+
 Updated 2026-10-03, Asia/Dhaka. **Connected motion study approved; implementation
 and final Windows qualification authorized. The owner rejected preview.7 UI/UX.** Scoped qualification
 below remains evidence; it does not establish product acceptance or commercial readiness.

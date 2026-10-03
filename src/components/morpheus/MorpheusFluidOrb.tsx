@@ -14,10 +14,11 @@ type MorpheusFluidOrbProps = {
   className?: string;
   label?: string;
   identity?: 'orb' | 'arrival';
+  active?: boolean;
 };
 
 /** The identity stays intact. Audio contours consume only the real shared meter. */
-export function MorpheusFluidOrb({ state, className, label, identity = 'orb' }: MorpheusFluidOrbProps) {
+export function MorpheusFluidOrb({ state, className, label, identity = 'orb', active = true }: MorpheusFluidOrbProps) {
   const element = useRef<HTMLDivElement>(null);
   const motionState = state === 'asleep' ? 'quiet'
     : state === 'listening' || state === 'speaking' ? state
@@ -33,7 +34,7 @@ export function MorpheusFluidOrb({ state, className, label, identity = 'orb' }: 
     const syncVisibility = () => {
       unsubscribe?.();
       unsubscribe = undefined;
-      const visible = isMorpheusPresentationVisible();
+      const visible = active && isMorpheusPresentationVisible();
       node.dataset.motionPaused = String(!visible);
       node.style.setProperty('--morpheus-audio-level', '0');
       if (visible && (state === 'listening' || state === 'speaking')) {
@@ -49,7 +50,7 @@ export function MorpheusFluidOrb({ state, className, label, identity = 'orb' }: 
       unsubscribe?.();
       node.style.setProperty('--morpheus-audio-level', '0');
     };
-  }, [state]);
+  }, [state, active]);
 
   return (
     <div

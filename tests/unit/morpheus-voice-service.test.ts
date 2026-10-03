@@ -13,6 +13,7 @@ import type { ProviderAccount } from '../../electron/shared/providers/types';
 import * as voiceStorage from '../../electron/services/morpheus/storage/atomic-json';
 import { composeMorpheusPersonaContext } from '@shared/morpheus/persona-context';
 import { DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES } from '@shared/morpheus/onboarding-types';
+import { MorpheusNoSpeechError } from '../../electron/services/morpheus/voice/local-input';
 
 const ACCOUNT: ProviderAccount = {
   id: 'voice-openai',
@@ -105,6 +106,51 @@ function createHarness(options?: {
 }
 
 describe('Morpheus voice service', () => {
+  it.each(['[BLANK_AUDIO', '(wind blowing)', '[Music] [silence]', ''])('rejects local non-speech %j before a transcript can reach a draft or routing', async text => {
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => text), synthesize: vi.fn() };
+    const h = createHarness({ localVoice });
+    await expect(h.service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' })).rejects.toThrow(MorpheusNoSpeechError);
+    expect(h.recordControl).toHaveBeenCalledWith(expect.objectContaining({ event: 'transcription-rejected',
+      details: expect.objectContaining({ reason: 'no-speech', ambient: false }) }));
+    expect(h.recordControl).not.toHaveBeenCalledWith(expect.objectContaining({ event: 'transcription-completed' }));
+    expect(h.fetchImpl).not.toHaveBeenCalled();
+    if (text) expect(JSON.stringify(h.recordControl.mock.calls)).not.toContain(text);
+    h.service.dispose();
+  });
+
+  it('recovers an admitted ambient non-speech turn and accepts the next short answer', async () => {
+    let wake!: () => void;
+    const localVoice = { ready: () => true,
+      transcribe: vi.fn().mockRejectedValueOnce(new MorpheusNoSpeechError()).mockResolvedValueOnce('yes'), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), stop: vi.fn() };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true });
+    wake(); await new Promise(resolve => setTimeout(resolve, 0));
+    await h.service.setAmbientListening(true);
+    h.auditOrder.length = 0;
+    await expect(h.service.transcribeAmbient({ ...PAYLOAD, mimeType: 'audio/wav' })).rejects.toThrow(MorpheusNoSpeechError);
+    expect(h.service.presence().state).toBe('armed');
+    expect(h.auditOrder).toEqual(['emit:transcribing', 'audit:transcription-rejected', 'emit:armed']);
+    // A fresh explicit press-to-talk remains valid; rejected input never becomes a command.
+    await expect(h.service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' })).resolves.toMatchObject({ transcript: 'yes' });
+    h.service.dispose();
+  });
+
+  it('cannot return a local transcript or re-arm input after mute during audit', async () => {
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'stop'), synthesize: vi.fn() };
+    const h = createHarness({ localVoice });
+    let release!: () => void;
+    h.recordControl.mockImplementationOnce(() => new Promise<void>(resolve => { release = resolve; }));
+    const pending = h.service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' });
+    await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+    await h.service.updateSettings({ enabled: false });
+    release();
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    expect(h.service.presence().state).toBe('asleep');
+    h.service.dispose();
+  });
+
   it('warms included output only for an admitted interaction and releases it on service disposal', async () => {
     const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Open YouTube.'), synthesize: vi.fn(), warm: vi.fn(async () => undefined), dispose: vi.fn() };
     const { service } = createHarness({ apiKey: null, localVoice });

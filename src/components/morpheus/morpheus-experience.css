@@ -4,6 +4,8 @@
 [data-morpheus].morpheus-first-launch,
 [data-morpheus].morpheus-welcome,
 [data-morpheus].morpheus-workspace,
+[data-morpheus].morpheus-settings,
+[data-morpheus].morpheus-voice-strip,
 [data-morpheus].morpheus-conversation-shell {
   --experience-background: #090f0d;
   --experience-panel: #111c16;
@@ -68,23 +70,30 @@
 .morpheus-workspace .morpheus-workspace-header,
 .morpheus-workspace .morpheus-workspace-footer { background: var(--experience-background); border-color: #273b2f; }
 .morpheus-workspace .morpheus-workspace-header { height: 58px; padding: 0 24px; }
-.morpheus-workspace .morpheus-workspace-content { max-width: 860px; padding: 26px 36px 20px; }
+.morpheus-workspace .morpheus-workspace-content { max-width: 900px; padding: 28px 28px 18px; }
 .morpheus-workspace[data-has-result='true'] .morpheus-workspace-content { max-width: 1160px; }
-.morpheus-workspace .morpheus-workspace-presence { padding-bottom: 20px; border-bottom: 1px solid #25392d; }
-.morpheus-workspace .morpheus-workspace-presence h2 { font-size: 20px; font-weight: 400; letter-spacing: -.5px; }
+.morpheus-workspace .morpheus-workspace-presence { padding-bottom: 24px; border-bottom: 1px solid #25392d; }
+.morpheus-workspace .morpheus-workspace-presence h2 { font-size: 24px; font-weight: 500; letter-spacing: -.5px; }
 .morpheus-workspace :is(h1, h2, h3) { font-family: inherit; }
 .morpheus-workspace .morpheus-workspace-main { margin-top: 22px; gap: 28px; }
 .morpheus-workspace .morpheus-workspace-thread { overflow: hidden; }
-.morpheus-workspace .morpheus-workspace-messages { padding-right: 12px; padding-bottom: 12px; }
+.morpheus-workspace .morpheus-workspace-messages { padding-right: 0; padding-bottom: 16px; }
 .morpheus-workspace .morpheus-workspace-composer { height: 58px; border-radius: 15px; background: var(--experience-input); border-color: var(--experience-border); padding: 0 12px; gap: 10px; box-shadow: 0 4px 20px #0002; }
 .morpheus-workspace .morpheus-workspace-composer:focus-within { border-color: #77c899; box-shadow: 0 0 0 3px #85f5b90b; }
 .morpheus-workspace .morpheus-workspace-composer input { font-size: 15px; }
 .morpheus-workspace .morpheus-workspace-composer button[type='submit']:enabled { color: #082014; background: #9cf7c6; border-radius: 10px; }
 .morpheus-workspace .morpheus-workspace-result { background: transparent; }
 .morpheus-workspace [data-testid='morpheus-conversation-assistant'],
-.morpheus-conversation-shell [data-testid='morpheus-conversation-assistant'] { background: transparent; border-left: 2px solid #467b59; border-radius: 0; padding: 3px 0 3px 15px; }
+.morpheus-conversation-shell [data-testid='morpheus-conversation-assistant'],
+.morpheus-workspace .morpheus-conversation-reply,
+.morpheus-conversation-shell .morpheus-conversation-reply { background: transparent; border-left: 2px solid #467b59; border-radius: 0; padding: 3px 0 3px 15px; }
+.morpheus-workspace .morpheus-conversation-reply { margin-top: 16px; max-width: 100%; }
 .morpheus-workspace [data-testid='morpheus-conversation-user'],
-.morpheus-conversation-shell [data-testid='morpheus-conversation-user'] { background: #17291e; border-radius: 15px 15px 5px 15px; padding: 14px 17px; }
+.morpheus-conversation-shell [data-testid='morpheus-conversation-user'],
+.morpheus-workspace [data-testid='morpheus-conversation-queued'],
+.morpheus-conversation-shell [data-testid='morpheus-conversation-queued'],
+.morpheus-workspace .morpheus-conversation-user-bubble,
+.morpheus-conversation-shell .morpheus-conversation-user-bubble { width: fit-content; max-width: 88%; margin-left: auto; background: #17291e; border: 1px solid #2b4435; border-radius: 16px 16px 5px 16px; padding: 12px 16px; overflow-wrap: anywhere; }
 .morpheus-workspace [data-testid='morpheus-first-success'],
 .morpheus-conversation-shell [data-testid='morpheus-first-success'] { background: transparent; border: 0; padding: 4px 0 12px; }
 .morpheus-workspace .morpheus-workspace-footer { height: 38px; }
@@ -96,12 +105,37 @@
 .morpheus-conversation-shell .morpheus-compact-presence { padding: 7px 0 17px; border-bottom: 1px solid #293d30; }
 .morpheus-conversation-shell .morpheus-compact-presence p:first-child { font-size: 16px; font-weight: 400; }
 .morpheus-conversation-shell .morpheus-compact-log { padding-top: 16px; overscroll-behavior: contain; }
+.morpheus-conversation-shell .morpheus-compact-presence .morpheus-fluid-orb { flex-shrink: 0; }
 .morpheus-conversation-shell .morpheus-setup-composer { padding: 6px 9px; gap: 4px; }
 .morpheus-conversation-shell .morpheus-setup-composer button[type='submit']:enabled { background: #9cf7c6; color: #082014; border-radius: 9px; }
 .morpheus-live-caption { flex: none; display: flex; align-items: center; gap: 10px; margin-top: 12px; border: 1px solid #36523f; border-radius: 13px; padding: 11px 13px; background: #182a1f; color: #ddefe3; }
 .morpheus-live-caption-copy { min-width: 0; flex: 1; font-size: 13px; line-height: 1.5; }
 .morpheus-live-caption-label { display: block; color: #a9d8bb; font-size: 11px; margin-bottom: 3px; }
 .morpheus-live-caption button { flex: none; padding: 7px; border-radius: 8px; color: #a5e7bd; }
+.morpheus-settings-button { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 7px; min-height: 36px; padding: 0 12px; border: 1px solid #354e3e; border-radius: 9px; font-size: 12px; font-weight: 500; color: #dcebe1; background: #122019; }
+.morpheus-settings-button:hover { background: #1b3025; border-color: #609273; }
+.morpheus-settings-button:focus-visible { outline: 2px solid #85f5b9; outline-offset: 3px; }
+/* Status participates in the shell's flex layout: it can never cover navigation. */
+[data-morpheus].morpheus-voice-strip { flex: none; border-bottom: 1px solid #273b2f; padding: 8px 24px; background: #102019; color: #dcebe1; --foreground: 140 24% 91%; --muted-foreground: 140 14% 69%; }
+.morpheus-voice-strip-ambient { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 38px; }
+.morpheus-voice-strip .text-2xs { font-size: 12px; line-height: 1.4; }
+.morpheus-voice-settings-link { margin-left: auto; color: #a5e7bd; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; padding: 2px 4px; }
+.morpheus-voice-strip-content { max-width: 900px; margin: 0 auto; }
+.morpheus-voice-strip-active { max-height: 28vh; overflow: auto; }
+.morpheus-voice-strip-active .morpheus-voice-strip-content { flex-wrap: wrap; }
+.morpheus-voice-strip-active .morpheus-voice-strip-content > .min-w-0 { flex-basis: 180px; }
+/* Imported controls inherit the conversation palette, spacing and typography. */
+[data-morpheus].morpheus-settings { --background: 160 25% 5%; --foreground: 140 24% 95%; --muted-foreground: 140 12% 69%; --border: 140 19% 26%; --surface-input: 145 24% 8%; --surface-modal: 145 24% 9%; --card: 145 24% 9%; --card-foreground: 140 24% 95%; --morpheus-surface-1: 160 25% 5%; --morpheus-surface-2: 145 24% 9%; }
+.morpheus-settings :is(h1, h2, h3) { font-family: inherit; }
+.morpheus-settings h2 { font-size: 20px; font-weight: 500; line-height: 1.4; }
+.morpheus-settings-header { height: 58px; padding: 0 24px; }
+.morpheus-settings-tabs { padding: 12px max(24px, calc((100% - 844px) / 2)); }
+.morpheus-settings-tabs button[aria-pressed='true'] { color: #bdf9d5; background: #1c3426; }
+.morpheus-settings-content { max-width: 900px; padding: 24px 28px 36px; }
+[data-morpheus].morpheus-workspace :is(button, a, input):focus-visible,
+[data-morpheus].morpheus-settings :is(button, a, input, select):focus-visible,
+[data-morpheus].morpheus-voice-strip :is(button, a):focus-visible { outline: 2px solid #85f5b9; outline-offset: 3px; }
+[data-morpheus].morpheus-workspace .morpheus-workspace-composer input:focus-visible { outline: none; }
 [data-morpheus].morpheus-opening :is(button, a):focus-visible,
 [data-morpheus].morpheus-first-launch :is(button, a, input):focus-visible,
 [data-morpheus].morpheus-conversation-shell :is(button, a, input):focus-visible { outline: 2px solid #85f5b9; outline-offset: 3px; }
@@ -122,6 +156,12 @@
   .morpheus-workspace .morpheus-workspace-presence h2 { font-size: 18px; }
   .morpheus-workspace .morpheus-workspace-presence p { font-size: 12px; }
   .morpheus-workspace .morpheus-workspace-icon-button { width: 32px; }
+  .morpheus-settings-header { padding: 0 12px; }
+  .morpheus-settings-tabs { padding: 10px 12px; }
+  .morpheus-settings-content { padding: 18px 16px 28px; }
+  [data-morpheus].morpheus-voice-strip { padding: 8px 16px; }
+  .morpheus-voice-wake-hint { flex-basis: auto; }
+  .morpheus-settings-button { padding: 0 8px; gap: 5px; }
   .morpheus-opening .morpheus-opening-identity { width: 88px; height: 88px; margin-bottom: 38px; }
   .morpheus-welcome .morpheus-welcome-body { padding: 28px 22px; }
   .morpheus-welcome .morpheus-welcome-presence { width: 88px; height: 88px; }

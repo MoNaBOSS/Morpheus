@@ -37,6 +37,9 @@ export function MorpheusLiveVoiceCaption({ surface, onEdit, onRepair }: {
     : errorKind === 'speech' ? 'morpheus.voice.dialogue.speechFailed'
       : `morpheus.voice.${errorKind === 'device' ? 'deviceBody' : errorKind === 'repeat' ? 'repeatBody'
         : errorKind === 'network' ? 'networkBody' : errorKind === 'configuration' ? 'configurationBody' : 'errorBody'}`;
+  // The full shell owns active status and recovery. Compact has no shell row,
+  // so it keeps local controls. Confirmed captions remain editable in both.
+  if (surface === 'full' && (active || failed)) return null;
   if (!failed && (mode === 'hidden' || !active && !caption)) return null;
   return <div className="morpheus-live-caption" data-testid={`morpheus-live-caption-${surface}`}>
     <Mic size={17} aria-hidden className="shrink-0 text-[#85f5b9]" />

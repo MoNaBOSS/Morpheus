@@ -7,6 +7,7 @@ import { useMorpheusArrivalStore } from '@/stores/morpheus-arrival';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { MorpheusFluidOrb } from '../MorpheusFluidOrb';
+import { MorpheusVoiceIndicator } from '../MorpheusVoiceRuntime';
 import morpheusLogo from '@/assets/morpheus-logo.svg';
 import { playMorpheusSpeech, stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
 import { MorpheusTrayChoice } from './MorpheusTrayChoice';
@@ -62,6 +63,7 @@ export function MorpheusWelcome() {
           <span className="flex items-center gap-2.5 text-sm"><img src={morpheusLogo} alt="" className="h-5 w-5" />{t('morpheus.title')}</span>
           <Dialog.Close data-testid="morpheus-welcome-close" aria-label={t('morpheus.arrival.close')} className="morpheus-fluid-icon"><X size={19} /></Dialog.Close>
         </header>
+        <MorpheusVoiceIndicator inWelcome />
         <div className="morpheus-welcome-body">
           <div className="morpheus-welcome-presence">
             <MorpheusFluidOrb state={audible ? 'speaking' : preparingSpeech ? 'understanding' : 'ready'} identity="arrival" className="h-full w-full" label={t('morpheus.title')} />

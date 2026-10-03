@@ -1,5 +1,79 @@
 # Morpheus experience specification
 
+## Current correction — preview.9 review build
+
+The owner authorized the bounded correction after the preview.8 rejection below.
+Keep the approved Floating companion direction and existing runtime owners.
+The current implementation reserves layout space for voice status, labels Settings
+in compact/full, aligns conversation and task bubbles with the composer, and gives
+connected Settings the same typography and palette. Voice repair keeps the origin
+and draft; welcome owns its status controls inside the modal focus boundary.
+Opening Voice settings preserves an existing microphone failure until deliberate
+retry or repair. A successful settings edit settles a cleared failure to idle;
+reading or saving configuration does not assert a successful microphone test.
+
+The original header M now reveals and gently breathes/tilts; the original orb
+artwork itself moves at actual desktop sizes. Quiet motion uses two moving layers,
+with reduced-motion, hidden-window and covered-surface guards. Listening/speaking
+deformation follows the existing real microphone/PCM meter; zero signal stays
+steady. Presentation state fixtures are not microphone evidence.
+Hidden/covered surfaces remove decorative animation instances and restore them
+when shown. A measured Chromium case reported `paused` while clocks advanced;
+the verification now checks absent animation instances and stable transforms.
+
+Included local input now rejects near-silence, DC bias and isolated clicks before
+decoding, and rejects known annotation-only output before draft/routing. Valid
+short answers remain accepted. This conservative gate is not a full speech/noise
+classifier; ordinary-prose hallucinations and physical acoustic quality remain
+open. No provider configuration, speech model or credentials were replaced.
+
+Next gate: review the actual corrected Windows shell and short motion recording.
+Check visible Settings, compact/settings/return, aligned messages/results and
+motion at ordinary size before broader work. Package identity, scoped verification
+and remaining physical/commercial gates are maintained in the current checklist.
+Do not label this review build production-ready or reinstall over the owner's
+existing app as part of automated qualification.
+
+## Current owner review — preview.8 rejected, 2026-10-03
+
+The approved study did **not** establish acceptance of its implementation. The
+owner rejected preview.8 alignment, navigation and visible motion. Treat the
+integration/qualification sections below as scoped historical evidence, not a
+completed experience. Preserve the selected Floating companion direction, identity,
+backend and profiles; another broad rewrite or installer is not the next step.
+
+Live Windows inspection restored the installed app and reproduced the wake badge
+covering the full conversation navigation. Ctrl+Shift+Space opened compact;
+its Settings control opened connected Voice settings, and Advanced exposed the
+preserved settings/workspace links. The user-supplied 162.93-second recording
+also shows the overlap, inconsistent surfaces and raw recognition artifacts.
+At about 74 seconds, a non-speech annotation occupies both the input and text
+above it; around 154 seconds, compact shows a raw blank-audio marker. The same
+marker was visible in the live app. No new microphone capture or provider request
+was performed during this inspection.
+
+Confirmed preview.8 implementation gaps (addressed by the correction above):
+- Ambient status is a high-z-index fixed overlay at `top-11`, with no layout
+  space reserved; it covers Settings/history/compact/More in CommandCenter.
+- The header M is a static image. Consecutive video frames (74–77.5 seconds)
+  show movement in narrow outer orb contours, with a static center. Animation
+  existence does not establish perceptibility or the approved expressive motion.
+- Conversation layout combines JSX spacing, global CSS and experience overrides;
+  messages add their own left inset. Connected Settings still uses different
+  surfaces/typography from the conversation. This is not a unified shell.
+- Local ASR returns trimmed engine text; the service rejects only an empty string
+  before the renderer copies it into the draft. Non-speech output needs semantic
+  rejection and actionable recovery. Do not merely hide a bad transcript.
+
+Authorized correction: one connected conversation shell, with a reserved in-flow
+voice-status area, visible labeled Settings, consistent content/composer alignment,
+and recognisable motion at the actual compact/full sizes. Verify wake enabled,
+active/error states, reduced motion, resize and compact→Settings→return together.
+Pair that with a bounded silence/noise transcription correction before claiming
+a successful spoken journey. Keep tests and actual user acceptance separate.
+Full speech quality, acoustic interruption, provider replies and release acceptance
+remain open; this inspection is not a new qualification of them.
+
 Updated 2026-10-03, Asia/Dhaka. **Approved design; implementation authorized. The owner
 has rejected the preview.7 UI/UX as well as the earlier preview.5 experience.**
 The owner subsequently approved the recommended direction: Floating companion

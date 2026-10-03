@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { WebBrowserHost } from '@/components/web-browser/WebBrowserHost';
 import { MorpheusProductNav } from '@/components/morpheus/signal/MorpheusProductNav';
 import { motion, useReducedMotion } from 'framer-motion';
+import { MorpheusVoiceIndicator } from '@/components/morpheus/MorpheusVoiceRuntime';
 
 export function MainLayout() {
   const location = useLocation();
@@ -37,32 +38,35 @@ export function MainLayout() {
     >
       <TitleBar />
 
-      <div className="flex min-h-0 flex-1 overflow-hidden bg-surface-sidebar">
-        {isWorkspace || isSimpleSettings ? null : isMorpheusProductSurface ? <MorpheusProductNav /> : <Sidebar />}
-        <main
-          data-testid="main-content"
-          className={cn(
-            'relative min-h-0 flex-1 bg-background',
-            isMorpheusProductSurface ? 'overflow-hidden p-0' : 'overflow-auto p-6',
-            !isMorpheusProductSurface && 'rounded-tl-2xl border-l border-border/60',
-            !isWin && 'border-t border-border/60',
-          )}
-        >
-          {isMac && (
-            <div
-              data-testid="mac-main-drag-region"
-              aria-hidden="true"
-              className="drag-region absolute inset-x-0 top-0 z-10"
-              style={{ height: MAC_SIDEBAR_CHROME_HEIGHT }}
-            />
-          )}
-          {isMorpheusProductSurface ? (
-            <motion.div key={location.pathname} className="h-full min-h-0" initial={{ opacity: 0, y: reducedMotion ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reducedMotion ? 0 : 0.24 }}>
-              <Outlet />
-            </motion.div>
-          ) : <Outlet />}
-        </main>
-        <WebBrowserHost />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <MorpheusVoiceIndicator />
+        <div className="flex min-h-0 flex-1 overflow-hidden bg-surface-sidebar">
+          {isWorkspace || isSimpleSettings ? null : isMorpheusProductSurface ? <MorpheusProductNav /> : <Sidebar />}
+          <main
+            data-testid="main-content"
+            className={cn(
+              'relative min-h-0 flex-1 bg-background',
+              isMorpheusProductSurface ? 'overflow-hidden p-0' : 'overflow-auto p-6',
+              !isMorpheusProductSurface && 'rounded-tl-2xl border-l border-border/60',
+              !isWin && 'border-t border-border/60',
+            )}
+          >
+            {isMac && (
+              <div
+                data-testid="mac-main-drag-region"
+                aria-hidden="true"
+                className="drag-region absolute inset-x-0 top-0 z-10"
+                style={{ height: MAC_SIDEBAR_CHROME_HEIGHT }}
+              />
+            )}
+            {isMorpheusProductSurface ? (
+              <motion.div key={location.pathname} className="h-full min-h-0" initial={{ opacity: 0, y: reducedMotion ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reducedMotion ? 0 : 0.24 }}>
+                <Outlet />
+              </motion.div>
+            ) : <Outlet />}
+          </main>
+          <WebBrowserHost />
+        </div>
       </div>
     </div>
   );
