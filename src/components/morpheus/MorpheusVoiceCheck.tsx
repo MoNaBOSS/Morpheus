@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { playMorpheusSpeech, stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import type { MorpheusVoiceStatus } from '@shared/morpheus/voice-types';
+import { MorpheusFluidOrb } from './MorpheusFluidOrb';
 
 /** Real setup checks. Configuration is not proof of playback or recognition. */
 export function MorpheusVoiceCheck({ status }: { status: MorpheusVoiceStatus }) {
@@ -10,6 +11,7 @@ export function MorpheusVoiceCheck({ status }: { status: MorpheusVoiceStatus }) 
   const [preview, setPreview] = useState<'idle' | 'playing' | 'neural' | 'windows' | 'failed'>('idle');
   const generation = useRef(0);
   const phase = useMorpheusVoiceStore((s) => s.phase);
+  const presence = useMorpheusVoiceStore((s) => s.presence?.state);
   const source = useMorpheusVoiceStore((s) => s.source);
   const transcript = useMorpheusVoiceStore((s) => s.transcript);
   const startListening = useMorpheusVoiceStore((s) => s.startListening);
@@ -43,6 +45,7 @@ export function MorpheusVoiceCheck({ status }: { status: MorpheusVoiceStatus }) 
   return <div data-testid="morpheus-voice-check" className="space-y-3 rounded-lg border border-border/60 bg-surface-input p-3">
     <p className="text-sm font-medium">{t('morpheus.voice.check.title')}</p>
     <p className="text-xs leading-relaxed text-muted-foreground">{t(local ? 'morpheus.experience.voice.checkLocal' : 'morpheus.voice.check.description')}</p>
+    {recording || preview === 'playing' ? <div className="flex items-center gap-3" data-testid="morpheus-voice-check-feedback"><MorpheusFluidOrb className="h-10 w-10 shrink-0" state={recording ? 'listening' : presence === 'speaking' ? 'speaking' : 'understanding'}/><p className="text-xs text-muted-foreground">{t(recording ? 'morpheus.voice.presence.listening' : presence === 'speaking' ? 'morpheus.voice.presence.speaking' : 'morpheus.voice.preparingSpeech')}</p></div> : null}
     <div className="flex flex-wrap gap-2">
       <button type="button" data-testid="morpheus-voice-preview"
         className="rounded-md border border-border px-3 py-2 text-xs hover:bg-white/5 disabled:opacity-50"

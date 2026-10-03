@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as Dialog from '@radix-ui/react-dialog';
 import { ArrowRight, Mic, Volume2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { MatrixRain } from '@/components/morpheus/boot/MatrixRain';
+import morpheusLogo from '@/assets/morpheus-logo.svg';
 import { MorpheusFluidOrb } from '@/components/morpheus/MorpheusFluidOrb';
 import { MorpheusTrayChoice } from './MorpheusTrayChoice';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
@@ -168,10 +168,9 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
 
   return <Dialog.Root open onOpenChange={(open) => { if (!open) void finish(); }}><Dialog.Portal><Dialog.Content data-morpheus data-testid="morpheus-activation" data-stage={stage} className="morpheus-first-launch fixed inset-0 z-[9997] flex flex-col overflow-hidden bg-[#040907] text-[#edf5ef]" aria-describedby={undefined} onOpenAutoFocus={(event) => { event.preventDefault(); introInput.current?.focus(); }}>
     <Dialog.Title className="sr-only">{t('morpheus.title')}</Dialog.Title>
-    <div aria-hidden className="morpheus-first-launch-rain"><MatrixRain /></div>
-    <header className="relative z-10 flex h-12 shrink-0 items-center justify-between border-b border-white/10 px-5"><span className="text-sm font-semibold text-[#53edb4]">M <span className="ml-2 text-xs font-normal text-[#edf5ef]">{t('morpheus.title')}</span></span><button type="button" aria-label={t('morpheus.activationV2.close')} onClick={() => void finish()} className="rounded p-2 text-[#a0b6aa] hover:text-white"><X size={16} /></button></header>
-    <main className="relative z-10 flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-5 py-6 text-center">
-      <MorpheusFluidOrb state={signalState} className={stage === 'connections' || stage === 'voice' || stage === 'personalize' ? 'h-12 w-12 shrink-0' : 'h-24 w-24 shrink-0'} label={t('morpheus.title')} />
+    <header className="relative z-10 flex h-14 shrink-0 items-center justify-between border-b border-white/10 px-6"><span className="morpheus-setup-brand"><img src={morpheusLogo} alt="" />{t('morpheus.title')}</span><button type="button" aria-label={t('morpheus.activationV2.close')} onClick={() => void finish()} className="rounded p-2 text-[#a0b6aa] hover:text-white"><X size={16} /></button></header>
+    <main className="morpheus-setup-main relative z-10 flex min-h-0 flex-1 flex-col items-center overflow-y-auto text-center">
+      <MorpheusFluidOrb state={signalState} identity="arrival" className={stage === 'connections' || stage === 'voice' || stage === 'personalize' ? 'h-14 w-14 shrink-0' : 'h-24 w-24 shrink-0'} label={t('morpheus.title')} />
       {stage === 'name' ? <div data-testid="morpheus-activation-intro" className="mt-4 w-full max-w-[580px]">
         <p className="text-sm text-[#a0b6aa]">{t('morpheus.activationV2.hello')}</p><h1 className="mt-3 text-[clamp(28px,4vw,38px)] font-semibold tracking-tight">{t('morpheus.activationV2.nameQuestion')}</h1>
         <form className="morpheus-setup-composer mt-6 flex items-center gap-2" onSubmit={(event) => { event.preventDefault(); setStage('connections'); }}>

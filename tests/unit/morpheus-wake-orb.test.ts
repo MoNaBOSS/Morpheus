@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MorpheusWakeOrb } from '@electron/main/morpheus-wake-orb';
 import { wakeOrbBounds, wakeOrbHoverBounds } from '@electron/main/morpheus-presence-layout';
 
-const mock = vi.hoisted(() => ({ windows: [] as Array<{
+const mock = vi.hoisted(() => ({ cursor: { x: 1500, y: 900 }, windows: [] as Array<{
   finishLoad(): void;
   showInactive: ReturnType<typeof vi.fn>;
   show: ReturnType<typeof vi.fn>;
@@ -46,11 +46,50 @@ vi.mock('electron', async () => {
   return {
     BrowserWindow: Window,
     app: { isPackaged: false },
-    screen: { getPrimaryDisplay: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1040 } }) },
+    screen: {
+      getPrimaryDisplay: () => ({ id: 1, workArea: { x: 0, y: 0, width: 1920, height: 1040 } }),
+      getAllDisplays: () => [{ id: 1, workArea: { x: 0, y: 0, width: 1920, height: 1040 } }],
+      getDisplayMatching: () => ({ id: 1, workArea: { x: 0, y: 0, width: 1920, height: 1040 } }),
+      getCursorScreenPoint: () => mock.cursor,
+    },
   };
 });
 
 describe.skipIf(process.platform !== 'win32')('native orb visibility across delayed loading', () => {
+  it('counts a keyboard position reset as activity before idle dismissal', () => {
+    vi.useFakeTimers(); const orb = new MorpheusWakeOrb(vi.fn());
+    try {
+      orb.show(); const window = mock.windows[0]; window.finishLoad();
+      vi.advanceTimersByTime(9_000); orb.present('reset-position');
+      vi.advanceTimersByTime(9_000); expect(window.hide).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1_180); expect(window.hide).toHaveBeenCalledOnce();
+    } finally { orb.dispose(); vi.useRealTimers(); }
+  });
+  it('uses Main cursor positions for drag, clamps to the work area, and persists only the finished position', () => {
+    const save = vi.fn(); const orb = new MorpheusWakeOrb(vi.fn(), undefined, save);
+    orb.show(); mock.windows[0].finishLoad();
+    const original = orb.anchorBounds();
+    mock.cursor = { x: 1500, y: 900 };
+    orb.present('drag-start'); mock.cursor = { x: -5000, y: -5000 }; orb.present('drag-move');
+    expect(orb.anchorBounds()).toEqual({ x: 16, y: 16, width: 56, height: 56 });
+    expect(save).not.toHaveBeenCalled();
+    orb.present('drag-end'); expect(save).toHaveBeenCalledOnce();
+    const persisted = save.mock.calls[0][0];
+    const restored = new MorpheusWakeOrb(vi.fn()); restored.restorePlacement(persisted);
+    expect(restored.anchorBounds()).toEqual(orb.anchorBounds());
+    orb.present('move-right'); expect(orb.anchorBounds().x).toBe(32);
+    orb.present('reset-position'); expect(orb.anchorBounds()).toEqual(original);
+    orb.dispose(); restored.dispose();
+  });
+
+  it('ignores malformed saved placement and safely relocates a removed display', () => {
+    const orb = new MorpheusWakeOrb(vi.fn());
+    const initial = orb.anchorBounds();
+    orb.restorePlacement({ displayId: 1, x: NaN, y: 0 }); expect(orb.anchorBounds()).toEqual(initial);
+    orb.restorePlacement({ displayId: 99, x: 0.5, y: 0.5 });
+    expect(orb.anchorBounds()).toEqual({ x: 932, y: 492, width: 56, height: 56 });
+    orb.dispose();
+  });
   beforeEach(() => { mock.windows.length = 0; });
   it('fades idle presence after ten seconds and holds during real speech', () => {
     vi.useFakeTimers(); const orb = new MorpheusWakeOrb(vi.fn());

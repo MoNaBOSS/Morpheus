@@ -71,14 +71,14 @@ beforeEach(() => {
 });
 afterEach(() => { stopMorpheusSpeech(); vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
-function pcmHarness() {
+function pcmHarness(source?: 'included-local') {
   let respond!: (result: unknown) => void;
   mocks.synthesizeSpeech.mockReturnValueOnce(new Promise((resolve) => { respond = resolve; }));
   const pending = playMorpheusSpeech('The full reply.', { neuralAvailable: true, format: 'pcm24' });
   const streamId = mocks.synthesizeSpeech.mock.calls[0][0].streamId as string;
   const player = mocks.createPcmPlayback.mock.results[0].value;
   const emit = (sequence: number, values = [1, 2]) => mocks.onSpeechChunk.mock.calls[0][0]({
-    streamId, sequence, mimeType: 'audio/pcm', audioBase64: window.btoa(String.fromCharCode(...values)),
+    streamId, sequence, mimeType: 'audio/pcm', audioBase64: window.btoa(String.fromCharCode(...values)), ...(source ? { source } : {}),
   });
   const result = (chunkCount = 3, byteLength = 6) => ({
     mimeType: 'audio/pcm', audioBase64: '', providerAccountId: 'included-local',
@@ -89,6 +89,28 @@ function pcmHarness() {
 async function flushPcmResponse() { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); }
 
 describe('sequenced PCM delivery completion', () => {
+  it('buffers included audio for at most 450ms without claiming playback has started', async () => {
+    vi.useFakeTimers(); const h = pcmHarness('included-local'); h.emit(0);
+    await vi.advanceTimersByTimeAsync(449);
+    expect(h.player.push).not.toHaveBeenCalled();
+    expect(mocks.setVoiceSpeaking).not.toHaveBeenCalledWith({ speaking: true });
+    await vi.advanceTimersByTimeAsync(1); expect(h.player.push).toHaveBeenCalledOnce();
+    h.emit(1); h.emit(2); h.respond(h.result()); await expect(h.pending).resolves.toBe('neural');
+    expect(h.player.push).toHaveBeenCalledTimes(3); expect(vi.getTimerCount()).toBe(0);
+  });
+  it('flushes a fully delivered short included reply immediately instead of waiting for the buffer', async () => {
+    vi.useFakeTimers(); const h = pcmHarness('included-local'); h.emit(0); h.respond(h.result(1, 2));
+    await expect(h.pending).resolves.toBe('neural');
+    expect(h.player.push).toHaveBeenCalledOnce(); expect(h.player.finish).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it('discards the initial buffer on cancellation without scheduling stale audio', async () => {
+    vi.useFakeTimers(); const h = pcmHarness('included-local'); h.emit(0); stopMorpheusSpeech();
+    await expect(h.pending).resolves.toBe('cancelled'); await vi.advanceTimersByTimeAsync(500);
+    h.emit(1); h.respond(h.result(2, 4)); await flushPcmResponse();
+    expect(h.player.push).not.toHaveBeenCalled(); expect(h.player.finish).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
   it('does not finish when the invoke response arrives between the first and later IPC chunks', async () => {
     const h = pcmHarness();
     h.emit(0); h.respond(h.result()); await flushPcmResponse();

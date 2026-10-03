@@ -8,6 +8,7 @@ import { useChatStore } from './chat';
 import { useSettingsStore } from './settings';
 import type {
   MorpheusAssistantSnapshot,
+  MorpheusAssistantTurn,
   MorpheusAssistantTurnSource,
 } from '@shared/morpheus/assistant-session-types';
 
@@ -16,12 +17,13 @@ type MorpheusConversationState = {
   draftText: string;
   loading: boolean;
   submitting: boolean;
+  submissionSource: MorpheusAssistantTurnSource | null;
   dispatchError: string | null;
   blockedTurnId: string | null;
   start: () => () => void;
   refresh: () => Promise<void>;
   setDraft: (text: string) => void;
-  submit: (text: string, source: MorpheusAssistantTurnSource) => Promise<boolean>;
+  submit: (text: string, source: MorpheusAssistantTurnSource, onAdmitted?: (turn: MorpheusAssistantTurn) => void) => Promise<boolean>;
   selectConversation: (conversationId: string) => Promise<void>;
   retryPending: () => void;
   restoreHistory: (conversationId: string) => Promise<void>;
@@ -204,6 +206,7 @@ export const useMorpheusConversationStore = create<MorpheusConversationState>((s
   draftText: '',
   loading: false,
   submitting: false,
+  submissionSource: null,
   dispatchError: null,
   blockedTurnId: null,
 
@@ -259,19 +262,22 @@ export const useMorpheusConversationStore = create<MorpheusConversationState>((s
     void flushDrafts();
   },
 
-  submit: async (text, source) => {
+  submit: async (text, source, onAdmitted) => {
     const normalized = text.trim();
     if (!get().snapshot) await get().refresh();
     const conversationId = get().snapshot?.selectedConversationId;
     if (!conversationId || !normalized) return false;
-    set({ submitting: true, dispatchError: null });
+    set({ submitting: true, submissionSource: source, dispatchError: null });
     try {
-      await hostApi.morpheus.admitAssistantTurn({
+      const turn = await hostApi.morpheus.admitAssistantTurn({
         conversationId,
         clientRequestId: crypto.randomUUID(),
         text: normalized,
         source,
       });
+      // Bind optional live presentation before the existing dispatch refresh.
+      // The returned Main identity, rather than text/history, owns correlation.
+      onAdmitted?.(turn);
       if (get().draftText.trim() === normalized) get().setDraft('');
       await get().refresh();
       return true;
@@ -279,7 +285,7 @@ export const useMorpheusConversationStore = create<MorpheusConversationState>((s
       set({ dispatchError: messageFromError(error) });
       return false;
     } finally {
-      set({ submitting: false });
+      set({ submitting: false, submissionSource: null });
     }
   },
 

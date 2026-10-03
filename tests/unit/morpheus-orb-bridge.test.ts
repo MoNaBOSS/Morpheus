@@ -117,6 +117,7 @@ describe('sandboxed Morpheus orb bridge', () => {
     })).rejects.toThrow('Invalid orb turn');
     expect(() => handlers.present(trustedEvent, 'shell')).toThrow('Invalid orb presentation request');
     expect(() => handlers.present(trustedEvent, 'focus', 'open')).toThrow('Invalid orb presentation request');
+    expect(() => handlers.present(trustedEvent, { action: 'drag-move', x: 10, y: 20 })).toThrow('Invalid orb presentation request');
     expect(snapshot).not.toHaveBeenCalled();
     expect(updateDraft).not.toHaveBeenCalled();
     expect(admitTurn).not.toHaveBeenCalled();
@@ -157,6 +158,11 @@ describe('sandboxed Morpheus orb bridge', () => {
     handlers.present(trustedEvent, 'collapse');
     handlers.present(trustedEvent, 'open');
     handlers.present(trustedEvent, 'focus');
-    expect(present.mock.calls.map(([action]) => action)).toEqual(['hover', 'collapse', 'open', 'focus']);
+    handlers.present(trustedEvent, 'drag-start');
+    handlers.present(trustedEvent, 'drag-move');
+    handlers.present(trustedEvent, 'drag-end');
+    handlers.present(trustedEvent, 'move-left');
+    handlers.present(trustedEvent, 'reset-position');
+    expect(present.mock.calls.map(([action]) => action)).toEqual(['hover', 'collapse', 'open', 'focus', 'drag-start', 'drag-move', 'drag-end', 'move-left', 'reset-position']);
   });
 });

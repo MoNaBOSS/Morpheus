@@ -1,5 +1,22 @@
 # Current continuation — owner experience correction, 2026-10-02
 
+**October 3 latest authorization: approved design; implementation and final Windows qualification requested.**
+The owner accepted the connected motion study ("It's great"), then requested the
+final application with connected settings and substantial voice/animation improvement.
+This supersedes the earlier implementation hold. Continue the existing E: checkout,
+preserve all work, implement and test the approved experience through the original
+owners, and package a clearly identified candidate. Do not claim public production
+readiness for unresolved physical or external-service gates.
+
+**Prior October 3 design checkpoint:**
+The owner rejected preview.7 UI/UX, then approved Floating companion + Conversation
+card with temporary editable captions and requested an eye-pleasing animated opening
+and existing logo. The new study and remaining review gates are recorded in the single
+experience specification and completion checklist linked below. Review its motion
+and actual voice quality before application integration. Earlier autonomous
+finish-everything authorization is superseded. Computer control stopped when the
+owner pressed Escape.
+
 Preview.5 was installed and rejected by the owner. Continue **Checkpoint A -> B ->
 C -> D -> E** in reviewable implementation pieces. On 2026-10-02 the owner changed
 the review schedule: complete the work, then review everything together. Simplify
@@ -12,7 +29,7 @@ voice key. Preserve all existing work, runtime owners and profiles.
 
 Checkpoint A verified clean `4a9f25e9` / matching fetched origin branch and installed
 preview.5 payload hashes, and reproduced navigation/continuity/spacing/error gaps.
-Checkpoint A is complete at `3bcad683`. Implementation is authorized in the isolated
+Checkpoint A is complete at `3bcad683`. Prior implementation used the isolated
 worktree `E:\Morpheus-builds\experience-preview6\source`. Preview.6 is implemented
 and packaged from application source `12a3689806d6bfe87cdc63f4b6600ecea21c2093`:
 simplified conversation/settings, retained Advanced capabilities, animated 56-DIP
@@ -44,12 +61,17 @@ normal-runtime bytes. The identical copy and current spec/checklist/evidence/med
 are delivered in this chat's `outputs\preview7`; later commits change docs only.
 Rejected reload/speech/chronology candidates stay preserved, as does preview.6.
 Original source checkouts remain clean at `fa988f06`/`3bcad683`. Previously installed
-Program Files/per-user paths are currently absent for an unknown reason; no task
-installer/uninstaller caused this and historical preview.5 identity is not current.
+Program Files/per-user paths were absent at that handoff. October 3 live inspection
+subsequently found installed per-user preview.7 with exact delivered EXE/app.asar
+hashes. The current screenshot's UI is rejected; no complete live settings/voice
+walkthrough occurred before the owner stopped Computer Use. No task installer ran.
 
-**Current next correction:** October 3 source audit confirmed voice-origin ACP
+**Current next step:** integrate the approved arrival/companion/card motion and
+contextual settings, connect ordinary ACP spoken replies, improve included local
+speech latency, then qualify the actual package. October 3 source audit confirmed voice-origin ACP
 chat replies are not automatically spoken; VoiceRuntime watches Core outcomes only.
-Connect one ordinary conversational reply through existing speech/follow-up owners,
+After direction and the connected motion/voice study are approved, connect one
+ordinary reply through existing speech/follow-up owners,
 retaining identity, cancellation, mute and reload safeguards. Warm synthesis/gap
 latency and fluid audio-reactive motion remain experience work. Passing Core tests
 do not qualify general spoken chat. Owner physical/appearance review uses the short

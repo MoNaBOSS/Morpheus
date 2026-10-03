@@ -105,6 +105,17 @@ function createHarness(options?: {
 }
 
 describe('Morpheus voice service', () => {
+  it('warms included output only for an admitted interaction and releases it on service disposal', async () => {
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Open YouTube.'), synthesize: vi.fn(), warm: vi.fn(async () => undefined), dispose: vi.fn() };
+    const { service } = createHarness({ apiKey: null, localVoice });
+    await service.status(); expect(localVoice.warm).not.toHaveBeenCalled();
+    await service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' });
+    expect(localVoice.warm).toHaveBeenCalledOnce();
+    await service.updateSettings({ enabled: false });
+    await expect(service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' })).rejects.toThrow('disabled');
+    expect(localVoice.warm).toHaveBeenCalledOnce();
+    service.dispose(); expect(localVoice.dispose).toHaveBeenCalledOnce();
+  });
   it('streams included PCM in bounded ordered events before completion without sending secrets or opening input in a generation gap', async () => {
     let finish!: () => void, chunk!: (pcm: Buffer) => void;
     const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Open YouTube.'), synthesize: vi.fn(),

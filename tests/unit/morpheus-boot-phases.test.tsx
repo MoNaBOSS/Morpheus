@@ -1,4 +1,4 @@
-import { act, cleanup, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { onFinishHydrationMock, hasHydratedMock, onGatewayStatusMock, systemInfoMock } = vi.hoisted(() => ({
@@ -28,6 +28,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 import { MorpheusBoot } from '@/components/morpheus/boot/MorpheusBoot';
+import morpheusLogo from '@/assets/morpheus-logo.svg';
 import {
   MORPHEUS_BOOT_PHASES,
   useBootPhases,
@@ -132,13 +133,15 @@ describe('MorpheusBoot', () => {
     expect(screen.queryByTestId('morpheus-boot')).toBeNull();
   });
 
-  it('renders the overlay and the canvas while booting', () => {
+  it('renders the original logo and a skippable arrival while booting', () => {
     vi.useFakeTimers();
     systemInfoMock.mockReturnValue(new Promise(() => {}));
     render(<MorpheusBoot enabled />);
 
     expect(screen.getByTestId('morpheus-boot')).toBeTruthy();
-    expect(screen.getByTestId('morpheus-boot-canvas')).toBeTruthy();
+    expect(screen.getByTestId('morpheus-boot').querySelector('canvas')).toBeNull();
+    expect(screen.getByTestId('morpheus-fluid-orb').querySelector('img')?.getAttribute('src')).toBe(morpheusLogo);
+    expect(screen.getByRole('button', { name: 'morpheus.experience.opening.skip' })).toBeTruthy();
     expect(screen.getByTestId('morpheus-boot-phase')).toBeTruthy();
   });
 
@@ -149,52 +152,31 @@ describe('MorpheusBoot', () => {
 
     expect(screen.getByTestId('morpheus-boot').getAttribute('data-arrival-mode')).toBe('returning');
     expect(screen.getByText('morpheus.boot.welcomeBack')).toBeTruthy();
-    expect(screen.getByTestId('morpheus-signal')).toBeTruthy();
+    expect(screen.getByTestId('morpheus-fluid-orb')).toBeTruthy();
   });
 
-  it('cancels its animation frame on unmount', () => {
-    // jsdom has no 2d canvas implementation, so the rain effect would bail out
-    // before ever scheduling a frame. Stub a minimal context so the real
-    // animation path — and therefore the real cleanup — is exercised.
-    const context2d = {
-      setTransform: vi.fn(),
-      fillRect: vi.fn(),
-      fillText: vi.fn(),
-      fillStyle: '',
-      font: '',
-    };
-    const getContext = vi
-      .spyOn(HTMLCanvasElement.prototype, 'getContext')
-      .mockReturnValue(context2d as unknown as CanvasRenderingContext2D);
-    const cancel = vi.spyOn(window, 'cancelAnimationFrame');
-
+  it('releases startup timers and visibility observation on unmount', () => {
+    vi.useFakeTimers();
+    systemInfoMock.mockReturnValue(new Promise(() => {}));
+    const removeListener = vi.spyOn(document, 'removeEventListener');
+    const baseline = vi.getTimerCount();
     const { unmount } = render(<MorpheusBoot enabled />);
+    expect(vi.getTimerCount()).toBeGreaterThan(baseline);
     unmount();
-
-    expect(cancel).toHaveBeenCalled();
-    getContext.mockRestore();
+    expect(vi.getTimerCount()).toBe(baseline);
+    expect(removeListener).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
+    removeListener.mockRestore();
   });
 
-  it('renders a single static frame under reduced motion', () => {
-    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(300);
-    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(300);
-    const context2d = {
-      setTransform: vi.fn(),
-      fillRect: vi.fn(),
-      fillText: vi.fn(),
-      fillStyle: '',
-      font: '',
-    };
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext')
-      .mockReturnValue(context2d as unknown as CanvasRenderingContext2D);
-    vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: true } as MediaQueryList);
-    const requestFrame = vi.spyOn(window, 'requestAnimationFrame');
-
-    render(<MorpheusBoot enabled />);
-
-    expect(requestFrame).not.toHaveBeenCalled();
-    expect(context2d.fillText).toHaveBeenCalled();
-    vi.restoreAllMocks();
+  it('lets the visible skip control dismiss a stalled startup exactly once', async () => {
+    vi.useFakeTimers();
+    systemInfoMock.mockReturnValue(new Promise(() => {}));
+    const onDismissed = vi.fn();
+    render(<MorpheusBoot enabled onDismissed={onDismissed} />);
+    fireEvent.click(screen.getByRole('button', { name: 'morpheus.experience.opening.skip' }));
+    await act(async () => { vi.advanceTimersByTime(350); });
+    expect(screen.queryByTestId('morpheus-boot')).toBeNull();
+    expect(onDismissed).toHaveBeenCalledOnce();
   });
 
   it('dismisses on Escape', async () => {

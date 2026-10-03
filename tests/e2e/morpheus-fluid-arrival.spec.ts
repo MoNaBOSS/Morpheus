@@ -18,7 +18,7 @@ test.describe('Fluid Morpheus arrival', () => {
       expect(await welcome.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
       await expect(welcome).toContainText('Moving to the tray does not enable your microphone');
       await expect(page.getByTestId('morpheus-ambient-voice-indicator')).toHaveCount(0);
-      await expect(welcome.getByTestId('morpheus-signal').locator('.morpheus-signal-core')).toBeVisible();
+      await expect(welcome.getByTestId('morpheus-fluid-orb').locator('.morpheus-motion__mark')).toBeVisible();
       const enter = page.getByTestId('morpheus-welcome-enter');
       const box = await enter.boundingBox();
       expect(box && box.y + box.height).toBeLessThan(800);
@@ -51,7 +51,7 @@ test.describe('Fluid Morpheus arrival', () => {
       await page.getByTestId('morpheus-command-input').fill('Show system information');
       await page.getByTestId('morpheus-command-submit').click();
       await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i);
-      const signal = page.getByTestId('morpheus-fluid-orb');
+      const signal = page.getByTestId('command-center-page').getByTestId('morpheus-fluid-orb');
       await expect(signal).toHaveAttribute('data-signal-state', 'complete');
       // Real Main presentation event after a completed objective: speech wins,
       // and completion resumes when playback ends. No synthetic execution data.
@@ -85,12 +85,11 @@ test.describe('Fluid Morpheus arrival', () => {
       await page.setViewportSize({ width: 800, height: 800 });
       expect(await welcome.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
       await page.getByTestId('morpheus-welcome-voice-settings').click();
-      await expect(page.getByTestId('morpheus-voice-settings')).toBeVisible();
-      await expect(page.getByTestId('settings-voice-destination')).toBeFocused();
+      await expect(page.getByTestId('morpheus-voice-setup')).toBeVisible();
       // Async runtime sections can change height. The actual acceptance is that
       // keyboard focus and the first voice control land in the visible viewport.
-      await expect(page.getByTestId('morpheus-voice-enabled')).toBeInViewport();
-      await expect(page.getByTestId('morpheus-voice-ambient')).toHaveAttribute('data-state', 'unchecked');
+      await expect(page.getByTestId('morpheus-microphone-enabled')).toBeInViewport();
+      await expect(page.getByTestId('morpheus-wake-enabled')).toHaveAttribute('data-state', 'unchecked');
     } finally { await closeElectronApp(app); }
   });
 });

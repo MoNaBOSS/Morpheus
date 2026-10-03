@@ -14,6 +14,9 @@ import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { MorpheusFluidOrb } from './MorpheusFluidOrb';
 import { hostApi } from '@/lib/host-api';
 import { resolveMorpheusSignalState } from './signal/signal-state';
+import { useMorpheusConversationStore } from '@/stores/morpheus-conversation';
+import { useAcpChatSessionStore } from '@/stores/acp-chat-session';
+import { createMorpheusConversationSpeechOwner } from '@/lib/morpheus-conversation-speech';
 
 export function MorpheusVoiceRuntime() {
   const { t } = useTranslation('dashboard');
@@ -57,10 +60,44 @@ export function MorpheusVoiceRuntime() {
     });
   }, [loadStatus, showQuickCommand, startListening]);
 
+  useEffect(() => useMorpheusConversationStore.subscribe((state, previous) => {
+    if (state.submitting && state.submissionSource !== 'voice'
+      && (!previous.submitting || state.submissionSource !== previous.submissionSource)
+      && useMorpheusVoiceStore.getState().source) useMorpheusVoiceStore.getState().cancel();
+  }), []);
+
+  useEffect(() => {
+    const owner = createMorpheusConversationSpeechOwner({
+      read: () => {
+        const voice = useMorpheusVoiceStore.getState();
+        const acp = useAcpChatSessionStore.getState();
+        return { reply: voice.replyTurn, snapshot: useMorpheusConversationStore.getState().snapshot,
+          activeSessionKey: acp.activeSessionKey, generation: acp.generation,
+          loading: acp.loading, sending: acp.sending, cancelling: acp.cancelling, error: acp.error,
+          timeline: acp.timeline, timings: acp.turnTimingsByUserMessageId,
+          enabled: voice.status?.settings.enabled === true, speakResponses: voice.status?.settings.speakResponses === true };
+      },
+      play: (text, signal) => {
+        const voice = useMorpheusVoiceStore.getState();
+        return playMorpheusSpeech(text, { signal, format: voice.status?.speechFormat,
+          neuralAvailable: voice.status?.neuralSpeechAvailable === true, allowWindowsFallback: false });
+      },
+      clear: (turnId) => useMorpheusVoiceStore.getState().clearReplyTurn(turnId),
+      claim: (turnId) => useMorpheusVoiceStore.getState().claimReplyTurn(turnId),
+      continueAfterResponse: () => useMorpheusVoiceStore.getState().continueAfterResponse(),
+      onFailure: () => useMorpheusVoiceStore.getState().reportSpeechFailure(),
+    });
+    const unsubscribers = [useMorpheusVoiceStore.subscribe(owner.sync),
+      useMorpheusConversationStore.subscribe(owner.sync), useAcpChatSessionStore.subscribe(owner.sync)];
+    owner.sync();
+    return () => { unsubscribers.forEach((unsubscribe) => unsubscribe()); owner.dispose(); };
+  }, []);
+
   useEffect(() => {
     if (!voiceOrigin || !message || spokenStateKey.current === stateKey) return;
 
     spokenStateKey.current = stateKey;
+    if (!source || source === 'onboarding' || status?.settings.enabled === false) return;
     if (!status?.settings.speakResponses) {
       void continueAfterResponse();
       return;
@@ -71,12 +108,12 @@ export function MorpheusVoiceRuntime() {
     }).then((result) => {
       if (result !== 'cancelled') void continueAfterResponse();
     }).catch(() => {
-      void continueAfterResponse();
+      useMorpheusVoiceStore.getState().reportSpeechFailure();
     });
     return () => {
       stopMorpheusSpeech();
     };
-  }, [continueAfterResponse, voiceOrigin, message, stateKey, status?.neuralSpeechAvailable, status?.speechFormat, status?.settings.speakResponses]);
+  }, [continueAfterResponse, voiceOrigin, message, stateKey, source, status?.neuralSpeechAvailable, status?.speechFormat, status?.settings.speakResponses, status?.settings.enabled]);
 
   const ambientActive = Boolean(presence?.ambientEnabled && presence.state !== 'asleep');
   // Arrival has its own live speech label, fallback disclosure and Stop control.

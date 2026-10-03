@@ -85,6 +85,7 @@ const APP_LAUNCH_ALIASES: ReadonlyArray<[RegExp, MorpheusApplicationKey]> = [
 /** Familiar sites use explicit navigation, not a paid planning round trip. */
 const NAMED_SITES: Readonly<Record<string, string>> = Object.freeze({
   youtube: 'https://www.youtube.com/', instagram: 'https://www.instagram.com/',
+  'youtube music': 'https://music.youtube.com/',
   pornhub: 'https://www.pornhub.com/', github: 'https://github.com/',
   gmail: 'https://mail.google.com/', google: 'https://www.google.com/',
 });
@@ -460,9 +461,9 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
     };
   }
 
-  const namedSite = /^(?:please\s+)?(?:open|launch|visit|go\s+to)\s+(youtube|instagram|pornhub|github|gmail|google)(?:\s+(?:website|site))?[.!?]?$/i.exec(text.trim());
+  const namedSite = /^(?:(?:can|could|would)\s+you\s+)?(?:please\s+)?(?:open|launch|visit|go\s+to)\s+(?:the\s+)?(youtube(?:\s+music)?|instagram|pornhub|github|gmail|google)(?:\s+(?:website|site))?(?:\s+please)?[.!?]?$/i.exec(text.trim());
   const bareDomain = /^(?:please\s+)?(?:open|visit|go\s+to)\s+((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24})(?:[.!?])?$/i.exec(text.trim());
-  const url = namedSite ? NAMED_SITES[namedSite[1].toLowerCase()]
+  const url = namedSite ? NAMED_SITES[namedSite[1].toLowerCase().replace(/\s+/g, ' ')]
     : bareDomain ? `https://${bareDomain[1].toLowerCase()}/`
       : /^(?:(?:please\s+)?(?:open|visit|browse|go\s+to)\s+)?https?:\/\/[^\s<>"']+(?:\s+please)?$/i.test(text)
         ? extractHttpUrl(text) : null;

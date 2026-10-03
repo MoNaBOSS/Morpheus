@@ -1,11 +1,46 @@
 # Morpheus experience specification
 
-Updated 2026-10-03, Asia/Dhaka. **Current owner requirements; preview.5 experience rejected.**
+Updated 2026-10-03, Asia/Dhaka. **Approved design; implementation authorized. The owner
+has rejected the preview.7 UI/UX as well as the earlier preview.5 experience.**
+The owner subsequently approved the recommended direction: Floating companion
+by default, opening into the Conversation card, with temporary editable voice
+captions. They requested a more animated opening page and visibly animated existing
+M logo. This advances the connected motion study; it does not accept the rejected
+application or qualify live voice. Computer control stopped when the owner pressed Escape.
+The owner then accepted the connected study ("It's great") and requested the final
+production application, connected settings, and major voice/animation improvements.
+This supersedes the design-only hold. Implement without another design restart;
+qualify the actual Windows package, and retain explicit hardware/service evidence limits.
 This is the single current experience specification, reconciled from the existing
 design review and the owner's October 2 correction. The single current execution
 checklist is [WINDOWS_COMPLETION_CHECKLIST.md](../releases/WINDOWS_COMPLETION_CHECKLIST.md).
 Historical plans, prototypes and automated results remain evidence, not approval.
-Final autonomous candidate is **1.2.0-preview.7**, application source
+## Preview.8 integration — current source, qualification in progress
+
+The approved design is implemented through the original runtime owners. The exact
+M logo animates on arrival; the 56-DIP orb uses smooth contours and actual RMS.
+Compact/full share conversation, draft and tasks. Settings preserve their origin,
+including Voice repair and Advanced return. Caption visibility is a persisted UI
+preference only; it never changes microphone consent. Personality exposes existing
+proactivity/quiet controls. Manual typing cancels capture/output before editing.
+Main now accepts fixed cursor-based drag and keyboard placement actions, saves
+bounded relative display placement, and opens the conversation inward. No arbitrary
+renderer coordinates or additional execution authority enter that bridge.
+Live voice-origin ACP replies correlate their original admitted turn and live
+completion, then speak once through the existing queue. Restored/typed replies stay
+silent. The pinned local Kokoro worker reuses a bounded native process, starts only
+for addressed speech, unloads after 60 seconds idle, and dies on cancellation/quit.
+A local-only 450 ms initial PCM buffer reduces phrase gaps; short completed answers
+flush immediately. Physical acoustic barge-in is **not implemented/qualified**:
+manual microphone, typed input and Stop interrupt; capture while speakers play
+remains suppressed until a real echo-safe design is tested.
+
+The following baseline findings explain the rejected build and are historical;
+they do not describe the completed source changes above or qualify their package.
+
+## Preserved preview.7 baseline
+
+The delivered implementation baseline was **1.2.0-preview.7**, application source
 `757f71c5f7e98d560624657a12875dba4330c7ac`. Actual normal packaged startup, held
 active-reply reload with exactly one inference, full restart, original tagged-persona
 history, canonical task/chat chronology, visible latest compact reply, draft and
@@ -58,6 +93,25 @@ are unavailable. The original design review is recoverable in Git at `4a9f25e9`.
 
 ## Product and preservation contract
 
+**Approved direction: a movable floating companion and connected conversation card.**
+Default to a small companion on the desktop; open a compact conversation when
+needed and expand for substantive work. Remove the continuous Matrix-rain wallpaper
+from ordinary conversation. Use near-black solid surfaces, restrained emerald light,
+comfortable readable type and spacing governed by content. Reserve the brief Matrix
+arrival for introduction. Keep the existing M and green/black identity.
+
+The owner's current screenshot rejects the oversized empty conversation, static
+greeting, stretched composer and decorative background. Live October 3 inspection
+confirmed the installed per-user preview.7 EXE and app.asar match the delivered
+payload. The merged old text visible in history needs investigation; its root cause
+has not been reproduced. Do not clear or rewrite owner history to hide it.
+
+Default companion character: capable, warm, quietly witty. Ordinary status must
+describe the user's activity only when useful. Do not show "thinking", "planning",
+model names, or internal reasoning in the normal experience. Longer work still needs
+honest progress, cancellation and actionable failure feedback. Advanced diagnostics
+remain available. No false human identity or fabricated understanding/progress.
+
 Morpheus is a polished Windows desktop assistant and companion. Preserve the
 existing M logo, selected green/black orb and restrained Matrix identity. Use
 excellent spacing, typography, feedback and fluid motion; decorative rain cannot
@@ -106,7 +160,22 @@ or beside the taskbar. Verify taskbars on each edge, DPI/text scaling, display
 changes and removal, auto-hide, small work areas and sleep/resume. A usable target
 can be larger than its visible artwork. Historical 100-DIP size is not approval.
 
-**Implemented preview.6 defaults, awaiting owner acceptance:**
+**New confirmed requirement: freely movable companion. Proposed behavior:** drag
+to reposition, optionally snap gently to a safe display edge, and remember the
+placement per display. Distinguish click from drag; offer a keyboard Move command
+and Reset position. Clamp saved coordinates into the current work area when a
+monitor disconnects or scaling changes. A panel opens inward from the saved position,
+upward at the default bottom-right dock. Keep its focus and hit target stable while
+the animated surface changes shape.
+
+Compact should show recent dialogue, a transient editable transcript, the current
+result when useful, and one composer with mic, send/stop and expand. Suggested width
+360-420 DIP, height based on content with a work-area cap; these dimensions are for
+prototype review, not approved implementation constants. Expanded view gives the
+same conversation more room and an optional results pane. Ordinary history/results
+must remain recoverable without an Advanced detour. No permanent hero above history.
+
+**Retained behavioral requirements; implementation acceptance remains open:**
 
 - Visible artwork about 48-56 DIP, with at least a 44-DIP interaction target;
   initial 16-DIP work-area inset, adjusted if actual taskbar/scaling tests require.
@@ -136,6 +205,84 @@ production must never fabricate audio activity or progress. Respect reduced moti
 keyboard/IME, screen readers, readable contrast and high text scaling. Motion should
 be noticeable during active interaction and quiet while idle. Hidden animation costs
 must be measured across the process tree.
+
+**Proposed motion score — review at actual desktop size and in reduced motion:**
+
+| Moment | Visual behavior | Source of truth |
+| --- | --- | --- |
+| Idle | Slow, smooth changing contour and internal green light around the stable M | Presentation only; never suggests an open microphone |
+| Listening | Surface opens slightly; light and contour respond to real input with controlled attack/release | Actual selected-mic capture and energy, with optional live transcript |
+| Request accepted | Brief settling gesture flows into the relevant next state | Final transcript accepted and routed, not a partial guess |
+| Executing | Directional current; a short action label only if useful or delayed | Real action lifecycle; no fake percentage or planning narration |
+| Speaking | Asymmetric pulses distinct from listening, preserving the same geometry | Real scheduled playback, including silence and generation gaps |
+| Question | An open, expectant shape with concise question/options; sufficient answer time | Actual unresolved clarification or authority request |
+| Done / failure | Brief resolve-and-settle; failure holds a clear repair affordance | Verified outcome or reported failure; never silence over a consequential error |
+| Open / move / dismiss | The same orb anchors the panel and carries position/momentum between surfaces | Actual window state; no focus theft or fabricated window morph |
+
+Use a shared presentation component and motion parameters for native orb, compact,
+expanded view and introduction. The approved artwork need not be replaced to animate
+the surrounding silhouette and light. Benchmark smooth motion at real size; a larger
+exported video is not appearance acceptance. Hidden decorative rendering stops.
+
+## Proposed voice and interaction architecture — not implemented
+
+Preserve the existing Main assistant-session, ACP conversation/history, Core actions,
+provider secrets and task authority. Extend the existing voice coordination boundary
+to follow the same original live turn through conversation or action execution.
+Do not create a second conversation history or competing action router.
+
+```mermaid
+flowchart LR
+  I[Voice or typed request] --> T[Existing Main turn identity and authority]
+  T --> D[Direct known action through Core]
+  T --> C[Conversation through ACP]
+  T --> W[Longer work through existing tasks and tools]
+  D --> E[Correlated outcome and reply events]
+  C --> E
+  W --> E
+  E --> P[Shared presentation state]
+  E --> S[Speech queue when a reply is appropriate]
+  S --> P
+```
+
+1. One selected microphone governs capture and wake. Share consistent device identity
+   and failure guidance. Partial recognition can provide editable feedback, but
+   only finalized, addressed requests can cause actions. Qualify real echo/noise
+   handling and same-breath wake plus command; do not infer them from generated input.
+2. Keep the included local inference models warm during an enabled voice session,
+   under measured idle memory/CPU and unload rules. The current offline CLI exits
+   after each phrase; genuine persistence requires a qualified worker/binding.
+   Incremental recognition likewise needs a capable recognizer, not a renamed batch
+   call. Benchmark alternatives before choosing or promising quality.
+3. Ordinary voice-origin ACP answers must feed the same cancellable speech queue as
+   Core replies. Enqueue stable sentences as they become available; synthesize ahead
+   of playback. Suppress internal planning/tool text, duplicate segments and historical
+   replay. Preserve turn/generation identity through reload, interruption and routing.
+4. Simple commands execute quietly. Rich answers and necessary questions are spoken
+   when enabled. Local results should say what happened rather than "completed one
+   step and produced one artifact". Persona informs concise wording without adding
+   an extra model call to every action; acoustic expressiveness must be auditioned.
+5. A confirmed spoken interruption stops current output and invalidates stale queued
+   audio, then admits the new turn. Stopping speech does not silently undo an action
+   already completed. Task cancellation remains explicit and correlated. Manual mute
+   blocks all capture/wake; follow-up listening is bounded and visibly indicated.
+6. Presentation observes actual events and audio; it never owns microphone authority,
+   task execution or secrets. Short recognition/synthesis gaps must be represented
+   truthfully, while motion transitions stay visually continuous.
+
+Standard voice remains included without another user API key. First evaluate a warm
+local architecture for quality, latency, accent handling, offline privacy and resource
+use. Product-funded hosted voice is a separate optional service decision requiring
+cost, privacy, allowance and operational agreement. Existing BYOK is task-model access.
+Neither a key purchase nor a hardware upgrade is the remedy for missing reply wiring.
+
+Proposed acceptance targets on an agreed Windows PC: warm first audio within 1 s
+of stable speakable text, avoidable generation gaps below 200 ms, typed Stop below
+150 ms, confirmed spoken interruption below 300 ms, and zero duplicate action or
+historical speech replay in the exercised journeys. These are targets, not results
+or guarantees. Measure end-of-user-speech to audible answer separately, including
+recognition and provider delay; report cold startup and p50/p95, not a best sample.
+Owner acceptance of naturalness and real microphone accuracy is required.
 
 ## Included voice architecture — preview.6, refined in preview.7
 
@@ -211,6 +358,30 @@ check-ins adapt to explicit preferences; never claim emotional awareness.
 Use deterministic dispatch and capable inexpensive routes for simple work; bounded
 stronger routes for complex work. Preserve context/personality across routing and
 keep unknown usage distinct from zero. Do not add an extra model pass for humor.
+
+**Confirmed browser requirement:** "Open YouTube" opens in the user's existing
+normal Chrome session/profile, with a brief visual acknowledgment and no planning
+speech, approval ritual, technical browser workspace or isolated profile. Prefer
+the relevant active Chrome window; if multiple profiles make selection ambiguous,
+offer a one-time profile preference. If Chrome is not running, open its chosen normal
+profile. Specify and test actual focus/tab behavior in the browser adapter: the OS
+default-browser opener alone does not prove it chose the active Chrome profile.
+Actual browsing automation requires an explicit connection to the selected browser
+context. Preserve isolated automation for workflows that need it, without silently
+copying cookies or exposing all personal tabs to an agent.
+
+**Proposed companionship defaults:** occasional situational humor, and one optional
+daily check-in at the first suitable interaction or a user-selected time. Reuse saved
+preferences and frequency/quiet-hours controls. No catch-up burst after absence, no
+repeating greetings on each launch, and no interruption during calls/fullscreen/DND
+where that state is known. A silent acknowledgement stays silent; jokes do not block
+actions. Show a short example during Personality setup. Movie/anime references are
+occasional, not the default answer to every request. Never infer emotions.
+
+The first journey should finish with one actual command and its verified outcome,
+then show a small capability selection based on actual availability. Repair settings
+must return to the originating surface and interrupted interaction. Focused editing,
+an unfinished draft and explicit reading must suspend automatic dismissal.
 
 The following inventory records Checkpoint A's historical preview.5 findings.
 Current preview.7 verification is in the single completion checklist.
@@ -297,11 +468,46 @@ not the installed app, real voice or current visual approval.
 
 ## Review sequence and exact next step
 
-**Current authorization:** the owner changed the schedule on October 2 to complete
-the job and review everything together: "Simplify but don't reduce capabilities."
-This supersedes separate B/C owner gates, not preservation or truthful acceptance.
-Implementation and autonomous candidate qualification completed at the stated
-boundaries in the separate E: worktree at
+**Current authorization:** on October 3 the owner approved the recommended Floating
+companion + Conversation card direction and asked for an eye-pleasing animated
+opening and logo. The preview.7 UI/UX remains rejected. The next design deliverable
+is a connected arrival/companion/conversation study before application integration.
+Required gates:
+
+1. Direction APPROVED: Floating companion + Conversation card; automatic editable
+   captions with optional hiding and persistent microphone-state feedback.
+2. Review one connected motion study at actual desktop size: drag/dock, listening,
+   quiet Chrome action, question/answer, interruption, compact/expanded return and
+   dismissal. Prototype behavior must be labelled; include a real voice audition
+   with generation waits retained, plus a reduced-motion version.
+3. After design approval, qualify one ordinary spoken conversation and one simple
+   Chrome command through the existing owners, including interruption and mute.
+4. Integrate approved presentation, first journey, contextual repair, history/results
+   and optional companionship in small checks; preserve Advanced.
+5. Package and verify the actual Windows build, with physical/hardware and commercial
+   service gates recorded separately. Do not equate a prototype or test count with
+   approval or readiness.
+
+Current motion study: `C:\Users\monir\.codex\visualizations\2026\10\02\01a0fc17-f1d1-72d1-ba71-dae8a942f04b\morpheus-connected-arrival.html`.
+It reuses the existing M artwork: staged light/reveal, brief first-visit welcome,
+shared logo travel into the 56-pixel companion, draggable placement, upward/inward
+card, compact/expanded draft continuity, temporary captions, quiet action current,
+distinct speaking contours, preferences, mute and reduced motion. Returning launch
+can be previewed separately. It is a browser motion study, with no microphone,
+provider, OS browser action, onboarding completion or new application runtime.
+No voice audition, taskbar/DPI acceptance or installed-app verification is implied.
+Browser review checked the 736- and 320-pixel content widths, opening/compact/
+expanded transitions, draft retention through preferences, keyboard focus, mouse
+drag and arrow-key movement, typed replies while simulation-muted, stop, reduced
+motion (zero running animations after settling), and long wrapped content retaining
+the composer. The browser console is clean. The simulated Chrome result remains in
+the same preview card. A recording of actual rendered study motion is saved at
+`C:\Users\monir\Documents\Codex\2026-10-02\continue-morpheus-from-the-existing-project\outputs\design-review\morpheus-connected-motion.webm`.
+That recording is silent, contains simulated actions, and is not installed-app or
+audio-latency evidence. No application source, profile or credentials were changed.
+
+The following implementation narrative is historical preview.6/preview.7 evidence
+from the separate E: worktree at
 `E:\Morpheus-builds\experience-preview6\source`, based on `3bcad683`. The original
 checkout and prior application worktree remain untouched. No owner profile is used
 for testing and no installer is run over the owner app.
@@ -370,14 +576,13 @@ normal-runtime qualification at `12a3689806d6bfe87cdc63f4b6600ecea21c2093`.
 The installer is unsigned and no owned update feed is configured. Included voice
 models, notices and corresponding upstream source archives are verified payload.
 
-**Exact next correction:** connect one ordinary voice-origin ACP reply to existing
-speech/follow-up owners with original turn identity, cancellation, mute and reload
-safeguards. Then qualify actual general spoken conversation and reduce warm/phrase
-generation gaps. Review fluid state transitions at the real 56-DIP size, with audio
-feedback from actual input/output. The four-step `Morpheus-PC-Acceptance.md` remains
+**Exact next step:** implement the approved motion through actual application state,
+connect contextual settings and original ACP spoken replies, improve included speech
+latency, and qualify the packaged Windows candidate. The four-step `Morpheus-PC-Acceptance.md` remains
 beside the identified preview.7 EXE and real media. The checklist identifies every
-autonomous test boundary and open gate. Fix demonstrated gaps without redoing approved
-work. Physical microphone/wake/echo/audibility, other DPI/taskbar/display/sleep,
+autonomous test boundary and open gate. After direction and the connected motion/voice
+study are approved, fix demonstrated gaps without redoing approved work.
+Physical microphone/wake/echo/audibility, other DPI/taskbar/display/sleep,
 owner-profile previous-version upgrade, live provider/publication and long mixed-use
 performance are not declared passed. Hosted pricing/funding, Stripe/crypto merchant
 services, signing/update and deferred NerdGPT require external inputs; their UI is

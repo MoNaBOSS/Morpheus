@@ -1,7 +1,8 @@
 import { app, BrowserWindow, screen, type Rectangle, type WebContents } from 'electron';
 import { join } from 'node:path';
 import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
-import { wakeOrbBounds, wakeOrbHoverBounds } from './morpheus-presence-layout';
+import { clampPresenceBounds, wakeOrbBounds, wakeOrbHoverBounds } from './morpheus-presence-layout';
+import type { MorpheusOrbPlacement, OrbPresentationAction } from '@shared/morpheus/orb-presentation';
 
 /** A narrow native companion surface. Main owns draft/turn admission and the hidden renderer owns execution. */
 export class MorpheusWakeOrb {
@@ -17,6 +18,34 @@ export class MorpheusWakeOrb {
   private captionTimer: ReturnType<typeof setTimeout> | null = null;
   private dismissTimer: ReturnType<typeof setTimeout> | null = null;
   private fadeTimer: ReturnType<typeof setTimeout> | null = null;
+  private placement: MorpheusOrbPlacement | null = null;
+  private dragging = false;
+  private dragOrigin: { x: number; y: number; anchor: Rectangle } | null = null;
+
+  restorePlacement(value: MorpheusOrbPlacement | null): void {
+    if (value && Number.isSafeInteger(value.displayId) && Number.isFinite(value.x) && Number.isFinite(value.y)
+      && value.x >= 0 && value.x <= 1 && value.y >= 0 && value.y <= 1) this.placement = value;
+  }
+
+  private workArea(): Rectangle {
+    return (this.placement && screen.getAllDisplays().find((display) => display.id === this.placement?.displayId)?.workArea) || this.getWorkArea();
+  }
+
+  anchorBounds(): Rectangle {
+    const area = this.workArea();
+    const initial = wakeOrbBounds(area);
+    if (!this.placement) return initial;
+    return clampPresenceBounds(area, { ...initial, x: area.x + this.placement.x * Math.max(0, area.width - initial.width), y: area.y + this.placement.y * Math.max(0, area.height - initial.height) });
+  }
+
+  private moveAnchor(bounds: Rectangle): void {
+    const display = screen.getDisplayMatching(bounds);
+    const anchor = clampPresenceBounds(display.workArea, bounds);
+    this.placement = { displayId: display.id,
+      x: (anchor.x - display.workArea.x) / Math.max(1, display.workArea.width - anchor.width),
+      y: (anchor.y - display.workArea.y) / Math.max(1, display.workArea.height - anchor.height) };
+    this.reposition();
+  }
 
   private clearDismiss(): void {
     if (this.dismissTimer) clearTimeout(this.dismissTimer);
@@ -25,7 +54,7 @@ export class MorpheusWakeOrb {
   }
 
   private scheduleDismiss(): void {
-    if (this.dismissTimer || !this.wantsVisible || this.hovered
+    if (this.dismissTimer || !this.wantsVisible || this.hovered || this.dragging
       || ['listening', 'transcribing', 'understanding', 'preparing-speech', 'speaking', 'waiting-for-approval'].includes(this.presence)) return;
     this.dismissTimer = setTimeout(() => {
       this.dismissTimer = null;
@@ -41,6 +70,7 @@ export class MorpheusWakeOrb {
   constructor(
     private readonly onOpen: () => void,
     private readonly getWorkArea: () => Rectangle = () => screen.getPrimaryDisplay().workArea,
+    private readonly savePlacement?: (placement: MorpheusOrbPlacement | null) => void,
   ) {}
 
   getWebContents(): WebContents | null {
@@ -82,7 +112,7 @@ export class MorpheusWakeOrb {
     }
 
     const window = new BrowserWindow({
-      ...wakeOrbBounds(this.getWorkArea()),
+      ...this.anchorBounds(),
       title: 'Morpheus presence',
       frame: false,
       transparent: true,
@@ -169,10 +199,34 @@ export class MorpheusWakeOrb {
     }
   }
 
-  present(action: 'hover' | 'collapse' | 'open' | 'focus'): void | Promise<void> {
+  present(action: OrbPresentationAction): void | Promise<void> {
     this.showCaption(null);
     const window = this.window;
     if (!this.wantsVisible || !window || window.isDestroyed()) return;
+    if (action === 'drag-start') {
+      this.clearDismiss();
+      this.dragging = true;
+      this.dragOrigin = { ...screen.getCursorScreenPoint(), anchor: this.anchorBounds() };
+      this.hovered = false;
+      this.reposition();
+      return this.applyHover();
+    }
+    if (action === 'drag-move' || action === 'drag-end') {
+      if (!this.dragging || !this.dragOrigin) return;
+      const cursor = screen.getCursorScreenPoint(), origin = this.dragOrigin;
+      this.moveAnchor({ ...origin.anchor, x: origin.anchor.x + cursor.x - origin.x, y: origin.anchor.y + cursor.y - origin.y });
+      if (action === 'drag-end') { this.dragging = false; this.dragOrigin = null; this.savePlacement?.(this.placement); this.scheduleDismiss(); }
+      return;
+    }
+    if (action.startsWith('move-')) {
+      const anchor = this.anchorBounds();
+      this.moveAnchor({ ...anchor, x: anchor.x + (action === 'move-left' ? -16 : action === 'move-right' ? 16 : 0), y: anchor.y + (action === 'move-up' ? -16 : action === 'move-down' ? 16 : 0) });
+      this.savePlacement?.(this.placement);
+      this.clearDismiss(); this.scheduleDismiss();
+      return;
+    }
+    if (action === 'reset-position') { this.placement = null; this.savePlacement?.(null); this.reposition(); this.clearDismiss(); this.scheduleDismiss(); return; }
+    if (this.dragging) return;
     if (action === 'open') {
       this.hide();
       this.onOpen();
@@ -181,7 +235,7 @@ export class MorpheusWakeOrb {
     if (action === 'hover' || action === 'focus') {
       this.clearDismiss();
       this.hovered = true;
-      window.setBounds(wakeOrbHoverBounds(this.getWorkArea()));
+      window.setBounds(wakeOrbHoverBounds(this.workArea(), this.anchorBounds()));
       this.shapeWindow();
       if (action === 'focus') {
         window.show();
@@ -193,7 +247,7 @@ export class MorpheusWakeOrb {
     }
     this.hovered = false;
     this.scheduleDismiss();
-    window.setBounds(wakeOrbBounds(this.getWorkArea()));
+    window.setBounds(this.anchorBounds());
     this.shapeWindow();
     return this.applyHover();
   }
@@ -203,11 +257,13 @@ export class MorpheusWakeOrb {
     this.showCaption(null);
     this.wantsVisible = false;
     this.hovered = false;
+    this.dragging = false;
+    this.dragOrigin = null;
     this.updateLevel(0);
     if (this.window && !this.window.isDestroyed()) {
       this.applyVisibility();
       this.window.hide();
-      this.window.setBounds(wakeOrbBounds(this.getWorkArea()));
+      this.window.setBounds(this.anchorBounds());
       this.shapeWindow();
       this.applyHover();
     }
@@ -216,8 +272,8 @@ export class MorpheusWakeOrb {
   reposition(): void {
     const window = this.window;
     if (!this.wantsVisible || !window || window.isDestroyed()) return;
-    const workArea = this.getWorkArea();
-    window.setBounds(this.hovered || this.caption ? wakeOrbHoverBounds(workArea) : wakeOrbBounds(workArea));
+    const workArea = this.workArea();
+    window.setBounds(this.hovered || this.caption ? wakeOrbHoverBounds(workArea, this.anchorBounds()) : this.anchorBounds());
     this.shapeWindow();
   }
 
@@ -278,8 +334,13 @@ export class MorpheusWakeOrb {
     if (!window || window.isDestroyed() || process.platform !== 'win32') return;
     const bounds = window.getBounds();
     const orbSize = Math.min(56, bounds.width, bounds.height);
-    const orbX = Math.max(0, bounds.width - orbSize);
-    const orbY = Math.max(0, bounds.height - orbSize);
+    const anchor = this.anchorBounds();
+    const orbX = Math.max(0, anchor.x - bounds.x);
+    const orbY = Math.max(0, anchor.y - bounds.y);
+    const panelY = Math.max(0, Math.min(bounds.height - 55, orbY >= 64 ? orbY - 64 : orbY + 64));
+    if (this.ready) void window.webContents.executeJavaScript(
+      `document.documentElement.style.setProperty('--orb-x', '${orbX}px'); document.documentElement.style.setProperty('--orb-y', '${orbY}px'); document.documentElement.style.setProperty('--panel-y', '${panelY}px')`, true,
+    ).catch(() => undefined);
     // Rectangular bands approximate the circular hit area and preserve the artwork's glow.
     const strips: Rectangle[] = [];
     for (let y = 0; y < orbSize; y += 10) {
@@ -289,7 +350,7 @@ export class MorpheusWakeOrb {
         width: Math.min(orbSize, Math.ceil(half * 2)), height: Math.min(10, orbSize - y) });
     }
     const shapes = this.hovered || this.caption
-      ? [{ x: Math.max(0, bounds.width - 352), y: Math.max(0, bounds.height - 119),
+      ? [{ x: Math.max(0, bounds.width - 352), y: panelY,
         width: Math.min(344, bounds.width), height: Math.min(55, bounds.height) }, ...strips]
       : strips;
     window.setShape?.(shapes);

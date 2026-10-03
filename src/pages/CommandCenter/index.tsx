@@ -10,7 +10,7 @@ import { CommandBar } from './CommandBar';
 import { ArtifactsPanel } from './ArtifactsPanel';
 import { ResearchSource } from './ResearchSource';
 import { DesktopControlResult } from './DesktopControlResult';
-import { MatrixRain } from '@/components/morpheus/boot/MatrixRain';
+import { morpheusSettingsPath } from '@/lib/morpheus-settings-route';
 import { MorpheusFluidOrb } from '@/components/morpheus/MorpheusFluidOrb';
 import { MorpheusConversationThread } from '@/components/morpheus/MorpheusConversationThread';
 import { MorpheusConversationHistory } from '@/components/morpheus/MorpheusConversationHistory';
@@ -60,8 +60,7 @@ export function CommandCenter() {
   };
 
   return (
-    <div data-morpheus data-testid="command-center-page" data-empty={recentRuns.length === 0} className="morpheus-workspace relative flex h-full min-h-0 flex-col overflow-hidden">
-      <div aria-hidden className="morpheus-workspace-rain"><MatrixRain /></div>
+    <div data-morpheus data-testid="command-center-page" data-empty={recentRuns.length === 0} data-has-result={hasResult} className="morpheus-workspace relative flex h-full min-h-0 flex-col overflow-hidden">
       <header className="morpheus-workspace-header relative z-30 flex h-12 shrink-0 items-center justify-between border-b border-white/10 px-5">
         <button type="button" data-testid="morpheus-open-welcome" onClick={openWelcome} className="flex items-center gap-2.5" title={t('morpheus.arrival.companion')}>
           <img src={morpheusLogo} alt="" className="h-5 w-5" />
@@ -71,7 +70,7 @@ export function CommandCenter() {
           {activeCount > 0 ? <button type="button" data-testid="workspace-tasks-button" aria-expanded={showTasks} onClick={() => setShowTasks((value) => !value)} className="morpheus-workspace-icon-button" aria-label={t('morpheus.workspace.tasks')}><List className="h-[18px] w-[18px]" strokeWidth={1.6} /><span className="sr-only">{activeCount}</span></button> : null}
           <button type="button" data-testid="signal-nav-chat" onClick={() => setShowHistory((value) => !value)} aria-expanded={showHistory} className="morpheus-workspace-icon-button" aria-label={t('morpheus.experience.history')} title={t('morpheus.experience.history')}><FileText data-testid="sidebar-nav-chat" className="h-[18px] w-[18px]" strokeWidth={1.6} /></button>
           <button type="button" data-testid="signal-nav-presence" onClick={() => showQuickCommand()} className="morpheus-workspace-icon-button" aria-label={t('morpheus.workspace.openCompact')} title={t('morpheus.workspace.openCompact')}><Minimize2 className="h-[18px] w-[18px]" strokeWidth={1.6} /></button>
-          <Link to="/settings" data-testid="sidebar-nav-settings" className="morpheus-workspace-icon-button" aria-label={t('morpheus.signalOs.nav.settings')} title={t('morpheus.signalOs.nav.settings')}><Settings2 className="h-[18px] w-[18px]" strokeWidth={1.6} /></Link>
+          <Link to={morpheusSettingsPath()} data-testid="sidebar-nav-settings" className="morpheus-workspace-icon-button" aria-label={t('morpheus.signalOs.nav.settings')} title={t('morpheus.signalOs.nav.settings')}><Settings2 className="h-[18px] w-[18px]" strokeWidth={1.6} /></Link>
           <div className="relative">
             <button type="button" data-testid="signal-nav-advanced" className="morpheus-workspace-icon-button" aria-label={t('morpheus.signalOs.more')} aria-expanded={showMore} onClick={() => setShowMore((value) => !value)}><MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.6} /></button>
             {showMore ? <div data-testid="signal-nav-advanced-menu" className="morpheus-workspace-more absolute right-0 top-9 z-30 max-h-[65vh] w-44 overflow-y-auto rounded-lg border border-white/15 p-1 shadow-xl">
@@ -89,8 +88,8 @@ export function CommandCenter() {
       {showHistory ? <MorpheusConversationHistory onClose={() => setShowHistory(false)} /> : null}
 
       <div className="morpheus-workspace-content relative z-10 mx-auto flex w-full max-w-[940px] min-h-0 flex-1 flex-col px-7 pb-3 pt-6 max-[640px]:px-5">
-        <div className="flex shrink-0 items-center gap-4">
-          <MorpheusFluidOrb state={signalState} className="h-12 w-12 shrink-0" label={t(`morpheus.signalOs.signal.${signalState}`)} />
+        <div className="morpheus-workspace-presence flex shrink-0 items-center gap-4">
+          <MorpheusFluidOrb state={signalState} className="h-14 w-14 shrink-0" label={t(`morpheus.signalOs.signal.${signalState}`)} />
           <div className="min-w-0">
             <h2 className="text-[clamp(22px,3vw,27px)] font-semibold leading-tight tracking-[-0.035em] text-[#edf5ef]">{preferredName ? t('morpheus.workspace.greetingNamed', { name: preferredName }) : t('morpheus.workspace.greeting')}</h2>
             <p className="mt-1 text-[13px] text-[#a0b6aa]">{t('morpheus.workspace.subtitle')}</p>

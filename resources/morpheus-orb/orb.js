@@ -1,4 +1,4 @@
-// The sandboxed orb has four fixed Main actions; it never owns execution or credentials.
+// The sandboxed orb has four fixed Main channels; it never owns execution or credentials.
 const bridge = window.morpheusOrb;
 const orb = document.querySelector('.orb');
 const composer = document.querySelector('.hover-composer');
@@ -22,11 +22,11 @@ const motionStates = {
   asleep: 'quiet',
   armed: 'idle',
   listening: 'listening',
-  transcribing: 'working',
-  understanding: 'working',
+  transcribing: 'understanding',
+  understanding: 'understanding',
   'waiting-for-approval': 'attention',
   working: 'working',
-  'preparing-speech': 'working',
+  'preparing-speech': 'understanding',
   speaking: 'speaking',
   error: 'attention',
 };
@@ -190,13 +190,59 @@ async function submit() {
   }
 }
 
+let dragPointer = null;
+let dragStarted = false;
+let suppressDragClick = false;
+let dragUpdate = null;
+let dragAdmission = Promise.resolve();
+orb.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0) return;
+  dragPointer = { id: event.pointerId, x: event.screenX, y: event.screenY };
+  dragStarted = false;
+  clearTimeout(hoverTimer);
+});
+orb.addEventListener('pointermove', (event) => {
+  if (!dragPointer || event.pointerId !== dragPointer.id) return;
+  if (!dragStarted && Math.hypot(event.screenX - dragPointer.x, event.screenY - dragPointer.y) < 5) return;
+  if (!dragStarted) {
+    dragStarted = true;
+    suppressDragClick = true;
+    orb.setPointerCapture(event.pointerId);
+    clearTimeout(hoverTimer); clearTimeout(collapseTimer);
+    dragAdmission = bridge.present('drag-start');
+  }
+  if (!dragUpdate) dragUpdate = requestAnimationFrame(() => {
+    dragUpdate = null;
+    void dragAdmission.then(() => bridge.present('drag-move'));
+  });
+});
+const finishDrag = (event) => {
+  if (!dragPointer || event.pointerId !== dragPointer.id) return;
+  if (event.type === 'pointercancel') suppressDragClick = false;
+  dragPointer = null;
+  if (!dragStarted) return;
+  dragStarted = false;
+  if (dragUpdate) cancelAnimationFrame(dragUpdate);
+  dragUpdate = null;
+  void dragAdmission.then(() => bridge.present('drag-end'));
+  if (orb.hasPointerCapture(event.pointerId)) orb.releasePointerCapture(event.pointerId);
+};
+orb.addEventListener('pointerup', finishDrag);
+orb.addEventListener('pointercancel', finishDrag);
+orb.addEventListener('keydown', (event) => {
+  const moves = { ArrowLeft: 'move-left', ArrowRight: 'move-right', ArrowUp: 'move-up', ArrowDown: 'move-down', Home: 'reset-position' };
+  if (!event.altKey || !moves[event.key]) return;
+  event.preventDefault();
+  void bridge.present(moves[event.key]);
+});
+
 orb.addEventListener('pointerenter', (event) => {
   observePointer(event);
   clearTimeout(collapseTimer);
   clearTimeout(hoverTimer);
   // Resizing a native window can generate pointerenter under a stationary
   // cursor. Escape is a dismissal, not an invitation to reopen immediately.
-  if (dismissedPointer) return;
+  if (dismissedPointer || dragPointer || dragStarted) return;
   hoverTimer = setTimeout(() => {
     void bridge?.present('hover');
     if (!dirty && !writing) void snapshot().catch(() => report(notices[language].failed));
@@ -204,6 +250,7 @@ orb.addEventListener('pointerenter', (event) => {
 });
 
 orb.addEventListener('click', async () => {
+  if (suppressDragClick) { suppressDragClick = false; return; }
   dismissedPointer = null;
   clearTimeout(hoverTimer);
   clearTimeout(collapseTimer);
@@ -217,7 +264,7 @@ document.body.addEventListener('pointerleave', (event) => {
   observePointer(event);
   clearTimeout(hoverTimer);
   clearTimeout(collapseTimer);
-  if (composer.contains(document.activeElement) || conflict) return;
+  if (dragStarted || composer.contains(document.activeElement) || conflict) return;
   collapseTimer = setTimeout(() => { void bridge?.present('collapse'); }, 260);
 });
 

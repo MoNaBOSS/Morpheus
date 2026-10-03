@@ -117,7 +117,18 @@
       "boundedExcerpt": "Retrieved excerpt — not the full page.",
       "openFailed": "The source could not be opened. Try again."
     },
-    "socialCheckIn": { "question": "How's your day going?", "answer": { "good": "Good", "rough": "Could be better" }, "reply": { "good": "Glad to hear it. I'm here when you need me.", "rough": "Sorry to hear that. I'm here if you want to talk or need a hand." }, "dismiss": "Dismiss check-in" },
+    "socialCheckIn": {
+      "question": "How's your day going?",
+      "answer": {
+        "good": "Good",
+        "rough": "Could be better"
+      },
+      "reply": {
+        "good": "Glad to hear it. I'm here when you need me.",
+        "rough": "Sorry to hear that. I'm here if you want to talk or need a hand."
+      },
+      "dismiss": "Dismiss check-in"
+    },
     "activationV2": {
       "profileTitle": "Your Morpheus",
       "profileDescription": "Change how I sound and check in, or preview the introduction. Your providers, tasks and permissions stay put.",
@@ -252,7 +263,11 @@
       "result": "Result",
       "resultPending": "Morpheus is still working toward a verified result.",
       "performance": "Performance",
-      "timing": { "planning": "Plan", "execution": "Execute", "review": "Review" },
+      "timing": {
+        "planning": "Plan",
+        "execution": "Execute",
+        "review": "Review"
+      },
       "artifacts": "Artifacts",
       "noArtifacts": "No artifacts produced yet.",
       "observable": "Live events are recorded as Morpheus works.",
@@ -340,7 +355,14 @@
       "contentPlaceholder": "Text to write",
       "applicationLabel": "Application"
     },
-    "controlResults": {"focus":"{{application}} is in front.","minimize":"{{application}} is minimized.","restore":"{{application}} is restored.","play":"{{application}} is playing.","pause":"{{application}} is paused.","volume":"Output volume is {{level}}%."},
+    "controlResults": {
+      "focus": "{{application}} is in front.",
+      "minimize": "{{application}} is minimized.",
+      "restore": "{{application}} is restored.",
+      "play": "{{application}} is playing.",
+      "pause": "{{application}} is paused.",
+      "volume": "Output volume is {{level}}%."
+    },
     "applications": {
       "spotify": "Spotify",
       "notepad": "Notepad",
@@ -351,15 +373,42 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
-      "mediaControl": {"label":"Control Spotify playback","description":"Play or pause one observed Spotify session, without global media keys."},
-      "audioVolume": {"label":"Set system output volume","description":"Set the default output volume to an explicit percentage, without touching microphones."},
-      "siteCreateInteractive": {"label":"Create interactive site","description":"Create a new client-only website from a reviewed template, with filters and local form validation. No messages are sent."},
-      "browserInspect": { "label": "Inspect public page", "description": "Open an isolated public page and observe its current controls without using your browser accounts." },
-      "browserInteract": { "label": "Use public page control", "description": "Use a recently observed control in this task’s public browser session. Account operations and downloads are separate." },
-      "siteRevise": {"label":"Revise website","description":"Revise a website only from its verified revision, preserving unrelated manual edits."},
-      "siteRollback": {"label":"Roll back website","description":"Restore a recorded website revision only when the current revision is verified, preserving manual edits."},
-      "webReadPage": { "label": "Read web page", "description": "Read a public HTTPS page and retain its retrieved source evidence." },
-      "appControlWindow": {"label":"Control an app window","description":"Focus, minimize or restore an exact running app, with its resulting state verified."},
+      "mediaControl": {
+        "label": "Control Spotify playback",
+        "description": "Play or pause one observed Spotify session, without global media keys."
+      },
+      "audioVolume": {
+        "label": "Set system output volume",
+        "description": "Set the default output volume to an explicit percentage, without touching microphones."
+      },
+      "siteCreateInteractive": {
+        "label": "Create interactive site",
+        "description": "Create a new client-only website from a reviewed template, with filters and local form validation. No messages are sent."
+      },
+      "browserInspect": {
+        "label": "Inspect public page",
+        "description": "Open an isolated public page and observe its current controls without using your browser accounts."
+      },
+      "browserInteract": {
+        "label": "Use public page control",
+        "description": "Use a recently observed control in this task’s public browser session. Account operations and downloads are separate."
+      },
+      "siteRevise": {
+        "label": "Revise website",
+        "description": "Revise a website only from its verified revision, preserving unrelated manual edits."
+      },
+      "siteRollback": {
+        "label": "Roll back website",
+        "description": "Restore a recorded website revision only when the current revision is verified, preserving manual edits."
+      },
+      "webReadPage": {
+        "label": "Read web page",
+        "description": "Read a public HTTPS page and retain its retrieved source evidence."
+      },
+      "appControlWindow": {
+        "label": "Control an app window",
+        "description": "Focus, minimize or restore an exact running app, with its resulting state verified."
+      },
       "appLaunch": {
         "label": "Launch an approved application",
         "description": "Starts an application from the built-in approved list."
@@ -1061,7 +1110,11 @@
     },
     "memory": {
       "export": "Export this memory",
-      "exportStatus": { "saved": "Memory saved. Chat history stays in Morpheus.", "cancelled": "Export cancelled.", "error": "Could not export memory. Please try again." },
+      "exportStatus": {
+        "saved": "Memory saved. Chat history stays in Morpheus.",
+        "cancelled": "Export cancelled.",
+        "error": "Could not export memory. Please try again."
+      },
       "title": "Morpheus Memory",
       "description": "Explicit context you can inspect, edit, disable or remove. Sensitive entries stay local.",
       "context": "Context memory",
@@ -1090,20 +1143,29 @@
       "modeLabel": "How Morpheus should respond",
       "clarification": "I did not understand that clearly enough to act. Please say what outcome you want.",
       "modes": {
-        "ask": { "name": "Ask", "description": "Think, explain and advise without taking action." },
-        "auto": { "name": "Auto", "description": "Understand the intent and act when a result is requested." },
-        "act": { "name": "Act", "description": "Treat the instruction as an objective to execute." }
+        "ask": {
+          "name": "Ask",
+          "description": "Think, explain and advise without taking action."
+        },
+        "auto": {
+          "name": "Auto",
+          "description": "Understand the intent and act when a result is requested."
+        },
+        "act": {
+          "name": "Act",
+          "description": "Treat the instruction as an objective to execute."
+        }
       }
     },
     "arrival": {
-      "subtitle": "One goal. We take it from there. Stay in the workspace, or let Morpheus stay beside you while you get on with your day.",
+      "subtitle": "I’m Morpheus. A little help. A little wit. Your call.",
       "witty": "Big plans? Excellent. I have cleared my imaginary calendar.",
-      "open": "Open workspace",
+      "open": "Open conversation",
       "tray": "Keep me in the tray",
       "transferring": "Moving to tray…",
       "trayHint": "Morpheus stays running. Click its icon in the Windows notification area to return, or choose Quit Morpheus there to exit.",
       "voiceHonesty": "Moving to the tray does not enable your microphone. Listening follows your voice settings; configure voice before using a wake phrase.",
-      "voiceSettings": "Set up voice & providers",
+      "voiceSettings": "Voice settings",
       "close": "Close welcome",
       "mute": "Stop greeting",
       "hear": "Hear greeting",
@@ -1158,15 +1220,36 @@
         "failed": "I couldn't hear that clearly. Try again or continue with the keyboard."
       },
       "personalities": {
-        "adaptive": { "name": "Adaptive", "description": "Match detail, tone and pace to the objective." },
-        "witty": { "name": "Witty", "description": "Confident, concise and naturally humorous." },
-        "concise": { "name": "Concise", "description": "Prefer brief, direct status and results." },
-        "warm": { "name": "Warm", "description": "Use a conversational, helpful and lightly humorous voice." }
+        "adaptive": {
+          "name": "Adaptive",
+          "description": "Match detail, tone and pace to the objective."
+        },
+        "witty": {
+          "name": "Witty",
+          "description": "Confident, concise and naturally humorous."
+        },
+        "concise": {
+          "name": "Concise",
+          "description": "Prefer brief, direct status and results."
+        },
+        "warm": {
+          "name": "Warm",
+          "description": "Use a conversational, helpful and lightly humorous voice."
+        }
       },
       "permissionProfiles": {
-        "strict": { "name": "Strict", "description": "Ask at each new action boundary." },
-        "balanced": { "name": "Balanced", "description": "Reuse exact trust and ask only when scope changes." },
-        "autonomous": { "name": "Autonomous", "description": "Handle routine reversible work; pause at protected boundaries." }
+        "strict": {
+          "name": "Strict",
+          "description": "Ask at each new action boundary."
+        },
+        "balanced": {
+          "name": "Balanced",
+          "description": "Reuse exact trust and ask only when scope changes."
+        },
+        "autonomous": {
+          "name": "Autonomous",
+          "description": "Handle routine reversible work; pause at protected boundaries."
+        }
       },
       "signal": {
         "core": "Execution core",
@@ -1191,7 +1274,13 @@
       "dismiss": "Dismiss",
       "act": "Handle it",
       "openGoals": "Open Goals",
-      "sources": { "mission": "Mission", "goal": "Goal", "schedule": "Schedule", "routine": "Routine", "reminder": "Reminder" },
+      "sources": {
+        "mission": "Mission",
+        "goal": "Goal",
+        "schedule": "Schedule",
+        "routine": "Routine",
+        "reminder": "Reminder"
+      },
       "itemTitles": {
         "mission-needs-input": "A Mission needs your input",
         "mission-failed": "A Mission needs attention",
@@ -1245,8 +1334,18 @@
       "history": "Goal history",
       "removeTitle": "Remove this Goal?",
       "removeMessage": "The Goal record will be removed. Existing Missions and artifacts remain intact.",
-      "statuses": { "active": "Active", "paused": "Paused", "completed": "Completed", "abandoned": "Abandoned" },
-      "milestoneStatuses": { "pending": "Pending", "inProgress": "In progress", "completed": "Completed", "skipped": "Skipped" }
+      "statuses": {
+        "active": "Active",
+        "paused": "Paused",
+        "completed": "Completed",
+        "abandoned": "Abandoned"
+      },
+      "milestoneStatuses": {
+        "pending": "Pending",
+        "inProgress": "In progress",
+        "completed": "Completed",
+        "skipped": "Skipped"
+      }
     },
     "systems": {
       "title": "Systems",
@@ -1287,15 +1386,55 @@
       "removeMessage": "The System record will be removed. Existing Missions, workflows, schedules, and artifacts remain intact.",
       "createFromMission": "Create System",
       "conversionFailed": "This Mission cannot become a reusable System.",
-      "status": { "draft": "Draft", "tested": "Tested", "active": "Active", "paused": "Paused", "invalid": "Invalid" },
-      "runKinds": { "test": "Test", "manual": "Manual run" },
-      "runStatus": { "completed": "Completed", "partially-completed": "Partially completed", "failed": "Failed", "rejected": "Rejected", "cancelled": "Cancelled" },
-      "outputs": { "collectArtifacts": "Artifacts", "retainHistory": "History" }
+      "status": {
+        "draft": "Draft",
+        "tested": "Tested",
+        "active": "Active",
+        "paused": "Paused",
+        "invalid": "Invalid"
+      },
+      "runKinds": {
+        "test": "Test",
+        "manual": "Manual run"
+      },
+      "runStatus": {
+        "completed": "Completed",
+        "partially-completed": "Partially completed",
+        "failed": "Failed",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled"
+      },
+      "outputs": {
+        "collectArtifacts": "Artifacts",
+        "retainHistory": "History"
+      }
     },
     "voice": {
-      "localWake": {"title":"Detect my name on this PC","description":"Windows English speech recognition. Say the name, pause for acknowledgement, then speak. No background transcription requests before activation. Requires an installed recognizer and microphone.","disclosure":"Name detection stays on this PC. After activation, your command audio is sent to {{provider}} for transcription. No audio is saved."},
-      "dialogue": {"listening":"I'm here. What would you like me to do?","hint":"Say your command now. No need to repeat my name. This turn closes after 15 seconds."},
-      "check": {"title":"Hear Morpheus. Let Morpheus hear you.","description":"Preview uses your selected voice and may incur a small provider charge. The microphone check transcribes a short sample without executing it. The voice is AI-generated.","preview":"Preview selected voice","stop":"Stop preview","microphone":"Check microphone","finish":"Finish microphone check","sample":"I'm Morpheus. Tell me what you have in mind. We'll take it one step at a time. The complicated part? That's my job.","idle":"Not tested yet. A configured account is not a successful voice test.","playing":"Preparing or playing your selected voice…","neural":"Neural playback completed. Does this voice feel right to you?","windows":"Played with Windows fallback, not the selected neural voice. Check voice access before relying on it.","failed":"Voice playback failed. Check your output device and provider settings.","heard":"I heard: {{text}}"},
+      "localWake": {
+        "title": "Detect my name on this PC",
+        "description": "Windows English speech recognition. Say the name, pause for acknowledgement, then speak. No background transcription requests before activation. Requires an installed recognizer and microphone.",
+        "disclosure": "Name detection stays on this PC. After activation, your command audio is sent to {{provider}} for transcription. No audio is saved."
+      },
+      "dialogue": {
+        "listening": "I'm here. What would you like me to do?",
+        "hint": "Say your command now. No need to repeat my name. This turn closes after 15 seconds.",
+        "speechFailed": "I couldn’t play the reply. Check Voice settings and try the voice sample. Your answer is still in the conversation."
+      },
+      "check": {
+        "title": "Hear Morpheus. Let Morpheus hear you.",
+        "description": "Preview uses your selected voice and may incur a small provider charge. The microphone check transcribes a short sample without executing it. The voice is AI-generated.",
+        "preview": "Preview selected voice",
+        "stop": "Stop preview",
+        "microphone": "Check microphone",
+        "finish": "Finish microphone check",
+        "sample": "I'm Morpheus. Tell me what you have in mind. We'll take it one step at a time. The complicated part? That's my job.",
+        "idle": "Not tested yet. A configured account is not a successful voice test.",
+        "playing": "Preparing or playing your selected voice…",
+        "neural": "Voice sample played. Does this voice feel right to you?",
+        "windows": "Played with Windows fallback, not the selected neural voice. Check voice access before relying on it.",
+        "failed": "Voice playback failed. Check your output device and provider settings.",
+        "heard": "I heard: {{text}}"
+      },
       "speechFailure": {
         "authentication": "Windows voice fallback: speech authentication failed (401). Check the selected provider key in Models.",
         "access": "Windows voice fallback: speech access was denied (403). Check the account's endpoint and model permissions.",
@@ -1308,7 +1447,7 @@
       "cancel": "Cancel voice input",
       "dismiss": "Dismiss voice status",
       "speaking": "Morpheus is speaking",
-      "preparingSpeech": "Preparing voice · you can interrupt",
+      "preparingSpeech": "One moment…",
       "deviceBody": "Microphone unavailable. Reconnect it, then turn ambient voice off and on in Settings.",
       "errorBody": "Voice input could not continue. Check the microphone and transcription provider in Settings.",
       "repeatBody": "I couldn't hear that clearly. Please say it once more.",
@@ -1327,7 +1466,8 @@
         "waiting-for-approval": "Waiting for your decision",
         "working": "Morpheus is working",
         "speaking": "Morpheus is speaking",
-        "error": "Voice presence needs attention"
+        "error": "Voice presence needs attention",
+        "preparing-speech": "One moment…"
       },
       "settings": {
         "title": "Voice operator",
@@ -1422,7 +1562,16 @@
         "checkLocal": "Play a real local voice sample, or test the microphone without sending a command. Audio is AI-generated and stays on this PC.",
         "providerBody": "You chose {{provider}} in Advanced. Audio is sent to that service and may incur charges. You can return to included local voice below.",
         "notTested": "Included voice is available. Play a sample to test your speakers.",
-        "sampleFailed": "Local voice could not play. Check your speakers or headphones and retry. If it fails again, repair the Morpheus installation."
+        "sampleFailed": "Local voice could not play. Check your speakers or headphones and retry. If it fails again, repair the Morpheus installation.",
+        "heard": "You said",
+        "edit": "Edit as a typed follow-up",
+        "captions": {
+          "title": "Voice captions",
+          "automatic": "Automatic — show briefly",
+          "always": "Keep the latest caption",
+          "hidden": "Hide captions",
+          "body": "This only changes captions. Microphone and mute indicators stay visible; voice errors still offer a repair."
+        }
       },
       "setup": {
         "skip": "Skip for now",
@@ -1443,6 +1592,15 @@
         "gentle": "One step at a time. I’ll handle the fiddly bits.",
         "cheeky": "Your tabs have formed a pirate crew. Let’s get them in line.",
         "unfiltered": "Sharper humor is a preference. NerdGPT-powered roasts are planned."
+      },
+      "opening": {
+        "title": "Welcome to the Matrix.",
+        "subtitle": "I’m Morpheus. A little help. A little wit. Your call.",
+        "begin": "Let’s begin",
+        "skip": "Skip introduction",
+        "footer": "Voice when you want it. Typing, always.",
+        "returning": "Good to have you here.",
+        "continue": "Continue conversation"
       }
     }
   }

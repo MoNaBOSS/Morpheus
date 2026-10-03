@@ -17,7 +17,7 @@ test.describe('Morpheus Chat presence', () => {
       await page.getByTestId('sidebar-nav-advanced-chat').click();
 
       const presence = page.getByTestId('morpheus-chat-presence');
-      const signal = presence.getByTestId('morpheus-signal');
+      const signal = presence.getByTestId('morpheus-fluid-orb');
       await expect(presence).toBeVisible();
       await expect(signal).toBeVisible();
       await expect(page.getByTestId('chat-composer-input')).toBeVisible();
@@ -32,8 +32,8 @@ test.describe('Morpheus Chat presence', () => {
 
       const presenceBox = await presence.boundingBox();
       const signalBox = await signal.boundingBox();
-      expect(presenceBox?.height ?? 0).toBeGreaterThanOrEqual(76);
-      expect(signalBox?.width ?? 0).toBeGreaterThanOrEqual(70);
+      expect(presenceBox?.height ?? 0).toBeGreaterThanOrEqual(64);
+      expect(signalBox?.width ?? 0).toBe(56);
 
       await page.screenshot({
         path: testInfo.outputPath('morpheus-chat-ready-1280x800.png'),

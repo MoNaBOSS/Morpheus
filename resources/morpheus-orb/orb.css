@@ -22,3 +22,6 @@ html[data-draft-conflict="true"] .hover-composer { border-color: #e9ab76; }
 
 html[data-visible="false"] body { opacity: 0; }
 body { transition: opacity 180ms ease; }
+.orb { left: var(--orb-x, auto); top: var(--orb-y, auto); touch-action: none; cursor: grab; }
+.orb:active { cursor: grabbing; }
+.hover-composer, .social-caption { top: var(--panel-y, auto); }

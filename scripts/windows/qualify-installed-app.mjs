@@ -133,7 +133,12 @@ const selectedFiles = ['Morpheus.exe', 'resources/app.asar', 'resources/resource
   'resources/resources/local-voice/manifest.json', 'resources/resources/local-voice/bin/sherpa-onnx-offline.exe',
   'resources/resources/local-voice/bin/sherpa-onnx-offline-tts.exe', 'resources/resources/local-voice/whisper/tiny.en-encoder.int8.onnx',
   'resources/resources/local-voice/whisper/tiny.en-decoder.int8.onnx', 'resources/resources/local-voice/kokoro/model.int8.onnx',
-  'resources/resources/local-voice/kokoro/voices.bin'];
+  'resources/resources/local-voice/kokoro/voices.bin',
+  'resources/resources/local-voice/worker/morpheus-tts-worker.cjs',
+  'resources/resources/local-voice/worker/node_modules/sherpa-onnx-node/non-streaming-tts.js',
+  'resources/resources/local-voice/worker/node_modules/sherpa-onnx-win-x64/sherpa-onnx.node',
+  'resources/resources/local-voice/worker/node_modules/sherpa-onnx-win-x64/sherpa-onnx-c-api.dll',
+  'resources/resources/local-voice/worker/node_modules/sherpa-onnx-win-x64/onnxruntime.dll'];
 const verifyPayload = async () => {
   const hashes = {};
   for (const file of selectedFiles) { hashes[file] = await digest(join(install, file)); assert.equal(hashes[file], await digest(join(unpacked, file)), `Installed payload mismatch: ${file}`); }

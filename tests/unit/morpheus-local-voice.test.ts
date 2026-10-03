@@ -24,28 +24,31 @@ function pcm16k(source: Buffer): Buffer {
 describe.skipIf(process.platform !== 'win32' || !root)('real included voice engine', () => {
   it('synthesizes and recognizes a real command without a provider and removes audio after success', async () => {
     const temporary = await mkdtemp(join(tmpdir(), 'local-voice-'));
+    const voice = createMorpheusLocalVoice(root!, temporary);
     try {
-      const voice = createMorpheusLocalVoice(root!, temporary); expect(voice.ready()).toBe(true);
+      expect(voice.ready()).toBe(true);
       const audio = await voice.synthesize('Open YouTube.', 'cedar', new AbortController().signal);
       const transcript = await voice.transcribe(pcm16k(audio), new AbortController().signal);
       expect(transcript.toLowerCase()).toMatch(/^open youtube[.!]?$/);
       expect(await readdir(temporary)).toEqual([]);
-    } finally { await rm(temporary, { recursive: true, force: true }); }
+    } finally { voice.dispose?.(); await rm(temporary, { recursive: true, force: true }); }
   }, 45_000);
   it('cancels the real speech process and removes its temporary directory', async () => {
     const temporary = await mkdtemp(join(tmpdir(), 'local-voice-cancel-'));
+    const voice = createMorpheusLocalVoice(root!, temporary);
     try {
-      const voice = createMorpheusLocalVoice(root!, temporary); const controller = new AbortController();
+      const controller = new AbortController();
       const result = voice.synthesize('This deliberately long sample is interrupted before it can finish speaking.', 'cedar', controller.signal);
       const cancel = setTimeout(() => controller.abort(), 100);
       await expect(result).rejects.toMatchObject({ name: 'AbortError' }); clearTimeout(cancel);
       expect(await readdir(temporary)).toEqual([]);
-    } finally { await rm(temporary, { recursive: true, force: true }); }
+    } finally { voice.dispose?.(); await rm(temporary, { recursive: true, force: true }); }
   });
   it('streams real validated PCM before the complete reply and cancels between phrases without retaining audio', async () => {
     const temporary = await mkdtemp(join(tmpdir(), 'local-voice-stream-'));
+    const voice = createMorpheusLocalVoice(root!, temporary);
     try {
-      const voice = createMorpheusLocalVoice(root!, temporary), controller = new AbortController();
+      const controller = new AbortController();
       const parts: Buffer[] = [];
       const pending = voice.synthesizeStream!('I am Morpheus. Tell me what you need, and I will get moving. A little humor, a little Matrix, and useful results.', 'cedar', controller.signal, pcm => {
         parts.push(pcm); controller.abort();
@@ -53,6 +56,6 @@ describe.skipIf(process.platform !== 'win32' || !root)('real included voice engi
       await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
       expect(parts).toHaveLength(1); expect(parts[0].length).toBeGreaterThan(24_000);
       expect(parts[0].length % 2).toBe(0); expect(await readdir(temporary)).toEqual([]);
-    } finally { await rm(temporary, { recursive: true, force: true }); }
+    } finally { voice.dispose?.(); await rm(temporary, { recursive: true, force: true }); }
   }, 30_000);
 });

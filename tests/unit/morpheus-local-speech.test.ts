@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { localSpeechPcm, localSpeechSegments } from '../../electron/services/morpheus/voice/local-speech';
+import { localSpeechPcm, localSpeechSegments, localSpeechWav } from '../../electron/services/morpheus/voice/local-speech';
 
 function wav(pcm = Buffer.from([0, 32, 0, 64])) {
   const value = Buffer.alloc(44 + pcm.length);
@@ -24,6 +24,8 @@ describe('included speech segments and PCM validation', () => {
   });
   it('returns only actual mono 24 kHz PCM samples', () => {
     expect(localSpeechPcm(wav())).toEqual(Buffer.from([0, 32, 0, 64]));
+    expect(localSpeechWav(Buffer.from([0, 32, 0, 64]))).toEqual(wav());
+    expect(() => localSpeechWav(Buffer.from([1]))).toThrow('invalid audio');
   });
   it.each(['stereo', 'wrong-rate', 'float', 'truncated', 'odd-samples', 'no-data'])('rejects %s before streaming', kind => {
     let value = wav();

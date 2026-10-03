@@ -1,6 +1,8 @@
 # Current Windows experience completion checklist
 
-Updated 2026-10-03, Asia/Dhaka. Preview.7 autonomous candidate qualification complete at the boundaries below; **commercial release is not yet qualified**.
+Updated 2026-10-03, Asia/Dhaka. **Connected motion study approved; implementation
+and final Windows qualification authorized. The owner rejected preview.7 UI/UX.** Scoped qualification
+below remains evidence; it does not establish product acceptance or commercial readiness.
 This is the single current checklist. Requirements and baseline evidence live in
 [the experience specification](../design/MORPHEUS_EXPERIENCE_REVIEW.md). Previous
 checklist detail is recoverable at `3bcad683`; historical preview.5 evidence is
@@ -9,16 +11,73 @@ retained in [its handoff](WINDOWS_PREVIEW5_HANDOFF.md).
 `VERIFIED` applies only to the stated test boundary. `IMPLEMENTED` is source,
 `SIMULATED` is fixture behavior, `OPEN` is untested or unaccepted, and `BLOCKED`
 requires external inputs. Automated counts never imply physical PC acceptance.
-The owner authorized a combined final review and then autonomous completion/testing:
-complete the work and simplify without reducing capabilities. Separate component
-review pauses are superseded. Preview.6 evidence below remains a preserved baseline.
+The owner accepted the new motion study and requested implementation, connected
+settings and improved voice/animations. That latest request supersedes the earlier
+design-only hold. Preview.6/preview.7 evidence remains a preserved baseline.
 An end-of-work preservation recheck confirms both historical source checkouts are
 still clean at `fa988f06` and `3bcad683`. The historical Program Files and per-user
-Morpheus installation paths and uninstall registration are now absent; the cause
-is unknown. This task has not executed an installer/uninstaller on the owner host.
-Historical preview.5 installed identity remains baseline evidence, not current state.
+Morpheus installation paths and uninstall registration were absent at the earlier
+handoff; their absence was unexplained. Subsequent live inspection on October 3
+found `C:\Users\monir\AppData\Local\Programs\Morpheus\Morpheus.exe`, version
+`1.2.0-preview.7`. Its EXE and app.asar hashes match the qualified payload. The
+installed conversation was observed; inspection stopped at the owner's Escape key
+before settings/voice walkthrough. This task did not run an installer/uninstaller
+on the owner host. No complete live function or physical voice acceptance is claimed.
 
-## Preview.7 final candidate — application source 757f71c5
+## Preview.8 integration — qualification in progress
+
+Source reverified at `92b79819` and fetched without overwriting work. C:9.37 GiB
+and E:146.45 GiB free before build. Build/version target is `1.2.0-preview.8`;
+source/package hashes will be recorded after final native checks. The previous
+installed preview.7 and all prior delivery files remain untouched.
+
+Current implemented changes: approved original-logo arrival and real audio contours;
+compact settings/draft continuity, editable captions with visibility preference;
+Main-owned movable orb/work-area persistence; live ACP spoken replies and typed
+interruption; bounded warm local synthesis and local-only playback buffer. Quiet
+and check-in controls are reachable under Personality. Ordinary website commands
+use the normal OS browser (Chrome on this PC), including “Open the YouTube”.
+
+Current source verification (before packaging):
+- Node/web/managed typechecks pass. Full unit run: 329 files / 3,454 tests pass,
+  six tests skipped; initial obsolete boot/PCM fixture assumptions were corrected.
+- Five design/motion Electron cases pass, including actual compact settings-return
+  clicks, retained draft/reply, captions preference, 320-pixel layout, reduced motion
+  and hidden pause. The initial real click-through defect is fixed and retested.
+- Existing simple/Advanced navigation, typed question hold and native orb
+  draft/admission/keyboard-placement cases pass. Direct URL phrasing and work-area
+  movement/persistence/cancelled-pointer regressions pass at their unit boundary.
+- Real local preview: 362,784 PCM bytes received, scheduled and naturally ended;
+  478.9 ms first-PCM-to-scheduled-audio buffer, 12.77 ms largest scheduled gap in
+  this sample. These are AudioContext observations, not physical speaker acceptance.
+- Generated “How are you today?” traversed the original recorder, real local STT,
+  routing/admission and ACP fixture. Live reply: 129,456 PCM bytes played completely;
+  typed/manual Stop measured 6.3/13.7 ms. Three exact admitted prompts; no physical
+  microphone. This proves the previously missing ordinary-conversation speech path.
+- Pinned warm worker benchmark: first PCM 0.98–1.15 s warm / 2.15 s cold, before
+  initial playback buffer. About 459 MB working set, unchanged CPU counter over
+  ten idle seconds; real 60-second unload/cancel/dispose leave no owned worker.
+- Comms replay/compare and diff-aware harness validation/CI pass. Windows harness
+  runner itself fails `spawn EINVAL` for pnpm.cmd; its fixed fast/comms steps were
+  executed directly and results above are real runs, not a dry-run pass.
+
+Build and native evidence: `E:\Morpheus-builds\experience-preview8-evidence`.
+The UI recordings use isolated fixture replies; actual neural audio is in `voice`.
+Package/installation, current animation CPU and physical acceptance are still open.
+
+## Current design review gates
+
+| Gate | Status and required evidence |
+| --- | --- |
+| Product direction | APPROVED: Floating companion by default + Conversation card, automatic temporary editable voice captions, optional hiding with visible mic/mute state. Owner explicitly requested an eye-pleasing animated opening and existing logo. Current installed screenshot remains rejected. |
+| Motion design | APPROVED study; application qualification in progress: connected arrival study linked in the experience specification; existing M light/reveal and travel into a 56-pixel draggable companion, upward card, compact/expanded continuity, simulated listening/accepted/executing/speaking, dismissal, mute and reduced motion. Browser study only; real audio, native geometry/performance, question/error and full onboarding remain open. |
+| Voice architecture | IMPLEMENTED current scoped changes: extend original Main turn ownership, warm bounded local inference, qualified incremental recognition, live ACP/Core speech queue, one microphone policy, real interruption/echo testing and mute authority. Existing task-only test does not close general conversation. |
+| Browser behavior | IMPLEMENTED direct URL route; normal browser launch still requires packaged qualification: ordinary website commands reuse current normal Chrome/profile; no surprise isolated profile. Specify multiple-profile and focus behavior without cookie copying or implicit broad tab access. |
+| Companionship | PROPOSED: occasional contextual jokes and optional once-daily check-in, quiet hours/off controls, no repetitive or emotional inference. Frequency and tone need owner approval. |
+| UX flow audit | Source review found compact dismissal may ignore draft/focus, first success is optional before outcome, older results can require Advanced, contextual Back loses origin, and More exposes ungrouped technical destinations. These need design corrections and later live reproduction, not automatic acceptance claims. |
+| Implementation | AUTHORIZED: integrate approved presentation and contextual settings, ordinary ACP speech/follow-up and local speech latency improvements through existing owners; verify actual package. Real microphone/audio quality and external commercial gates remain distinct. |
+
+## Historical preview.7 candidate — application source 757f71c5
 
 | Component | Current evidence |
 | --- | --- |
@@ -46,8 +105,9 @@ and the fully played command reply are supplied. Rejected `5b93a145` reload,
 `23d7bae9` truncated speech and `24945c32` pre-chronology EXEs/evidence stay preserved.
 The recorder's flight-recorder filename preflight error was corrected before any
 app launch; it is a harness failure, not a product acceptance result.
-No installer/uninstaller ran on the owner host, and no owner profile or credential
-was used. Signing is `NotSigned`; the updater stays unconfigured with signature
+No installer/uninstaller ran on the owner host. Autonomous qualification used
+synthetic profiles; no owner credential was used. Signing is `NotSigned`;
+the updater stays unconfigured with signature
 verification enabled. Hosted installation ZIP SHA256 is
 `7adc602433610471ce21d15f83fda4fc31cdda13121d03e3eb628c42c19a1007`.
 
@@ -98,7 +158,7 @@ verification enabled. Hosted installation ZIP SHA256 is
 | Identified EXE | VERIFIED: `E:\Morpheus-builds\experience-preview6\source\release\Morpheus-1.2.0-preview.6-win-x64.exe`, 477,650,761 bytes; SHA256 `599f8d29628efcfafdfe7837cf72dabb7ab8bbf99efa1af8704e5416a83cb07e`. All 40,896 embedded paths/sizes, archive integrity and 44 selected hashes match the qualified payload. EXE/app.asar/orb/motion hashes also match normal qualification. Voice notices/source provenance included. Unsigned; no owned update feed. |
 | Installed upgrade / hardware | OPEN: installer execution, upgrade/uninstall with owner profile, physical mic/echo/interruption, DPI/taskbar positions/display removal/sleep, live paid provider/publication and long mixed-use session. Do not label source or fixtures as installed acceptance. |
 
-## Current record and exact next step
+## Historical preview.7 delivery record
 
 Implementation stays in `E:\Morpheus-builds\experience-preview6\source`; original
 checkouts remain clean at `fa988f06` and `3bcad683`. Verified local build:
@@ -112,11 +172,9 @@ Evidence root is `E:\Morpheus-builds\experience-preview6`: `installer-inspection
 `evidence/packaged-conversation-preview7.json`, `evidence/native-orb-motion.json`
 and `evidence/hosted-install-37050843303/installed-app-qualification.json`.
 
-**Exact next correction:** connect one ordinary voice-origin ACP reply to the
-existing speech and follow-up owners, with original turn identity, cancellation,
-mute and duplicate/reload safeguards. Qualify a complete conversational turn;
-the passing Core command test is not that evidence. Also address warm synthesis
-and generation gaps before claiming fluid dialogue. Preserve existing capabilities.
+**Exact next step:** finish native UI/voice checks on preview.8, freeze its source,
+then qualify the exact packaged payload and produce the identified EXE. Ordinary
+conversational speech needs actual playback evidence in addition to Core commands.
 The owner's combined appearance/physical-PC review uses `Morpheus-PC-Acceptance.md`
 in the delivery folder. Commercial launch requires the external service
 and physical/performance gates above; automated or generated-input evidence does

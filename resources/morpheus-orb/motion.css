@@ -15,29 +15,29 @@
 }
 
 .morpheus-motion__aurora {
-  z-index: 1;
-  inset: -2%;
+  z-index: 2;
+  inset: -3%;
+  border: 1px solid rgb(133 245 185 / .6);
   border-radius: 46% 54% 59% 41% / 53% 42% 58% 47%;
   background: conic-gradient(from 40deg, transparent 7%, rgb(83 237 180 / 0.34) 27%, transparent 52%, rgb(44 170 110 / 0.28) 78%, transparent 96%);
-  filter: blur(4px);
   opacity: 0.65;
   transform: translateZ(0);
-  mask-image: radial-gradient(circle, transparent 52%, #000 72%);
+  mask-image: radial-gradient(circle, transparent 57%, #000 69%);
 }
 
 .morpheus-motion__halo {
-  z-index: 2;
-  inset: 4%;
+  z-index: 3;
+  inset: 1%;
   border: 1px solid rgb(120 245 179 / 0.46);
   border-radius: 50%;
   box-shadow: 0 0 15px rgb(83 237 180 / 0.18);
   opacity: 0.52;
-  transition: transform 120ms linear, opacity 120ms linear;
+  transition: transform 90ms linear, opacity 90ms linear, border-radius 90ms linear;
 }
 
 .morpheus-motion__cue {
   position: absolute;
-  z-index: 3;
+  z-index: 4;
   right: 5%;
   bottom: 7%;
   display: grid;
@@ -70,9 +70,7 @@
 
 .morpheus-motion[data-motion-state='idle'] .morpheus-motion__halo {
   inset: 6%;
-  /* Idle changes by subpixel amounts: five updates/second avoids a continuously
-     busy transparent-window compositor. Active aurora/audio remain fluid. */
-  animation: morpheus-motion-breathe 7.2s steps(36, end) infinite;
+  animation: morpheus-motion-breathe 5.6s ease-in-out infinite;
 }
 
 .morpheus-motion[data-motion-state='working'] .morpheus-motion__aurora,
@@ -84,29 +82,28 @@
 
 .morpheus-motion[data-motion-state='working'] .morpheus-motion__halo {
   opacity: 0.7;
-  border-left-color: transparent;
-  animation: morpheus-motion-work 2.4s linear infinite;
 }
 
 /* Quiet means the microphone is asleep. A visible companion still has life;
    this presentation motion never suggests capture or changes audio authority. */
 .morpheus-motion[data-motion-state='idle'] .morpheus-motion__aurora,
+.morpheus-motion[data-motion-state='complete'] .morpheus-motion__aurora,
 .morpheus-motion[data-motion-state='quiet'] .morpheus-motion__aurora {
-  animation: morpheus-motion-orbit 8s steps(40, end) infinite;
+  animation: morpheus-motion-contour 5.6s ease-in-out infinite alternate;
   opacity: 0.75;
 }
 
 .morpheus-motion[data-motion-state='quiet'] .morpheus-motion__aurora { opacity: 0.48; }
 .morpheus-motion[data-motion-state='quiet'] .morpheus-motion__halo {
-  animation: morpheus-motion-quiet-breathe 7.2s steps(36, end) infinite;
+  animation: morpheus-motion-quiet-breathe 5.6s ease-in-out infinite;
 }
 
 @keyframes morpheus-motion-work { to { transform: rotate(360deg); } }
 
 .morpheus-motion[data-motion-state='listening'] .morpheus-motion__halo,
 .morpheus-motion[data-motion-state='speaking'] .morpheus-motion__halo {
-  inset: 10%;
-  transform: scale(calc(1 + var(--morpheus-audio-level, 0) * 0.16));
+  inset: 1%;
+  transform: scale(calc(1 + var(--morpheus-audio-level, 0) * 0.24));
   opacity: calc(0.6 + var(--morpheus-audio-level, 0) * 0.35);
   box-shadow: 0 0 24px rgb(110 255 190 / 0.38);
 }
@@ -147,6 +144,33 @@
   0%, 100% { transform: scale(1); opacity: 0.40; }
   50% { transform: scale(1.075); opacity: 0.85; }
 }
+.morpheus-motion[data-motion-paused='true'] .morpheus-motion__mark { animation-play-state: paused; }
+
+/* Presence travel is independent of sound. Only the real RMS meter changes
+   listening/speaking deformation: silent capture never fabricates activity. */
+.morpheus-motion[data-motion-state='listening'] .morpheus-motion__halo {
+  border-radius: calc(50% - var(--morpheus-audio-level) * 9%) calc(50% + var(--morpheus-audio-level) * 9%) 48% 52%;
+}
+.morpheus-motion[data-motion-state='speaking'] .morpheus-motion__halo {
+  transform: scale(calc(1 + var(--morpheus-audio-level) * .11), calc(1 + var(--morpheus-audio-level) * .3));
+  border-radius: 43% 57% 51% 49% / 47% 42% 58% 53%;
+}
+.morpheus-motion[data-motion-state='understanding'] .morpheus-motion__halo {
+  animation: morpheus-motion-recognize .5s ease-out both;
+}
+.morpheus-motion[data-motion-state='understanding'] .morpheus-motion__aurora,
+.morpheus-motion[data-motion-state='working'] .morpheus-motion__aurora {
+  border-color: rgb(133 245 185 / .25);
+  background: conic-gradient(transparent 0deg, transparent 225deg, rgb(191 255 225 / .75) 302deg, transparent 355deg);
+  animation: morpheus-motion-work 1.6s linear infinite;
+}
+.morpheus-motion[data-motion-state='complete'] .morpheus-motion__halo { animation: morpheus-motion-complete .8s ease-out both; }
+@keyframes morpheus-motion-contour {
+  from { transform: rotate(-15deg) scale(.99); border-radius: 43% 57% 53% 47% / 52% 45% 55% 48%; }
+  to { transform: rotate(35deg) scale(1.1); border-radius: 56% 44% 44% 56% / 42% 59% 41% 58%; }
+}
+@keyframes morpheus-motion-recognize { 0% { transform: scale(1); } 40% { transform: scale(.87); } 75% { transform: scale(1.1); } 100% { transform: scale(1); } }
+@keyframes morpheus-motion-complete { 0% { opacity: .4; transform: scale(.95); } 35% { opacity: 1; } 100% { opacity: .55; transform: scale(1.12); } }
 
 @keyframes morpheus-motion-quiet-breathe {
   0%, 100% { transform: scale(1); opacity: 0.28; }

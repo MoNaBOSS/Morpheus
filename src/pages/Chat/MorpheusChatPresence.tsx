@@ -1,7 +1,7 @@
 import { Square } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { MorpheusSignal } from '@/components/morpheus/signal/MorpheusSignal';
+import { MorpheusFluidOrb } from '@/components/morpheus/MorpheusFluidOrb';
 import type { AcpTimelineSnapshot } from '@/lib/acp/timeline-types';
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
@@ -71,8 +71,8 @@ export function MorpheusChatPresence({
     label = t('chat:presence.executing');
     detail = snapshot.activeToolTitle ?? t('chat:presence.executingDetail');
   } else if (snapshot.activity === 'thinking') {
-    label = t('chat:presence.thinking');
-    detail = t('chat:presence.thinkingDetail');
+    label = t('dashboard:morpheus.title');
+    detail = t('dashboard:morpheus.workspace.subtitle');
   } else if (snapshot.activity === 'stopping') {
     label = t('chat:presence.stopping');
     detail = t('chat:presence.stoppingDetail');
@@ -94,21 +94,15 @@ export function MorpheusChatPresence({
       role="status"
       aria-live="polite"
     >
-      <span aria-hidden className="morpheus-presence-field pointer-events-none absolute inset-0 opacity-45" />
-      <div className="relative z-10 flex h-[76px] w-[76px] shrink-0 items-center justify-center sm:h-[88px] sm:w-[88px]">
-        <MorpheusSignal
+      <div className="relative z-10 flex h-16 w-16 shrink-0 items-center justify-center">
+        <MorpheusFluidOrb
           state={snapshot.signalState}
-          className="h-[72px] w-[72px] text-[hsl(var(--morpheus-accent))] sm:h-[84px] sm:w-[84px]"
+          className="h-14 w-14"
           label={t(`dashboard:morpheus.signalOs.signal.${snapshot.signalState}`)}
         />
       </div>
 
       <div className="relative z-10 min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
-          <span className="text-[hsl(var(--morpheus-accent))]">{t('chat:presence.live')}</span>
-          <span className="h-1 w-1 shrink-0 rounded-full bg-[hsl(var(--morpheus-accent))] shadow-[0_0_9px_hsl(var(--morpheus-glow))]" />
-          <span>{snapshot.source === 'openclaw' ? t('chat:presence.conversation') : t('chat:presence.core')}</span>
-        </div>
         <div className="mt-1 flex min-w-0 items-baseline gap-2">
           <h1
             data-testid="chat-session-title"

@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Switch } from '@/components/ui/switch';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { MorpheusVoiceCheck } from './MorpheusVoiceCheck';
+import { morpheusAdvancedSettingsPath } from '@/lib/morpheus-settings-route';
+import { useSettingsStore, type VoiceCaptionMode } from '@/stores/settings';
 
 export function MorpheusVoiceSetup() {
   const { t } = useTranslation('dashboard');
+  const location = useLocation();
+  const captions = useSettingsStore((s) => s.voiceCaptionMode);
+  const setCaptions = useSettingsStore((s) => s.setVoiceCaptionMode);
   const status = useMorpheusVoiceStore((s) => s.status);
   const load = useMorpheusVoiceStore((s) => s.loadStatus);
   const update = useMorpheusVoiceStore((s) => s.updateSettings);
@@ -24,8 +29,9 @@ export function MorpheusVoiceSetup() {
     <div className="space-y-2"><label htmlFor="morpheus-mic-device" className="block text-sm">{t('morpheus.experience.voice.device')}</label><div className="flex gap-2"><select id="morpheus-mic-device" data-testid="morpheus-microphone-device" className="min-w-0 flex-1 rounded-lg border border-border bg-surface-input px-3 py-2 text-sm" value={status.settings.inputDeviceId ?? ''} onChange={(e) => void update({ inputDeviceId: e.target.value })}><option value="">{t('morpheus.experience.voice.defaultDevice')}</option>{devices.filter((d) => d.deviceId !== 'default' && d.deviceId !== 'communications' && d.deviceId).map((d, index) => <option key={d.deviceId} value={d.deviceId}>{d.label || t('morpheus.experience.voice.unnamedDevice', { number: index + 1 })}</option>)}</select><button type="button" onClick={() => void refresh()} className="rounded-lg border border-border px-3 text-sm">{t('morpheus.experience.voice.refresh')}</button></div><p className="text-xs leading-relaxed text-muted-foreground">{t('morpheus.experience.voice.permission')}</p></div>
     <div className="flex items-center justify-between gap-4"><label htmlFor="morpheus-spoken-replies" className="text-sm">{t('morpheus.voice.settings.speakResponses')}</label><Switch className="data-[state=checked]:bg-[#53edb4]" id="morpheus-spoken-replies" checked={status.settings.speakResponses} onCheckedChange={(speakResponses) => void update({ speakResponses })}/></div>
     {local ? <label className="block space-y-2 text-sm"><span>{t('morpheus.experience.voice.sound')}</span><select data-testid="morpheus-local-voice-choice" className="block w-full rounded-lg border border-border bg-surface-input px-3 py-2" value={status.settings.speechVoice === 'coral' ? 'coral' : 'cedar'} onChange={(e) => void update({ speechVoice: e.target.value as 'cedar' | 'coral' })}><option value="cedar">{t('morpheus.experience.voice.warm')}</option><option value="coral">{t('morpheus.experience.voice.bright')}</option></select></label> : null}
+    <label className="block space-y-2 text-sm"><span>{t('morpheus.experience.voice.captions.title')}</span><select data-testid="morpheus-voice-caption-mode" className="block w-full rounded-lg border border-border bg-surface-input px-3 py-2" value={captions} onChange={(e) => setCaptions(e.target.value as VoiceCaptionMode)}>{(['automatic', 'always', 'hidden'] as const).map((mode) => <option key={mode} value={mode}>{t(`morpheus.experience.voice.captions.${mode}`)}</option>)}</select><span className="block text-xs leading-relaxed text-muted-foreground">{t('morpheus.experience.voice.captions.body')}</span></label>
     <div className="flex items-center justify-between gap-4"><div><label htmlFor="morpheus-wake-enabled" className="text-sm">{t('morpheus.experience.voice.wake')}</label><p className="mt-1 text-xs text-muted-foreground">{t('morpheus.experience.voice.wakeBody')}</p></div><Switch className="data-[state=checked]:bg-[#53edb4]" id="morpheus-wake-enabled" data-testid="morpheus-wake-enabled" checked={status.settings.ambientEnabled} disabled={!status.settings.enabled} onCheckedChange={(ambientEnabled) => void update({ ambientEnabled, localWakeEnabled: true })}/></div>
     {error ? <p role="alert" className="text-sm text-red-700 dark:text-red-400">{error}</p> : null}
-    <Link to="/settings/advanced?section=voice" className="inline-block text-sm text-muted-foreground underline">{t('morpheus.experience.voice.advanced')}</Link>
+    <Link data-testid="morpheus-voice-advanced-settings" to={morpheusAdvancedSettingsPath(location.search, 'voice')} className="inline-block text-sm text-muted-foreground underline">{t('morpheus.experience.voice.advanced')}</Link>
   </section>;
 }

@@ -42,6 +42,11 @@ expectedUserBehavior:
   - Public research rejects credential-bearing URLs and retries only validated transport connection failures.
   - Completed task exchanges stay beside their original request in the continuous conversation.
   - Reloading an active reply restores original ACP history without duplicating the admitted turn; Main settles successful delivery independently of the renderer.
+  - Live voice-origin ACP replies use the existing cancellable speech queue exactly once, without replaying historical or typed replies.
+  - The approved animated arrival, actual audio-reactive companion and conversation card retain one draft, history and task owner.
+  - Contextual settings return to the interrupted compact or expanded conversation.
+  - Companion drag and keyboard placement stay within actual display work areas and survive display changes safely.
+  - Included local speech reuses a bounded warm engine when enabled, with measurable latency, cancellation and shutdown.
 requiredTests:
   - pnpm run typecheck
   - pnpm run lint:check
@@ -65,3 +70,9 @@ requested autonomous completion and testing. The next preview.7 change is bounde
 speech responsiveness, verified conversation chronology, public capability reliability,
 and disposable hosted Windows installation qualification. No paid provider, checkout,
 signing identity or NerdGPT deployment is invented.
+
+October 3 amendment: the owner approved the connected motion study and authorized
+full integration/qualification with substantial voice improvement and connected
+settings. The earlier design-only hold is superseded. Suggestions are considered
+within this coherent experience; no speculative service or unimplemented action
+is advertised. Keep actual package, physical audio and hosted-service gates distinct.

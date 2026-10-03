@@ -194,7 +194,7 @@ describe('Main-owned objective orchestration', () => {
     expect(run.planIds).toEqual(['plan-1', 'plan-2']);
     expect(run.observations).toHaveLength(2);
     expect(run.artifacts).toHaveLength(0);
-    expect(run.summary).toBe('Completed 1 step.');
+    expect(run.summary).toBe('Done.');
     expect(runtime.executePlan).toHaveBeenCalledTimes(2);
     expect(planner.review).toHaveBeenCalledTimes(1);
     expect(runtime.registerPlan).toHaveBeenNthCalledWith(1, expect.objectContaining({

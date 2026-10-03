@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MorpheusAssistantSnapshot } from '@shared/morpheus/assistant-session-types';
 
 const mocks = vi.hoisted(() => ({
-  workspace: vi.fn(), load: vi.fn(), send: vi.fn(), snapshot: vi.fn(), ack: vi.fn(),
+  workspace: vi.fn(), load: vi.fn(), send: vi.fn(), snapshot: vi.fn(), ack: vi.fn(), admit: vi.fn(),
   sessions: [] as Array<{ key: string; createdLocally?: boolean }>,
 }));
-vi.mock('@/lib/host-api', () => ({ hostApi: { files: { resolveWorkspaceContext: mocks.workspace }, morpheus: { assistantSnapshot: mocks.snapshot, ackAssistantTurn: mocks.ack } } }));
+vi.mock('@/lib/host-api', () => ({ hostApi: { files: { resolveWorkspaceContext: mocks.workspace }, morpheus: { assistantSnapshot: mocks.snapshot, ackAssistantTurn: mocks.ack, admitAssistantTurn: mocks.admit } } }));
 vi.mock('@/lib/host-events', () => ({ hostEvents: {} }));
 vi.mock('@/lib/workspace-context', () => ({ resolveEffectiveWorkspace: () => ({ cwd: '/fixture' }) }));
 vi.mock('@/i18n', () => ({ default: { t: (key: string) => key } }));
@@ -82,6 +82,14 @@ describe('Morpheus original-history recovery', () => {
     reject(new Error('Old failure'));
     await pending;
     expect(store.getState().dispatchError).toBeNull();
+  });
+
+  it('exposes the original admission to live voice presentation before dispatch refresh', async () => {
+    const turn = { conversationId: 'agent:main:main', turnId: 'voice', source: 'voice', generation: 1 };
+    mocks.admit.mockResolvedValue(turn); mocks.snapshot.mockResolvedValue(snapshot());
+    const admitted = vi.fn(() => expect(mocks.snapshot).not.toHaveBeenCalled());
+    expect(await store.getState().submit('Hello', 'voice', admitted)).toBe(true);
+    expect(admitted).toHaveBeenCalledExactlyOnceWith(turn);
   });
 
   it('rechecks Main after reload recovery and never dispatches its already-consumed admission', async () => {

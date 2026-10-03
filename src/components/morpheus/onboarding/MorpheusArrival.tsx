@@ -72,7 +72,7 @@ export function MorpheusArrival({ bootEnabled, onboardingEnabled }: MorpheusArri
 
   return (
     <>
-      {onboarding?.completed === false ? <MorpheusBoot
+      {onboarding ? <MorpheusBoot
         enabled={bootEnabled && !bootDone}
         mode={completed ? 'returning' : 'first-run'}
         preferredName={preferredName}

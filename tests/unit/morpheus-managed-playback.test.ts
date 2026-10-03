@@ -19,7 +19,7 @@ describe('managed playback at the shared speech generation', () => {
     mocks.synthesizeSpeech.mockImplementation(async ({ streamId }) => {
       mocks.chunk?.({ streamId: 'other', sequence: 99, audioBase64: 'AAA=', mimeType: 'audio/pcm' });
       mocks.chunk?.({ streamId, sequence: 0, audioBase64: 'AAA=', mimeType: 'audio/pcm' });
-      return { audioBase64: '', mimeType: 'audio/pcm' };
+      return { audioBase64: '', mimeType: 'audio/pcm', pcmStream: { streamId, chunkCount: 1, byteLength: 2 } };
     });
     await expect(playMorpheusSpeech('hello', { neuralAvailable: true, format: 'pcm24' })).resolves.toBe('neural');
     expect(mocks.push).toHaveBeenCalledOnce(); expect(mocks.finish).toHaveBeenCalledOnce(); expect(vi.getTimerCount()).toBe(0);

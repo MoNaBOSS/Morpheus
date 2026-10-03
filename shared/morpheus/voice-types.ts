@@ -158,7 +158,7 @@ export type MorpheusSynthesizeSpeechPayload = {
   streamId?: string;
 };
 
-export type MorpheusSpeechChunk = { streamId: string; sequence: number; audioBase64: string; mimeType?: 'audio/mpeg' | 'audio/pcm' };
+export type MorpheusSpeechChunk = { streamId: string; sequence: number; audioBase64: string; mimeType?: 'audio/mpeg' | 'audio/pcm'; source?: 'included-local' };
 
 /** Main-authored completion totals. IPC chunks and the invoke response may arrive
  * in different orders; receipt of the response does not finish PCM delivery. */

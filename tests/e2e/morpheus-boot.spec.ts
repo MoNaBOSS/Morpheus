@@ -16,7 +16,8 @@ test.describe('Morpheus boot sequence', () => {
 
       const boot = page.getByTestId('morpheus-boot');
       await expect(boot).toBeVisible();
-      await expect(page.getByTestId('morpheus-boot-canvas')).toBeVisible();
+      await expect(boot.locator('.morpheus-motion__mark')).toBeVisible();
+      await expect(boot.locator('canvas')).toHaveCount(0);
       await expect(page.getByTestId('morpheus-boot-phase')).toBeVisible();
 
       // The overlay must never outlive its hard cap.

@@ -18,14 +18,15 @@ test('simple navigation preserves a draft and retains the full workspace under A
     await expect(page.getByTestId('morpheus-microphone-device')).toBeVisible();
     await expect(page.getByTestId('morpheus-voice-preview')).toBeVisible();
     await page.screenshot({ path: info.outputPath('voice-setup.png') });
-    await page.locator('a[href$="/settings/advanced?section=voice"]').click();
+    await page.getByTestId('morpheus-voice-advanced-settings').click();
     await expect(page.getByTestId('morpheus-voice-engine')).toHaveValue('local');
     await expect(page.getByTestId('morpheus-voice-provider')).toHaveCount(0);
     await page.getByTestId('morpheus-voice-engine').selectOption('provider');
     await expect(page.getByTestId('morpheus-voice-provider')).toBeVisible();
     await page.getByTestId('morpheus-voice-engine').selectOption('local');
     await expect(page.getByTestId('morpheus-voice-provider')).toHaveCount(0);
-    await page.getByTestId('sidebar-nav-settings').click();
+    await page.getByTestId('morpheus-advanced-settings-return').click();
+    await expect(page.getByTestId('morpheus-settings-voice')).toHaveAttribute('aria-pressed', 'true');
     await page.getByTestId('morpheus-settings-return').click();
     await expect(page.getByTestId('morpheus-command-input')).toHaveValue('Keep my draft across settings');
     await expect(page.getByTestId('command-center-page').locator('..')).toHaveCSS('opacity', '1');

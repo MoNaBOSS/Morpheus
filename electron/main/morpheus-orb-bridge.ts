@@ -14,7 +14,7 @@ import {
   type MorpheusAssistantTurn,
 } from '../../shared/morpheus/assistant-session-types';
 
-type OrbPresentationAction = 'hover' | 'collapse' | 'open' | 'focus';
+import { ORB_PRESENTATION_ACTIONS, type OrbPresentationAction } from '../../shared/morpheus/orb-presentation';
 type OrbEvent = Pick<IpcMainInvokeEvent, 'sender' | 'senderFrame'>;
 
 export type MorpheusOrbBridgeOptions = {
@@ -93,7 +93,7 @@ export function createMorpheusOrbHandlers(options: MorpheusOrbBridgeOptions) {
     },
     present: (event: OrbEvent, ...args: unknown[]) => {
       trust(event);
-      if (args.length !== 1 || !['hover', 'collapse', 'open', 'focus'].includes(args[0] as string)) {
+      if (args.length !== 1 || !ORB_PRESENTATION_ACTIONS.includes(args[0] as OrbPresentationAction)) {
         throw new Error('Invalid orb presentation request');
       }
       return options.present(args[0] as OrbPresentationAction);

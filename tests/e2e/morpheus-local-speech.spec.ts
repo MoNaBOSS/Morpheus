@@ -11,6 +11,7 @@ type VoiceEvidence = {
     contextId: number; startAt: number | null; endedAt: number | null; stopAt: number | null;
     stoppedBeforeEnd: boolean; frames: number; channels: number; sampleRate: number;
     offsetSeconds: number; durationSeconds?: number;
+    scheduledAt: number | null; scheduledEndAt: number | null;
   }>;
   contexts: Array<{ id: number; closeAt: number | null; pendingSourcesAtClose: number }>;
 };
@@ -68,17 +69,19 @@ test('Voice preview plays every real included PCM frame before reporting complet
         return record;
       };
       AudioContext.prototype.createBufferSource = function (...args) {
+        const contextTime = () => this.currentTime;
         const source: AudioBufferSourceNode = Reflect.apply(originalCreate, this, args);
         const owner = contextRecord(this);
         const originalStart = source.start;
         const originalStop = source.stop;
         const entry: VoiceEvidence['sources'][number] = {
           contextId: owner.id, startAt: null, endedAt: null, stopAt: null, stoppedBeforeEnd: false,
-          frames: 0, channels: 0, sampleRate: 0, offsetSeconds: 0,
+          frames: 0, channels: 0, sampleRate: 0, offsetSeconds: 0, scheduledAt: null, scheduledEndAt: null,
         };
         source.start = function (...startArgs) {
           const result = Reflect.apply(originalStart, this, startArgs);
-          Object.assign(entry, { startAt: performance.now(), frames: this.buffer?.length ?? 0,
+          const scheduledAt = performance.now() + Math.max(0, (startArgs[0] ?? 0) - contextTime()) * 1000;
+          Object.assign(entry, { startAt: performance.now(), scheduledAt, scheduledEndAt: scheduledAt + (this.buffer?.duration ?? 0) * 1000, frames: this.buffer?.length ?? 0,
             channels: this.buffer?.numberOfChannels ?? 0, sampleRate: this.buffer?.sampleRate ?? 0,
             offsetSeconds: startArgs[1] ?? 0, durationSeconds: startArgs[2] });
           evidence.sources.push(entry);
@@ -109,19 +112,30 @@ test('Voice preview plays every real included PCM frame before reporting complet
     const sample = page.getByTestId('morpheus-voice-preview');
     await sample.click();
     await expect.poll(() => page.evaluate(() => (window as unknown as { voiceEvidence: { chunks: unknown[] } }).voiceEvidence.chunks.length), { timeout: 30_000 }).toBeGreaterThan(0);
-    await expect(page.getByTestId('morpheus-voice-preview-result')).toContainText('Neural playback completed', { timeout: 35_000 });
+    await expect(page.getByTestId('morpheus-voice-preview-result')).toContainText('Voice sample played', { timeout: 35_000 });
     const observed = await page.evaluate(() => ({ completedLabelObservedAt: performance.now(), result: (window as unknown as { voiceEvidence: VoiceEvidence }).voiceEvidence }));
     const result = observed.result;
     const receivedBytes = result.chunks.reduce((sum, chunk) => sum + chunk.bytes, 0);
     const scheduledBytes = result.sources.reduce((sum, source) => sum + source.frames * source.channels * 2, 0);
     const endedBytes = result.sources.filter((source) => source.endedAt !== null).reduce((sum, source) => sum + source.frames * source.channels * 2, 0);
     const completions = await app.evaluate(() => (globalThis as unknown as { speechCompletionEvidence: PcmCompletionEvidence[] }).speechCompletionEvidence);
+    const scheduled = result.sources.filter(source => source.scheduledAt !== null && source.scheduledEndAt !== null)
+      .sort((a, b) => a.scheduledAt! - b.scheduledAt!);
+    const playbackTiming = {
+      firstPcmAt: result.chunks[0]?.at,
+      firstAudioScheduledAt: scheduled[0]?.scheduledAt,
+      firstPcmToScheduledAudioMs: scheduled[0]?.scheduledAt === undefined ? undefined : scheduled[0].scheduledAt! - result.chunks[0].at,
+      maxScheduledGenerationGapMs: Math.max(0, ...scheduled.slice(1).map((source, index) => source.scheduledAt! - scheduled[index].scheduledEndAt!)),
+      scope: 'Real AudioContext scheduling and natural ended events. Physical speaker audibility is not asserted.',
+    };
     const evidencePath = testInfo.outputPath('real-pcm-completion-evidence.json');
-    await writeFile(evidencePath, JSON.stringify({ ...observed, completions, receivedBytes, scheduledBytes, endedBytes }, null, 2));
+    await writeFile(evidencePath, JSON.stringify({ ...observed, completions, receivedBytes, scheduledBytes, endedBytes, playbackTiming }, null, 2));
     await testInfo.attach('real-pcm-completion-evidence', { path: evidencePath, contentType: 'application/json' });
     expect(result.chunks.length).toBeGreaterThan(1);
     expect(result.chunks.every((chunk, index) => chunk.sequence === index && chunk.mimeType === 'audio/pcm')).toBe(true);
     expect(result.chunks.at(-1)!.at - result.chunks[0].at).toBeGreaterThan(100);
+    expect(playbackTiming.firstPcmToScheduledAudioMs).toBeGreaterThanOrEqual(400);
+    expect(playbackTiming.firstPcmToScheduledAudioMs).toBeLessThan(900);
     expect(new Set(result.chunks.map((chunk) => chunk.streamId)).size).toBe(1);
     expect(completions).toHaveLength(1);
     expect(completions[0]).toEqual({ mimeType: 'audio/pcm', pcmStream: { streamId: result.chunks[0].streamId, chunkCount: result.chunks.length, byteLength: receivedBytes } });

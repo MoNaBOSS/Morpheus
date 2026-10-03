@@ -6,7 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { useMorpheusArrivalStore } from '@/stores/morpheus-arrival';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
-import { MorpheusSignal } from '../signal/MorpheusSignal';
+import { MorpheusFluidOrb } from '../MorpheusFluidOrb';
+import morpheusLogo from '@/assets/morpheus-logo.svg';
 import { playMorpheusSpeech, stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
 import { MorpheusTrayChoice } from './MorpheusTrayChoice';
 import { useMorpheusIntelligenceStore } from '@/stores/morpheus-intelligence';
@@ -57,25 +58,24 @@ export function MorpheusWelcome() {
     <Dialog.Portal>
       <Dialog.Overlay data-morpheus className="morpheus-welcome-backdrop" />
       <Dialog.Content data-morpheus data-testid="morpheus-welcome" className="morpheus-welcome morpheus-signal-activation">
-        <div aria-hidden className="morpheus-activation-depth absolute inset-0" />
         <header className="relative flex h-16 items-center justify-between border-b border-white/[0.06] px-8">
-          <span className="font-serif tracking-[0.22em]">{t('morpheus.title')}</span>
+          <span className="flex items-center gap-2.5 text-sm"><img src={morpheusLogo} alt="" className="h-5 w-5" />{t('morpheus.title')}</span>
           <Dialog.Close data-testid="morpheus-welcome-close" aria-label={t('morpheus.arrival.close')} className="morpheus-fluid-icon"><X size={19} /></Dialog.Close>
         </header>
         <div className="morpheus-welcome-body">
           <div className="morpheus-welcome-presence">
-            <MorpheusSignal state={audible ? 'speaking' : preparingSpeech ? 'understanding' : 'ready'} className="morpheus-hero-signal" label={t('morpheus.title')} />
+            <MorpheusFluidOrb state={audible ? 'speaking' : preparingSpeech ? 'understanding' : 'ready'} identity="arrival" className="h-full w-full" label={t('morpheus.title')} />
           </div>
           <div className="morpheus-welcome-copy">
             <Dialog.Title className="morpheus-welcome-title font-serif font-normal tracking-tight">{greeting}</Dialog.Title>
             <Dialog.Description className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">{t('morpheus.arrival.subtitle')}</Dialog.Description>
             {onboarding?.preferences.personality === 'witty' ? <p className="mt-4 text-sm text-foreground/65">{t('morpheus.arrival.witty')}</p> : null}
-            <div className="mt-9 flex flex-wrap gap-3">
+            <div className="morpheus-welcome-actions">
               <button type="button" data-testid="morpheus-welcome-enter" onClick={() => finish('/')} className="morpheus-fluid-button">{t('morpheus.arrival.open')}<ArrowRight size={17} /></button>
               <MorpheusTrayChoice onTransferred={() => finish('/')} />
             </div>
             <p className="mt-5 max-w-lg text-xs leading-relaxed text-muted-foreground">{t('morpheus.arrival.trayHint')}</p>
-            <div className="mt-8 border-t border-white/[0.08] pt-5">
+            <div className="morpheus-welcome-options border-t border-white/[0.08]">
               <p data-testid="morpheus-welcome-microphone" className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground"><MicOff size={15} className="mt-0.5 shrink-0" />{t('morpheus.arrival.voiceHonesty')}</p>
               <div className="mt-4 flex flex-wrap items-center gap-5">
                 <button type="button" data-testid="morpheus-welcome-voice-settings" onClick={() => finish('/settings?section=voice')} className="morpheus-fluid-link">{t('morpheus.arrival.voiceSettings')}</button>

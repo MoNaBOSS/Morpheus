@@ -7,6 +7,7 @@ import { randomBytes } from 'crypto';
 import { app } from 'electron';
 import { resolveSupportedLanguage } from '@shared/language';
 import { DEFAULT_WORKSPACE_CWD } from '@shared/workspace';
+import type { MorpheusOrbPlacement } from '@shared/morpheus/orb-presentation';
 
 // Lazy-load electron-store (ESM module)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -54,6 +55,7 @@ export interface AppSettings {
 
   // UI State
   sidebarCollapsed: boolean;
+  morpheusOrbPlacement: MorpheusOrbPlacement | null;
   devModeUnlocked: boolean;
   chatWorkspacePath: string;
   recentWorkspacePaths: string[];
@@ -113,6 +115,7 @@ function createDefaultSettings(): AppSettings {
 
     // UI State
     sidebarCollapsed: false,
+    morpheusOrbPlacement: null,
     devModeUnlocked: false,
     chatWorkspacePath: DEFAULT_WORKSPACE_CWD,
     recentWorkspacePaths: [DEFAULT_WORKSPACE_CWD],

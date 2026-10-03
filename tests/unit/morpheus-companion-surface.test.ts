@@ -37,6 +37,24 @@ function fakeWindow(options: { visible?: boolean; maximized?: boolean } = {}) {
 }
 
 describe('Main-owned compact companion surface', () => {
+  it('opens inward from a moved orb near the upper left of a negative-coordinate display', () => {
+    const area = { x: -1600, y: -900, width: 1600, height: 860 };
+    const anchor = { x: -1584, y: -884, width: 56, height: 56 };
+    const hover = wakeOrbHoverBounds(area, anchor);
+    const compact = wakeCompactBounds(area, 440, 400, anchor);
+    for (const bounds of [hover, compact]) {
+      expect(bounds.x).toBeGreaterThanOrEqual(area.x + 16);
+      expect(bounds.y).toBeGreaterThanOrEqual(area.y + 16);
+      expect(bounds.x + bounds.width).toBeLessThanOrEqual(area.x + area.width - 16);
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(area.y + area.height - 16);
+    }
+    expect(hover.x).toBe(anchor.x);
+    expect(hover.y).toBe(anchor.y);
+    expect(compact.y).toBe(anchor.y + anchor.height + 12);
+    const window = fakeWindow();
+    createMorpheusCompanionSurfaceController({ getWorkArea: () => area, getAnchor: () => anchor }).show(window, 'orb-click');
+    expect(window.snapshot().bounds).toEqual(compact);
+  });
   it('repositions compact and fits restored full bounds after a display change', () => {
     const window = fakeWindow(); let area = { x: 0, y: 0, width: 1920, height: 1040 };
     const controller = createMorpheusCompanionSurfaceController({ getWorkArea: () => area });

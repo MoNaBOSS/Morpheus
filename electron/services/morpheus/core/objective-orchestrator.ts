@@ -158,7 +158,7 @@ function summaryForExecution(result: MorpheusPlanExecutionResult): string {
   const failed = result.steps.filter((step) => step.status === 'failed').length;
   const artifacts = result.steps.filter((step) => step.artifact).length;
   if (result.status === 'completed') {
-    return `Completed ${succeeded} ${succeeded === 1 ? 'step' : 'steps'}${artifacts ? ` and produced ${artifacts} ${artifacts === 1 ? 'artifact' : 'artifacts'}` : ''}.`;
+    return artifacts ? 'Done. Your result is ready.' : 'Done.';
   }
   return `Completed ${succeeded} steps; ${failed} failed. Review the execution details before continuing.`;
 }

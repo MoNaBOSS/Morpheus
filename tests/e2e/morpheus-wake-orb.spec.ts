@@ -32,6 +32,14 @@ test('the native orb edits a preserved draft and admits one turn before compact 
     expect(main).toBeDefined();
     await expect(orb!.locator('.orb')).toBeVisible();
     await expect(orb!.locator('#orb-input')).toBeEnabled();
+    // Keyboard placement exercises the trusted native presentation bridge and
+    // actual BrowserWindow bounds without moving the owner's desktop pointer.
+    const beforeMove = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus presence')!.getBounds());
+    await orb!.locator('.orb').focus();
+    await orb!.locator('.orb').press('Alt+ArrowLeft');
+    await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus presence')!.getBounds().x)).toBe(beforeMove.x - 16);
+    await orb!.locator('.orb').press('Alt+Home');
+    await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus presence')!.getBounds().x)).toBe(beforeMove.x);
     await expect.poll(() => app.evaluate(({ BrowserWindow }) => {
       const orbWindow = BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus presence');
       return { visible: orbWindow?.isVisible(), focused: orbWindow?.isFocused() };
@@ -41,7 +49,7 @@ test('the native orb edits a preserved draft and admits one turn before compact 
 
     // Ambient-off is honestly quiet, but visible presentation must still move.
     const aurora = orb!.locator('.morpheus-motion__aurora');
-    await expect(aurora).toHaveCSS('animation-name', 'morpheus-motion-orbit');
+    await expect(aurora).toHaveCSS('animation-name', 'morpheus-motion-contour');
     await expect(orb!.locator('html')).toHaveAttribute('data-window-visible', 'true');
     await expect(orb!.locator('.orb')).toHaveAttribute('data-motion-paused', 'false');
     const initialOrbit = await aurora.evaluate((node) => getComputedStyle(node).transform);

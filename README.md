@@ -1,21 +1,6 @@
-Preview.7 retains the simplified conversation and contextual settings, all Advanced tools, included local English voice and animated companion. Chat and task exchanges now share chronological compact/expanded views. Native window resizing keeps the latest reply visible; deliberate scrolling lets you read older history without being pulled back. Main owns prompt completion settlement; active-reply reload recovers original history without sending the same turn again. Local neural replies begin in bounded PCM segments, with genuine audio feedback and cancellation. Playback waits for the complete sequenced audio stream even when the synthesis response arrives before its final chunks. Public research rejects credential-bearing URLs and safely retries validated connection failures; website completion stays recoverable until final verification passes. Hosted plans, checkout and NerdGPT remain unavailable until their external services are configured. See [current requirements](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) and [Windows checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) for evidence boundaries.
+Preview.8 keeps the approved Morpheus design and existing capabilities. The original M now has an animated arrival; the movable 56-DIP companion and connected conversation use real audio feedback, accessible controls and reduced motion. Settings return to the same compact or expanded conversation, with Voice captions, device tests, personality and quiet controls. Live voice-origin ACP answers join the existing cancellable playback queue without reading typed or historical replies. Included English speech reuses a bounded local worker, with a short local playback buffer, cancellation and idle unload. Simple website commands use the normal default browser; this PC is configured for Chrome.
 
-
-After restart, chat/task chronology uses original bounded transcript timing metadata when short-lived Main admission references are absent. Unknown dates retain the saved ACP order.
-
-The preserved preview.6 baseline at application source `12a36898` passed normal
-isolated runtime and exact installer-payload checks. Preview.7 adds scoped capability,
-speech, conversation and disposable installed-Windows qualification. Current build
-identity and actual results are recorded in the single checklist; physical acceptance,
-signing and hosted commercial operations must not be inferred from fixtures.
-
-Final candidate: `1.2.0-preview.7`, application source `757f71c5`. The identified
-unsigned EXE and exact-source disposable Windows install/reinstall/uninstall pass
-their recorded checks. Physical voice/display/previous-version upgrade acceptance,
-slow cold Gateway startup and external commercial services remain release gates.
-Known voice gap: automatic replies speak voice-origin Core outcomes, but ordinary
-ACP chat answers are not yet connected to speech/follow-up. Included local speech
-uses freshly started phrase engines; full conversational fluency is not qualified.
+Exact package evidence, measured latency/resource limits and unresolved physical/commercial release gates are recorded in the [single Windows checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md). The [experience specification](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) remains authoritative. Preview.7 evidence below is historical; it does not qualify this changed build. Hosted plans, billing, signing/update operation and NerdGPT are not fabricated.
 
 <p align="center">
   <img src="src/assets/morpheus-logo.svg" width="128" height="128" alt="Morpheus Logo" />

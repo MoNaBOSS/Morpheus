@@ -9,6 +9,9 @@ const mocks = vi.hoisted(() => ({
   beginAmbientVoice: vi.fn(),
   endAmbientVoice: vi.fn(),
   setVoiceSpeaking: vi.fn(),
+  submitConversation: vi.fn(),
+  setDraft: vi.fn(),
+  updateVoiceSettings: vi.fn(),
   voicePresenceHandler: null as ((...args: unknown[]) => void) | null,
 }));
 
@@ -24,9 +27,14 @@ vi.mock('@/lib/host-api', () => ({
       endAmbientVoice: mocks.endAmbientVoice,
       setVoiceSpeaking: mocks.setVoiceSpeaking,
       cancelSpeech: vi.fn(),
+      updateVoiceSettings: mocks.updateVoiceSettings,
     },
   },
 }));
+
+vi.mock('@/stores/morpheus-conversation', () => ({ useMorpheusConversationStore: { getState: () => ({
+  submit: mocks.submitConversation, setDraft: mocks.setDraft, dispatchError: null,
+}) } }));
 
 vi.mock('@/lib/host-events', () => ({
   hostEvents: {
@@ -104,6 +112,7 @@ beforeEach(() => {
   useMorpheusVoiceStore.setState({
     phase: 'idle', status: null, transcript: null, error: null, errorKind: null, source: null, startedAt: null,
     followUpUntil: null,
+    replyTurn: null,
   });
   useMorpheusCommandStore.setState({
     input: '', plan: null, unsupported: null, interpreting: false, executing: false,
@@ -112,6 +121,45 @@ beforeEach(() => {
 });
 
 describe('Morpheus renderer voice controller', () => {
+  it('binds spoken conversation only to the exact Main admission before reply dispatch', async () => {
+    mocks.routeInteraction.mockResolvedValue({ route: 'conversation', text: 'How are you?', confidence: 'high' });
+    const turn = { conversationId: 'chat', turnId: 'admitted-voice', clientRequestId: 'request', source: 'voice', status: 'admitted', generation: 1, admittedAt: '2026-10-03T00:00:00Z' };
+    mocks.submitConversation.mockImplementation(async (_text, _source, onAdmitted) => { onAdmitted(turn); return true; });
+    await useMorpheusVoiceStore.getState().startListening('quick-command'); useMorpheusVoiceStore.getState().stopListening();
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().replyTurn?.turn).toEqual(turn));
+    expect(mocks.submitObjective).not.toHaveBeenCalled();
+    expect(useMorpheusVoiceStore.getState().claimReplyTurn(turn.turnId)).toBe(true);
+    expect(useMorpheusVoiceStore.getState().claimReplyTurn(turn.turnId)).toBe(false);
+    useMorpheusVoiceStore.getState().cancel(); expect(useMorpheusVoiceStore.getState().replyTurn).toBeNull();
+  });
+  it('does not bind an admission that returns after cancellation', async () => {
+    mocks.routeInteraction.mockResolvedValue({ route: 'conversation', text: 'Hello' });
+    let admitted!: () => void;
+    mocks.submitConversation.mockImplementation(async (_text, _source, callback) => {
+      await new Promise<void>((resolve) => { admitted = resolve; });
+      callback({ turnId: 'late', source: 'voice' }); return true;
+    });
+    await useMorpheusVoiceStore.getState().startListening(); useMorpheusVoiceStore.getState().stopListening();
+    await vi.waitFor(() => expect(mocks.submitConversation).toHaveBeenCalledOnce());
+    useMorpheusVoiceStore.getState().cancel(); admitted(); await Promise.resolve(); await Promise.resolve();
+    expect(useMorpheusVoiceStore.getState().replyTurn).toBeNull();
+  });
+  it('discards late routing after cancellation before admitting another turn', async () => {
+    let decide!: (value: unknown) => void;
+    mocks.routeInteraction.mockReturnValueOnce(new Promise((resolve) => { decide = resolve; }));
+    await useMorpheusVoiceStore.getState().startListening(); useMorpheusVoiceStore.getState().stopListening();
+    await vi.waitFor(() => expect(mocks.routeInteraction).toHaveBeenCalledOnce());
+    useMorpheusVoiceStore.getState().cancel(); decide({ route: 'conversation', text: 'Hello' }); await Promise.resolve();
+    expect(mocks.submitConversation).not.toHaveBeenCalled();
+  });
+  it('manual microphone mute clears reply authority and prevents follow-up capture', async () => {
+    await useMorpheusVoiceStore.getState().startListening();
+    const status = await mocks.voiceStatus(); status.settings.enabled = false;
+    mocks.updateVoiceSettings.mockResolvedValue(status);
+    await useMorpheusVoiceStore.getState().updateSettings({ enabled: false });
+    expect(track.stop).toHaveBeenCalled(); expect(useMorpheusVoiceStore.getState().phase).toBe('idle');
+    await useMorpheusVoiceStore.getState().continueAfterResponse(); expect(getUserMedia).toHaveBeenCalledOnce();
+  });
   it('service invalidation releases capture and discards late status/transcription without submitting', async () => {
     const unsubscribe = useMorpheusVoiceStore.getState().subscribePresence();
     await useMorpheusVoiceStore.getState().startListening();

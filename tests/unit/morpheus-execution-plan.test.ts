@@ -23,6 +23,7 @@ describe('supported command interpretation', () => {
   it('opens named sites, plain domains and Spotify without provider planning', () => {
     for (const [command, url] of [
       ['Open YouTube', 'https://www.youtube.com/'], ['Open Instagram', 'https://www.instagram.com/'],
+      ['Open the YouTube', 'https://www.youtube.com/'], ['Could you open YouTube Music please?', 'https://music.youtube.com/'],
       ['Open Pornhub', 'https://www.pornhub.com/'], ['Open example.com', 'https://example.com/'],
     ]) {
       const result = interpret(command);
@@ -32,6 +33,8 @@ describe('supported command interpretation', () => {
     expect(interpret("Don't open Spotify").ok).toBe(false);
     expect(interpret('Research music trends and open Spotify').ok).toBe(false);
     expect(interpret('Explain https://example.com').ok).toBe(false);
+    expect(interpret("Don't open the YouTube").ok).toBe(false);
+    expect(interpret('Open the YouTube and delete my files').ok).toBe(false);
   });
   it('maps system-information phrasings to system.report', () => {
     for (const command of [

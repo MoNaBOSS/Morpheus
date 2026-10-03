@@ -31,7 +31,7 @@ import {
 import { autoInstallCliIfNeeded, generateCompletionCache, installCompletionToProfile } from '../utils/openclaw-cli';
 import { isQuitting, setQuitting } from './app-state';
 import { getMacTrafficLightPosition, syncMacTrafficLightPosition } from './traffic-light-layout';
-import { getSetting } from '../utils/store';
+import { getSetting, setSetting } from '../utils/store';
 import { applyProxySettings } from './proxy';
 import { syncLaunchAtStartupSettingFromStore } from './launch-at-startup';
 import { WebBrowserGuestRegistry, installWebBrowserGuestPolicy } from './web-browser-policy';
@@ -146,6 +146,7 @@ const mainWindowFocusState = createMainWindowFocusState();
 const quitLifecycleState = createQuitLifecycleState();
 const companionSurfaceController = createMorpheusCompanionSurfaceController({
   getWorkArea: (bounds) => screen.getDisplayMatching(bounds).workArea,
+  getAnchor: () => wakeOrb.anchorBounds(),
 });
 const wakeOrb = new MorpheusWakeOrb(
   () => {
@@ -157,6 +158,7 @@ const wakeOrb = new MorpheusWakeOrb(
   () => mainWindow && !mainWindow.isDestroyed()
     ? screen.getDisplayMatching(mainWindow.getBounds()).workArea
     : screen.getPrimaryDisplay().workArea,
+  (placement) => { void setSetting('morpheusOrbPlacement', placement).catch(() => undefined); },
 );
 const quickCommandRegistration = createMorpheusQuickCommandRegistration({
   shortcuts: globalShortcut,
@@ -505,6 +507,7 @@ async function initialize(): Promise<void> {
     logger.info('Running in E2E mode: startup side effects minimized');
   }
   shouldStartHidden = Boolean(await getSetting('startMinimized'));
+  wakeOrb.restorePlacement(await getSetting('morpheusOrbPlacement'));
 
   // Set application menu
   await createMenu();

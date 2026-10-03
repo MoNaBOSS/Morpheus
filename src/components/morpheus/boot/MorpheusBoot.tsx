@@ -14,9 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
-import { MorpheusSignal } from '@/components/morpheus/signal/MorpheusSignal';
-
-import { MatrixRain } from './MatrixRain';
+import { MorpheusFluidOrb } from '@/components/morpheus/MorpheusFluidOrb';
 import { MORPHEUS_BOOT_PHASES, useBootPhases } from './use-boot-phases';
 
 /** Duration of the fade, kept in sync with `.morpheus-boot-leaving` in globals.css. */
@@ -49,11 +47,11 @@ export function MorpheusBoot({
       setLeaving(true);
       return;
     }
-    readyTimer.current = setTimeout(() => setLeaving(true), READY_HOLD_MS);
-  }, []);
+    readyTimer.current = setTimeout(() => setLeaving(true), mode === 'returning' ? 100 : READY_HOLD_MS);
+  }, [mode]);
   useEffect(() => () => { if (readyTimer.current) clearTimeout(readyTimer.current); }, []);
 
-  const { phase, progress, skip } = useBootPhases({ enabled, onComplete: handleComplete });
+  const { phase, progress, skip } = useBootPhases({ enabled, minMs: mode === 'returning' ? 500 : 1_700, maxMs: mode === 'returning' ? 1_100 : 3_500, onComplete: handleComplete });
 
   const skipNow = useCallback(() => {
     skippedRef.current = true;
@@ -88,33 +86,29 @@ export function MorpheusBoot({
       data-arrival-mode={mode}
       role="status"
       aria-live="polite"
-      onClick={skipNow}
       className={cn(
-        'morpheus-boot fixed inset-0 z-[9998] flex flex-col items-center justify-center overflow-hidden',
-        leaving && 'morpheus-boot-leaving pointer-events-none',
+        'morpheus-boot morpheus-opening fixed inset-0 z-[9998] flex flex-col items-center justify-center overflow-hidden',
+        leaving && 'morpheus-boot-leaving morpheus-opening-leaving pointer-events-none',
       )}
     >
-      <div className="morpheus-boot-rain absolute inset-0"><MatrixRain /></div>
-      <div aria-hidden className="morpheus-arrival-vignette absolute inset-0" />
-
-      <div className="relative flex flex-col items-center px-6 text-center">
-        <MorpheusSignal
-          state={phase === 'ready' ? 'complete' : 'understanding'}
-          className="morpheus-arrival-signal h-52 w-52 sm:h-72 sm:w-72"
+      <button type="button" onClick={skipNow} data-testid="morpheus-boot-skip" className="morpheus-opening-skip">{t('morpheus.experience.opening.skip')}</button>
+      <div className="morpheus-opening-copy">
+        <MorpheusFluidOrb
+          state="ready"
+          identity="arrival"
+          className="morpheus-opening-identity"
           label={t('morpheus.boot.title')}
         />
-        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.42em] text-[hsl(var(--morpheus-accent))]">
-          {t('morpheus.boot.identity')}
-        </p>
-        <h1 className="morpheus-boot-title mt-4 max-w-3xl font-serif text-3xl font-normal leading-tight sm:text-5xl">
+        <h1>
           {mode === 'returning'
             ? preferredName
               ? t('morpheus.boot.welcomeBack', { name: preferredName })
               : t('morpheus.boot.welcomeBackGeneric')
-            : t('morpheus.boot.awakening')}
+            : t('morpheus.experience.opening.title')}
         </h1>
+        <p className="morpheus-opening-subtitle">{t('morpheus.experience.opening.subtitle')}</p>
 
-        <div className="mt-8 w-72 max-w-full">
+        <div className="sr-only">
           <div className="h-0.5 w-full overflow-hidden rounded-full bg-white/10">
             <div
               data-testid="morpheus-boot-progress"
@@ -131,10 +125,8 @@ export function MorpheusBoot({
           </p>
         </div>
 
-        <p className="mt-6 font-mono text-2xs uppercase tracking-[0.2em] text-white/40">
-          {t('morpheus.boot.skip')}
-        </p>
       </div>
+      <p className="morpheus-opening-footer">{t('morpheus.experience.opening.footer')}</p>
 
       {/* Ordered phase list for assistive technology and for E2E introspection. */}
       <ol className="sr-only">

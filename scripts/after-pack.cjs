@@ -28,6 +28,7 @@ const { patchNsisUninstallTemplate } = require('./patch-nsis-uninstall.mjs');
 const { stampPluginBundleRevision } = require('./plugin-bundle-revision.mjs');
 const { patchBundledPluginDependencies } = require('./patch-bundled-plugin-dependencies.mjs');
 const { isPackageNoticeFile, pruneDirectoryPreservingNotices } = require('./package-notice-guards.cjs');
+const { copyLocalVoiceWorker } = require('./package-local-voice-worker.cjs');
 
 // On Windows, paths in pnpm's virtual store can exceed the default MAX_PATH
 // limit (260 chars). Node.js 18.17+ respects the system LongPathsEnabled
@@ -658,6 +659,11 @@ exports.default = async function afterPack(context) {
     resourcesDir = join(appOutDir, `${appName}.app`, 'Contents', 'Resources');
   } else {
     resourcesDir = join(appOutDir, 'resources');
+  }
+
+  if (platform === 'win32') {
+    copyLocalVoiceWorker(join(__dirname, '..', 'build', 'local-voice', 'worker'), join(resourcesDir, 'resources', 'local-voice', 'worker'));
+    console.log('[after-pack] Included offline speech worker and pinned native libraries copied.');
   }
 
   const openclawRoot = join(resourcesDir, 'openclaw');

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { RotateCcw, X } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { MatrixRain } from '@/components/morpheus/boot/MatrixRain';
 import { MorpheusFluidOrb } from '@/components/morpheus/MorpheusFluidOrb';
 import { useMorpheusCompanionStore } from '@/stores/morpheus-companion';
 import type { MorpheusHumorStyle, MorpheusProactivityLevel } from '@shared/morpheus/onboarding-types';
@@ -51,6 +51,13 @@ export function MorpheusOnboardingSettings() {
       {error ? <p role="alert" className="mt-2 text-xs text-red-300">{error}</p> : null}
     </div> : null}
     {saved ? <p role="status" className="mt-3 text-xs text-[hsl(var(--morpheus-accent))]">{t('morpheus.activationV2.saved')}</p> : null}
-    {preview ? <div data-testid="morpheus-intro-preview" role="dialog" aria-modal="true" aria-label={t('morpheus.activationV2.preview')} className="morpheus-first-launch fixed inset-0 z-[9999] flex flex-col bg-[#040907] text-[#edf5ef]"><div aria-hidden className="morpheus-first-launch-rain"><MatrixRain /></div><header className="relative z-10 flex h-12 items-center justify-between border-b border-white/10 px-5"><span className="text-sm font-semibold">{t('morpheus.title')}</span><button type="button" data-testid="morpheus-intro-preview-close" aria-label={t('morpheus.activationV2.close')} onClick={() => setPreview(false)}><X size={18} /></button></header><main className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 text-center"><MorpheusFluidOrb state="ready" className="h-36 w-36" label={t('morpheus.title')} /><p className="mt-5 text-sm text-[#a0b6aa]">{t('morpheus.activationV2.welcome', { name: onboarding?.preferences.preferredName || t('morpheus.activationV2.friend') })}</p><h2 className="mt-3 text-[clamp(28px,4vw,38px)] font-semibold">{t('morpheus.activationV2.firstQuestion')}</h2><button type="button" onClick={() => setPreview(false)} className="mt-8 rounded-full border border-[#3b7657] px-6 py-2 text-sm">{t('morpheus.activationV2.enter')}</button></main></div> : null}
+    <Dialog.Root open={preview} onOpenChange={setPreview}><Dialog.Portal><Dialog.Content data-morpheus data-testid="morpheus-intro-preview" className="morpheus-opening fixed inset-0 z-[9999] flex items-center justify-center" aria-describedby="morpheus-preview-description">
+      <Dialog.Close data-testid="morpheus-intro-preview-close" aria-label={t('morpheus.activationV2.close')} className="morpheus-opening-skip"><X size={18} /></Dialog.Close>
+      <div className="morpheus-opening-copy"><MorpheusFluidOrb state="ready" identity="arrival" className="morpheus-opening-identity" label={t('morpheus.title')} />
+        <Dialog.Title asChild><h1>{t('morpheus.experience.opening.title')}</h1></Dialog.Title>
+        <Dialog.Description id="morpheus-preview-description" className="morpheus-opening-subtitle">{t('morpheus.experience.opening.subtitle')}</Dialog.Description>
+        <button type="button" onClick={() => setPreview(false)} className="morpheus-fluid-button mt-7">{t('morpheus.experience.opening.begin')}</button>
+      </div><p className="morpheus-opening-footer">{t('morpheus.experience.opening.footer')}</p>
+    </Dialog.Content></Dialog.Portal></Dialog.Root>
   </section>;
 }

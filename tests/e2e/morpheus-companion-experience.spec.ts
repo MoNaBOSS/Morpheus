@@ -12,7 +12,7 @@ test('companion voice checks remain truthful and visible at 1280x800', async ({ 
     await page.getByTestId('morpheus-open-welcome').click();
     await expect(page.getByTestId('morpheus-welcome')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     await expect(page.getByTestId('morpheus-welcome')).toHaveCSS('opacity', '1');
-    await expect(page.getByTestId('morpheus-welcome').locator('.morpheus-signal-sphere')).toBeVisible();
+    await expect(page.getByTestId('morpheus-welcome').locator('.morpheus-motion__mark')).toBeVisible();
     const folder = process.env.MORPHEUS_VISUAL_EVIDENCE_DIR;
     if (folder) await page.screenshot({ path: join(folder, 'companion-orb-1280x800.png') });
     await page.getByTestId('morpheus-welcome-voice-settings').click();
@@ -94,7 +94,7 @@ test('MP3 chunks play through real Electron MediaSource before generation finish
     await page.getByTestId('sidebar-nav-settings').click();
     await page.getByTestId('morpheus-voice-preview').scrollIntoViewIfNeeded();
     await page.getByTestId('morpheus-voice-preview').click();
-    await expect(page.getByTestId('morpheus-voice-preview-result')).toContainText('Neural playback completed', { timeout: 15_000 });
+    await expect(page.getByTestId('morpheus-voice-preview-result')).toContainText('Voice sample played', { timeout: 15_000 });
     expect(await app.evaluate(() => (globalThis as unknown as {
       speechStreamEvidence: { playingBeforeComplete: boolean };
     }).speechStreamEvidence.playingBeforeComplete)).toBe(true);

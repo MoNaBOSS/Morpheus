@@ -16,6 +16,7 @@ import {
 
 type Theme = 'light' | 'dark' | 'system';
 type UpdateChannel = 'stable' | 'beta' | 'dev';
+export type VoiceCaptionMode = 'automatic' | 'always' | 'hidden';
 
 interface SettingsState {
   // General
@@ -42,6 +43,7 @@ interface SettingsState {
   // UI State
   sidebarCollapsed: boolean;
   sidebarWidth: number;
+  voiceCaptionMode: VoiceCaptionMode;
   devModeUnlocked: boolean;
   chatWorkspacePath: string;
   recentWorkspacePaths: string[];
@@ -69,6 +71,7 @@ interface SettingsState {
   setAutoCheckUpdate: (value: boolean) => void;
   setSidebarCollapsed: (value: boolean) => void;
   setSidebarWidth: (value: number) => void;
+  setVoiceCaptionMode: (value: VoiceCaptionMode) => void;
   setDevModeUnlocked: (value: boolean) => void;
   setChatWorkspacePath: (workspacePath: string) => void;
   setWorkspaceLabel: (workspacePath: string, label: string) => void;
@@ -97,6 +100,7 @@ const defaultSettings = {
   autoCheckUpdate: true,
   sidebarCollapsed: false,
   sidebarWidth: 280,
+  voiceCaptionMode: 'automatic' as VoiceCaptionMode,
   devModeUnlocked: false,
   chatWorkspacePath: DEFAULT_WORKSPACE_CWD,
   recentWorkspacePaths: [DEFAULT_WORKSPACE_CWD],
@@ -110,6 +114,8 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       ...defaultSettings,
+      // Presentation only: persisted beside UI preferences, never changes microphone consent.
+      setVoiceCaptionMode: (value) => { if (['automatic', 'always', 'hidden'].includes(value)) set({ voiceCaptionMode: value }); },
 
       init: async () => {
         try {

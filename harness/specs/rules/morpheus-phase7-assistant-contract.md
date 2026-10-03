@@ -54,6 +54,20 @@ NerdGPT is deferred; preserve extension contracts without a fake activation flow
 
 Native presentation acknowledgement follows the applied editable state, not just
 queued DOM work. Escape cannot reopen from stationary-pointer resize events.
+Orb placement is a fixed sender-checked presentation action. Main reads the actual
+cursor and display work area; renderer coordinates never become authority. Drag
+completion saves bounded relative placement, keyboard moves offer the same control,
+and compact/hover surfaces open inward while preserving the orb anchor. Hidden
+presentation pauses motion without changing microphone consent.
+Voice-origin ACP playback must correlate the original admitted user turn and its
+live successful response. Typed/history/restored turns never acquire speech merely
+because a surface mounted. New input, cancellation, mute or a changed generation
+invalidates pending speech; follow-up waits for actual playback completion.
+The local speech worker accepts bounded text from Main, validates sequenced PCM,
+uses a fixed bundled executable without inherited credentials, and unloads after
+bounded idle time or cancellation/quit. Benchmark and package tests identify actual
+first PCM, gaps, memory, cancellation and input scope; generated audio is not proof
+of physical microphone, echo handling or hands-free interruption.
 Installer upgrades target validated dedicated folders, preserve exact recoverable
 backups, and never terminate globally named processes or erase other users' data.
 

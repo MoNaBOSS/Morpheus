@@ -3,7 +3,8 @@
  * Application configuration
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { morpheusSettingsPath, readMorpheusSettingsContext } from '@/lib/morpheus-settings-route';
 import { Sun, Moon, Monitor, RefreshCw, ExternalLink, Copy, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -440,6 +441,7 @@ export function Settings() {
       className="flex flex-col -m-6 dark:bg-background h-[calc(100vh-2.5rem)] overflow-hidden"
     >
       <div className="w-full max-w-5xl mx-auto flex flex-col h-full p-10 pt-16 pb-0">
+        <Link data-testid="morpheus-advanced-settings-return" className="mb-5 text-sm text-muted-foreground underline" to={morpheusSettingsPath(searchParams.get('section') === 'voice' ? 'voice' : 'advanced', readMorpheusSettingsContext(searchParams.toString()).returnTo, readMorpheusSettingsContext(searchParams.toString()).surface)}>{t('morpheus.experience.back', { ns: 'dashboard' })}</Link>
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-start justify-between mb-12 shrink-0 gap-4">
           <div>

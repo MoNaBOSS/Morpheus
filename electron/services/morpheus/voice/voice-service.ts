@@ -337,6 +337,11 @@ export function createMorpheusVoiceService(options: {
     ambientEnabled: settings.ambientEnabled,
   };
   const publish = (state: MorpheusVoicePresenceState, reason?: string, wakeCommand?: string): MorpheusVoicePresence => {
+    // Warm only during an actual addressed interaction, never on idle wake monitoring.
+    // Input/audio authority is unchanged; this only loads the offline output model.
+    if (settings.speakResponses && settings.engine !== 'provider' && ['listening', 'transcribing', 'understanding'].includes(state)) {
+      void options.localVoice?.warm?.().catch(() => undefined);
+    }
     currentPresence = {
       v: MORPHEUS_VOICE_VERSION,
       authorityRevision,
@@ -469,7 +474,9 @@ export function createMorpheusVoiceService(options: {
       const controller = new AbortController(); transcriptions.set(controller, ambient);
       const started = performance.now();
       try {
-        checkInput(); if (ambient) publish('transcribing');
+        checkInput();
+        if (ambient) publish('transcribing');
+        else if (settings.speakResponses) void options.localVoice.warm?.().catch(() => undefined);
         const transcript = await options.localVoice.transcribe(audio, controller.signal);
         checkInput();
         if (!transcript) throw new Error("I couldn't hear anything clearly. Please try again.");
@@ -633,7 +640,7 @@ export function createMorpheusVoiceService(options: {
             firstAudioByteMs ??= Math.round(performance.now() - started);
             if (!options.emitSpeechChunk) { collected.push(pcm); return; }
             for (let offset = 0; offset < pcm.length; offset += 48 * 1024) {
-              options.emitSpeechChunk({ streamId: payload.streamId!, sequence: sequence++, mimeType: 'audio/pcm', audioBase64: pcm.subarray(offset, offset + 48 * 1024).toString('base64') });
+              options.emitSpeechChunk({ streamId: payload.streamId!, sequence: sequence++, mimeType: 'audio/pcm', source: 'included-local', audioBase64: pcm.subarray(offset, offset + 48 * 1024).toString('base64') });
             }
           });
           checkCurrent();
@@ -1048,6 +1055,7 @@ export function createMorpheusVoiceService(options: {
       clearFollowUp();
       cancelSpeech();
       ambientSession = null;
+      options.localVoice?.dispose?.();
       currentPresence = {
         v: MORPHEUS_VOICE_VERSION, state: 'asleep', ambientEnabled: settings.ambientEnabled,
       };

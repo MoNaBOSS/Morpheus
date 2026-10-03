@@ -117,7 +117,18 @@
       "boundedExcerpt": "已获取的摘录，并非完整页面。",
       "openFailed": "无法打开来源，请重试。"
     },
-    "socialCheckIn": { "question": "今天过得怎么样？", "answer": { "good": "不错", "rough": "不太好" }, "reply": { "good": "真好。有需要随时叫我。", "rough": "抱歉听到这个。想聊聊或需要帮忙时，我都在。" }, "dismiss": "关闭问候" },
+    "socialCheckIn": {
+      "question": "今天过得怎么样？",
+      "answer": {
+        "good": "不错",
+        "rough": "不太好"
+      },
+      "reply": {
+        "good": "真好。有需要随时叫我。",
+        "rough": "抱歉听到这个。想聊聊或需要帮忙时，我都在。"
+      },
+      "dismiss": "关闭问候"
+    },
     "activationV2": {
       "profileTitle": "你的 Morpheus",
       "profileDescription": "更改说话方式和主动关心频率，或预览介绍。现有任务和权限保持不变。",
@@ -210,17 +221,113 @@
     "commandCenter": "指挥中心",
     "subtitle": "AI 执行平台 —— 规划、授权、执行、审计。",
     "signalOs": {
-      "navigation": "Morpheus 导航", "advanced": "高级界面", "more": "更多",
-      "nav": { "command": "指令", "missions": "任务", "systems": "系统", "library": "资料库", "chat": "聊天", "invoke": "唤起", "goals": "目标", "agentProfiles": "智能体配置", "workflows": "工作流", "schedules": "计划", "activity": "活动", "models": "模型", "agents": "智能体", "channels": "频道", "skills": "技能", "cron": "定时任务", "settings": "设置" },
-      "commandLayer": "指令层", "presence": "临场助手", "presencePromise": "说出结果，Morpheus 负责完成工作。", "presencePromiseNamed": "{{name}}，说出结果，Morpheus 负责完成工作。", "commandPlaceholder": "希望 Morpheus 处理什么？", "commandPlaceholderNamed": "{{name}}，希望 Morpheus 为你处理什么？", "voiceShortcut": "现在说话，或在任意位置按 Ctrl Alt Space", "try": "试试", "stop": "停止",
-      "ready": "就绪", "idleTitle": "告诉 Morpheus 结果，而不是一连串点击。", "idleBody": "自然地说出或输入需求。Morpheus 会制定计划，仅在出现新的信任边界时提醒，然后执行、验证并交付结果。",
-      "activeMission": "当前任务", "currentWork": "当前工作", "interpreting": "正在理解目标", "runAgain": "再次运行", "inspect": "查看", "result": "结果", "resultPending": "Morpheus 正在生成经过验证的结果。", "performance": "性能", "timing": { "planning": "规划", "execution": "执行", "review": "复核" }, "artifacts": "产物", "noArtifacts": "尚未生成产物。", "observable": "Morpheus 工作时会记录实时事件。",
-      "today": "今天", "todayClear": "当前无待办", "todayClearBody": "没有需要你关注的主动任务。", "goals": "目标", "handle": "处理", "allMissions": "全部任务", "context": "上下文", "trustReason": "只有计划跨越新的信任边界时，Morpheus 才会询问。",
-      "presenceReady": "助手已就绪", "microphoneVisible": "麦克风已启用", "interpretation": "理解", "handlingObjective": "正在构建并执行真实计划。", "presenceHint": "说出或输入结果。这里与指挥中心使用同一个目标核心。", "trustProfile": "{{profile}} 信任配置",
-      "signal": { "asleep": "休眠", "ready": "就绪", "listening": "正在聆听", "understanding": "正在理解", "planning": "正在规划", "trust": "需要信任", "executing": "正在执行", "speaking": "正在回应", "complete": "已完成", "failed": "需要处理", "degraded": "受限状态" },
-      "phases": { "understand": "理解", "plan": "规划", "act": "执行", "verify": "验证", "deliver": "交付" },
-      "presencePhases": { "plan": "规划", "trust": "信任", "execute": "执行", "result": "结果" },
-      "activation": { "spokenIntroduction": "我是 Morpheus。告诉我你想要的结果。我会规划工作，只在信任发生变化时询问，并在行动时保持透明。", "title": "让智能真正出现。", "introduction": "Morpheus 不是另一个聊天窗口，而是将你的目标转化为可控、可观察工作的智能存在。", "begin": "唤醒 Morpheus", "readiness": "正在建立运行环境", "relationship": "选择 Morpheus 与你协作的方式", "prove": "运行首个任务", "firstMission": "首个任务", "proofTitle": "进入前，先看 Morpheus 工作。", "proofBody": "该任务使用真实的隐私安全能力。你将看到规划、执行、验证和真实结果。", "proofObjective": "显示系统信息", "runMission": "执行任务", "continueWithout": "不运行并继续", "readyTitle": "Morpheus 已就绪。", "readyBody": "你可以随时唤起助手，或从指挥中心开始。" }
+      "navigation": "Morpheus 导航",
+      "advanced": "高级界面",
+      "more": "更多",
+      "nav": {
+        "command": "指令",
+        "missions": "任务",
+        "systems": "系统",
+        "library": "资料库",
+        "chat": "聊天",
+        "invoke": "唤起",
+        "goals": "目标",
+        "agentProfiles": "智能体配置",
+        "workflows": "工作流",
+        "schedules": "计划",
+        "activity": "活动",
+        "models": "模型",
+        "agents": "智能体",
+        "channels": "频道",
+        "skills": "技能",
+        "cron": "定时任务",
+        "settings": "设置"
+      },
+      "commandLayer": "指令层",
+      "presence": "临场助手",
+      "presencePromise": "说出结果，Morpheus 负责完成工作。",
+      "presencePromiseNamed": "{{name}}，说出结果，Morpheus 负责完成工作。",
+      "commandPlaceholder": "希望 Morpheus 处理什么？",
+      "commandPlaceholderNamed": "{{name}}，希望 Morpheus 为你处理什么？",
+      "voiceShortcut": "现在说话，或在任意位置按 Ctrl Alt Space",
+      "try": "试试",
+      "stop": "停止",
+      "ready": "就绪",
+      "idleTitle": "告诉 Morpheus 结果，而不是一连串点击。",
+      "idleBody": "自然地说出或输入需求。Morpheus 会制定计划，仅在出现新的信任边界时提醒，然后执行、验证并交付结果。",
+      "activeMission": "当前任务",
+      "currentWork": "当前工作",
+      "interpreting": "正在理解目标",
+      "runAgain": "再次运行",
+      "inspect": "查看",
+      "result": "结果",
+      "resultPending": "Morpheus 正在生成经过验证的结果。",
+      "performance": "性能",
+      "timing": {
+        "planning": "规划",
+        "execution": "执行",
+        "review": "复核"
+      },
+      "artifacts": "产物",
+      "noArtifacts": "尚未生成产物。",
+      "observable": "Morpheus 工作时会记录实时事件。",
+      "today": "今天",
+      "todayClear": "当前无待办",
+      "todayClearBody": "没有需要你关注的主动任务。",
+      "goals": "目标",
+      "handle": "处理",
+      "allMissions": "全部任务",
+      "context": "上下文",
+      "trustReason": "只有计划跨越新的信任边界时，Morpheus 才会询问。",
+      "presenceReady": "助手已就绪",
+      "microphoneVisible": "麦克风已启用",
+      "interpretation": "理解",
+      "handlingObjective": "正在构建并执行真实计划。",
+      "presenceHint": "说出或输入结果。这里与指挥中心使用同一个目标核心。",
+      "trustProfile": "{{profile}} 信任配置",
+      "signal": {
+        "asleep": "休眠",
+        "ready": "就绪",
+        "listening": "正在聆听",
+        "understanding": "正在理解",
+        "planning": "正在规划",
+        "trust": "需要信任",
+        "executing": "正在执行",
+        "speaking": "正在回应",
+        "complete": "已完成",
+        "failed": "需要处理",
+        "degraded": "受限状态"
+      },
+      "phases": {
+        "understand": "理解",
+        "plan": "规划",
+        "act": "执行",
+        "verify": "验证",
+        "deliver": "交付"
+      },
+      "presencePhases": {
+        "plan": "规划",
+        "trust": "信任",
+        "execute": "执行",
+        "result": "结果"
+      },
+      "activation": {
+        "spokenIntroduction": "我是 Morpheus。告诉我你想要的结果。我会规划工作，只在信任发生变化时询问，并在行动时保持透明。",
+        "title": "让智能真正出现。",
+        "introduction": "Morpheus 不是另一个聊天窗口，而是将你的目标转化为可控、可观察工作的智能存在。",
+        "begin": "唤醒 Morpheus",
+        "readiness": "正在建立运行环境",
+        "relationship": "选择 Morpheus 与你协作的方式",
+        "prove": "运行首个任务",
+        "firstMission": "首个任务",
+        "proofTitle": "进入前，先看 Morpheus 工作。",
+        "proofBody": "该任务使用真实的隐私安全能力。你将看到规划、执行、验证和真实结果。",
+        "proofObjective": "显示系统信息",
+        "runMission": "执行任务",
+        "continueWithout": "不运行并继续",
+        "readyTitle": "Morpheus 已就绪。",
+        "readyBody": "你可以随时唤起助手，或从指挥中心开始。"
+      }
     },
     "systemPanel": {
       "title": "系统",
@@ -248,7 +355,14 @@
       "contentPlaceholder": "要写入的文本",
       "applicationLabel": "应用程序"
     },
-    "controlResults": {"focus":"{{application}} 已置于前台。","minimize":"{{application}} 已最小化。","restore":"{{application}} 已恢复。","play":"{{application}} 正在播放。","pause":"{{application}} 已暂停。","volume":"输出音量为 {{level}}%。"},
+    "controlResults": {
+      "focus": "{{application}} 已置于前台。",
+      "minimize": "{{application}} 已最小化。",
+      "restore": "{{application}} 已恢复。",
+      "play": "{{application}} 正在播放。",
+      "pause": "{{application}} 已暂停。",
+      "volume": "输出音量为 {{level}}%。"
+    },
     "applications": {
       "spotify": "Spotify",
       "notepad": "记事本",
@@ -259,15 +373,42 @@
       "vscode": "Visual Studio Code"
     },
     "actions": {
-      "mediaControl": {"label":"控制 Spotify 播放","description":"播放或暂停已观察到的单个 Spotify 会话，不使用全局媒体按键。"},
-      "audioVolume": {"label":"设置系统输出音量","description":"将默认输出音量设为指定百分比，不更改麦克风。"},
-      "siteCreateInteractive": {"label":"创建交互网站","description":"使用经过审核的模板创建新的客户端网站，提供筛选和本地表单验证。不会发送消息。"},
-      "browserInspect": { "label": "查看公开页面", "description": "在隔离的浏览器中查看页面控件，不使用您的浏览器账户。" },
-      "browserInteract": { "label": "操作公开页面控件", "description": "使用此任务刚刚观察到的页面控件。账户操作与下载需要单独授权。" },
-      "siteRevise": {"label":"修改网站","description":"仅基于已验证的网站版本进行修改，保留无关的手动编辑。"},
-      "siteRollback": {"label":"回退网站","description":"仅在当前版本已验证时恢复已记录的网站版本，保留手动编辑。"},
-      "webReadPage": { "label": "读取网页", "description": "读取公开 HTTPS 网页并保留实际获取的来源证据。" },
-      "appControlWindow": {"label":"控制应用窗口","description":"聚焦、最小化或恢复确切的运行中应用，并验证结果。"},
+      "mediaControl": {
+        "label": "控制 Spotify 播放",
+        "description": "播放或暂停已观察到的单个 Spotify 会话，不使用全局媒体按键。"
+      },
+      "audioVolume": {
+        "label": "设置系统输出音量",
+        "description": "将默认输出音量设为指定百分比，不更改麦克风。"
+      },
+      "siteCreateInteractive": {
+        "label": "创建交互网站",
+        "description": "使用经过审核的模板创建新的客户端网站，提供筛选和本地表单验证。不会发送消息。"
+      },
+      "browserInspect": {
+        "label": "查看公开页面",
+        "description": "在隔离的浏览器中查看页面控件，不使用您的浏览器账户。"
+      },
+      "browserInteract": {
+        "label": "操作公开页面控件",
+        "description": "使用此任务刚刚观察到的页面控件。账户操作与下载需要单独授权。"
+      },
+      "siteRevise": {
+        "label": "修改网站",
+        "description": "仅基于已验证的网站版本进行修改，保留无关的手动编辑。"
+      },
+      "siteRollback": {
+        "label": "回退网站",
+        "description": "仅在当前版本已验证时恢复已记录的网站版本，保留手动编辑。"
+      },
+      "webReadPage": {
+        "label": "读取网页",
+        "description": "读取公开 HTTPS 网页并保留实际获取的来源证据。"
+      },
+      "appControlWindow": {
+        "label": "控制应用窗口",
+        "description": "聚焦、最小化或恢复确切的运行中应用，并验证结果。"
+      },
       "appLaunch": {
         "label": "启动已批准的应用程序",
         "description": "从内置批准列表中启动一个应用程序。"
@@ -459,8 +600,11 @@
       "systemSummary": "{{platform}} {{release}}（{{arch}}）"
     },
     "readiness": {
-      "gateway": "OpenClaw 运行时", "audit": "审计持久化", "auditHealthy": "正常",
-      "capabilities": "Windows 能力", "capabilityCount": "{{count}} 项可用",
+      "gateway": "OpenClaw 运行时",
+      "audit": "审计持久化",
+      "auditHealthy": "正常",
+      "capabilities": "Windows 能力",
+      "capabilityCount": "{{count}} 项可用",
       "sequential": "计划按顺序执行。Morpheus 会在第一个真实步骤前对完整信任边界评估一次。"
     },
     "audit": {
@@ -508,10 +652,20 @@
       "progress": "目标进度",
       "plannerAutomatic": "自动规划器",
       "states": {
-        "ready": "就绪", "listening": "正在聆听", "understanding": "正在理解", "planning": "正在规划",
-        "waiting-for-approval": "等待批准", "executing": "正在执行", "observing": "正在观察", "replanning": "正在重新规划",
-        "speaking": "正在播报", "complete": "已完成", "needs-clarification": "需要澄清", "cancelled": "已取消",
-        "degraded": "安全降级", "error": "错误"
+        "ready": "就绪",
+        "listening": "正在聆听",
+        "understanding": "正在理解",
+        "planning": "正在规划",
+        "waiting-for-approval": "等待批准",
+        "executing": "正在执行",
+        "observing": "正在观察",
+        "replanning": "正在重新规划",
+        "speaking": "正在播报",
+        "complete": "已完成",
+        "needs-clarification": "需要澄清",
+        "cancelled": "已取消",
+        "degraded": "安全降级",
+        "error": "错误"
       }
     },
     "status": {
@@ -630,7 +784,12 @@
       "objectiveCore": "实时目标核心",
       "liveBody": "Morpheus 正在理解完整目标并构建受限计划。",
       "noExecutablePlan": "此目标未生成可执行计划。",
-      "flow": { "objective": "目标", "plan": "类型化计划", "trust": "信任检查", "execute": "执行" },
+      "flow": {
+        "objective": "目标",
+        "plan": "类型化计划",
+        "trust": "信任检查",
+        "execute": "执行"
+      },
       "executing": "正在执行…",
       "statusLabel": "计划",
       "status": {
@@ -669,16 +828,34 @@
       "step": "{{summary}}"
     },
     "common": {
-      "cancel": "取消", "save": "保存", "edit": "编辑", "remove": "删除",
-      "enable": "启用", "disable": "停用", "enabled": "已启用", "disabled": "已停用",
+      "cancel": "取消",
+      "save": "保存",
+      "edit": "编辑",
+      "remove": "删除",
+      "enable": "启用",
+      "disable": "停用",
+      "enabled": "已启用",
+      "disabled": "已停用",
       "loading": "正在加载 Morpheus 配置…"
     },
-    "risk": { "low": "低", "medium": "中", "high": "高", "critical": "关键" },
+    "risk": {
+      "low": "低",
+      "medium": "中",
+      "high": "高",
+      "critical": "关键"
+    },
     "workspaces": {
       "title": "受信任工作区",
       "description": "选择 Morpheus 可工作的范围。路径只能来自 Windows 文件夹选择器，信任绑定到一个精确的规范根目录。",
-      "active": "活动工作区", "selected": "活动", "managed": "Morpheus 管理", "unavailable": "不可用",
-      "add": "添加工作区", "open": "打开工作区", "access": "访问权限", "read": "只读", "readWrite": "读写",
+      "active": "活动工作区",
+      "selected": "活动",
+      "managed": "Morpheus 管理",
+      "unavailable": "不可用",
+      "add": "添加工作区",
+      "open": "打开工作区",
+      "access": "访问权限",
+      "read": "只读",
+      "readWrite": "读写",
       "authorityNote": "选择工作区并不授予权限。Morpheus 会针对精确根目录评估完整计划，并只复用匹配的信任。降级或停用工作区会撤销该根目录的已记住授权。"
     },
     "agentProfiles": {
@@ -693,18 +870,46 @@
       "active": "活动 Agent 配置档",
       "automatic": "自动选择",
       "authorityNote": "配置档只会收窄计划。所有真实目标仍由 Morpheus 主进程解析、授权并审计。",
-      "create": "创建配置档", "reset": "恢复内置配置", "builtIn": "内置", "custom": "自定义",
-      "removeTitle": "删除 Agent 配置档？", "removeDescription": "只删除自定义配置档定义。仍被工作流使用时，Morpheus 会阻止删除。",
-      "resetTitle": "恢复内置 Agent 配置档？", "resetDescription": "内置配置档将恢复为发布配置，自定义配置档不受影响。",
+      "create": "创建配置档",
+      "reset": "恢复内置配置",
+      "builtIn": "内置",
+      "custom": "自定义",
+      "removeTitle": "删除 Agent 配置档？",
+      "removeDescription": "只删除自定义配置档定义。仍被工作流使用时，Morpheus 会阻止删除。",
+      "resetTitle": "恢复内置 Agent 配置档？",
+      "resetDescription": "内置配置档将恢复为发布配置，自定义配置档不受影响。",
       "editor": {
-        "builtIn": "内置执行身份", "custom": "自定义执行身份", "editTitle": "编辑 Agent 配置档", "createTitle": "创建 Agent 配置档",
+        "builtIn": "内置执行身份",
+        "custom": "自定义执行身份",
+        "editTitle": "编辑 Agent 配置档",
+        "createTitle": "创建 Agent 配置档",
         "description": "配置 Morpheus 的规划方式及该配置档可提出的边界。主进程策略始终拥有最终决定权。",
-        "enabled": "启用配置档", "identity": "身份与推理", "name": "名称", "profileDescription": "描述", "instructions": "操作指令",
-        "planner": "规划策略", "workspaceAccess": "工作区策略", "readOnly": "只读", "readWrite": "读写",
-        "providerAccount": "提供方账户", "model": "规划模型", "memory": "上下文策略", "contextItems": "最大上下文项目",
-        "boundary": "能力边界", "boundaryDescription": "此允许列表只能收窄执行，绝不会创建权限授权。", "revert": "还原编辑",
-        "planners": { "auto": "自动 · 提供方并安全回退", "deterministic": "确定性解释器", "provider": "指定提供方和模型" },
-        "memoryModes": { "none": "不保留上下文", "session": "当前会话", "workspace": "受信任工作区" }
+        "enabled": "启用配置档",
+        "identity": "身份与推理",
+        "name": "名称",
+        "profileDescription": "描述",
+        "instructions": "操作指令",
+        "planner": "规划策略",
+        "workspaceAccess": "工作区策略",
+        "readOnly": "只读",
+        "readWrite": "读写",
+        "providerAccount": "提供方账户",
+        "model": "规划模型",
+        "memory": "上下文策略",
+        "contextItems": "最大上下文项目",
+        "boundary": "能力边界",
+        "boundaryDescription": "此允许列表只能收窄执行，绝不会创建权限授权。",
+        "revert": "还原编辑",
+        "planners": {
+          "auto": "自动 · 提供方并安全回退",
+          "deterministic": "确定性解释器",
+          "provider": "指定提供方和模型"
+        },
+        "memoryModes": {
+          "none": "不保留上下文",
+          "session": "当前会话",
+          "workspace": "受信任工作区"
+        }
       }
     },
     "workflows": {
@@ -714,23 +919,57 @@
       "run": "运行工作流",
       "running": "运行中…",
       "agent": "Agent 配置档",
-      "steps": "个步骤", "create": "创建工作流",
-      "removeTitle": "删除工作流？", "removeDescription": "将删除自定义工作流定义。必须先删除仍引用它的计划任务。",
+      "steps": "个步骤",
+      "create": "创建工作流",
+      "removeTitle": "删除工作流？",
+      "removeDescription": "将删除自定义工作流定义。必须先删除仍引用它的计划任务。",
       "editor": {
-        "builtIn": "内置系统", "custom": "自定义系统", "editTitle": "编辑工作流", "createTitle": "创建工作流",
+        "builtIn": "内置系统",
+        "custom": "自定义系统",
+        "editTitle": "编辑工作流",
+        "createTitle": "创建工作流",
         "description": "构建受限、可复用的顺序。每次运行都进入同一 Objective Core 和计划级信任评估。",
-        "name": "工作流名称", "workflowDescription": "描述", "triggers": "允许的触发器",
+        "name": "工作流名称",
+        "workflowDescription": "描述",
+        "triggers": "允许的触发器",
         "triggersDescription": "触发器可以启动工作流，但不能绕过信任或策略。",
-        "trigger": { "manual": "手动", "schedule": "计划任务", "app-startup": "应用启动" },
-        "planSteps": "类型化计划步骤", "sequentialNote": "Windows 1.0 按顺序执行就绪步骤，依赖关系仍决定顺序与跳过行为。",
-        "addStep": "添加步骤", "removeStep": "删除步骤", "stepId": "步骤 id", "capability": "能力", "summary": "面向用户的摘要",
-        "dependsOn": "依赖于", "condition": "条件", "conditions": { "always": "依赖完成后运行", "succeeded": "仅当 {{id}} 成功" },
-        "optional": "可选", "outputs": "输出", "collectArtifacts": "收集产物", "retainHistory": "保留目标历史",
-        "stepCount": "{{count}} 个类型化步骤", "stepCount_other": "{{count}} 个类型化步骤", "defaultStep": "步骤 {{number}}",
+        "trigger": {
+          "manual": "手动",
+          "schedule": "计划任务",
+          "app-startup": "应用启动"
+        },
+        "planSteps": "类型化计划步骤",
+        "sequentialNote": "Windows 1.0 按顺序执行就绪步骤，依赖关系仍决定顺序与跳过行为。",
+        "addStep": "添加步骤",
+        "removeStep": "删除步骤",
+        "stepId": "步骤 id",
+        "capability": "能力",
+        "summary": "面向用户的摘要",
+        "dependsOn": "依赖于",
+        "condition": "条件",
+        "conditions": {
+          "always": "依赖完成后运行",
+          "succeeded": "仅当 {{id}} 成功"
+        },
+        "optional": "可选",
+        "outputs": "输出",
+        "collectArtifacts": "收集产物",
+        "retainHistory": "保留目标历史",
+        "stepCount": "{{count}} 个类型化步骤",
+        "stepCount_other": "{{count}} 个类型化步骤",
+        "defaultStep": "步骤 {{number}}",
         "params": {
-          "applicationKey": "已批准应用", "fileName": "文件名", "content": "文本内容", "path": "工作区相对路径",
-          "query": "搜索查询", "limit": "最大结果数", "destination": "目标路径", "title": "标题", "body": "消息",
-          "url": "已批准网页 URL", "templateKey": "开发启动器"
+          "applicationKey": "已批准应用",
+          "fileName": "文件名",
+          "content": "文本内容",
+          "path": "工作区相对路径",
+          "query": "搜索查询",
+          "limit": "最大结果数",
+          "destination": "目标路径",
+          "title": "标题",
+          "body": "消息",
+          "url": "已批准网页 URL",
+          "templateKey": "开发启动器"
         }
       }
     },
@@ -748,9 +987,14 @@
       "daily": "每天本地时间",
       "once": "运行一次",
       "startup": "应用启动时",
-      "save": "保存计划", "update": "更新计划", "edit": "编辑计划", "workspace": "工作区",
+      "save": "保存计划",
+      "update": "更新计划",
+      "edit": "编辑计划",
+      "workspace": "工作区",
       "runNow": "立即运行",
-      "remove": "删除计划", "removeTitle": "删除计划？", "removeDescription": "计划定义将被删除，现有目标与审计历史仍保持仅追加。"
+      "remove": "删除计划",
+      "removeTitle": "删除计划？",
+      "removeDescription": "计划定义将被删除，现有目标与审计历史仍保持仅追加。"
     },
     "activity": {
       "history": "可观察执行",
@@ -806,40 +1050,122 @@
       "voiceHint": "自然说话，然后停顿",
       "openCommandCenter": "打开指挥中心"
     },
-    "context": { "title": "执行上下文" },
+    "context": {
+      "title": "执行上下文"
+    },
     "missions": {
-      "eyebrow": "持久工作", "title": "任务", "description": "由真实 Morpheus 目标核心投射的持久目标。", "new": "新目标", "empty": "暂无任务。向 Morpheus 提出目标即可开始。", "emptyCompact": "活动和已完成的目标将显示在这里。", "select": "选择任务以查看真实状态。", "activeRail": "任务流", "open": "打开全部任务", "rerun": "再次运行", "route": "执行路线", "routeUnknown": "未记录路线", "runs": "目标运行", "updated": "最后更新", "result": "结果", "noSummary": "此任务尚未产生最终结果。", "artifacts": "任务产物", "noArtifacts": "此任务尚未产生任何产物。",
-      "status": { "planning": "规划中", "waiting-for-permission": "等待信任", "running": "执行中", "observing": "观察中", "needs-input": "需要输入", "completed": "已完成", "failed": "失败", "cancelled": "已取消" },
-      "routes": { "direct-capability": "直接能力", "provider-plan": "提供商规划", "deterministic-fallback": "确定性回退", "prepared-workflow": "预备工作流" }
+      "eyebrow": "持久工作",
+      "title": "任务",
+      "description": "由真实 Morpheus 目标核心投射的持久目标。",
+      "new": "新目标",
+      "empty": "暂无任务。向 Morpheus 提出目标即可开始。",
+      "emptyCompact": "活动和已完成的目标将显示在这里。",
+      "select": "选择任务以查看真实状态。",
+      "activeRail": "任务流",
+      "open": "打开全部任务",
+      "rerun": "再次运行",
+      "route": "执行路线",
+      "routeUnknown": "未记录路线",
+      "runs": "目标运行",
+      "updated": "最后更新",
+      "result": "结果",
+      "noSummary": "此任务尚未产生最终结果。",
+      "artifacts": "任务产物",
+      "noArtifacts": "此任务尚未产生任何产物。",
+      "status": {
+        "planning": "规划中",
+        "waiting-for-permission": "等待信任",
+        "running": "执行中",
+        "observing": "观察中",
+        "needs-input": "需要输入",
+        "completed": "已完成",
+        "failed": "失败",
+        "cancelled": "已取消"
+      },
+      "routes": {
+        "direct-capability": "直接能力",
+        "provider-plan": "提供商规划",
+        "deterministic-fallback": "确定性回退",
+        "prepared-workflow": "预备工作流"
+      }
     },
     "projects": {
-      "eyebrow": "个人智能", "title": "项目与上下文", "description": "围绕精确可信工作区和可检查上下文组织目标。", "active": "活动项目", "none": "无项目", "manage": "管理上下文", "create": "创建项目", "newProject": "新项目", "projectContext": "项目上下文", "untitled": "未命名项目", "name": "项目名称", "descriptionLabel": "说明", "workspace": "可信工作区", "instructions": "规划上下文", "instructionsPlaceholder": "Morpheus 在此项目中工作时应了解什么？", "noDescription": "尚无说明。", "noActiveDescription": "选择项目，为 Morpheus 提供聚焦上下文。"
+      "eyebrow": "个人智能",
+      "title": "项目与上下文",
+      "description": "围绕精确可信工作区和可检查上下文组织目标。",
+      "active": "活动项目",
+      "none": "无项目",
+      "manage": "管理上下文",
+      "create": "创建项目",
+      "newProject": "新项目",
+      "projectContext": "项目上下文",
+      "untitled": "未命名项目",
+      "name": "项目名称",
+      "descriptionLabel": "说明",
+      "workspace": "可信工作区",
+      "instructions": "规划上下文",
+      "instructionsPlaceholder": "Morpheus 在此项目中工作时应了解什么？",
+      "noDescription": "尚无说明。",
+      "noActiveDescription": "选择项目，为 Morpheus 提供聚焦上下文。"
     },
     "memory": {
       "export": "导出这些记忆",
-      "exportStatus": { "saved": "记忆已保存。聊天记录仍保留在 Morpheus 中。", "cancelled": "已取消导出。", "error": "无法导出记忆，请重试。" },
-      "title": "Morpheus 记忆", "description": "可检查、编辑、禁用或删除的明确上下文。敏感条目保留在本地。", "context": "上下文记忆", "disclosure": "只有启用、普通且允许提供商使用的条目才会进入规划上下文。", "saveProjectFirst": "请先保存项目再添加记忆。", "titlePlaceholder": "Morpheus 应该记住什么？", "textPlaceholder": "输入简洁的上下文、偏好、惯例或决定。", "sensitive": "敏感 — 仅保留在本地并排除在提供商规划之外", "add": "添加记忆", "entries": "{{count}} 条记忆", "empty": "此项目没有关联记忆。", "emptyCompact": "当前上下文没有可用记忆。", "remove": "删除记忆",
-      "kinds": { "preference": "偏好", "project-context": "项目上下文", "routine": "惯例", "decision": "决定" },
-      "providerUse": { "allowed": "可供规划器使用", "local-only": "仅本地" }
+      "exportStatus": {
+        "saved": "记忆已保存。聊天记录仍保留在 Morpheus 中。",
+        "cancelled": "已取消导出。",
+        "error": "无法导出记忆，请重试。"
+      },
+      "title": "Morpheus 记忆",
+      "description": "可检查、编辑、禁用或删除的明确上下文。敏感条目保留在本地。",
+      "context": "上下文记忆",
+      "disclosure": "只有启用、普通且允许提供商使用的条目才会进入规划上下文。",
+      "saveProjectFirst": "请先保存项目再添加记忆。",
+      "titlePlaceholder": "Morpheus 应该记住什么？",
+      "textPlaceholder": "输入简洁的上下文、偏好、惯例或决定。",
+      "sensitive": "敏感 — 仅保留在本地并排除在提供商规划之外",
+      "add": "添加记忆",
+      "entries": "{{count}} 条记忆",
+      "empty": "此项目没有关联记忆。",
+      "emptyCompact": "当前上下文没有可用记忆。",
+      "remove": "删除记忆",
+      "kinds": {
+        "preference": "偏好",
+        "project-context": "项目上下文",
+        "routine": "惯例",
+        "decision": "决定"
+      },
+      "providerUse": {
+        "allowed": "可供规划器使用",
+        "local-only": "仅本地"
+      }
     },
     "operator": {
       "modeLabel": "Morpheus 应如何回应",
       "clarification": "我还不能清楚理解该指令，无法安全执行。请说明你想要的结果。",
       "modes": {
-        "ask": { "name": "询问", "description": "思考、解释和建议，但不执行操作。" },
-        "auto": { "name": "自动", "description": "理解意图，在需要结果时主动执行。" },
-        "act": { "name": "执行", "description": "把指令作为需要完成的目标。" }
+        "ask": {
+          "name": "询问",
+          "description": "思考、解释和建议，但不执行操作。"
+        },
+        "auto": {
+          "name": "自动",
+          "description": "理解意图，在需要结果时主动执行。"
+        },
+        "act": {
+          "name": "执行",
+          "description": "把指令作为需要完成的目标。"
+        }
       }
     },
     "arrival": {
-      "subtitle": "给出一个目标，我们一起完成。留在工作区，或让 Morpheus 在你忙碌时陪伴左右。",
+      "subtitle": "我是 Morpheus。帮你一把，逗你一笑。由你做主。",
       "witty": "有大计划？太好了。我已清空想象中的日程。",
-      "open": "打开工作区",
+      "open": "打开对话",
       "tray": "留在系统托盘",
       "transferring": "正在移入托盘…",
       "trayHint": "Morpheus 会继续运行。点击 Windows 通知区域中的图标返回，或在托盘菜单中选择退出 Morpheus。",
       "voiceHonesty": "移入托盘不会启用麦克风。监听遵循你的语音设置；使用唤醒词前请先配置语音。",
-      "voiceSettings": "配置语音与提供商",
+      "voiceSettings": "语音设置",
       "close": "关闭欢迎界面",
       "mute": "停止问候",
       "hear": "播放问候",
@@ -847,13 +1173,97 @@
       "companion": "伙伴"
     },
     "activation": {
-      "eyebrow": "智能操作伙伴", "title": "认识 Morpheus", "introduction": "我把目标转化为计划、可信操作和持久任务。自然地说或输入；我会处理日常工作，只在信任边界真正变化时打断。", "spokenIntroduction": "你好，我是 Morpheus，你的智能操作伙伴。告诉我你想完成什么，我会规划并处理工作。", "begin": "激活 Morpheus", "skip": "跳过激活", "calibrating": "真实系统校准", "systemsTitle": "正在连接智能层", "checking": "正在检查此系统可用的能力…", "continue": "个性化伙伴", "personalize": "伙伴行为", "preferenceTitle": "Morpheus 应如何与你协作？", "preferenceBody": "这些偏好会影响沟通，但不会绕过能力政策或信任。", "preferredName": "我应该怎么称呼你？", "preferredNamePlaceholder": "你的名字或称呼", "autonomy": "自主性与保护", "launchAtStartup": "随 Windows 启动", "launchAtStartupDescription": "登录后让 Morpheus 在托盘中保持可用。", "ambientVoice": "聆听 Morpheus 唤醒词", "ambientVoiceDescription": "由提供商支持的聆听只在听到“{{wakePhrase}}”后响应。", "ambientVoiceUnavailable": "添加兼容转录的提供商以启用唤醒词。", "wakePhrase": "唤醒词", "proactiveCheckIns": "偶尔主动问候", "proactiveCheckInsDescription": "长时间工作时让 Morpheus 自然地询问进展。", "speak": "朗读最终响应", "speakDescription": "语音目标完成后使用 Windows 语音。", "finish": "完成激活", "readyLabel": "系统就绪", "readyTitle": "Morpheus 已就绪。", "readyBody": "在指挥中心管理任务；随时按 Ctrl+Shift+Space 打开快捷命令，或按 Ctrl+Alt+Space 说话。", "enter": "进入指挥中心", "connectProvider": "连接 AI 提供商", "providerNeeded": "Morpheus 现在可以运行已注册的本地操作。连接兼容提供商以理解更广泛的目标并启用转录。", "replay": "伙伴激活", "replayDescription": "重新播放真实系统介绍并选择伙伴行为。", "replayAction": "重播激活",
-      "personalities": { "adaptive": { "name": "自适应", "description": "根据目标调整细节、语气和节奏。" }, "witty": { "name": "幽默", "description": "自信、简洁且自然风趣。" }, "concise": { "name": "简洁", "description": "偏好简短直接的状态与结果。" }, "warm": { "name": "温暖", "description": "使用自然、乐于助人且略带幽默的语气。" } },
-      "permissionProfiles": { "strict": { "name": "严格", "description": "在每个新操作边界询问。" }, "balanced": { "name": "平衡", "description": "复用精确信任，仅在范围变化时询问。" }, "autonomous": { "name": "自主", "description": "处理常规可逆工作，在受保护边界暂停。" } },
-      "signal": { "core": "执行核心", "runtime": "代理运行时", "provider": "推理提供商", "voice": "语音通道", "capabilities": "{{count}} 项真实能力", "unavailable": "不可用", "connected": "已连接", "starting": "正在后台启动", "optionalProvider": "需要开放式规划时配置", "available": "可用", "voiceSetup": "配置兼容转录的提供商" },
+      "eyebrow": "智能操作伙伴",
+      "title": "认识 Morpheus",
+      "introduction": "我把目标转化为计划、可信操作和持久任务。自然地说或输入；我会处理日常工作，只在信任边界真正变化时打断。",
+      "spokenIntroduction": "你好，我是 Morpheus，你的智能操作伙伴。告诉我你想完成什么，我会规划并处理工作。",
+      "begin": "激活 Morpheus",
+      "skip": "跳过激活",
+      "calibrating": "真实系统校准",
+      "systemsTitle": "正在连接智能层",
+      "checking": "正在检查此系统可用的能力…",
+      "continue": "个性化伙伴",
+      "personalize": "伙伴行为",
+      "preferenceTitle": "Morpheus 应如何与你协作？",
+      "preferenceBody": "这些偏好会影响沟通，但不会绕过能力政策或信任。",
+      "preferredName": "我应该怎么称呼你？",
+      "preferredNamePlaceholder": "你的名字或称呼",
+      "autonomy": "自主性与保护",
+      "launchAtStartup": "随 Windows 启动",
+      "launchAtStartupDescription": "登录后让 Morpheus 在托盘中保持可用。",
+      "ambientVoice": "聆听 Morpheus 唤醒词",
+      "ambientVoiceDescription": "由提供商支持的聆听只在听到“{{wakePhrase}}”后响应。",
+      "ambientVoiceUnavailable": "添加兼容转录的提供商以启用唤醒词。",
+      "wakePhrase": "唤醒词",
+      "proactiveCheckIns": "偶尔主动问候",
+      "proactiveCheckInsDescription": "长时间工作时让 Morpheus 自然地询问进展。",
+      "speak": "朗读最终响应",
+      "speakDescription": "语音目标完成后使用 Windows 语音。",
+      "finish": "完成激活",
+      "readyLabel": "系统就绪",
+      "readyTitle": "Morpheus 已就绪。",
+      "readyBody": "在指挥中心管理任务；随时按 Ctrl+Shift+Space 打开快捷命令，或按 Ctrl+Alt+Space 说话。",
+      "enter": "进入指挥中心",
+      "connectProvider": "连接 AI 提供商",
+      "providerNeeded": "Morpheus 现在可以运行已注册的本地操作。连接兼容提供商以理解更广泛的目标并启用转录。",
+      "replay": "伙伴激活",
+      "replayDescription": "重新播放真实系统介绍并选择伙伴行为。",
+      "replayAction": "重播激活",
+      "personalities": {
+        "adaptive": {
+          "name": "自适应",
+          "description": "根据目标调整细节、语气和节奏。"
+        },
+        "witty": {
+          "name": "幽默",
+          "description": "自信、简洁且自然风趣。"
+        },
+        "concise": {
+          "name": "简洁",
+          "description": "偏好简短直接的状态与结果。"
+        },
+        "warm": {
+          "name": "温暖",
+          "description": "使用自然、乐于助人且略带幽默的语气。"
+        }
+      },
+      "permissionProfiles": {
+        "strict": {
+          "name": "严格",
+          "description": "在每个新操作边界询问。"
+        },
+        "balanced": {
+          "name": "平衡",
+          "description": "复用精确信任，仅在范围变化时询问。"
+        },
+        "autonomous": {
+          "name": "自主",
+          "description": "处理常规可逆工作，在受保护边界暂停。"
+        }
+      },
+      "signal": {
+        "core": "执行核心",
+        "runtime": "代理运行时",
+        "provider": "推理提供商",
+        "voice": "语音通道",
+        "capabilities": "{{count}} 项真实能力",
+        "unavailable": "不可用",
+        "connected": "已连接",
+        "starting": "正在后台启动",
+        "optionalProvider": "需要开放式规划时配置",
+        "available": "可用",
+        "voiceSetup": "配置兼容转录的提供商"
+      },
       "firstGreeting": "我是 Morpheus。我该怎么称呼你？",
       "personalGreeting": "很高兴认识你，{{name}}。告诉我结果，其余路径交给我。",
-      "voiceCalibration": { "title": "语音校准", "ready": "说出你的名字，然后停止。音频只发送给你配置的转录提供商，Morpheus 不会保存。", "unavailable": "语音需要兼容转录的提供商。你可以先用键盘完成，稍后再配置。", "try": "测试麦克风", "useName": "使用这个名字", "failed": "我没能听清。请重试或使用键盘继续。" }
+      "voiceCalibration": {
+        "title": "语音校准",
+        "ready": "说出你的名字，然后停止。音频只发送给你配置的转录提供商，Morpheus 不会保存。",
+        "unavailable": "语音需要兼容转录的提供商。你可以先用键盘完成，稍后再配置。",
+        "try": "测试麦克风",
+        "useName": "使用这个名字",
+        "failed": "我没能听清。请重试或使用键盘继续。"
+      }
     },
     "today": {
       "title": "今日",
@@ -864,7 +1274,13 @@
       "dismiss": "忽略",
       "act": "处理",
       "openGoals": "打开目标",
-      "sources": { "mission": "任务", "goal": "目标", "schedule": "计划", "routine": "例行工作", "reminder": "提醒" },
+      "sources": {
+        "mission": "任务",
+        "goal": "目标",
+        "schedule": "计划",
+        "routine": "例行工作",
+        "reminder": "提醒"
+      },
       "itemTitles": {
         "mission-needs-input": "一个任务需要你的输入",
         "mission-failed": "一个任务需要处理",
@@ -918,28 +1334,107 @@
       "history": "目标历史",
       "removeTitle": "移除此目标？",
       "removeMessage": "目标记录将被移除，现有任务和产物保持不变。",
-      "statuses": { "active": "进行中", "paused": "已暂停", "completed": "已完成", "abandoned": "已放弃" },
-      "milestoneStatuses": { "pending": "待处理", "inProgress": "进行中", "completed": "已完成", "skipped": "已跳过" }
+      "statuses": {
+        "active": "进行中",
+        "paused": "已暂停",
+        "completed": "已完成",
+        "abandoned": "已放弃"
+      },
+      "milestoneStatuses": {
+        "pending": "待处理",
+        "inProgress": "进行中",
+        "completed": "已完成",
+        "skipped": "已跳过"
+      }
     },
     "systems": {
-      "title": "系统", "description": "从真实的 Morpheus 工作流中设计、验证并激活可靠的 AI 系统。", "new": "新建系统", "search": "搜索系统…",
-      "empty": "暂无系统。将经过审查的工作流或符合条件的任务转化为可复用工作。", "select": "选择一个系统或新建系统。", "count": "个系统", "capabilities": "项能力", "noDescription": "未提供描述。",
-      "executionPlan": "执行计划", "steps": "个步骤", "dependsOn": "依赖", "workflowUnavailable": "引用的工作流不可用。",
-      "trustDisclosure": "激活不会创建权限授权。每次运行仍会进入目标核心，并根据当前精确信任进行评估。", "runHistory": "真实运行证据",
-      "test": "测试一次", "activate": "激活", "pause": "暂停", "run": "立即运行", "detailsHint": "选择已保存的系统以检查其精确边界和测试证据。",
-      "agent": "分配的 Agent 配置档", "workspace": "受信任工作区", "project": "项目上下文", "workflow": "工作流", "schedules": "计划", "manualOnly": "仅手动",
-      "permissionBoundary": "精确能力边界", "testEvidence": "测试证据", "notTested": "尚未测试", "edit": "编辑系统", "name": "系统名称", "descriptionLabel": "描述",
-      "editorDescription": "引用均为逻辑引用。Main 根据所选工作流推导 Agent 配置档和精确能力。", "noMatchingSchedules": "没有与此工作流和工作区匹配的计划。系统仍可手动运行。",
-      "removeTitle": "移除此系统？", "removeMessage": "系统记录将被移除。现有任务、工作流、计划和产物保持不变。", "createFromMission": "创建系统", "conversionFailed": "此任务无法转化为可复用系统。",
-      "status": { "draft": "草稿", "tested": "已测试", "active": "已激活", "paused": "已暂停", "invalid": "无效" },
-      "runKinds": { "test": "测试", "manual": "手动运行" },
-      "runStatus": { "completed": "已完成", "partially-completed": "部分完成", "failed": "失败", "rejected": "已拒绝", "cancelled": "已取消" },
-      "outputs": { "collectArtifacts": "产物", "retainHistory": "历史" }
+      "title": "系统",
+      "description": "从真实的 Morpheus 工作流中设计、验证并激活可靠的 AI 系统。",
+      "new": "新建系统",
+      "search": "搜索系统…",
+      "empty": "暂无系统。将经过审查的工作流或符合条件的任务转化为可复用工作。",
+      "select": "选择一个系统或新建系统。",
+      "count": "个系统",
+      "capabilities": "项能力",
+      "noDescription": "未提供描述。",
+      "executionPlan": "执行计划",
+      "steps": "个步骤",
+      "dependsOn": "依赖",
+      "workflowUnavailable": "引用的工作流不可用。",
+      "trustDisclosure": "激活不会创建权限授权。每次运行仍会进入目标核心，并根据当前精确信任进行评估。",
+      "runHistory": "真实运行证据",
+      "test": "测试一次",
+      "activate": "激活",
+      "pause": "暂停",
+      "run": "立即运行",
+      "detailsHint": "选择已保存的系统以检查其精确边界和测试证据。",
+      "agent": "分配的 Agent 配置档",
+      "workspace": "受信任工作区",
+      "project": "项目上下文",
+      "workflow": "工作流",
+      "schedules": "计划",
+      "manualOnly": "仅手动",
+      "permissionBoundary": "精确能力边界",
+      "testEvidence": "测试证据",
+      "notTested": "尚未测试",
+      "edit": "编辑系统",
+      "name": "系统名称",
+      "descriptionLabel": "描述",
+      "editorDescription": "引用均为逻辑引用。Main 根据所选工作流推导 Agent 配置档和精确能力。",
+      "noMatchingSchedules": "没有与此工作流和工作区匹配的计划。系统仍可手动运行。",
+      "removeTitle": "移除此系统？",
+      "removeMessage": "系统记录将被移除。现有任务、工作流、计划和产物保持不变。",
+      "createFromMission": "创建系统",
+      "conversionFailed": "此任务无法转化为可复用系统。",
+      "status": {
+        "draft": "草稿",
+        "tested": "已测试",
+        "active": "已激活",
+        "paused": "已暂停",
+        "invalid": "无效"
+      },
+      "runKinds": {
+        "test": "测试",
+        "manual": "手动运行"
+      },
+      "runStatus": {
+        "completed": "已完成",
+        "partially-completed": "部分完成",
+        "failed": "失败",
+        "rejected": "已拒绝",
+        "cancelled": "已取消"
+      },
+      "outputs": {
+        "collectArtifacts": "产物",
+        "retainHistory": "历史"
+      }
     },
     "voice": {
-      "localWake": {"title":"在此电脑上检测唤醒词","description":"使用 Windows 英语语音识别。叫名字，等待回应，再说指令。唤醒前不向服务商发送后台语音。需要已安装识别器和麦克风。","disclosure":"唤醒词检测在此电脑上完成。唤醒后，指令音频发送给 {{provider}} 转录。不会保存音频。"},
-      "dialogue": {"listening":"我在。你想让我做什么？","hint":"现在说出指令，无需再次叫我的名字。本轮将在 15 秒后关闭。"},
-      "check": {"title":"听听 Morpheus，也让 Morpheus 听见你。","description":"试听会使用所选声音，可能产生少量服务商费用。麦克风测试只转录简短语音，不执行任务。声音由 AI 生成。","preview":"试听所选声音","stop":"停止试听","microphone":"测试麦克风","finish":"结束麦克风测试","sample":"我是 Morpheus。告诉我你的想法，我们一步一步来。复杂的部分？交给我。","idle":"尚未测试。已配置账户并不代表语音测试成功。","playing":"正在准备或播放所选声音…","neural":"神经语音播放完毕。这个声音合适吗？","windows":"已使用 Windows 备用声音，而非所选神经语音。请检查语音访问权限。","failed":"语音播放失败。请检查输出设备和服务商设置。","heard":"我听到的是：{{text}}"},
+      "localWake": {
+        "title": "在此电脑上检测唤醒词",
+        "description": "使用 Windows 英语语音识别。叫名字，等待回应，再说指令。唤醒前不向服务商发送后台语音。需要已安装识别器和麦克风。",
+        "disclosure": "唤醒词检测在此电脑上完成。唤醒后，指令音频发送给 {{provider}} 转录。不会保存音频。"
+      },
+      "dialogue": {
+        "listening": "我在。你想让我做什么？",
+        "hint": "现在说出指令，无需再次叫我的名字。本轮将在 15 秒后关闭。",
+        "speechFailed": "无法播放回复。请到语音设置中试听并检查。文字回复仍在对话中。"
+      },
+      "check": {
+        "title": "听听 Morpheus，也让 Morpheus 听见你。",
+        "description": "试听会使用所选声音，可能产生少量服务商费用。麦克风测试只转录简短语音，不执行任务。声音由 AI 生成。",
+        "preview": "试听所选声音",
+        "stop": "停止试听",
+        "microphone": "测试麦克风",
+        "finish": "结束麦克风测试",
+        "sample": "我是 Morpheus。告诉我你的想法，我们一步一步来。复杂的部分？交给我。",
+        "idle": "尚未测试。已配置账户并不代表语音测试成功。",
+        "playing": "正在准备或播放所选声音…",
+        "neural": "语音样本已播放。这个声音适合你吗？",
+        "windows": "已使用 Windows 备用声音，而非所选神经语音。请检查语音访问权限。",
+        "failed": "语音播放失败。请检查输出设备和服务商设置。",
+        "heard": "我听到的是：{{text}}"
+      },
       "speechFailure": {
         "authentication": "Windows 语音回退：语音身份验证失败 (401)。请在模型设置中检查所选提供商的密钥。",
         "access": "Windows 语音回退：语音访问被拒绝 (403)。请检查账户的端点和模型权限。",
@@ -952,7 +1447,7 @@
       "cancel": "取消语音输入",
       "dismiss": "关闭语音状态",
       "speaking": "Morpheus 正在说话",
-      "preparingSpeech": "正在准备语音 · 可随时中断",
+      "preparingSpeech": "稍等…",
       "deviceBody": "麦克风不可用。请重新连接，然后在设置中关闭并重新开启环境语音。",
       "errorBody": "语音输入无法继续。请在设置中检查麦克风和转录提供商。",
       "repeatBody": "我没听清。请再说一次。",
@@ -971,7 +1466,8 @@
         "waiting-for-approval": "等待你的决定",
         "working": "Morpheus 正在工作",
         "speaking": "Morpheus 正在说话",
-        "error": "语音状态需要处理"
+        "error": "语音状态需要处理",
+        "preparing-speech": "稍等…"
       },
       "settings": {
         "title": "语音操作员",
@@ -1066,7 +1562,16 @@
         "checkLocal": "播放真实的本地语音样本，或测试麦克风而不执行命令。AI 生成的音频保留在本机。",
         "providerBody": "您在高级设置中选择了 {{provider}}。音频会发送给该服务，并可能收费。可在下方切换回内置本地语音。",
         "notTested": "内置语音可用。播放样本以测试扬声器。",
-        "sampleFailed": "本地语音无法播放。检查扬声器或耳机后重试。如果仍然失败，请修复 Morpheus 安装。"
+        "sampleFailed": "本地语音无法播放。检查扬声器或耳机后重试。如果仍然失败，请修复 Morpheus 安装。",
+        "heard": "你说",
+        "edit": "编辑为文字追问",
+        "captions": {
+          "title": "语音字幕",
+          "automatic": "自动 — 短暂显示",
+          "always": "保留最近的字幕",
+          "hidden": "隐藏字幕",
+          "body": "仅更改字幕显示。麦克风与静音标志仍可见；语音错误仍提供修复入口。"
+        }
       },
       "setup": {
         "skip": "暂时跳过",
@@ -1087,6 +1592,15 @@
         "gentle": "一步一步来。麻烦的部分交给我。",
         "cheeky": "您的标签页组建了海盗团。我们来整理一下。",
         "unfiltered": "更犀利的幽默是一种偏好。NerdGPT 吐槽功能仍在计划中。"
+      },
+      "opening": {
+        "title": "欢迎来到 Matrix。",
+        "subtitle": "我是 Morpheus。帮你一把，逗你一笑。由你做主。",
+        "begin": "开始吧",
+        "skip": "跳过介绍",
+        "footer": "想说就说，也随时可以打字。",
+        "returning": "很高兴你来了。",
+        "continue": "继续对话"
       }
     }
   }

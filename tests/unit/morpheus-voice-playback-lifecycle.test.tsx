@@ -12,7 +12,12 @@ vi.mock('@/lib/morpheus-speech-player', () => ({ playMorpheusSpeech: mocks.play,
 vi.mock('@/lib/host-events', () => ({ hostEvents: { onMorpheusVoiceCommand: () => () => undefined } }));
 vi.mock('@/stores/morpheus-command', () => ({ useMorpheusCommandStore: (select: (s: unknown) => unknown) => select({ objectiveRun: mocks.run }) }));
 vi.mock('@/stores/morpheus-quick-command', () => ({ useMorpheusQuickCommandStore: (select: (s: unknown) => unknown) => select({ show: mocks.load }) }));
-vi.mock('@/stores/morpheus-voice', () => ({ useMorpheusVoiceStore: (select: (s: unknown) => unknown) => select({ phase: 'idle', status: mocks.status, loadStatus: mocks.load, startListening: mocks.load, continueAfterResponse: mocks.followUp }) }));
+vi.mock('@/stores/morpheus-voice', () => {
+  const getState = () => ({ phase: 'idle', source: 'quick-command', replyTurn: null, status: mocks.status, loadStatus: mocks.load, startListening: mocks.load, continueAfterResponse: mocks.followUp });
+  return { useMorpheusVoiceStore: Object.assign((select: (s: unknown) => unknown) => select(getState()), { getState, subscribe: () => () => undefined }) };
+});
+vi.mock('@/stores/morpheus-conversation', () => ({ useMorpheusConversationStore: { getState: () => ({ snapshot: null }), subscribe: () => () => undefined } }));
+vi.mock('@/stores/acp-chat-session', () => ({ useAcpChatSessionStore: { getState: () => ({}), subscribe: () => () => undefined } }));
 
 import { MorpheusVoiceRuntime } from '@/components/morpheus/MorpheusVoiceRuntime';
 

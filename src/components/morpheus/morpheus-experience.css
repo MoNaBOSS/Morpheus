@@ -1,0 +1,132 @@
+/* Approved October motion study: original identity, quiet opaque surfaces,
+   compact conversation, and a short luminous arrival. Scoped to Morpheus only. */
+[data-morpheus].morpheus-opening,
+[data-morpheus].morpheus-first-launch,
+[data-morpheus].morpheus-welcome,
+[data-morpheus].morpheus-workspace,
+[data-morpheus].morpheus-conversation-shell {
+  --experience-background: #090f0d;
+  --experience-panel: #111c16;
+  --experience-input: #0b140e;
+  --experience-ink: #eff8f2;
+  --experience-soft: #a8baaf;
+  --experience-accent: #85f5b9;
+  --experience-border: #354e3e;
+  color-scheme: dark;
+  color: var(--experience-ink);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--experience-background);
+}
+.morpheus-motion.morpheus-motion--arrival {
+  background: radial-gradient(circle at 35% 22%, #1a3929, #06110b 70%);
+  box-shadow: 0 0 38px #45eba324;
+}
+.morpheus-motion__mark {
+  position: absolute; width: 52%; height: 52%; left: 24%; top: 24%;
+  user-select: none; pointer-events: none;
+  filter: drop-shadow(0 0 7px #5beba44d);
+}
+[data-morpheus].morpheus-opening { background: radial-gradient(ellipse at 50% 40%, #153224aa, transparent 53%), linear-gradient(125deg, #141d18, #080e0b 70%); }
+.morpheus-opening .morpheus-opening-identity { width: 108px; height: 108px; margin-bottom: 52px; }
+.morpheus-opening .morpheus-motion__mark,
+.morpheus-welcome .morpheus-motion__mark { animation: morpheus-logo-arrive 1.25s cubic-bezier(.2,.7,.2,1) both; }
+.morpheus-opening .morpheus-motion__halo { animation: morpheus-opening-ring 1.6s .35s ease-out both; }
+.morpheus-opening-copy { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; width: min(100%, 560px); padding: 24px; text-align: center; }
+.morpheus-opening-copy > :not(.morpheus-opening-identity) { animation: morpheus-opening-copy .65s .65s cubic-bezier(.2,.7,.2,1) both; }
+.morpheus-opening-copy h1 { margin: 0; max-width: 450px; color: var(--experience-ink); font-size: clamp(34px, 5vw, 50px); line-height: 1.12; font-weight: 400; letter-spacing: -1.65px; text-wrap: balance; }
+.morpheus-opening-copy .morpheus-opening-subtitle { max-width: 320px; margin: 20px 0 0; color: var(--experience-soft); font-size: 14px; line-height: 1.65; animation-delay: .85s; }
+.morpheus-opening-footer { position: absolute; bottom: 32px; left: 24px; right: 24px; text-align: center; font-size: 11px; color: var(--experience-soft); }
+.morpheus-opening-skip { position: absolute; top: 26px; right: 26px; z-index: 3; padding: 10px; border-radius: 9px; color: var(--experience-soft); font-size: 12px; }
+.morpheus-opening-skip:hover { color: var(--experience-accent); }
+.morpheus-opening[data-arrival-mode='returning'] .morpheus-motion__mark { animation-duration: .5s; }
+.morpheus-opening[data-arrival-mode='returning'] .morpheus-opening-copy > :not(.morpheus-opening-identity) { animation-delay: .12s; animation-duration: .35s; }
+.morpheus-opening-leaving .morpheus-opening-identity { animation: morpheus-identity-depart .32s ease-in both; }
+
+[data-morpheus].morpheus-first-launch { background: radial-gradient(ellipse at 50% 22%, #15322470, transparent 48%), var(--experience-background); }
+.morpheus-first-launch .morpheus-setup-main { padding: clamp(28px, 5vh, 60px) 24px 36px; }
+.morpheus-first-launch [data-testid='morpheus-activation-intro'],
+.morpheus-first-launch [data-testid='morpheus-activation-welcome'] { max-width: 460px; }
+.morpheus-first-launch h1 { font-weight: 400; letter-spacing: -.035em; }
+.morpheus-first-launch .morpheus-setup-composer,
+.morpheus-conversation-shell .morpheus-setup-composer { border-radius: 14px; background: var(--experience-input); border-color: var(--experience-border); min-height: 52px; }
+.morpheus-first-launch .morpheus-setup-brand { display: flex; align-items: center; gap: 9px; font-size: 13px; }
+.morpheus-first-launch .morpheus-setup-brand img { width: 21px; height: 21px; }
+
+[data-morpheus].morpheus-welcome { background: radial-gradient(ellipse at 50% 28%, #153224aa, transparent 52%), var(--experience-background); }
+.morpheus-welcome .morpheus-welcome-body { display: flex; flex-direction: column; justify-content: center; gap: 30px; min-height: calc(100% - 64px); max-width: 650px; padding: 38px 30px; text-align: center; }
+.morpheus-welcome .morpheus-welcome-presence { width: 108px; height: 108px; }
+.morpheus-welcome .morpheus-welcome-title { font-family: inherit; font-size: clamp(30px, 4vw, 44px); font-weight: 400; letter-spacing: -1.3px; }
+.morpheus-welcome .morpheus-welcome-copy { width: 100%; }
+.morpheus-welcome .morpheus-welcome-copy > p { margin-left: auto; margin-right: auto; }
+.morpheus-welcome .morpheus-welcome-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 25px; }
+.morpheus-welcome .morpheus-fluid-button:not(.morpheus-fluid-button-secondary) { color: #082014; background: #9cf7c6; border-color: #c3ffe0; }
+.morpheus-welcome .morpheus-welcome-options { text-align: left; margin-top: 26px; padding-top: 18px; }
+.morpheus-welcome .morpheus-welcome-options > div { justify-content: center; }
+.morpheus-welcome .morpheus-welcome-voice-status { min-height: 0; }
+
+[data-morpheus].morpheus-workspace { background: var(--experience-background); }
+.morpheus-workspace .morpheus-workspace-header,
+.morpheus-workspace .morpheus-workspace-footer { background: var(--experience-background); border-color: #273b2f; }
+.morpheus-workspace .morpheus-workspace-header { height: 58px; padding: 0 24px; }
+.morpheus-workspace .morpheus-workspace-content { max-width: 860px; padding: 26px 36px 20px; }
+.morpheus-workspace[data-has-result='true'] .morpheus-workspace-content { max-width: 1160px; }
+.morpheus-workspace .morpheus-workspace-presence { padding-bottom: 20px; border-bottom: 1px solid #25392d; }
+.morpheus-workspace .morpheus-workspace-presence h2 { font-size: 20px; font-weight: 400; letter-spacing: -.5px; }
+.morpheus-workspace :is(h1, h2, h3) { font-family: inherit; }
+.morpheus-workspace .morpheus-workspace-main { margin-top: 22px; gap: 28px; }
+.morpheus-workspace .morpheus-workspace-thread { overflow: hidden; }
+.morpheus-workspace .morpheus-workspace-messages { padding-right: 12px; padding-bottom: 12px; }
+.morpheus-workspace .morpheus-workspace-composer { height: 58px; border-radius: 15px; background: var(--experience-input); border-color: var(--experience-border); padding: 0 12px; gap: 10px; box-shadow: 0 4px 20px #0002; }
+.morpheus-workspace .morpheus-workspace-composer:focus-within { border-color: #77c899; box-shadow: 0 0 0 3px #85f5b90b; }
+.morpheus-workspace .morpheus-workspace-composer input { font-size: 15px; }
+.morpheus-workspace .morpheus-workspace-composer button[type='submit']:enabled { color: #082014; background: #9cf7c6; border-radius: 10px; }
+.morpheus-workspace .morpheus-workspace-result { background: transparent; }
+.morpheus-workspace [data-testid='morpheus-conversation-assistant'],
+.morpheus-conversation-shell [data-testid='morpheus-conversation-assistant'] { background: transparent; border-left: 2px solid #467b59; border-radius: 0; padding: 3px 0 3px 15px; }
+.morpheus-workspace [data-testid='morpheus-conversation-user'],
+.morpheus-conversation-shell [data-testid='morpheus-conversation-user'] { background: #17291e; border-radius: 15px 15px 5px 15px; padding: 14px 17px; }
+.morpheus-workspace [data-testid='morpheus-first-success'],
+.morpheus-conversation-shell [data-testid='morpheus-first-success'] { background: transparent; border: 0; padding: 4px 0 12px; }
+.morpheus-workspace .morpheus-workspace-footer { height: 38px; }
+.morpheus-workspace .morpheus-workspace-footer > [data-testid='signal-os-live-state'] { display: inline-flex; align-items: center; gap: 7px; }
+.morpheus-workspace .morpheus-workspace-footer > [data-testid='signal-os-live-state']::before { content: ''; width: 5px; height: 5px; background: #85f5b9; border-radius: 50%; }
+[data-morpheus].morpheus-conversation-shell { background: transparent; }
+.morpheus-conversation-shell .morpheus-conversation-card { background: var(--experience-panel); border-color: var(--experience-border); border-radius: 20px; transform-origin: 88% 100%; }
+.morpheus-conversation-shell[data-presentation='compact-window'] .morpheus-conversation-card { border: 1px solid var(--experience-border); border-radius: 16px; }
+.morpheus-conversation-shell .morpheus-compact-presence { padding: 7px 0 17px; border-bottom: 1px solid #293d30; }
+.morpheus-conversation-shell .morpheus-compact-presence p:first-child { font-size: 16px; font-weight: 400; }
+.morpheus-conversation-shell .morpheus-compact-log { padding-top: 16px; overscroll-behavior: contain; }
+.morpheus-conversation-shell .morpheus-setup-composer { padding: 6px 9px; gap: 4px; }
+.morpheus-conversation-shell .morpheus-setup-composer button[type='submit']:enabled { background: #9cf7c6; color: #082014; border-radius: 9px; }
+.morpheus-live-caption { flex: none; display: flex; align-items: center; gap: 10px; margin-top: 12px; border: 1px solid #36523f; border-radius: 13px; padding: 11px 13px; background: #182a1f; color: #ddefe3; }
+.morpheus-live-caption-copy { min-width: 0; flex: 1; font-size: 13px; line-height: 1.5; }
+.morpheus-live-caption-label { display: block; color: #a9d8bb; font-size: 11px; margin-bottom: 3px; }
+.morpheus-live-caption button { flex: none; padding: 7px; border-radius: 8px; color: #a5e7bd; }
+[data-morpheus].morpheus-opening :is(button, a):focus-visible,
+[data-morpheus].morpheus-first-launch :is(button, a, input):focus-visible,
+[data-morpheus].morpheus-conversation-shell :is(button, a, input):focus-visible { outline: 2px solid #85f5b9; outline-offset: 3px; }
+[data-morpheus].morpheus-conversation-shell .morpheus-setup-composer input:focus-visible { outline: none; }
+@keyframes morpheus-logo-arrive { 0% { clip-path: inset(100% 0 0); transform: translateY(8px); opacity: 0; filter: drop-shadow(0 0 0 transparent); } 40% { opacity: 1; } 75% { filter: drop-shadow(0 0 12px #c3ffe0); } 100% { clip-path: inset(0 0 0); transform: translateY(0); opacity: 1; } }
+@keyframes morpheus-opening-copy { from { opacity: 0; transform: translateY(12px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes morpheus-opening-ring { 0% { opacity: .05; transform: scale(.85); } 30% { opacity: .8; } 100% { opacity: .5; transform: scale(1.08); } }
+@keyframes morpheus-identity-depart { to { transform: translateY(-12px) scale(.65); opacity: 0; } }
+@media(max-width: 850px) {
+  .morpheus-workspace .morpheus-workspace-content { padding: 20px 22px 12px; }
+  .morpheus-workspace[data-has-result='false'] .morpheus-workspace-main { display: flex; overflow: hidden; }
+  .morpheus-workspace[data-has-result='false'] .morpheus-workspace-thread { min-height: 0; flex: 1; }
+}
+@media(max-width: 500px) {
+  .morpheus-workspace .morpheus-workspace-header { padding: 0 12px; }
+  .morpheus-workspace .morpheus-workspace-content { padding: 18px 16px 10px; }
+  .morpheus-workspace .morpheus-workspace-presence { gap: 13px; }
+  .morpheus-workspace .morpheus-workspace-presence h2 { font-size: 18px; }
+  .morpheus-workspace .morpheus-workspace-presence p { font-size: 12px; }
+  .morpheus-workspace .morpheus-workspace-icon-button { width: 32px; }
+  .morpheus-opening .morpheus-opening-identity { width: 88px; height: 88px; margin-bottom: 38px; }
+  .morpheus-welcome .morpheus-welcome-body { padding: 28px 22px; }
+  .morpheus-welcome .morpheus-welcome-presence { width: 88px; height: 88px; }
+}
+@media(prefers-reduced-motion: reduce) {
+  .morpheus-opening *, .morpheus-opening *::after,
+  .morpheus-welcome .morpheus-motion__mark { animation: none!important; transition: none!important; }
+}

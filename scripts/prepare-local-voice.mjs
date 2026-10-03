@@ -8,6 +8,10 @@ import { spawn } from 'node:child_process';
 
 const cache = resolve(process.env.MORPHEUS_VOICE_ASSET_CACHE || 'build/voice-assets');
 const destination = resolve('build/local-voice');
+const workerAssets = [
+  ['sherpa-onnx-node', 'https://registry.npmjs.org/sherpa-onnx-node/-/sherpa-onnx-node-1.13.8.tgz', 'db2a7b8b18d950b6e9ca5c1c919afec33fd3dd2bfef1aade0bea5a9fe7a1f0f1'],
+  ['sherpa-onnx-win-x64', 'https://registry.npmjs.org/sherpa-onnx-win-x64/-/sherpa-onnx-win-x64-1.13.8.tgz', 'fe522f02a5c113c2567a43982107ef41ae517f9a431931e90731e7e4d4341073'],
+];
 const assets = [
   ['engine-static.tar.bz2', 'https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-v1.13.8-win-x64-static-MT-Release.tar.bz2', '849ea51f860cefbe0ae0074ed01190cd24b91ae3da80c2637261a9e7dabe39c9'],
   ['kokoro.tar.bz2', 'https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2', '4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e'],
@@ -27,11 +31,25 @@ for (const name of ['sherpa-onnx-offline.exe', 'sherpa-onnx-offline-tts.exe']) a
 const whisper = join(destination, 'whisper'); await mkdir(whisper, { recursive: true });
 for (const name of ['tiny.en-encoder.int8.onnx', 'tiny.en-decoder.int8.onnx', 'tiny.en-tokens.txt']) await cp(join(cache, 'sherpa-onnx-whisper-tiny.en', name), join(whisper, name));
 await cp(join(cache, 'kokoro-int8-multi-lang-v1_0'), join(destination, 'kokoro'), { recursive: true });
+// Pin the two small upstream packages independently; never install optional floating dependencies.
+const worker = join(destination, 'worker'); await mkdir(worker, { recursive: true });
+for (const [name, url, expected] of workerAssets) {
+  const path = join(cache, `${name}-1.13.8.tgz`);
+  if (!existsSync(path)) await download(url, path);
+  if (await digest(path) !== expected) throw new Error(`Voice worker checksum mismatch: ${name}`);
+  const output = join(worker, 'node_modules', name); await mkdir(output, { recursive: true });
+  await new Promise((done, fail) => {
+    const child = spawn('tar', ['-xf', path, '--strip-components=1', '-C', output], { windowsHide: true, shell: false, stdio: 'inherit' });
+    child.on('error', fail); child.on('exit', code => code === 0 ? done() : fail(new Error('Voice worker extraction failed')));
+  });
+}
+await cp(resolve('resources/scripts/morpheus-tts-worker.cjs'), join(worker, 'morpheus-tts-worker.cjs'));
 const notices = join(destination, 'notices'); await mkdir(notices, { recursive: true });
 const licenseSources = [
   ['sherpa-onnx-APACHE-2.0.txt', 'https://raw.githubusercontent.com/k2-fsa/sherpa-onnx/v1.13.8/LICENSE'],
   ['whisper-MIT.txt', 'https://raw.githubusercontent.com/openai/whisper/v20250625/LICENSE'],
   ['onnxruntime-MIT.txt', 'https://raw.githubusercontent.com/microsoft/onnxruntime/v1.24.4/LICENSE'],
+  ['onnxruntime-worker-MIT.txt', 'https://raw.githubusercontent.com/microsoft/onnxruntime/v1.28.2/LICENSE'],
   ['espeak-ng-GPL-3.0.txt', 'https://raw.githubusercontent.com/csukuangfj/espeak-ng/ed530aa113046142eb5115cf2fc9157854d0ffe1/COPYING'],
 ];
 for (const [name, url] of licenseSources) {
@@ -45,6 +63,6 @@ const sources = [
   ['espeak-ng-ed530aa-source.zip', 'https://github.com/csukuangfj/espeak-ng/archive/ed530aa113046142eb5115cf2fc9157854d0ffe1.zip', 'e4e262cbe34f7fe21f91f1ba3397f2728e1f30eafbae7853f2b753a9ed13f0dd'],
 ];
 for (const [name, url, expected] of sources) { const path = join(cache, name); if (!existsSync(path)) await download(url, path); if (expected && await digest(path) !== expected) throw new Error(`Voice source checksum mismatch: ${name}`); await cp(path, join(notices, name)); }
-await writeFile(join(notices, 'NOTICE.txt'), 'Included offline voice: sherpa-onnx 1.13.8 (Apache-2.0), Whisper tiny.en (MIT), Kokoro v1.0 int8 (Apache-2.0), ONNX Runtime (MIT), eSpeak NG phonemizer/data (GPL-3.0).\nThe voice executables are independent processes, not linked into Morpheus. Original source/build files and license texts are included here. No engine/model source modifications.\nUpstream: https://github.com/k2-fsa/sherpa-onnx/tree/v1.13.8\nPhonemizer: https://github.com/csukuangfj/espeak-ng/tree/ed530aa113046142eb5115cf2fc9157854d0ffe1\n');
-await writeFile(join(destination, 'manifest.json'), JSON.stringify({ engine: 'sherpa-onnx-1.13.8', language: 'en', assets: assets.map(([name,url,sha256]) => ({name,url,sha256})), notices: await Promise.all(licenseSources.map(async ([name,url]) => ({name,url,sha256:await digest(join(notices,name))}))), source: await Promise.all(sources.map(async ([name,url]) => ({name,url,sha256:await digest(join(notices,name))}))) }, null, 2) + '\n');
+await writeFile(join(notices, 'NOTICE.txt'), 'Included offline voice: sherpa-onnx CLI and Node binding 1.13.8 (Apache-2.0), Whisper tiny.en (MIT), Kokoro v1.0 int8 (Apache-2.0), ONNX Runtime 1.24.4 CLI / 1.28.2 worker (MIT), eSpeak NG phonemizer/data (GPL-3.0).\nVoice engines run in independent processes; the native binding is loaded only by the bundled Node worker, never Electron. Original engine source/build files and license texts are included here. No engine/model source modifications. The Morpheus IPC worker source is included at ../worker/morpheus-tts-worker.cjs (Morpheus MIT).\nUpstream: https://github.com/k2-fsa/sherpa-onnx/tree/v1.13.8\nPhonemizer: https://github.com/csukuangfj/espeak-ng/tree/ed530aa113046142eb5115cf2fc9157854d0ffe1\n');
+await writeFile(join(destination, 'manifest.json'), JSON.stringify({ engine: 'sherpa-onnx-1.13.8', language: 'en', worker: { protocol: 1, version: '1.13.8', onnxruntime: '1.28.2', idleUnloadMs: 60000 }, assets: [...assets, ...workerAssets].map(([name,url,sha256]) => ({name,url,sha256})), notices: await Promise.all(licenseSources.map(async ([name,url]) => ({name,url,sha256:await digest(join(notices,name))}))), source: await Promise.all(sources.map(async ([name,url]) => ({name,url,sha256:await digest(join(notices,name))}))) }, null, 2) + '\n');
 console.log('Included voice staged at ' + destination);

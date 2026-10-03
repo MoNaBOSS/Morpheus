@@ -50,6 +50,7 @@ export interface MorpheusCompanionSurfaceController {
 
 export function createMorpheusCompanionSurfaceController(options: {
   getWorkArea: (bounds: Rectangle) => Rectangle;
+  getAnchor?: () => Rectangle;
   compactWidth?: number;
   compactHeight?: number;
 }): MorpheusCompanionSurfaceController {
@@ -61,8 +62,9 @@ export function createMorpheusCompanionSurfaceController(options: {
   let current: MorpheusCompanionSurfaceStatus = { mode: 'full' };
 
   const positionCompact = (window: CompanionWindow, bounds: Rectangle): void => {
-    const workArea = options.getWorkArea(bounds);
-    const target = wakeCompactBounds(workArea, compactWidth, compactHeight);
+    const anchor = options.getAnchor?.();
+    const workArea = options.getWorkArea(anchor ?? bounds);
+    const target = wakeCompactBounds(workArea, compactWidth, compactHeight, anchor);
     window.setMinimumSize(Math.min(400, target.width), Math.min(360, target.height));
     window.setBounds(target, false);
   };
