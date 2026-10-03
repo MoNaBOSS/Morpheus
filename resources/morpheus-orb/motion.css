@@ -70,7 +70,7 @@
 
 .morpheus-motion[data-motion-state='idle'] .morpheus-motion__halo {
   inset: 6%;
-  animation: morpheus-motion-breathe 5.6s ease-in-out infinite;
+  animation: morpheus-motion-breathe 5.6s steps(84, end) infinite;
 }
 
 .morpheus-motion[data-motion-state='working'] .morpheus-motion__aurora,
@@ -89,13 +89,23 @@
 .morpheus-motion[data-motion-state='idle'] .morpheus-motion__aurora,
 .morpheus-motion[data-motion-state='complete'] .morpheus-motion__aurora,
 .morpheus-motion[data-motion-state='quiet'] .morpheus-motion__aurora {
-  animation: morpheus-motion-contour 5.6s ease-in-out infinite alternate;
+  animation: morpheus-motion-contour 5.6s steps(168, end) infinite alternate;
   opacity: 0.75;
 }
 
 .morpheus-motion[data-motion-state='quiet'] .morpheus-motion__aurora { opacity: 0.48; }
 .morpheus-motion[data-motion-state='quiet'] .morpheus-motion__halo {
-  animation: morpheus-motion-quiet-breathe 5.6s ease-in-out infinite;
+  animation: morpheus-motion-quiet-breathe 5.6s steps(84, end) infinite;
+}
+
+/* A 200 Hz display otherwise repaints the organic mask at every refresh.
+   Keep its shape static and composite bounded travel instead. Quiet travel has
+   one 5.6s segment (168 steps); breathing has two 2.8s segments (84 steps each):
+   both update at 30/s. Real audio response and finite arrival/ack motion retain
+   their existing interpolation. Hidden surfaces never reserve these layers. */
+.morpheus-motion[data-motion-paused='false'] .morpheus-motion__aurora,
+.morpheus-motion[data-motion-paused='false'] .morpheus-motion__halo {
+  will-change: transform, opacity;
 }
 
 @keyframes morpheus-motion-work { to { transform: rotate(360deg); } }
@@ -166,8 +176,8 @@
 }
 .morpheus-motion[data-motion-state='complete'] .morpheus-motion__halo { animation: morpheus-motion-complete .8s ease-out both; }
 @keyframes morpheus-motion-contour {
-  from { transform: rotate(-15deg) scale(.99); border-radius: 43% 57% 53% 47% / 52% 45% 55% 48%; }
-  to { transform: rotate(35deg) scale(1.1); border-radius: 56% 44% 44% 56% / 42% 59% 41% 58%; }
+  from { transform: rotate(-15deg) scale(.99, .98); }
+  to { transform: rotate(35deg) scale(1.1, 1.06); }
 }
 @keyframes morpheus-motion-recognize { 0% { transform: scale(1); } 40% { transform: scale(.87); } 75% { transform: scale(1.1); } 100% { transform: scale(1); } }
 @keyframes morpheus-motion-complete { 0% { opacity: .4; transform: scale(.95); } 35% { opacity: 1; } 100% { opacity: .55; transform: scale(1.12); } }

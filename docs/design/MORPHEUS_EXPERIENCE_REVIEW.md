@@ -15,7 +15,7 @@ This is the single current experience specification, reconciled from the existin
 design review and the owner's October 2 correction. The single current execution
 checklist is [WINDOWS_COMPLETION_CHECKLIST.md](../releases/WINDOWS_COMPLETION_CHECKLIST.md).
 Historical plans, prototypes and automated results remain evidence, not approval.
-## Preview.8 integration — current source, qualification in progress
+## Preview.8 integration — approved design and measured runtime
 
 The approved design is implemented through the original runtime owners. The exact
 M logo animates on arrival; the 56-DIP orb uses smooth contours and actual RMS.
@@ -34,6 +34,29 @@ A local-only 450 ms initial PCM buffer reduces phrase gaps; short completed answ
 flush immediately. Physical acoustic barge-in is **not implemented/qualified**:
 manual microphone, typed input and Stop interrupt; capture while speakers play
 remains suppressed until a real echo-safe design is tested.
+
+The first integrated package at `f6ea7144` passed normal isolated runtime and
+generated-input ordinary ACP speech: three original conversation turns, complete
+PCM playback and typed/manual Stop within 30 ms in that run. Source-level installed
+Windows install/reinstall/uninstall passed on a disposable runner. Model answers
+were loopback fixtures; the recorder, local recognition, Gateway, PCM and playback
+were real. These results do not establish physical microphone, wake or audibility.
+
+Resource budget is part of the design. This PC's display runs at 200 Hz. Native
+measurement found that continuously repainting the organic contour was expensive.
+The final correction keeps a static organic contour and animates compositor
+transforms/opacity, with idle motion limited to approximately 30 updates per second.
+Hidden surfaces must pause all motion, and reduced motion remains respected.
+An inspector-only comparison reduced short visible CPU measurements by roughly
+three quarters; final-payload observations belong in the completion checklist.
+This does not establish long mixed-use or low-power hardware performance.
+
+Voice latency is also an experience limit: a first cold packaged sample took
+4.765 s to emit PCM and 5.280 s to report actual playback, while shorter/warm
+worker samples were faster. Keep those conditions separate. The included local
+English voice avoids a separate key and per-utterance hosted charge, but uses
+local CPU/RAM and installation space. Hosted quality/latency/privacy/funding and
+physical recognition/echo still require independent qualification.
 
 The following baseline findings explain the rejected build and are historical;
 they do not describe the completed source changes above or qualify their package.

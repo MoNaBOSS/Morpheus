@@ -24,12 +24,15 @@ installed conversation was observed; inspection stopped at the owner's Escape ke
 before settings/voice walkthrough. This task did not run an installer/uninstaller
 on the owner host. No complete live function or physical voice acceptance is claimed.
 
-## Preview.8 integration — qualification in progress
+## Preview.8 integration — final package qualification
 
 Source reverified at `92b79819` and fetched without overwriting work. C:9.37 GiB
-and E:146.45 GiB free before build. Build/version target is `1.2.0-preview.8`;
-source/package hashes will be recorded after final native checks. The previous
-installed preview.7 and all prior delivery files remain untouched.
+and E:146.45 GiB were free before build. The first integrated application source
+is `f6ea71448626d7d07d94715213d3c6b62b54cb03`, version `1.2.0-preview.8`.
+Its normal packaged runtime, generated-input ordinary voice conversation and
+disposable Windows installation passed at the boundaries below. A final bounded
+motion performance correction is being qualified before identifying the delivery
+EXE. Installed preview.7 and all prior delivery files remain untouched.
 
 Current implemented changes: approved original-logo arrival and real audio contours;
 compact settings/draft continuity, editable captions with visibility preference;
@@ -63,18 +66,46 @@ Current source verification (before packaging):
 
 Build and native evidence: `E:\Morpheus-builds\experience-preview8-evidence`.
 The UI recordings use isolated fixture replies; actual neural audio is in `voice`.
-Package/installation, current animation CPU and physical acceptance are still open.
+First integrated package evidence:
+- Normal startup, original Gateway/Core/ACP, protected synthetic provider, local
+  voice sample, compact/full/settings draft/history, held-reply reload with exactly
+  one model request, and quiet restart passed. No E2E mode or owner profile.
+- Real generated speech traversed the original recorder and local recognition,
+  then three ordinary Gateway/ACP turns. The first reply played all 129,446 PCM
+  bytes; typed/manual Stop took 20.6/29.7 ms. Model answers were a bounded loopback
+  fixture; no physical microphone, paid inference or acoustic acceptance.
+- The fresh normal package needed 53.711 s for Gateway readiness; returning window
+  2.583 s / Gateway 7.479 s. Cold Voice sample first PCM 4.765 s / speaking state
+  5.280 s; generation plus playback 13.423 s. These remain material latency limits.
+- Actual 56-DIP native quiet/fade/restore/speaking motion, hidden pause and reduced
+  motion passed on the 1920×1080 work area at 100% scaling. Speaking used genuine
+  included PCM/meter data. Physical wake and speaker audibility remain untested.
+- Clean hosted Windows install, normal installed runtime, same-version reinstall
+  and default uninstall passed in run `37119065463`, preserving synthetic profiles
+  and rollback. Its rebuilt installer SHA256 is
+  `5e5b3de66de707579e23e58bc89913eeb8ebf80a21f79f908bc6776243cab6ab`;
+  this is source-level installation evidence, not execution of the local EXE.
+- The initial visible orb/blank composer used 92.68% of one CPU core in a 15 s
+  observation on this 200 Hz display. A bounded same-machine attribution found
+  native orb 83.95% / compact 125.76%; an inspector-only compositor/30 Hz candidate
+  reduced these to 22.80% / 32.58% over roughly five seconds each. These short
+  comparisons motivated the final CSS correction; they are not final-payload or
+  long-session performance acceptance. Actual UI dismissal set both window
+  visibility projections false and paused both surfaces' animation loops.
+
+Both historical source checkouts remain clean (`fa988f06`, `3bcad683`). Per-user
+installed preview.7 still exists; no owner-host installer/uninstaller was run.
 
 ## Current design review gates
 
 | Gate | Status and required evidence |
 | --- | --- |
 | Product direction | APPROVED: Floating companion by default + Conversation card, automatic temporary editable voice captions, optional hiding with visible mic/mute state. Owner explicitly requested an eye-pleasing animated opening and existing logo. Current installed screenshot remains rejected. |
-| Motion design | APPROVED study; application qualification in progress: connected arrival study linked in the experience specification; existing M light/reveal and travel into a 56-pixel draggable companion, upward card, compact/expanded continuity, simulated listening/accepted/executing/speaking, dismissal, mute and reduced motion. Browser study only; real audio, native geometry/performance, question/error and full onboarding remain open. |
-| Voice architecture | IMPLEMENTED current scoped changes: extend original Main turn ownership, warm bounded local inference, qualified incremental recognition, live ACP/Core speech queue, one microphone policy, real interruption/echo testing and mute authority. Existing task-only test does not close general conversation. |
+| Motion design | APPROVED study and IMPLEMENTED application: original M arrival, movable 56-DIP orb, inward compact card, continuous expansion, actual audio contours, dismissal and reduced motion. Native appearance/voice recordings are separate from the simulated browser study. Final bounded-cadence package verification and physical display/drag/wake acceptance remain distinct. |
+| Voice architecture | IMPLEMENTED and scoped package VERIFIED: original Main turn ownership, bounded warm local synthesis, live ACP/Core speech queue, original recorder and real local STT, complete PCM playback, typed/manual interruption and mute authority. Recognition remains per-utterance Whisper tiny.en; incremental recognition is not claimed. Physical echo-safe acoustic barge-in is not implemented/qualified. |
 | Browser behavior | IMPLEMENTED direct URL route; normal browser launch still requires packaged qualification: ordinary website commands reuse current normal Chrome/profile; no surprise isolated profile. Specify multiple-profile and focus behavior without cookie copying or implicit broad tab access. |
-| Companionship | PROPOSED: occasional contextual jokes and optional once-daily check-in, quiet hours/off controls, no repetitive or emotional inference. Frequency and tone need owner approval. |
-| UX flow audit | Source review found compact dismissal may ignore draft/focus, first success is optional before outcome, older results can require Advanced, contextual Back loses origin, and More exposes ungrouped technical destinations. These need design corrections and later live reproduction, not automatic acceptance claims. |
+| Companionship | Existing personality, greeting humor, proactivity, quiet hours and off controls are retained and connected through Personality. A new guaranteed daily social check-in service is not claimed; frequency and tone remain user preferences. No emotional inference or intrusive promises. |
+| UX flow audit | Draft/focus/older-history/questions now hold compact visibility. Contextual Back preserves the original compact/full surface and draft. Source/native qualification covers these repairs; first-success/task-results and physical interruption retain the evidence boundaries below. Advanced functionality is preserved. |
 | Implementation | AUTHORIZED: integrate approved presentation and contextual settings, ordinary ACP speech/follow-up and local speech latency improvements through existing owners; verify actual package. Real microphone/audio quality and external commercial gates remain distinct. |
 
 ## Historical preview.7 candidate — application source 757f71c5

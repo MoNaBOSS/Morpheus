@@ -1,4 +1,28 @@
-# Current continuation — owner experience correction, 2026-10-02
+# Current continuation — approved experience integration, 2026-10-03
+
+**Current candidate: 1.2.0-preview.8.** The approved arrival, movable animated
+companion, conversation card and contextual settings are integrated. Ordinary
+voice-origin ACP replies now speak through the original cancellable queue;
+included local synthesis reuses a bounded worker. First integrated source
+`f6ea7144` passed normal packaged runtime, generated-input ordinary voice and
+disposable Windows install/reinstall/uninstall. A measured motion CPU regression
+on this 200 Hz display led to a small compositor/cadence correction before final
+delivery. Use the [single current checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md)
+for the final exact source, EXE identity, scope-specific evidence and open gates.
+
+Active source remains `E:\Morpheus-builds\experience-preview6\source`; all builds
+and large evidence stay on E:. Existing owner preview.7, profiles, credentials
+and historical checkouts are preserved. No owner-host installer was run. The next
+step is final corrected-payload qualification and one combined physical-PC review,
+not another design restart. Paid hosted services, signing/update operations,
+payment setup and physical echo-safe acoustic interruption are not represented
+as complete. Source/fixture/installed evidence never substitutes for real audio
+and hardware acceptance.
+
+## Preserved authorization and preview.7 handoff history
+
+The following records explain the inherited work. Their old version identities
+and next-action paragraphs are historical; the current checklist above governs.
 
 **October 3 latest authorization: approved design; implementation and final Windows qualification requested.**
 The owner accepted the connected motion study ("It's great"), then requested the
