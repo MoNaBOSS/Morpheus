@@ -3,17 +3,27 @@
 **Current candidate: 1.2.0-preview.8.** The approved arrival, movable animated
 companion, conversation card and contextual settings are integrated. Ordinary
 voice-origin ACP replies now speak through the original cancellable queue;
-included local synthesis reuses a bounded worker. First integrated source
-`f6ea7144` passed normal packaged runtime, generated-input ordinary voice and
-disposable Windows install/reinstall/uninstall. A measured motion CPU regression
-on this 200 Hz display led to a small compositor/cadence correction before final
-delivery. Use the [single current checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md)
+included local synthesis reuses a bounded worker. Final application source is
+`24ebf455d539b27bb8bad99a23aea2d53579e2bc`, pushed to the application branch.
+Its normal packaged runtime, complete generated-input ordinary speech and actual
+native motion passed. A measured motion CPU regression on this 200 Hz display
+was corrected with compositor travel and bounded quiet cadence: visible CPU
+fell from 92.68% to 17.54% of one core in the short comparison; hidden 0.20%.
+Use the [single current checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md)
 for the final exact source, EXE identity, scope-specific evidence and open gates.
+
+Verified local installer:
+`E:\Morpheus-builds\experience-preview8-final-release\Morpheus-1.2.0-preview.8-win-x64.exe`,
+SHA256 `94005472d4a419d5e678ac8869c742c8ae21876da4ebd0738bd279f3ccc34eca`.
+Static archive identity/integrity passed. Exact-source hosted Windows installation,
+runtime, same-version reinstall and default uninstall passed in run `37120643451`;
+its independently rebuilt EXE is distinct. The installer remains unsigned.
+Media, evidence and the short PC checklist are in this chat's `outputs\preview8`.
 
 Active source remains `E:\Morpheus-builds\experience-preview6\source`; all builds
 and large evidence stay on E:. Existing owner preview.7, profiles, credentials
 and historical checkouts are preserved. No owner-host installer was run. The next
-step is final corrected-payload qualification and one combined physical-PC review,
+step is one combined physical-PC review of the identified preview.8 candidate,
 not another design restart. Paid hosted services, signing/update operations,
 payment setup and physical echo-safe acoustic interruption are not represented
 as complete. Source/fixture/installed evidence never substitutes for real audio

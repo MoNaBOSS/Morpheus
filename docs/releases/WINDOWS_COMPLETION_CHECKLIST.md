@@ -24,7 +24,51 @@ installed conversation was observed; inspection stopped at the owner's Escape ke
 before settings/voice walkthrough. This task did not run an installer/uninstaller
 on the owner host. No complete live function or physical voice acceptance is claimed.
 
-## Preview.8 integration — final package qualification
+## Preview.8 final candidate — application source 24ebf455
+
+Final application source is `24ebf455d539b27bb8bad99a23aea2d53579e2bc`, version
+**1.2.0-preview.8**, pushed to `codex/morpheus-phase6-managed-layer`. Its approved
+design remains intact. The last functional correction replaces repeated contour
+repainting with static organic shape/compositor travel and approximately 30 Hz
+quiet motion. Native and React regressions verify actual changing transforms,
+static contour shape, shared cadence, reduced motion and hidden layer hints.
+No source changes followed the final package; subsequent handoff edits are docs only.
+
+| Final candidate gate | Actual result and boundary |
+| --- | --- |
+| Normal packaged runtime | VERIFIED on the exact local payload, E2E unset, isolated synthetic profile: setup, real Core task, protected local provider, original Gateway/ACP, compact/full/settings continuity, active/settled renderer reload without duplicate inference, and quiet process restart with original history. The model answer is a bounded loopback fixture. |
+| Ordinary spoken conversation | VERIFIED: real generated speech → original MediaRecorder → local recognition → original Gateway/ACP → actual PCM playback. Three turns; first reply 129,456 bytes received/scheduled/played completely. Typed/manual Stop 19.0/30.8 ms. Physical capture requests zero; microphone, accent/noise/echo, wake and audibility are not qualified. |
+| Native motion and placement | VERIFIED actual 56×56 native pixels: quiet motion, fade, restoration, actual audio-driven speaking, reduced motion and hidden pause. Work area 1920×1080, scale 1. The 32 s clip is sampled at 10 fps without enlargement/interpolation; hidden frames are padding, and no audio track is claimed. Restoration uses isolated Main controls, not a physical tray/shortcut/wake test. |
+| Motion resource correction | VERIFIED short no-capture observations, mic/ambient muted and Gateway autostart off: visible orb plus blank hover composer 17.545% of one CPU core / 669.0 MiB summed working sets; hidden 0.201% / 658.7 MiB, roughly 15 s each, stable PID set. The comparable first integration measured 92.681% / 10.221%: approximately 81% visible reduction. Working-set sums can count shared pages twice. Both hidden surface projections were false and their animation loops paused. Long mixed-use/low-power performance remains OPEN. |
+| Included voice cost and latency | VERIFIED real packaged Michael/Heart auditions, no separate voice account/key, pinned engine/model/worker bytes. WAVs contain actual PCM without delivery waits. Fresh Gateway 45.476 s; returning UI 2.610 s / Gateway 7.521 s. Cold sample first PCM 4.149 s / actual speaking state 4.633 s, full generation/playback 12.419 s. Warm and shorter samples are different conditions. These cold-start and local CPU/RAM/installation costs remain product limitations. |
+| Installed Windows runtime | VERIFIED on disposable hosted Windows for exact source `24ebf455`, run [37120643451](https://github.com/MoNaBOSS/Morpheus/actions/runs/37120643451): actual per-user install, normal runtime with included voice readiness, navigation/draft/Advanced/personality, same-version reinstall and default uninstall. Synthetic profiles and rollback preserved; errors empty. The CI rebuilt installer SHA256 is `05736526a28abece5db1ecf186fa42fa0c902e8b1ccf685304c9169beb03e60e`, distinct from the local delivery EXE. No owner-host install, previous-version upgrade, physical audio, SmartScreen or UAC acceptance is implied. |
+
+Final normal/voice/motion evidence is in
+`E:\Morpheus-builds\experience-preview8-final-evidence`; the package is in
+`E:\Morpheus-builds\experience-preview8-final-release`. Unpacked application
+`Morpheus.exe` / `resources/app.asar` SHA256:
+`3bf95b85d220817be139b416c97fd9d21711069821a18057a79a693f47c97ab9` /
+`cff9694aa37468e57df3233e30d1181a270d095cd1f21c057a524e13adb44d2a`.
+The final normal, generated-voice and motion runs all bind to the same payload.
+
+**Identified installer:**
+`E:\Morpheus-builds\experience-preview8-final-release\Morpheus-1.2.0-preview.8-win-x64.exe`,
+486,897,301 bytes, SHA256
+`94005472d4a419d5e678ac8869c742c8ae21876da4ebd0738bd279f3ccc34eca`.
+Static verification passed archive integrity, every one of 40,926 embedded file
+paths/sizes, 73 selected extracted hashes, and all 14 normal-runtime identity
+hashes, including the complete required worker subtree. Installer version is
+`1.2.0-preview.8`; signature status is `NotSigned`. It was assembled from the
+qualified unpacked payload. The separate hosted installed test above rebuilt its
+own EXE; it did not execute this local EXE on the owner host.
+
+The handoff, build identity, short PC checklist, final voice samples, actual native
+motion and returning-launch recording are in
+`C:\Users\monir\Documents\Codex\2026-10-02\continue-morpheus-from-the-existing-project\outputs\preview8`.
+The large installer stays on E: to preserve C: space. Prior preview.6/preview.7
+deliveries and the first preview.8 integration remain intact.
+
+### Preserved first preview.8 integration and diagnosis
 
 Source reverified at `92b79819` and fetched without overwriting work. C:9.37 GiB
 and E:146.45 GiB were free before build. The first integrated application source
@@ -203,10 +247,13 @@ Evidence root is `E:\Morpheus-builds\experience-preview6`: `installer-inspection
 `evidence/packaged-conversation-preview7.json`, `evidence/native-orb-motion.json`
 and `evidence/hosted-install-37050843303/installed-app-qualification.json`.
 
-**Exact next step:** finish native UI/voice checks on preview.8, freeze its source,
-then qualify the exact packaged payload and produce the identified EXE. Ordinary
-conversational speech needs actual playback evidence in addition to Core commands.
-The owner's combined appearance/physical-PC review uses `Morpheus-PC-Acceptance.md`
-in the delivery folder. Commercial launch requires the external service
-and physical/performance gates above; automated or generated-input evidence does
-not close them. No new open-ended implementation campaign or competing plan.
+**Exact next step:** one combined owner appearance/physical-PC acceptance using
+`Morpheus-PC-Acceptance.md` in the preview.8 delivery folder. Physical microphone
+accuracy, wake/echo/audibility, actual Chrome/session behavior, other DPI/taskbar/
+display/sleep conditions, owner previous-version upgrade, live paid providers and
+publication remain OPEN. Acoustic barge-in while speakers play is not implemented;
+typed input, the microphone control and Stop interrupt safely. Commercial launch
+also requires owned signing/update operations, hosted funding/operations, pricing/
+business country and Stripe/crypto setup; NerdGPT stays deferred. No fake checkout,
+subscription or live acceptance. Do not restart approved design work without a
+demonstrated regression.

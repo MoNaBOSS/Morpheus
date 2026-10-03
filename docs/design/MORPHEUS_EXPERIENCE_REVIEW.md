@@ -47,12 +47,18 @@ measurement found that continuously repainting the organic contour was expensive
 The final correction keeps a static organic contour and animates compositor
 transforms/opacity, with idle motion limited to approximately 30 updates per second.
 Hidden surfaces must pause all motion, and reduced motion remains respected.
-An inspector-only comparison reduced short visible CPU measurements by roughly
-three quarters; final-payload observations belong in the completion checklist.
-This does not establish long mixed-use or low-power hardware performance.
+An inspector-only comparison motivated the correction. Final source `24ebf455`
+then passed native motion and real PCM speaking checks: the comparable visible
+observation fell from 92.68% to 17.54% of one CPU core, and hidden usage was 0.20%.
+The 32-second clip retains actual 56-pixel native captures without enlargement.
+This does not establish long mixed-use or low-power hardware performance. The
+same source also passed isolated normal package, generated-input ordinary voice
+and disposable Windows installation; exact identities and boundaries are in the
+completion checklist.
 
 Voice latency is also an experience limit: a first cold packaged sample took
-4.765 s to emit PCM and 5.280 s to report actual playback, while shorter/warm
+4.149 s to emit PCM and 4.633 s to report actual playback on the final package,
+while shorter/warm
 worker samples were faster. Keep those conditions separate. The included local
 English voice avoids a separate key and per-utterance hosted charge, but uses
 local CPU/RAM and installation space. Hosted quality/latency/privacy/funding and
