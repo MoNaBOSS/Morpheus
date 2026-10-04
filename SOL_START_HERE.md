@@ -1,5 +1,22 @@
 # Current continuation — separate command/voice delivery, 2026-10-04
 
+**Delivered separately:** `1.2.0-preview.15`, frozen application source
+`b27a40af226096280a6abc468ecbd6ffb67ba105`. Installer and guide:
+`C:\Users\monir\Documents\Codex\2026-10-02\continue-morpheus-from-the-existing-project\outputs\Morpheus-Windows-BYOK-1.2.0-preview.15`.
+EXE SHA256: `bc2b733a69ed208808047968b03f064b34e7445c8ae10548fa4e7029637f3eaf`.
+The normal packaged app passed the complete generated-audio selected-stream /
+native wake / Whisper / Core command journey, tray OFF→ON recovery, immediate
+mute and foreground scope, included PCM output and compact-versus-expanded reply
+policy, with zero recorded errors. Its installer passed payload integrity checks.
+Exact-source disposable Windows run 37218549849 passed install/reinstall/retained
+uninstall using independently rebuilt bytes. The delivered local EXE was inspected,
+not installed on the owner's PC. Preview.13, its delivery and owner data remain.
+This remains unsigned and honestly labelled preview: live funded model journeys,
+human microphone/speaker/echo, previous-version upgrade, display/soak and signed
+distribution/update acceptance remain open. Next: the short PC checks in START-HERE,
+using a fresh account entered securely in Connections. No keys in chat or delivery.
+The following paragraphs record the lead-up; the checklist owns exact current evidence.
+
 The owner approves the visual direction and requests a separately delivered full
 Windows BYOK application. Preserve the current preview.13 and every profile/key.
 Baseline `70cbb324` was clean and matched fetched origin. Preview.14 normal-package

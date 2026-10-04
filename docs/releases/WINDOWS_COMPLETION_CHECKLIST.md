@@ -16,9 +16,9 @@
 - [x] Speak orb/compact voice and typed replies; expanded chat stays quiet, with
   persistent user controls and no historical reply replay.
 - [x] Refine meaningful feedback/motion within the approved visual direction.
-- [ ] Focused source, rendered interaction and actual normal-package tests;
+- [x] Focused source, rendered interaction and actual normal-package tests;
   preserve failure evidence and distinguish physical from synthetic audio.
-- [ ] Build and verify a separate identified installer and delivery; preserve
+- [x] Build and verify a separate identified installer and delivery; preserve
   current application, historical packages, profiles and credentials.
 
 The owner requests a stable final delivery. Unverified live/physical behavior and
@@ -57,7 +57,49 @@ Final source checks for these lifecycle corrections pass: 189 focused cases acro
 seven suites, Node/web types, scoped lint, communication replay/comparison, and
 harness validation/dry-run. Both pending-input veto cases failed before the fix.
 The real Electron silent-stream OFF→ON test passed before the final explicit-veto
-addition; rerun it with output-scope and Voice-panel journeys on the final build.
+addition; all three final-build journeys then passed: native rearm, output scope
+with actual PCM/meter/Stop, and connected Voice controls.
+
+### Separate preview.15 delivery receipt
+
+- Application source: `b27a40af226096280a6abc468ecbd6ffb67ba105`; documentation-only
+  receipt commits after it do not change the tested application identity.
+- EXE: `C:\Users\monir\Documents\Codex\2026-10-02\continue-morpheus-from-the-existing-project\outputs\Morpheus-Windows-BYOK-1.2.0-preview.15\Morpheus-1.2.0-preview.15-win-x64.exe`.
+- Version: `1.2.0-preview.15`, Windows x64 BYOK, **NotSigned**, 491,528,648 bytes.
+- EXE SHA256: `bc2b733a69ed208808047968b03f064b34e7445c8ae10548fa4e7029637f3eaf`.
+- Tested app.asar SHA256: `09faea39a593b666e317d9b76b8a7e3e80892c1cce05cfad761cada9f0d079ea`.
+- Normal qualification: `E:\Morpheus-builds\experience-command-voice-preview15-evidence\normal-1791133010645\qualification.json`;
+  545 compiled files and 12 external resource identities bound to the tested
+  package; no E2E app mode, empty source patch, no owner profile, errors `[]` and
+  renderer errors `[]`. Real protected dummy-account save with the Gateway running
+  and live OpenRouter authentication rejection passed; no real model generation
+  or owner credential was used. Included PCM output, Core report, draft/settings/
+  Advanced continuity, compact typed speech with input muted and quiet full chat
+  passed. Real selected-stream AudioWorklet/native helper/Whisper admitted exactly
+  one generated voice command and a successful Core system report in 4.37 seconds.
+  Native OFF→ON rearm, visible-chat/settings suspension and mute guards passed.
+- Delivered EXE inspection: archive CRC, all 40,926 payload paths/sizes and 73
+  selected hashes passed against the normally tested payload. Unpacked size is
+  1,459,054,229 bytes. Runtime test logs and synthetic profiles are not bundled.
+- Disposable Windows [run 37218549849](https://github.com/MoNaBOSS/Morpheus/actions/runs/37218549849)
+  passed for this exact source. Both normal installed identities, protected
+  synthetic configuration retention, same-version reinstall and retained-profile
+  uninstall passed with errors `[]`. Its independently built installer SHA256 is
+  `9dc2842046e36e3f54416475c934b8e3aadb7c9ac5fa3afa82662290181161b3`;
+  these are different bytes from the delivered local EXE, which was not installed
+  on the owner's PC. Exact summary: `final-installed-summary.json` in the evidence folder.
+- Delivery contains the installer, START-HERE, BUILD-IDENTITY, VERIFICATION,
+  SHA256SUMS, actual 27.38-second motion recording, actual included-engine PCM WAV
+  and four actual setup/settings screenshots. Media uses synthetic Alex data;
+  PCM is playback input, not physical loopback or human audibility evidence.
+- Previous builds, owner's running preview.13, profiles, credentials and history
+  remain preserved. No new version was installed over the owner's application.
+
+Remaining gates are the final BYOK checklist below: valid protected live-model
+journeys, physical voice/echo and latency, previous-version upgrade, real display/
+taskbar/sleep/long-use checks, and signing/update operation. Hosted payment services
+and NerdGPT remain deferred. Do not rename this evidence into a stable commercial
+release. The next user action is the short PC acceptance in the delivered START-HERE.
 
 ## Current bounded checkpoint — per-user OpenRouter setup
 

@@ -2,6 +2,14 @@
 
 ## Current correction — October 4, command intent and companion voice
 
+Delivery receipt: frozen application `b27a40af226096280a6abc468ecbd6ffb67ba105`,
+version `1.2.0-preview.15`, is separately packaged in the task's
+`outputs/Morpheus-Windows-BYOK-1.2.0-preview.15`. Actual normal package, generated
+selected-stream wake-to-command execution, output scope, lifecycle recovery,
+installer integrity and exact-source disposable installation passed. The Windows
+checklist records the exact EXE/hash, scopes and remaining acceptance. This is an
+unsigned BYOK preview; the owner's installed preview.13 and data remain untouched.
+
 The owner approves the current visual direction and asks for a separate final
 delivery with more reliable execution and responsive feedback. Preserve all
 capabilities, current releases and user data. Verified source is clean `70cbb324`
@@ -66,6 +74,10 @@ Main also publishes its effective input-enabled state before a native mute's
 audit/persistence completes. This distinguishes an immediate mute from a harmless
 token rollover and releases pending/active capture. Repeated muted output events
 must preserve new typed reply speech, whose input consent is independent.
+Both corrections now pass the final real Electron and normal packaged journeys.
+Generated “Morpheus, show system information” admitted exactly one real successful
+Core run in 4.37 seconds from input injection. This measures generated input on this
+PC, including phrase playback, rather than human speech or acoustic acceptance.
 
 ## Current bounded checkpoint — October 4, per-user OpenRouter setup
 
