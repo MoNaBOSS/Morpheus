@@ -84,10 +84,18 @@ cursor and display work area; renderer coordinates never become authority. Drag
 completion saves bounded relative placement, keyboard moves offer the same control,
 and compact/hover surfaces open inward while preserving the orb anchor. Hidden
 presentation pauses motion without changing microphone consent.
-Voice-origin ACP playback must correlate the original admitted user turn and its
-live successful response. Typed/history/restored turns never acquire speech merely
-because a surface mounted. New input, cancellation, mute or a changed generation
+Eligible ACP playback must correlate the original admitted user turn, its original
+surface and its live successful response. Saved response mode controls orb/compact
+typed and voice replies versus expanded chat. History/restored turns never acquire
+speech merely because a surface mounted. New input, cancellation, mute or a changed generation
 invalidates pending speech; follow-up waits for actual playback completion.
+Local wake consumes bounded volatile PCM from the same acquired selected microphone
+as command capture. Main validates the live session and owns foreground/mute veto;
+neither a launched helper nor saved consent alone proves input readiness. Do not
+start a second default-device capture, log audio, or retain an unbounded frame queue.
+Completion feedback settles into quiet presence while the task remains selected;
+hidden and reduced-motion rules still remove decorative animation. Visible meters
+consume actual audio levels and never animate invented listening or speech.
 The local speech worker accepts bounded text from Main, validates sequenced PCM,
 uses a fixed bundled executable without inherited credentials, and unloads after
 bounded idle time or cancellation/quit. Benchmark and package tests identify actual

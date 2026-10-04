@@ -1,5 +1,60 @@
 # Morpheus experience specification
 
+## Current correction — October 4, command intent and companion voice
+
+The owner approves the current visual direction and asks for a separate final
+delivery with more reliable execution and responsive feedback. Preserve all
+capabilities, current releases and user data. Verified source is clean `70cbb324`
+on the existing local branch, matching the fetched application branch. The owner
+is actually running preview.13. The interrupted preview.14 normal qualification
+completed successfully, and exact-source disposable Windows installation run
+37198664430 passed; neither proves the newly reported command/wake behavior.
+
+Confirmed next behavior:
+- “Go to YouTube and search Mr Beast” searches YouTube, preserving the intended
+  destination and query instead of silently replacing it with a Google search.
+- Enabled companion voice listens for the wake phrase from the tray/hidden
+  companion and pauses automatic capture in visible conversation or Settings.
+  Explicit microphone capture remains available; manual mute always wins.
+- The owner explicitly selected spoken replies for both voice and typed requests
+  originating in the orb/compact companion, with expanded chat quiet. Keep this
+  revisitable in Voice settings and preserve explicit existing quiet preferences.
+- Improve purposeful interaction feedback within the approved design. Motion
+  follows actual capture, execution and output; capability and payment authority
+  stay with their existing owners. Do not promise control of every application.
+- Produce a separately identified package and delivery folder. “Stable” requires
+  evidence for the changed real runtime, not a version-label change.
+
+First work: reproduce destination routing, inspect real tray wake acquisition and
+turn-origin speech selection, implement bounded corrections, then run focused
+tests and actual packaged journeys. Report synthetic audio separately from human
+wake, acoustic interruption and speaker acceptance. No posted credential is used.
+
+Implemented direction and observed causes: deterministic routing matched generic
+search before the explicitly named site; Windows wake previously opened the
+default microphone independently of the selected renderer input and could publish
+armed before acquisition. Actual generated-audio qualification also found Windows
+dictation converting “go to YouTube” into “goldie U. two”. The new native helper
+receives the selected stream and identifies the addressed sample range only.
+Included Whisper transcribes the original range with bounded 300 ms context and
+must recognize the exact wake prefix before command admission. The same generated
+PCM now yields “Morpheus, go to YouTube and search for MrBeast.” This is generated
+audio/native recognition evidence, not human microphone, echo or accent acceptance.
+Unaddressed PCM is held only in a volatile 21.5-second rolling buffer and evicted;
+no background recording is saved or sent to a provider. Addressed audio follows
+the existing guarded temporary WAV transcription path and cleanup. Session,
+sequence, size, acquisition, timeout, visibility and mute guards remain Main-owned.
+
+Reply scope is an immutable live-turn origin, never reconstructed from history or
+the surface visible when a delayed answer completes. The saved output setting is
+independent of microphone consent; typing must not silently enable capture. The
+compact meter follows real capture/playback levels and exposes Stop for speech.
+Completed-work acknowledgement returns to gentle presence instead of leaving the
+orb on a dead final frame; hidden and reduced-motion paths stop animation. Known
+legacy capability-list clarification is presented as a short retry, preserving
+the full backend capability inventory. Source and package qualification remain
+separate gates in the current checklist.
+
 ## Current bounded checkpoint — October 4, per-user OpenRouter setup
 
 The owner requests OpenRouter testing and preparation for every user. Each Windows

@@ -15,6 +15,8 @@ import { composeMorpheusPersonaContext } from '@shared/morpheus/persona-context'
 import { DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES } from '@shared/morpheus/onboarding-types';
 import { MorpheusNoSpeechError } from '../../electron/services/morpheus/voice/local-input';
 import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
+import { MORPHEUS_WAKE_FRAME_BYTES, MORPHEUS_WAKE_FRAME_SAMPLES } from '@shared/morpheus/wake-audio-types';
+import type { startWindowsWake } from '../../electron/services/morpheus/voice/windows-wake';
 
 const ACCOUNT: ProviderAccount = {
   id: 'voice-openai',
@@ -46,6 +48,21 @@ const PAYLOAD = {
 };
 
 const temporaryDirectories: string[] = [];
+const SELECTED_PCM = Buffer.alloc(MORPHEUS_WAKE_FRAME_BYTES, 0x21);
+const WAKE_RANGE = { startSample: 0, sampleCount: MORPHEUS_WAKE_FRAME_SAMPLES };
+type WakeCallback = Parameters<typeof startWindowsWake>[0]['onWake'];
+
+async function acquireAmbientInput(h: ReturnType<typeof createHarness>) {
+  const session = await h.service.prepareAmbientInput();
+  expect(session.sessionId).toMatch(/^voice-/);
+  const frame = { sessionId: session.sessionId!, sequence: 0, pcmBase64: SELECTED_PCM.toString('base64') };
+  await expect(h.service.feedWakeAudio(frame)).resolves.toEqual({ ready: true });
+  return frame;
+}
+
+function wakeNative(wake: WakeCallback, nativeDictation?: string) {
+  wake(nativeDictation, WAKE_RANGE);
+}
 
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
@@ -132,16 +149,18 @@ describe('Morpheus voice service', () => {
   });
   it('keeps companion voice consent while native foreground scope prevents automatic wake and capture', async () => {
     let companion = false;
-    const stop = vi.fn(), startLocalWake = vi.fn(() => ({ ready: Promise.resolve(), stop }));
+    const stop = vi.fn(), startLocalWake = vi.fn(() => ({ ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop }));
     const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Open YouTube'), synthesize: vi.fn() };
     const h = createHarness({ localVoice, startLocalWake, isCompanionVoiceScope: () => companion });
-    await h.service.updateSettings({ ambientEnabled: true });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
     expect(startLocalWake).not.toHaveBeenCalled();
     expect(await h.service.status()).toMatchObject({ settings: { ambientEnabled: true }, presence: { state: 'asleep' } });
     await expect(h.service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' })).resolves.toMatchObject({ transcript: 'Open YouTube' });
     companion = true; await h.service.reconcileAmbientScope();
     expect(startLocalWake).not.toHaveBeenCalled();
     await h.service.beginAmbientSession();
+    expect(startLocalWake).not.toHaveBeenCalled(); expect(h.service.presence().state).toBe('asleep');
+    await acquireAmbientInput(h);
     expect(startLocalWake).toHaveBeenCalledOnce(); expect(h.service.presence().state).toBe('armed');
     companion = false; await h.service.reconcileAmbientScope();
     expect(stop).toHaveBeenCalledOnce(); expect(h.service.presence().state).toBe('asleep');
@@ -159,27 +178,31 @@ describe('Morpheus voice service', () => {
       const first = stops.length === 0;
       const ready = first ? new Promise<void>((_resolve, reject) => { rejectReady = reject; }) : Promise.resolve();
       const stop = vi.fn(() => { if (first) rejectReady(new DOMException('Cancelled', 'AbortError')); });
-      stops.push(stop); return { ready, stop };
+      stops.push(stop); return { ready, pushAudio: vi.fn(async () => {}), stop };
     });
     const h = createHarness({ localVoice: { ready: () => true, transcribe: vi.fn(), synthesize: vi.fn() },
       startLocalWake, isCompanionVoiceScope: () => companion });
-    const starting = h.service.updateSettings({ ambientEnabled: true });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
+    const session = await h.service.prepareAmbientInput();
+    const starting = h.service.feedWakeAudio({ sessionId: session.sessionId!, sequence: 0, pcmBase64: SELECTED_PCM.toString('base64') });
     const interrupted = expect(starting).rejects.toMatchObject({ name: 'AbortError' });
     await vi.waitFor(() => expect(startLocalWake).toHaveBeenCalledOnce());
     companion = false; const ending = h.service.reconcileAmbientScope();
     expect(stops[0]).toHaveBeenCalledOnce(); expect(h.service.presence().state).toBe('asleep');
-    companion = true; const restored = h.service.beginAmbientSession();
-    await ending; await interrupted; await restored;
+    await ending; await interrupted;
+    companion = true; await acquireAmbientInput(h);
     expect(startLocalWake).toHaveBeenCalledTimes(2); expect(h.service.presence().state).toBe('armed');
     expect(h.presenceEvents).not.toContain('error'); h.service.dispose();
   });
 
   it('cannot publish a completed ambient capture audit after native scope changes', async () => {
-    let companion = true, wake!: () => void;
-    const h = createHarness({ localVoice: { ready: () => true, transcribe: vi.fn(), synthesize: vi.fn() },
-      isCompanionVoiceScope: () => companion, startLocalWake: ({ onWake }) => { wake = onWake; return { ready: Promise.resolve(), stop: vi.fn() }; } });
-    await h.service.updateSettings({ ambientEnabled: true });
-    wake(); await new Promise(resolve => setTimeout(resolve, 0));
+    let companion = true, wake!: WakeCallback;
+    const h = createHarness({ localVoice: { ready: () => true, transcribe: vi.fn(async () => 'Morpheus'), synthesize: vi.fn() },
+      isCompanionVoiceScope: () => companion, startLocalWake: ({ onWake }) => { wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() }; } });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
+    await acquireAmbientInput(h);
+    wakeNative(wake); await vi.waitFor(() => expect(h.service.presence().followUpUntil).toBeDefined());
+    h.presenceEvents.length = 0;
     let audit!: () => void;
     h.recordControl.mockImplementationOnce(() => new Promise<void>(resolve => { audit = resolve; }));
     const capture = h.service.setAmbientListening(true);
@@ -206,12 +229,13 @@ describe('Morpheus voice service', () => {
   });
 
   it('manual mute vetoes input and stops native wake before its settings audit or disk commit finishes', async () => {
-    let wake!: (command?: string) => void, completeTranscript!: (value: string) => void;
+    let wake!: WakeCallback, completeTranscript!: (value: string) => void;
     const stop = vi.fn();
     const h = createHarness({ localVoice: { ready: () => true, synthesize: vi.fn(),
       transcribe: vi.fn(() => new Promise<string>(resolve => { completeTranscript = resolve; })) },
-    startLocalWake: ({ onWake }) => { wake = onWake; return { ready: Promise.resolve(), stop }; } });
-    await h.service.updateSettings({ ambientEnabled: true });
+    startLocalWake: ({ onWake }) => { wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop }; } });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
+    await acquireAmbientInput(h);
     const transcript = h.service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' });
     const rejected = expect(transcript).rejects.toMatchObject({ name: 'AbortError' });
     let commit!: () => void;
@@ -220,7 +244,7 @@ describe('Morpheus voice service', () => {
     const mute = h.service.updateSettings({ enabled: false });
     expect(stop).toHaveBeenCalledOnce(); expect(h.service.presence().state).toBe('asleep');
     expect((await h.service.status()).settings).toMatchObject({ enabled: false, ambientEnabled: true });
-    wake('Open YouTube'); await h.service.reconcileAmbientScope();
+    wakeNative(wake, 'Open YouTube'); await h.service.reconcileAmbientScope();
     await expect(h.service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' })).rejects.toThrow('disabled');
     completeTranscript('Open YouTube'); await rejected;
     expect(h.service.presence().wakeCommand).toBeUndefined();
@@ -228,37 +252,39 @@ describe('Morpheus voice service', () => {
   });
 
   it('late follow-up audit cannot re-arm a foreground conversation or stop a newer companion session', async () => {
-    let companion = true, wake!: () => void, releaseAudit!: (error?: Error) => void;
+    let companion = true, wake!: WakeCallback, releaseAudit!: (error?: Error) => void;
     const stops: ReturnType<typeof vi.fn>[] = [];
-    const h = createHarness({ localVoice: { ready: () => true, synthesize: vi.fn(), transcribe: vi.fn() },
+    const h = createHarness({ localVoice: { ready: () => true, synthesize: vi.fn(), transcribe: vi.fn(async () => 'Morpheus') },
       isCompanionVoiceScope: () => companion, startLocalWake: ({ onWake }) => {
-        wake = onWake; const stop = vi.fn(); stops.push(stop); return { ready: Promise.resolve(), stop };
+        wake = onWake; const stop = vi.fn(); stops.push(stop); return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop };
       } });
-    await h.service.updateSettings({ ambientEnabled: true });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
+    await acquireAmbientInput(h);
     h.recordControl.mockImplementation((entry) => entry.event === 'conversation-started'
       ? new Promise<void>((resolve, reject) => { releaseAudit = (error) => error ? reject(error) : resolve(); }) : Promise.resolve());
-    wake(); await vi.waitFor(() => expect(releaseAudit).toBeTypeOf('function'));
+    wakeNative(wake); await vi.waitFor(() => expect(releaseAudit).toBeTypeOf('function'));
     companion = false; await h.service.reconcileAmbientScope();
     h.presenceEvents.length = 0; releaseAudit(); await new Promise(resolve => setTimeout(resolve, 0));
     expect(h.service.presence()).toMatchObject({ state: 'asleep' });
     expect(h.service.presence().followUpUntil).toBeUndefined(); expect(h.presenceEvents).toEqual([]);
-    companion = true; await h.service.beginAmbientSession();
+    companion = true; await acquireAmbientInput(h);
     expect(stops[1]).not.toHaveBeenCalled(); h.service.dispose();
   });
 
   it('a failed old follow-up audit cannot stop or overwrite a newer companion session', async () => {
-    let companion = true, wake!: () => void, rejectAudit!: (error: Error) => void;
+    let companion = true, wake!: WakeCallback, rejectAudit!: (error: Error) => void;
     const stops: ReturnType<typeof vi.fn>[] = [];
-    const h = createHarness({ localVoice: { ready: () => true, synthesize: vi.fn(), transcribe: vi.fn() },
+    const h = createHarness({ localVoice: { ready: () => true, synthesize: vi.fn(), transcribe: vi.fn(async () => 'Morpheus') },
       isCompanionVoiceScope: () => companion, startLocalWake: ({ onWake }) => {
-        wake = onWake; const stop = vi.fn(); stops.push(stop); return { ready: Promise.resolve(), stop };
+        wake = onWake; const stop = vi.fn(); stops.push(stop); return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop };
       } });
-    await h.service.updateSettings({ ambientEnabled: true });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
+    await acquireAmbientInput(h);
     h.recordControl.mockImplementation((entry) => entry.event === 'conversation-started'
       ? new Promise<void>((_resolve, reject) => { rejectAudit = reject; }) : Promise.resolve());
-    wake(); await vi.waitFor(() => expect(rejectAudit).toBeTypeOf('function'));
+    wakeNative(wake); await vi.waitFor(() => expect(rejectAudit).toBeTypeOf('function'));
     companion = false; await h.service.reconcileAmbientScope();
-    companion = true; await h.service.beginAmbientSession();
+    companion = true; await acquireAmbientInput(h);
     h.presenceEvents.length = 0; rejectAudit(new Error('Audit unavailable'));
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(stops[1]).not.toHaveBeenCalled(); expect(h.service.presence().state).toBe('armed');
@@ -278,14 +304,15 @@ describe('Morpheus voice service', () => {
   });
 
   it('recovers an admitted ambient non-speech turn and accepts the next short answer', async () => {
-    let wake!: () => void;
+    let wake!: WakeCallback;
     const localVoice = { ready: () => true,
-      transcribe: vi.fn().mockRejectedValueOnce(new MorpheusNoSpeechError()).mockResolvedValueOnce('yes'), synthesize: vi.fn() };
+      transcribe: vi.fn().mockResolvedValueOnce('Morpheus').mockRejectedValueOnce(new MorpheusNoSpeechError()).mockResolvedValueOnce('yes'), synthesize: vi.fn() };
     const h = createHarness({ localVoice, startLocalWake: ({ onWake }) => {
-      wake = onWake; return { ready: Promise.resolve(), stop: vi.fn() };
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() };
     } });
-    await h.service.updateSettings({ ambientEnabled: true });
-    wake(); await new Promise(resolve => setTimeout(resolve, 0));
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
+    await acquireAmbientInput(h);
+    wakeNative(wake); await vi.waitFor(() => expect(h.service.presence().followUpUntil).toBeDefined());
     await h.service.setAmbientListening(true);
     h.auditOrder.length = 0;
     await expect(h.service.transcribeAmbient({ ...PAYLOAD, mimeType: 'audio/wav' })).rejects.toThrow(MorpheusNoSpeechError);
@@ -451,20 +478,23 @@ describe('Morpheus voice service', () => {
     expect(JSON.stringify(h.recordControl.mock.calls)).not.toContain('A private spoken result');
   });
   it('admits one local-wake recording only after the audited native event', async () => {
-    let wake!: () => void;
+    let wake!: WakeCallback;
     const stop = vi.fn();
-    const startLocalWake = vi.fn((options: { onWake(): void }) => {
+    const startLocalWake = vi.fn((options: Parameters<typeof startWindowsWake>[0]) => {
       wake = options.onWake;
-      return { ready: Promise.resolve(), stop };
+      return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop };
     });
-    const h = createHarness({ startLocalWake });
+    const localVoice = { ready: () => true, transcribe: vi.fn().mockResolvedValueOnce('Morpheus').mockResolvedValueOnce('Open Notepad'), synthesize: vi.fn() };
+    const h = createHarness({ startLocalWake, localVoice });
     await h.service.updateSettings({ localWakeEnabled: true, ambientEnabled: true });
+    await acquireAmbientInput(h);
     expect(startLocalWake).toHaveBeenCalledOnce();
     await expect(h.service.setAmbientListening(true)).rejects.toThrow('wake phrase');
     await expect(h.service.transcribeAmbient(PAYLOAD)).rejects.toThrow('wake phrase');
     expect(h.fetchImpl).not.toHaveBeenCalled();
-    wake();
-    await vi.waitFor(() => expect(h.service.presence().wakeSequence).toBe(1));
+    wakeNative(wake);
+    await vi.waitFor(() => expect(h.service.presence().followUpUntil).toBeDefined());
+    expect(h.service.presence().wakeSequence).toBe(1);
     expect(h.auditOrder.indexOf('audit:local-wake-detected')).toBeGreaterThan(-1);
     expect(h.service.presence()).toMatchObject({ conversationTurn: 1 });
     expect(Date.parse(h.service.presence().followUpUntil ?? '')).toBeGreaterThan(Date.now());
@@ -473,47 +503,63 @@ describe('Morpheus voice service', () => {
     await h.service.setAmbientListening(true);
     await expect(h.service.setAmbientListening(true)).rejects.toThrow('wake phrase');
     await h.service.setAmbientListening(false);
-    await expect(h.service.transcribeAmbient(PAYLOAD)).resolves.toMatchObject({ transcript: 'Open Notepad' });
-    await expect(h.service.transcribeAmbient(PAYLOAD)).rejects.toThrow('wake phrase');
+    await expect(h.service.transcribeAmbient({ ...PAYLOAD, mimeType: 'audio/wav' })).resolves.toMatchObject({ transcript: 'Open Notepad' });
+    await expect(h.service.transcribeAmbient({ ...PAYLOAD, mimeType: 'audio/wav' })).rejects.toThrow('wake phrase');
     await h.service.endAmbientSession();
     expect(stop).toHaveBeenCalledOnce();
-    wake();
+    wakeNative(wake);
     await Promise.resolve();
     expect(h.service.presence().state).toBe('asleep');
+    expect(localVoice.transcribe).toHaveBeenCalledTimes(2); expect(h.fetchImpl).not.toHaveBeenCalled();
+    h.service.dispose();
   });
 
   it('publishes one audited same-breath local command without opening a second capture window', async () => {
-    let wake!: (command?: string) => void;
-    const h = createHarness({ startLocalWake: ({ onWake }) => {
-      wake = onWake; return { ready: Promise.resolve(), stop: vi.fn() };
+    let wake!: WakeCallback;
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Morpheus Open Notepad'), synthesize: vi.fn() };
+    const pushAudio = vi.fn(async () => {});
+    const h = createHarness({ localVoice, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio, stop: vi.fn() };
     } });
-    await h.service.updateSettings({ localWakeEnabled: true, ambientEnabled: true });
-    wake('Open Notepad');
-    wake('Open Notepad');
+    await h.service.updateSettings({ engine: 'provider', localWakeEnabled: true, ambientEnabled: true });
+    await acquireAmbientInput(h);
+    wakeNative(wake, 'delete private files');
+    wakeNative(wake, 'delete private files');
     await vi.waitFor(() => expect(h.service.presence()).toMatchObject({
       state: 'understanding', wakeSequence: 1, wakeCommand: 'Open Notepad',
     }));
     expect(h.auditOrder.indexOf('audit:local-wake-detected')).toBeLessThan(h.auditOrder.indexOf('emit:understanding'));
     expect(h.service.presence().followUpUntil).toBeUndefined();
+    expect(pushAudio).toHaveBeenCalledWith(SELECTED_PCM);
+    expect(localVoice.transcribe).toHaveBeenCalledOnce();
+    const [wave, signal] = localVoice.transcribe.mock.calls[0] as unknown as [Buffer, AbortSignal];
+    expect(wave.subarray(0, 4).toString()).toBe('RIFF');
+    expect(wave.subarray(44)).toEqual(SELECTED_PCM); expect(signal.aborted).toBe(false);
+    expect(h.presenceSnapshots.filter(presence => presence.wakeCommand === 'Open Notepad')).toHaveLength(1);
+    expect(JSON.stringify(h.recordControl.mock.calls)).not.toMatch(/delete private files|Morpheus Open Notepad/);
     await expect(h.service.setAmbientListening(true)).rejects.toThrow('wake phrase');
     expect(h.fetchImpl).not.toHaveBeenCalled();
     await h.service.endAmbientSession();
-    wake('Open Notepad');
+    wakeNative(wake, 'Open Notepad');
     await Promise.resolve();
     expect(h.service.presence().wakeCommand).toBeUndefined();
     expect(h.service.presence().state).toBe('asleep');
+    expect(localVoice.transcribe).toHaveBeenCalledOnce();
     h.service.dispose();
   });
 
   it('accepts a new wake during task work and keeps the old result from closing the new listening turn', async () => {
-    let wake!: () => void;
-    const h = createHarness({ startLocalWake: ({ onWake }) => { wake = onWake; return { ready: Promise.resolve(), stop: vi.fn() }; } });
+    let wake!: WakeCallback;
+    const h = createHarness({ localVoice: { ready: () => true, transcribe: vi.fn(async () => 'Morpheus'), synthesize: vi.fn() },
+      startLocalWake: ({ onWake }) => { wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() }; } });
     await h.service.updateSettings({ localWakeEnabled: true, ambientEnabled: true });
+    await acquireAmbientInput(h);
     h.service.observeObjective({ objectiveRunId: 'old-task', state: 'understanding', run: { origin: { type: 'voice' } } } as never);
     h.service.observeObjective({ objectiveRunId: 'old-task', state: 'executing', run: { origin: { type: 'voice' } } } as never);
     expect(h.service.presence().state).toBe('working');
-    wake();
-    await vi.waitFor(() => expect(h.service.presence().wakeSequence).toBe(1));
+    wakeNative(wake);
+    await vi.waitFor(() => expect(h.service.presence().followUpUntil).toBeDefined());
+    expect(h.service.presence().wakeSequence).toBe(1);
     h.service.observeObjective({ objectiveRunId: 'old-task', state: 'complete', run: { origin: { type: 'voice' } } } as never);
     expect(h.service.presence().state).toBe('armed');
     await h.service.setAmbientListening(true);
@@ -523,22 +569,25 @@ describe('Morpheus voice service', () => {
   });
 
   it('uses an audited local wake to interrupt speech only when barge-in is enabled', async () => {
-    let wake!: () => void;
-    const h = createHarness({ startLocalWake: ({ onWake }) => {
+    let wake!: WakeCallback;
+    const h = createHarness({ localVoice: { ready: () => true, transcribe: vi.fn(async () => 'Morpheus'), synthesize: vi.fn() }, startLocalWake: ({ onWake }) => {
       wake = onWake;
-      return { ready: Promise.resolve(), stop: vi.fn() };
+      return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() };
     } });
     await h.service.updateSettings({ localWakeEnabled: true, ambientEnabled: true, bargeIn: false });
+    await acquireAmbientInput(h);
     h.service.setSpeaking(true);
-    wake();
+    wakeNative(wake);
     await Promise.resolve();
     expect(h.service.presence().wakeSequence).toBeUndefined();
     expect(h.service.presence().state).toBe('speaking');
 
     await h.service.updateSettings({ bargeIn: true });
+    await acquireAmbientInput(h);
     h.service.setSpeaking(true);
-    wake();
-    await vi.waitFor(() => expect(h.service.presence().wakeSequence).toBe(1));
+    wakeNative(wake);
+    await vi.waitFor(() => expect(h.service.presence().followUpUntil).toBeDefined());
+    expect(h.service.presence().wakeSequence).toBe(1);
     expect(h.service.presence()).toMatchObject({ state: 'armed', conversationTurn: 1 });
     expect(h.auditOrder.indexOf('audit:local-wake-detected')).toBeLessThan(h.auditOrder.lastIndexOf('emit:armed'));
     h.service.dispose();
@@ -547,6 +596,7 @@ describe('Morpheus voice service', () => {
   it('opens one audited hands-free follow-up after a spoken voice result', async () => {
     const h = createHarness();
     await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: false });
+    await acquireAmbientInput(h);
     h.service.observeObjective({
       state: 'complete',
       run: { origin: { type: 'voice' } },
@@ -571,13 +621,264 @@ describe('Morpheus voice service', () => {
 
   it('does not fall back to cloud monitoring when native wake startup fails', async () => {
     const h = createHarness({ startLocalWake: () => ({
-      ready: Promise.reject(new Error('recognizer unavailable')), stop: vi.fn(),
+      ready: Promise.reject(new Error('recognizer unavailable')), pushAudio: vi.fn(async () => {}), stop: vi.fn(),
     }) });
-    await expect(h.service.updateSettings({ localWakeEnabled: true, ambientEnabled: true }))
+    await h.service.updateSettings({ localWakeEnabled: true, ambientEnabled: true });
+    const session = await h.service.prepareAmbientInput();
+    await expect(h.service.feedWakeAudio({ sessionId: session.sessionId!, sequence: 0, pcmBase64: SELECTED_PCM.toString('base64') }))
       .rejects.toThrow('recognizer unavailable');
     expect(h.service.presence().state).toBe('error');
     await expect(h.service.transcribeAmbient(PAYLOAD)).rejects.toThrow('not armed');
     expect(h.fetchImpl).not.toHaveBeenCalled();
+    h.service.dispose();
+  });
+
+  it('arms only after an acquired session receives PCM and the native helper accepts its first frame', async () => {
+    let ready!: () => void, accepted!: () => void;
+    const pushAudio = vi.fn(() => new Promise<void>(resolve => { accepted = resolve; }));
+    const startLocalWake = vi.fn(() => ({ ready: new Promise<void>(resolve => { ready = resolve; }), pushAudio, stop: vi.fn() }));
+    const h = createHarness({ localVoice: { ready: () => true, transcribe: vi.fn(), synthesize: vi.fn() }, startLocalWake });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
+    await h.service.beginAmbientSession();
+    expect(startLocalWake).not.toHaveBeenCalled(); expect(h.presenceEvents).not.toContain('armed');
+    const session = await h.service.prepareAmbientInput();
+    expect(session).toMatchObject({ localWakeEnabled: true, presence: { state: 'asleep' } });
+    expect(session.sessionId).toMatch(/^voice-[a-f0-9-]{36}$/);
+    expect(JSON.stringify(session)).not.toContain(SELECTED_PCM.toString('base64'));
+    const feeding = h.service.feedWakeAudio({ sessionId: session.sessionId!, sequence: 0, pcmBase64: SELECTED_PCM.toString('base64') });
+    expect(startLocalWake).toHaveBeenCalledOnce(); expect(pushAudio).not.toHaveBeenCalled();
+    expect(h.service.presence().state).toBe('asleep');
+    ready(); await vi.waitFor(() => expect(pushAudio).toHaveBeenCalledWith(SELECTED_PCM));
+    expect(h.service.presence().state).toBe('asleep');
+    accepted(); await expect(feeding).resolves.toEqual({ ready: true });
+    expect(h.presenceEvents.filter(state => state === 'armed')).toHaveLength(1);
+    expect(h.fetchImpl).not.toHaveBeenCalled(); h.service.dispose();
+  });
+
+  it('cannot claim input readiness or open a task follow-up during pending selected microphone acquisition', async () => {
+    const h = createHarness();
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: false, speakResponses: false });
+    const session = await h.service.prepareAmbientInput();
+    h.presenceEvents.length = 0; h.auditOrder.length = 0;
+    for (const state of ['understanding', 'complete', 'cancelled']) {
+      h.service.observeObjective({ objectiveRunId: 'foreground-task', state, run: { origin: { type: 'voice' } } } as never);
+    }
+    h.service.setSpeaking(true); h.service.setSpeaking(false);
+    await Promise.resolve();
+    expect(h.service.presence()).toMatchObject({ state: 'asleep' });
+    expect(h.service.presence().followUpUntil).toBeUndefined();
+    expect(h.presenceEvents).not.toContain('armed');
+    expect(h.auditOrder).not.toContain('audit:follow-up-opened');
+    await h.service.feedWakeAudio({ sessionId: session.sessionId!, sequence: 0, pcmBase64: SELECTED_PCM.toString('base64') });
+    expect(h.service.presence().state).toBe('armed');
+    h.service.observeObjective({ objectiveRunId: 'new-task', state: 'understanding', run: { origin: { type: 'voice' } } } as never);
+    h.service.observeObjective({ objectiveRunId: 'new-task', state: 'complete', run: { origin: { type: 'voice' } } } as never);
+    await vi.waitFor(() => expect(h.service.presence().followUpUntil).toBeDefined());
+    expect(h.auditOrder).toContain('audit:follow-up-opened');
+    h.service.dispose();
+  });
+
+  it.each([
+    { pcmBase64: 'AQID' },
+    { pcmBase64: '!'.repeat(SELECTED_PCM.toString('base64').length) },
+    { sequence: -1 },
+    { command: 'Open YouTube' },
+  ])('rejects malformed PCM frames before starting wake or recognition: %j', async patch => {
+    const localVoice = { ready: () => true, transcribe: vi.fn(), synthesize: vi.fn() };
+    const startLocalWake = vi.fn(() => ({ ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() }));
+    const h = createHarness({ localVoice, startLocalWake });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
+    const session = await h.service.prepareAmbientInput();
+    const frame = { sessionId: session.sessionId!, sequence: 0, pcmBase64: SELECTED_PCM.toString('base64'), ...patch };
+    await expect(h.service.feedWakeAudio(frame)).rejects.toThrow('Invalid local wake audio frame');
+    expect(startLocalWake).not.toHaveBeenCalled(); expect(localVoice.transcribe).not.toHaveBeenCalled();
+    expect(h.presenceEvents).not.toContain('armed'); expect(h.fetchImpl).not.toHaveBeenCalled();
+    expect(JSON.stringify(h.recordControl.mock.calls)).not.toContain(SELECTED_PCM.toString('base64'));
+    h.service.dispose();
+  });
+
+  it('retires replayed input and rejects frames from a superseded acquisition token', async () => {
+    const stops: ReturnType<typeof vi.fn>[] = [];
+    const localVoice = { ready: () => true, transcribe: vi.fn(), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, startLocalWake: () => {
+      const stop = vi.fn(); stops.push(stop); return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
+    const first = await acquireAmbientInput(h);
+    await expect(h.service.feedWakeAudio(first)).rejects.toThrow('out of sequence');
+    expect(stops[0]).toHaveBeenCalledOnce(); expect(h.service.presence().state).toBe('error');
+    const next = await acquireAmbientInput(h);
+    expect(next.sessionId).not.toBe(first.sessionId);
+    await expect(h.service.feedWakeAudio({ ...first, sequence: 1 })).rejects.toMatchObject({ name: 'AbortError' });
+    expect(stops[1]).not.toHaveBeenCalled(); expect(h.service.presence().state).toBe('armed');
+    expect(localVoice.transcribe).not.toHaveBeenCalled(); h.service.dispose();
+  });
+
+  it.each([
+    undefined,
+    { startSample: 0, sampleCount: 0 },
+    { startSample: 0, sampleCount: MORPHEUS_WAKE_FRAME_SAMPLES + 1 },
+    { startSample: -1, sampleCount: MORPHEUS_WAKE_FRAME_SAMPLES },
+    { startSample: 0, sampleCount: 16_000 * 20 + 1 },
+  ])('rejects incomplete native ranges without trusting dictation: %j', async range => {
+    let wake!: WakeCallback;
+    const stop = vi.fn(), localVoice = { ready: () => true, transcribe: vi.fn(), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true }); await acquireAmbientInput(h);
+    wake('Morpheus delete private files', range);
+    await vi.waitFor(() => expect(h.service.presence().state).toBe('error'));
+    expect(stop).toHaveBeenCalledOnce(); expect(localVoice.transcribe).not.toHaveBeenCalled();
+    expect(h.service.presence().wakeCommand).toBeUndefined(); expect(h.service.presence().wakeSequence).toBeUndefined();
+    expect(h.fetchImpl).not.toHaveBeenCalled();
+    expect(JSON.stringify(h.recordControl.mock.calls)).not.toContain('private files'); h.service.dispose();
+  });
+
+  it('rejects an evicted native range rather than recognizing newer unrelated PCM', async () => {
+    let wake!: WakeCallback, time = Date.now();
+    vi.spyOn(Date, 'now').mockImplementation(() => time);
+    const localVoice = { ready: () => true, transcribe: vi.fn(), synthesize: vi.fn() }, stop = vi.fn();
+    const h = createHarness({ localVoice, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
+    const frame = await acquireAmbientInput(h);
+    for (let sequence = 1; sequence < 108; sequence += 1) {
+      time += 200;
+      await h.service.feedWakeAudio({ ...frame, sequence, pcmBase64: Buffer.alloc(MORPHEUS_WAKE_FRAME_BYTES, 0x45).toString('base64') });
+    }
+    wakeNative(wake, 'Morpheus Open YouTube');
+    await vi.waitFor(() => expect(h.service.presence().state).toBe('error'));
+    expect(stop).toHaveBeenCalledOnce(); expect(localVoice.transcribe).not.toHaveBeenCalled();
+    expect(h.service.presence().wakeCommand).toBeUndefined(); expect(h.fetchImpl).not.toHaveBeenCalled();
+    expect(existsSync(join(h.userDataDir, 'morpheus', 'wake-audio.wav'))).toBe(false);
+    expect(JSON.stringify(h.recordControl.mock.calls)).not.toContain(SELECTED_PCM.toString('base64')); h.service.dispose();
+  });
+
+  it('recognizes the addressed range with bounded original context from the selected stream', async () => {
+    let wake!: WakeCallback, time = Date.now();
+    vi.spyOn(Date, 'now').mockImplementation(() => time);
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Morpheus Open YouTube'), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
+    const frame = await acquireAmbientInput(h), accepted = [SELECTED_PCM];
+    for (let sequence = 1; sequence < 10; sequence += 1) {
+      time += 200;
+      const pcm = Buffer.alloc(MORPHEUS_WAKE_FRAME_BYTES, sequence);
+      accepted.push(pcm);
+      await h.service.feedWakeAudio({ ...frame, sequence, pcmBase64: pcm.toString('base64') });
+    }
+    wake('different native words', { startSample: MORPHEUS_WAKE_FRAME_SAMPLES * 4, sampleCount: MORPHEUS_WAKE_FRAME_SAMPLES });
+    await vi.waitFor(() => expect(h.service.presence().wakeCommand).toBe('Open YouTube'));
+    expect(localVoice.transcribe).toHaveBeenCalledOnce();
+    const [wave] = localVoice.transcribe.mock.calls[0] as unknown as [Buffer, AbortSignal];
+    // The 200 ms addressed range retains at most 300 ms of already acquired PCM on each side.
+    const expected = Buffer.concat(accepted).subarray((MORPHEUS_WAKE_FRAME_SAMPLES * 4 - 4_800) * 2,
+      (MORPHEUS_WAKE_FRAME_SAMPLES * 5 + 4_800) * 2);
+    expect(wave.subarray(44)).toEqual(expected); expect(wave.readUInt32LE(40)).toBe(expected.length);
+    expect(wave.readUInt32LE(24)).toBe(16_000); expect(wave.readUInt16LE(22)).toBe(1);
+    expect(h.fetchImpl).not.toHaveBeenCalled();
+    expect(JSON.stringify(h.recordControl.mock.calls)).not.toContain(expected.toString('base64')); h.service.dispose();
+  });
+
+  it.each(['Open YouTube', 'Morpheuss Open YouTube', 'I said Morpheus Open YouTube', 'Hey there Morpheus Open YouTube'])(
+    'does not dispatch an included transcript without the exact wake prefix: %j', async transcript => {
+    let wake!: WakeCallback;
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => transcript), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true }); await acquireAmbientInput(h);
+    wakeNative(wake, 'Morpheus Open YouTube');
+    await vi.waitFor(() => expect(h.recordControl).toHaveBeenCalledWith(expect.objectContaining({ event: 'ambient-capture-ended' })));
+    expect(localVoice.transcribe).toHaveBeenCalledOnce(); expect(h.service.presence().state).toBe('armed');
+    expect(h.service.presence().wakeSequence).toBeUndefined(); expect(h.service.presence().wakeCommand).toBeUndefined();
+    expect(h.service.presence().followUpUntil).toBeUndefined(); expect(h.fetchImpl).not.toHaveBeenCalled();
+    expect(JSON.stringify(h.recordControl.mock.calls)).not.toContain(transcript); h.service.dispose();
+  });
+
+  it.each([
+    ['Morpheus', 'mOrPhEuS, Open YouTube.', 'Open YouTube.'],
+    ['Morpheus', 'Hey Morpheus: Open YouTube', 'Open YouTube'],
+    ['Hey Morpheus', 'Hey Morpheus Open YouTube', 'Open YouTube'],
+  ])('requires the configured prefix %j in original-audio recognition %j', async (wakePhrase, transcript, command) => {
+    let wake!: WakeCallback;
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => transcript), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true, wakePhrase }); await acquireAmbientInput(h);
+    wakeNative(wake, 'wrong native dictation');
+    await vi.waitFor(() => expect(h.service.presence()).toMatchObject({ state: 'understanding', wakeCommand: command, wakeSequence: 1 }));
+    expect(localVoice.transcribe).toHaveBeenCalledOnce(); expect(h.fetchImpl).not.toHaveBeenCalled(); h.service.dispose();
+  });
+
+  it('cannot dispatch deferred wake recognition after mute invalidates its original input', async () => {
+    let wake!: WakeCallback, complete!: (text: string) => void;
+    const stop = vi.fn();
+    const transcribe = vi.fn((_audio: Buffer, _signal: AbortSignal) => new Promise<string>(resolve => { complete = resolve; }));
+    const h = createHarness({ localVoice: { ready: () => true, transcribe, synthesize: vi.fn() }, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true }); await acquireAmbientInput(h);
+    wakeNative(wake, 'Open YouTube');
+    await vi.waitFor(() => expect(transcribe).toHaveBeenCalledOnce());
+    expect(h.service.presence().state).toBe('transcribing');
+    let commit!: () => void;
+    h.recordControl.mockImplementation(entry => entry.event === 'settings-updated'
+      ? new Promise<void>(resolve => { commit = resolve; }) : Promise.resolve());
+    const mute = h.service.updateSettings({ enabled: false });
+    expect(transcribe.mock.calls[0][1].aborted).toBe(true); expect(stop).toHaveBeenCalledOnce();
+    expect(h.service.presence().state).toBe('asleep');
+    h.presenceEvents.length = 0; complete('Morpheus Open YouTube');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(h.presenceEvents).toEqual([]); expect(h.service.presence().wakeCommand).toBeUndefined();
+    expect(h.service.presence().wakeSequence).toBeUndefined(); expect(h.service.presence().followUpUntil).toBeUndefined();
+    expect(h.fetchImpl).not.toHaveBeenCalled(); commit(); await mute; h.service.dispose();
+  });
+
+  it('admits one wake verification while its audit is deferred beyond the native cooldown', async () => {
+    let wake!: WakeCallback, releaseAudit!: () => void, time = Date.now();
+    vi.spyOn(Date, 'now').mockImplementation(() => time);
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Morpheus Open Notepad'), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true }); await acquireAmbientInput(h);
+    h.recordControl.mockImplementation(entry => entry.event === 'local-wake-detected'
+      ? new Promise<void>(resolve => { releaseAudit = resolve; }) : Promise.resolve());
+    wakeNative(wake, 'wrong native dictation');
+    expect(releaseAudit).toBeTypeOf('function'); expect(localVoice.transcribe).not.toHaveBeenCalled();
+    time += 2_000; wakeNative(wake, 'second wrong dictation');
+    expect(h.recordControl.mock.calls.filter(([entry]) => entry.event === 'local-wake-detected')).toHaveLength(1);
+    releaseAudit();
+    await vi.waitFor(() => expect(h.service.presence()).toMatchObject({ wakeCommand: 'Open Notepad', wakeSequence: 1 }));
+    expect(localVoice.transcribe).toHaveBeenCalledOnce();
+    expect(h.presenceSnapshots.filter(presence => presence.wakeCommand === 'Open Notepad')).toHaveLength(1);
+    expect(h.fetchImpl).not.toHaveBeenCalled(); h.service.dispose();
+  });
+
+  it('cancelling the ambient session revokes pending wake STT without disturbing a new acquisition', async () => {
+    let wake!: WakeCallback, complete!: (text: string) => void;
+    const stops: ReturnType<typeof vi.fn>[] = [];
+    const transcribe = vi.fn((_audio: Buffer, _signal: AbortSignal) => new Promise<string>(resolve => { complete = resolve; }));
+    const h = createHarness({ localVoice: { ready: () => true, transcribe, synthesize: vi.fn() }, startLocalWake: ({ onWake }) => {
+      wake = onWake; const stop = vi.fn(); stops.push(stop); return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
+    const old = await acquireAmbientInput(h);
+    wakeNative(wake, 'Open YouTube'); await vi.waitFor(() => expect(transcribe).toHaveBeenCalledOnce());
+    await h.service.endAmbientSession();
+    expect(transcribe.mock.calls[0][1].aborted).toBe(true); expect(stops[0]).toHaveBeenCalledOnce();
+    const current = await acquireAmbientInput(h); expect(current.sessionId).not.toBe(old.sessionId);
+    h.presenceEvents.length = 0; complete('Morpheus Open YouTube');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(stops[1]).not.toHaveBeenCalled(); expect(h.service.presence().state).toBe('armed');
+    expect(h.presenceEvents).toEqual([]); expect(h.service.presence().wakeCommand).toBeUndefined();
+    expect(h.service.presence().wakeSequence).toBeUndefined(); expect(h.fetchImpl).not.toHaveBeenCalled(); h.service.dispose();
   });
   it('preserves in-memory settings when the atomic disk write fails', async () => {
     const harness = createHarness();
@@ -835,15 +1136,22 @@ describe('Morpheus voice service', () => {
   it('audits ambient session and capture transitions before presence emission', async () => {
     const harness = createHarness();
     await harness.service.updateSettings({ ambientEnabled: true, wakePhrase: 'Hey Morpheus' });
+    expect(harness.auditOrder).toEqual([
+      'audit:settings-updated', 'emit:asleep', 'audit:ambient-session-started', 'emit:asleep',
+    ]);
+    expect(harness.service.presence().state).toBe('asleep');
+    await acquireAmbientInput(harness);
+    expect(harness.auditOrder.slice(-4)).toEqual([
+      'emit:asleep', 'audit:ambient-session-started', 'emit:asleep', 'emit:armed',
+    ]);
+    harness.presenceEvents.length = 0; harness.auditOrder.length = 0;
     await harness.service.setAmbientListening(true);
     await harness.service.setAmbientListening(false);
     await harness.service.transcribeAmbient(PAYLOAD);
     await harness.service.endAmbientSession();
 
-    expect(harness.presenceEvents).toEqual(['asleep', 'armed', 'listening', 'armed', 'transcribing', 'armed', 'asleep']);
+    expect(harness.presenceEvents).toEqual(['listening', 'armed', 'transcribing', 'armed', 'asleep']);
     expect(harness.auditOrder).toEqual([
-      'audit:settings-updated', 'emit:asleep',
-      'audit:ambient-session-started', 'emit:armed',
       'audit:ambient-capture-started', 'emit:listening',
       'audit:ambient-capture-ended', 'emit:armed',
       'audit:transcription-started', 'emit:transcribing',

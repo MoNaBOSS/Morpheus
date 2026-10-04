@@ -205,6 +205,7 @@
       "deliveryFailed": "对话发送失败。"
     },
     "actionOutcome": {
+      "rephraseCommand": "我没理解要执行的操作。请告诉我使用哪个应用或网站，以及你希望我做什么。",
       "openedWebsite": "已打开 {{target}}。",
       "openedApplication": "已打开{{target}}。",
       "applicationOpened": "已打开应用。",
@@ -1421,7 +1422,7 @@
     "voice": {
       "localWake": {
         "title": "在此电脑上检测唤醒词",
-        "description": "使用 Windows 英语语音识别。叫名字，等待回应，再说指令。唤醒前不向服务商发送后台语音。需要已安装识别器和麦克风。",
+        "description": "说“Morpheus”并接上指令，或等待聆听提示后再说。使用您选择的麦克风和已安装的 Windows 英语识别器，只转写呼叫助手的音频。",
         "disclosure": "唤醒词检测在此电脑上完成。唤醒后，指令音频发送给 {{provider}} 转录。不会保存音频。"
       },
       "dialogue": {
@@ -1500,6 +1501,13 @@
         "autoSubmit": "转录后运行",
         "autoSubmitDescription": "转录成功后无需再次点击，直接进入同一目标核心。",
         "speakResponses": "朗读最终响应",
+        "replySpeechMode": "选择朗读哪些回复",
+        "replySpeechModes": { "orb": "悬浮球回复", "voice": "仅语音请求", "all": "所有请求" },
+        "replySpeechDescriptions": {
+          "orb": "朗读来自悬浮球的文字和语音回复。展开的聊天保持安静。",
+          "voice": "朗读悬浮球和展开聊天中的语音请求回复。文字请求保持安静。",
+          "all": "朗读悬浮球和展开聊天中的文字和语音回复。"
+        },
         "speakResponsesDescription": "通过已配置的神经语音朗读简洁结果，并以 Windows 语音作为备用。",
         "handsFreeFollowUp": "继续对话",
         "handsFreeFollowUpDescription": "语音结果结束后，在有限时间内继续聆听一轮，无需再次说出唤醒词。",
@@ -1573,7 +1581,7 @@
           "deviceRepair": "选择已连接的麦克风，刷新设备列表，然后测试输入。",
           "localDisclosure": "内置自然英语语音，无需单独的语音 API 密钥。此试听在您的电脑上运行。",
           "moreOptions": "字幕、唤醒词和更多选项",
-          "wakeBody": "名称检测使用 Windows 默认麦克风。打开聊天框或设置时，伴侣聆听会暂停；启用后，隐藏界面仍可继续聆听。全局静音会停止所有拾音。",
+          "wakeBody": "使用您选择的麦克风。打开聊天或设置时暂停助手聆听；启用后隐藏界面仍可继续。全局静音会停止所有拾音。",
           "interruptionBody": "停止按钮、输入文字或麦克风按钮可中断回复。当桌面伴侣处于活动状态且已启用时，识别到唤醒词也可中断。暂不支持通过直接说话打断语音。"
         },
         "included": "内置英语语音",
@@ -1588,7 +1596,7 @@
         "warm": "温暖 · Michael",
         "bright": "明亮 · Heart",
         "wake": "监听 “Morpheus”",
-        "wakeBody": "可选的本地唤醒使用 Windows 默认麦克风。隐藏界面不停止已启用的唤醒监听；手动静音会停止监听。",
+        "wakeBody": "可选的本地唤醒使用您选择的麦克风。隐藏界面后仍可保持已启用的聆听；打开聊天、设置或手动静音会暂停聆听。",
         "advanced": "高级语音和提供商选项",
         "engine": "语音服务",
         "local": "内置本地语音",

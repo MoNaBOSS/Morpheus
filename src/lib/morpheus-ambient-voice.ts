@@ -5,6 +5,7 @@ import {
 } from '@shared/morpheus/voice-types';
 import { createMorpheusAudioLevelSource } from './morpheus-audio-level';
 import { matchMorpheusAddress } from './morpheus-voice-dialogue';
+import { MORPHEUS_WAKE_FRAME_BYTES } from '@shared/morpheus/wake-audio-types';
 
 /**
  * Returns only the words after an exact normalized wake-phrase token sequence.
@@ -31,6 +32,8 @@ export type MorpheusAmbientVoiceCaptureOptions = {
   maxUtteranceMs: number;
   /** Local wake mode must not record background speech before an addressed window. */
   shouldCapture?(): boolean;
+  /** Ephemeral selected-mic PCM for the local recognizer, never a recording. */
+  onAudioFrame?(pcm: Uint8Array): Promise<void>;
   /** Main must audit and publish the visible capture state before bytes are recorded. */
   onCaptureStarted(): Promise<void>;
   /** Balances every audited start, including discarded and failed captures. */
@@ -60,6 +63,9 @@ export class MorpheusAmbientVoiceCapture {
   private maxTimer: number | null = null;
   private discardCurrent = false;
   private generation = 0;
+  private wakeProcessor: AudioWorkletNode | null = null;
+  private wakeSink: GainNode | null = null;
+  private inputLifetime: AbortController | null = null;
 
   constructor(private readonly options: MorpheusAmbientVoiceCaptureOptions) {}
 
@@ -78,16 +84,102 @@ export class MorpheusAmbientVoiceCapture {
       stream.getTracks().forEach((track) => track.stop());
       return;
     }
+    let ownsStream = false;
     try {
       const context = new AudioContext();
       const analyser = context.createAnalyser();
       analyser.fftSize = 1024;
       analyser.smoothingTimeConstant = 0.35;
-      context.createMediaStreamSource(stream).connect(analyser);
+      const source = context.createMediaStreamSource(stream);
+      source.connect(analyser);
       this.stream = stream;
+      ownsStream = true;
       this.context = context;
       this.analyser = analyser;
       this.stopped = false;
+      const lifetime = new AbortController();
+      this.inputLifetime = lifetime;
+      await this.inputStep(context.resume(), lifetime.signal,
+        'Microphone audio could not start. Reopen Morpheus and restart companion voice.');
+      if (generation !== this.generation) return;
+      if (context.state !== 'running') throw new Error('Microphone audio could not start. Reopen Morpheus and restart companion voice.');
+      let resuming = false;
+      context.onstatechange = () => {
+        if (generation !== this.generation || this.stopped || context.state === 'running' || resuming) return;
+        resuming = true;
+        void this.inputStep(context.resume(), lifetime.signal,
+          'Microphone audio paused. Reopen Morpheus and restart companion voice.').then(() => {
+          if (context.state !== 'running') throw new Error('Microphone audio paused. Reopen Morpheus and restart companion voice.');
+        }).catch((error) => {
+          if (generation !== this.generation || this.stopped) return;
+          this.stop();
+          this.options.onError(error instanceof Error ? error : new Error(String(error)));
+        }).finally(() => { resuming = false; });
+      };
+      if (this.options.onAudioFrame) {
+        // Keep the fixed module on the application's own origin. An inlined
+        // data URL would be rejected by the packaged script-src 'self' policy.
+        await this.inputStep(context.audioWorklet.addModule(new URL('./morpheus-wake-audio-worklet.js?no-inline', import.meta.url).href), lifetime.signal,
+          'Local microphone audio could not start. Restart companion voice.');
+        if (generation !== this.generation) return;
+        const processor = new AudioWorkletNode(context, 'morpheus-wake-audio');
+        const sink = context.createGain();
+        sink.gain.value = 0; // Keep the graph active without playing microphone audio.
+        source.connect(processor);
+        processor.connect(sink).connect(context.destination);
+        this.wakeProcessor = processor;
+        this.wakeSink = sink;
+        let first = true, sending = false;
+        let pending: Uint8Array | null = null;
+        await new Promise<void>((resolve, reject) => {
+          const cancel = (): void => { window.clearTimeout(timeout); reject(new DOMException('Voice input stopped', 'AbortError')); };
+          const finish = (): void => { window.clearTimeout(timeout); lifetime.signal.removeEventListener('abort', cancel); };
+          const timeout = window.setTimeout(() => { finish(); reject(new Error('The selected microphone supplied no audio. Reconnect it and restart companion voice.')); }, 15_000);
+          lifetime.signal.addEventListener('abort', cancel, { once: true });
+          const send = async (pcm: Uint8Array): Promise<void> => {
+            sending = true;
+            try {
+              if (generation !== this.generation || this.stopped) return;
+              await this.options.onAudioFrame!(pcm);
+              if (first) { first = false; finish(); resolve(); }
+            } catch (error) {
+              finish();
+              const failure = error instanceof Error ? error : new Error(String(error));
+              if (first) reject(failure);
+              else if (generation === this.generation) { this.stop(); this.options.onError(failure); }
+            } finally {
+              sending = false;
+              if (pending && generation === this.generation && !this.stopped) {
+                const next = pending; pending = null;
+                void send(next);
+              }
+            }
+          };
+          processor.port.onmessage = (event: MessageEvent<unknown>) => {
+            if (generation !== this.generation || this.stopped) return;
+            if (!(event.data instanceof ArrayBuffer) || event.data.byteLength !== MORPHEUS_WAKE_FRAME_BYTES) {
+              const error = new Error('Local microphone audio failed. Restart companion voice.');
+              finish(); reject(error); this.stop(); this.options.onError(error); return;
+            }
+            const pcm = new Uint8Array(event.data);
+            if (this.suppressed) pcm.fill(0);
+            if (sending) {
+              // Recognition startup may take seconds. Discard pre-ready frames;
+              // after readiness allow only one queued 200-ms frame.
+              if (first) return;
+              if (pending) {
+                this.stop(); this.options.onError(new Error('Local microphone audio stalled. Restart companion voice.')); return;
+              }
+              pending = pcm;
+            } else void send(pcm);
+          };
+          processor.onprocessorerror = () => {
+            const error = new Error('Local microphone audio stopped. Restart companion voice.');
+            finish(); reject(error); this.stop(); this.options.onError(error);
+          };
+        });
+        if (generation !== this.generation) return;
+      }
       for (const track of stream.getAudioTracks()) {
         track.addEventListener('ended', () => {
           if (generation !== this.generation || this.stopped) return;
@@ -97,7 +189,9 @@ export class MorpheusAmbientVoiceCapture {
       }
       this.monitor(mimeType);
     } catch (error) {
-      stream.getTracks().forEach((track) => track.stop());
+      if (!ownsStream) stream.getTracks().forEach((track) => track.stop());
+      if (generation === this.generation) this.stop();
+      else return;
       throw error;
     }
   }
@@ -110,6 +204,8 @@ export class MorpheusAmbientVoiceCapture {
   stop(): void {
     this.generation += 1;
     this.stopped = true;
+    this.inputLifetime?.abort();
+    this.inputLifetime = null;
     this.level.dispose();
     if (this.monitorTimer !== null) window.clearTimeout(this.monitorTimer);
     this.monitorTimer = null;
@@ -118,6 +214,11 @@ export class MorpheusAmbientVoiceCapture {
     this.maxTimer = null;
     this.stream?.getTracks().forEach((track) => track.stop());
     this.stream = null;
+    if (this.wakeProcessor) { this.wakeProcessor.port.onmessage = null; this.wakeProcessor.disconnect(); }
+    this.wakeProcessor = null;
+    this.wakeSink?.disconnect();
+    this.wakeSink = null;
+    if (this.context) this.context.onstatechange = null;
     void this.context?.close().catch(() => undefined);
     this.context = null;
     this.analyser = null;
@@ -127,6 +228,17 @@ export class MorpheusAmbientVoiceCapture {
   private supportedMimeType(): MorpheusVoiceMimeType | null {
     if (typeof MediaRecorder === 'undefined') return null;
     return MORPHEUS_VOICE_MIME_TYPES.find((mimeType) => MediaRecorder.isTypeSupported(mimeType)) ?? null;
+  }
+
+  private inputStep(step: Promise<void>, signal: AbortSignal, message: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      const finish = (): void => { window.clearTimeout(timeout); signal.removeEventListener('abort', abort); };
+      const abort = (): void => { finish(); reject(new DOMException('Voice input stopped', 'AbortError')); };
+      const timeout = window.setTimeout(() => { finish(); reject(new Error(message)); }, 5_000);
+      signal.addEventListener('abort', abort, { once: true });
+      if (signal.aborted) { abort(); return; }
+      step.then(() => { finish(); resolve(); }, (error) => { finish(); reject(error); });
+    });
   }
 
   private monitor(mimeType: MorpheusVoiceMimeType): void {

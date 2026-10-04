@@ -88,7 +88,7 @@ export class MorpheusAssistantSession {
     return (this.options.now?.() ?? new Date()).toISOString();
   }
 
-  private changed(conversationId: string, generation: number, type: MorpheusAssistantSessionChanged['type']): void {
+  private changed(conversationId: string, generation: number, type: MorpheusAssistantSessionChanged['type'], admittedTurn?: MorpheusAssistantTurn): void {
     const event: MorpheusAssistantSessionChanged = {
       schemaVersion: MORPHEUS_ASSISTANT_SESSION_VERSION,
       sequence: ++this.sequence,
@@ -96,6 +96,7 @@ export class MorpheusAssistantSession {
       conversationId,
       timestamp: this.now(),
       type,
+      ...(admittedTurn ? { admittedTurn: cloneTurn(admittedTurn) } : {}),
     };
     // Delivery is a hint. A missed event is recovered from snapshot + cursor.
     try { this.options.emit?.(event); } catch { /* snapshot remains authoritative */ }
@@ -219,7 +220,7 @@ export class MorpheusAssistantSession {
       conversation.draft = { conversationId: input.conversationId, revision: conversation.draft.revision + 1, text: '' };
       this.changed(input.conversationId, 1, 'draft');
     }
-    this.changed(input.conversationId, ref.generation, 'turn-admitted');
+    this.changed(input.conversationId, ref.generation, 'turn-admitted', ref);
     return cloneTurn(ref);
   }
 

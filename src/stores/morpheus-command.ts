@@ -32,8 +32,10 @@ import { isMorpheusActionId, type MorpheusActionId } from '@shared/morpheus/acti
 import { useMorpheusWorkspacesStore } from './morpheus-workspaces';
 import { useMorpheusExecutionContextStore } from './morpheus-execution-context';
 import { useMorpheusActionsStore } from './morpheus-actions';
+import type { MorpheusReplySpeechOrigin } from '@shared/morpheus/voice-types';
 
 const MAX_ARTIFACTS = 50;
+let objectiveSpeechRevision = 0;
 
 function supportedCapabilityIds(): MorpheusActionId[] {
   return Object.entries(useMorpheusActionsStore.getState().supportedActions)
@@ -68,12 +70,18 @@ export type MorpheusCommandState = {
   /** Main-owned objective state shared by Command Center, Quick Command and Chat execution. */
   objectiveRun: MorpheusObjectiveRun | null;
   objectiveHistory: MorpheusObjectiveSnapshot | null;
+  /** Exact live submission only; loading saved task history never restores it. */
+  objectiveSpeech: { objectiveRunId: string; origin: MorpheusReplySpeechOrigin; claimedStates: string[] } | null;
+  bindObjectiveSpeech: (objectiveRunId: string, origin: MorpheusReplySpeechOrigin) => void;
+  clearObjectiveSpeech: (objectiveRunId?: string) => void;
+  claimObjectiveSpeech: (objectiveRunId: string, stateKey: string) => boolean;
 
   setInput: (input: string) => void;
   submit: () => Promise<void>;
   runObjective: (
     objective: string,
     originType?: SubmitMorpheusObjectivePayload['originType'],
+    onAdmitted?: (objectiveRunId: string) => void,
   ) => Promise<boolean>;
   clearPlan: () => void;
   subscribeObjectives: () => () => void;
@@ -425,6 +433,18 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
   permission: null,
   objectiveRun: null,
   objectiveHistory: null,
+  objectiveSpeech: null,
+  bindObjectiveSpeech: (objectiveRunId, origin) => set({ objectiveSpeech: { objectiveRunId, origin, claimedStates: [] } }),
+  clearObjectiveSpeech: (objectiveRunId) => {
+    objectiveSpeechRevision += 1;
+    if (!objectiveRunId || get().objectiveSpeech?.objectiveRunId === objectiveRunId) set({ objectiveSpeech: null });
+  },
+  claimObjectiveSpeech: (objectiveRunId, stateKey) => {
+    const target = get().objectiveSpeech;
+    if (!target || target.objectiveRunId !== objectiveRunId || target.claimedStates.includes(stateKey)) return false;
+    set({ objectiveSpeech: { ...target, claimedStates: [...target.claimedStates, stateKey].slice(-8) } });
+    return true;
+  },
 
   setInput: (input) => set({ input }),
 
@@ -434,10 +454,12 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
     await get().runObjective(objective, 'command-bar');
   },
 
-  runObjective: async (objectiveInput, originType = 'command-bar') => {
+  runObjective: async (objectiveInput, originType = 'command-bar', onAdmitted) => {
     const objective = objectiveInput.trim();
     if (!objective || get().submitting) return false;
 
+    get().clearObjectiveSpeech();
+    const speechRevision = objectiveSpeechRevision;
     set({ submitting: true, unsupported: null });
     try {
       // Every interactive surface enters the same Main-owned objective state
@@ -465,6 +487,11 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
         return false;
       }
       set({ input: '', selectedObjectiveRunId: result.objectiveRunId });
+      if (speechRevision === objectiveSpeechRevision) {
+        if (originType !== 'voice') get().bindObjectiveSpeech(result.objectiveRunId,
+          { surface: originType === 'quick-command' ? 'compact' : 'full', input: 'typed' });
+        onAdmitted?.(result.objectiveRunId);
+      }
       await get().loadObjectives();
       return true;
     } catch (error) {
@@ -480,13 +507,17 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
     }
   },
 
-  clearPlan: () => set({
+  clearPlan: () => {
+    get().clearObjectiveSpeech();
+    set({
     plan: null,
     unsupported: null,
     planResult: null,
     objectiveRun: null,
     selectedObjectiveRunId: null,
-  }),
+    objectiveSpeech: null,
+    });
+  },
 
   subscribeObjectives: () => hostEvents.onMorpheusObjectiveEvent((event) => {
     set((state) => objectiveStatePatch(event, state));
@@ -550,6 +581,7 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
   cancelObjective: async () => {
     const run = get().objectiveRun;
     if (!run || isObjectiveTerminalState(run.state)) return;
+    get().clearObjectiveSpeech(run.objectiveRunId);
     await hostApi.morpheus.cancelObjective({ objectiveRunId: run.objectiveRunId });
   },
 

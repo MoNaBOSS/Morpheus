@@ -1,9 +1,10 @@
 import type { AcpTimelineSnapshot } from './acp/timeline-types';
 import type { AcpTurnTiming } from './acp/turn-timings';
 import type { MorpheusAssistantSnapshot, MorpheusAssistantTurn } from '@shared/morpheus/assistant-session-types';
+import type { MorpheusReplySurface } from '@shared/morpheus/voice-types';
 
 /** Ephemeral live presentation reference. Never restored from saved history. */
-export type MorpheusVoiceReplyTurn = { turn: MorpheusAssistantTurn; voiceGeneration: number; speechClaimed?: boolean };
+export type MorpheusVoiceReplyTurn = { turn: MorpheusAssistantTurn; voiceGeneration: number; surface: MorpheusReplySurface; speechClaimed?: boolean };
 export type MorpheusConversationSpeechInput = {
   reply: MorpheusVoiceReplyTurn | null;
   snapshot: MorpheusAssistantSnapshot | null;
@@ -24,14 +25,14 @@ type ReplySelection = { kind: 'wait' | 'invalid' } | { kind: 'ready'; text: stri
  * Thoughts, tool output, errors and compatibility captions are never speech. */
 export function selectMorpheusConversationSpeech(input: MorpheusConversationSpeechInput, boundGeneration?: number): ReplySelection {
   const target = input.reply?.turn;
-  if (!target || target.source !== 'voice' || !input.enabled) return { kind: 'invalid' };
+  if (!target || target.source === 'onboarding' || target.source === 'voice' && !input.enabled) return { kind: 'invalid' };
   const snapshot = input.snapshot;
   if (!snapshot) return { kind: 'wait' };
   if (snapshot.selectedConversationId !== target.conversationId) return { kind: 'invalid' };
   const index = snapshot.turns.findIndex((turn) => turn.turnId === target.turnId && turn.conversationId === target.conversationId);
   const admission = snapshot.turns[index];
   if (!admission) return { kind: 'wait' };
-  if (admission.generation !== target.generation || admission.source !== 'voice'
+  if (admission.generation !== target.generation || admission.source !== target.source
     || admission.status === 'cancelled' || admission.status === 'failed'
     || snapshot.turns.slice(index + 1).some((turn) => turn.conversationId === target.conversationId)) return { kind: 'invalid' };
   if (input.activeSessionKey !== target.conversationId || input.timeline.sessionId !== target.conversationId) return { kind: boundGeneration === undefined ? 'wait' : 'invalid' };
@@ -118,10 +119,13 @@ export function createMorpheusConversationSpeechOwner(options: {
     // consume a real reply. A subsequent real remount cannot speak it twice.
     queueMicrotask(() => {
       if (!isCurrent() || !options.claim(reply.turn.turnId)) return;
-      if (!read().speakResponses) { void options.continueAfterResponse(); return; }
+      if (!read().speakResponses) {
+        if (reply.turn.source === 'voice') void options.continueAfterResponse();
+        return;
+      }
       controller = new AbortController();
       void options.play(selection.text, controller.signal).then((result) => {
-        if (result !== 'cancelled' && isCurrent()) void options.continueAfterResponse();
+        if (result !== 'cancelled' && isCurrent() && reply.turn.source === 'voice') void options.continueAfterResponse();
       }).catch(() => { if (isCurrent()) options.onFailure(); });
     });
   };

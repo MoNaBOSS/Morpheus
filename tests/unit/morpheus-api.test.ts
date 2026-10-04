@@ -152,6 +152,9 @@ function stubOptions(runtime = stubRuntime()) {
       synthesize: vi.fn(),
       cancelSpeech: vi.fn(),
       prepareOutput: vi.fn(async () => ({ prepared: true })),
+      prepareAmbientInput: vi.fn(async () => ({ sessionId: 'voice-00000000-0000-0000-0000-000000000001', localWakeEnabled: true,
+        presence: { v: 3, ambientEnabled: true, state: 'asleep' } })),
+      feedWakeAudio: vi.fn(async () => ({ ready: true })),
     } as never,
     proactive: {
       snapshot: vi.fn(() => ({ settings: { enabled: false }, attentions: [] })),
@@ -621,6 +624,19 @@ describe('runtime control validation', () => {
 });
 
 describe('createMorpheusApi', () => {
+  it('delegates input preparation and only an exact bounded opaque-token PCM envelope', async () => {
+    const options = stubOptions(), api = createMorpheusApi(options);
+    await expect(api.prepareAmbientVoiceInput()).resolves.toMatchObject({ localWakeEnabled: true, presence: { state: 'asleep' } });
+    expect(options.voice.prepareAmbientInput).toHaveBeenCalledWith();
+    const frame = { sessionId: 'voice-00000000-0000-0000-0000-000000000001', sequence: 0, pcmBase64: Buffer.alloc(6400).toString('base64') };
+    await expect(api.feedAmbientWakeAudio(frame)).resolves.toEqual({ ready: true });
+    expect(options.voice.feedWakeAudio).toHaveBeenCalledWith(frame);
+    expect(() => api.feedAmbientWakeAudio({ ...frame, path: 'C:\\audio.wav' } as never)).toThrow(MorpheusValidationError);
+    expect(() => api.feedAmbientWakeAudio({ ...frame, sequence: -1 })).toThrow(MorpheusValidationError);
+    expect(() => api.feedAmbientWakeAudio({ ...frame, pcmBase64: Buffer.alloc(12800).toString('base64') })).toThrow(MorpheusValidationError);
+    expect(options.voice.feedWakeAudio).toHaveBeenCalledOnce();
+    expect(options.voice.transcribe).not.toHaveBeenCalled(); expect(options.voice.synthesize).not.toHaveBeenCalled();
+  });
   it('exposes explicit local output preparation without forwarding audio, text or a provider request', async () => {
     const options = stubOptions(), api = createMorpheusApi(options);
     await expect(api.prepareVoiceOutput()).resolves.toEqual({ prepared: true });
@@ -660,6 +676,7 @@ describe('createMorpheusApi', () => {
       'executePlan',
       'expandCompanionSurface',
       'exportMemories',
+      'feedAmbientWakeAudio',
       'filesRoot',
       'goal',
       'goals',
@@ -673,6 +690,7 @@ describe('createMorpheusApi', () => {
       'openWorkspace',
       'pauseSystem',
       'permissionCenter',
+      'prepareAmbientVoiceInput',
       'prepareVoiceOutput',
       'previewInteractiveSite',
       'proactiveSnapshot',

@@ -28,6 +28,7 @@ import {
   type PermissionRequirement,
 } from '../execution-types';
 import type { MorpheusActionParams } from '../action-types';
+import { parseBrowserSearch } from './browser-search';
 
 export type InterpretOptions = {
   objective: string;
@@ -59,10 +60,6 @@ const PROCESS_PATTERNS = [
 const URL_PATTERN = /\bhttps?:\/\/[^\s<>"']+/i;
 const BROWSER_HOME_PATTERNS = [
   /\b(open|launch|start)\b[^.]*\b(browser|web)\b/i,
-];
-const WEB_SEARCH_PATTERNS = [
-  /\b(?:open|launch|start)\b[^.]*\bbrowser\b[^.]*\bsearch\b(?:\s+the\s+web)?(?:\s+for)?\s+(.{1,200})$/i,
-  /\b(?:search|google|look\s+up)\b(?:\s+the\s+web)?(?:\s+for)?\s+(.{1,200})$/i,
 ];
 const PROJECT_PATTERNS = [
   /\b(open|launch)\b.*\b(vscode|visual\s+studio\s+code|project|workspace)\b/i,
@@ -207,15 +204,8 @@ export function extractHttpUrl(objective: string): string | null {
 }
 
 export function extractWebSearchQuery(objective: string): string | null {
-  // Filesystem search is a different capability and is handled earlier. Never
-  // reinterpret an incomplete file command as a web search.
-  if (/\b(files?|folders?|director(?:y|ies)|workspace)\b/i.test(objective)) return null;
-  for (const pattern of WEB_SEARCH_PATTERNS) {
-    const match = pattern.exec(objective);
-    const query = match?.[1]?.trim().replace(/^["']|["'.!?]+$/g, '').trim();
-    if (query && query.length <= 200 && !URL_PATTERN.test(query)) return query;
-  }
-  return null;
+  const search = parseBrowserSearch(objective);
+  return search?.kind === 'search' ? search.query : null;
 }
 
 export function extractProjectPath(objective: string): string | null {
@@ -299,6 +289,18 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
     steps,
     plannedBy: 'deterministic',
   });
+
+  // Parse the entire browser request before matching capability keywords.
+  // Search text is literal; a trailing action requires the full planner.
+  const browserSearch = parseBrowserSearch(text);
+  if (browserSearch?.kind === 'unsupported') {
+    return { ok: false, unsupported: { objective: text, reason: 'not-understood', supportedCapabilities } };
+  }
+  if (browserSearch?.kind === 'search') {
+    return { ok: true, plan: basePlan([makeStep('step-1', 'web.openUrl', { url: browserSearch.url },
+      buildPermission('web.openUrl', platform, new URL(browserSearch.url).origin),
+      'morpheus.plan.steps.webSearch', { query: browserSearch.query })]) };
+  }
 
   const readPage = /^(?:read|retrieve)\s+(https:\/\/\S+)$/i.exec(text);
   if (readPage) {
@@ -573,12 +575,9 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
     };
   }
 
-  const webSearchQuery = extractWebSearchQuery(text);
   const openBrowserHome = BROWSER_HOME_PATTERNS.some((pattern) => pattern.test(text));
-  if (webSearchQuery || openBrowserHome) {
-    const targetUrl = webSearchQuery
-      ? `https://www.google.com/search?q=${encodeURIComponent(webSearchQuery)}`
-      : 'https://www.google.com/';
+  if (openBrowserHome) {
+    const targetUrl = 'https://www.google.com/';
     return {
       ok: true,
       plan: basePlan([
@@ -587,8 +586,8 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
           'web.openUrl',
           { url: targetUrl },
           buildPermission('web.openUrl', platform, 'https://www.google.com'),
-          webSearchQuery ? 'morpheus.plan.steps.webSearch' : 'morpheus.plan.steps.webOpenUrl',
-          webSearchQuery ? { query: webSearchQuery } : { url: targetUrl },
+          'morpheus.plan.steps.webOpenUrl',
+          { url: targetUrl },
         ),
       ]),
     };

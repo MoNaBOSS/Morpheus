@@ -5,6 +5,7 @@ import { stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
 import { hostEvents } from '@/lib/host-events';
 import i18n from '@/i18n';
 import type { MorpheusVoiceReplyTurn } from '@/lib/morpheus-conversation-speech';
+import type { MorpheusAssistantTurn } from '@shared/morpheus/assistant-session-types';
 import {
   morpheusBlobToBase64,
   MorpheusAmbientVoiceCapture,
@@ -26,6 +27,7 @@ import {
   type MorpheusVoicePresence,
   type MorpheusVoiceSettingsPatch,
   type MorpheusVoiceStatus,
+  type MorpheusReplySurface,
 } from '@shared/morpheus/voice-types';
 
 export type MorpheusVoicePhase =
@@ -61,7 +63,8 @@ export function classifyMorpheusVoiceError(error: unknown): MorpheusVoiceErrorKi
   if (name === 'notallowederror' || name === 'permissiondeniederror') return 'permission';
   if (message.includes('microphone is muted') || message.includes('microphone muted')) return 'muted';
   if (/microphone (?:is )?disconnected/.test(message) || message.includes('notfounderror')
-    || message.includes('requested device not found')) return 'device';
+    || message.includes('requested device not found') || message.includes('selected microphone')
+    || message.includes('microphone audio') || message.includes('local wake audio')) return 'device';
   if (message.includes('empty') || message.includes('no speech') || message.includes("couldn't hear")) {
     return 'repeat';
   }
@@ -97,6 +100,8 @@ export type MorpheusVoiceState = {
   followUpUntil: number | null;
   /** Only the exact turn admitted by this live voice interaction can speak. */
   replyTurn: MorpheusVoiceReplyTurn | null;
+  getReplyGeneration: () => number;
+  registerReplyTurn: (turn: MorpheusAssistantTurn, surface: MorpheusReplySurface, expectedGeneration?: number) => void;
   clearReplyTurn: (turnId: string) => void;
   claimReplyTurn: (turnId: string) => boolean;
   reportSpeechFailure: () => void;
@@ -173,18 +178,22 @@ async function blobToBase64(blob: Blob): Promise<string> {
 }
 
 async function routeVoiceInput(text: string, generation: number): Promise<void> {
+  const source = useMorpheusVoiceStore.getState().source;
+  const surface: MorpheusReplySurface = ['quick-command', 'global-shortcut', 'ambient'].includes(source ?? '') ? 'compact' : 'full';
   const operator = useMorpheusOperatorStore.getState();
   const decision = await operator.route(text, 'voice');
   if (generation !== operationGeneration) return;
   if (decision.route === 'objective') {
-    if (await useMorpheusCommandStore.getState().runObjective(decision.text, 'voice')) {
+    if (await useMorpheusCommandStore.getState().runObjective(decision.text, 'voice', (id) => {
+      if (generation === operationGeneration) useMorpheusCommandStore.getState().bindObjectiveSpeech(id, { surface, input: 'voice' });
+    })) {
       useMorpheusConversationStore.getState().setDraft('');
     }
     return;
   }
   if (decision.route === 'conversation') {
     const success = await useMorpheusConversationStore.getState().submit(decision.text, 'voice', (turn) => {
-      if (generation === operationGeneration) useMorpheusVoiceStore.setState({ replyTurn: { turn, voiceGeneration: generation } });
+      if (source !== 'onboarding') useMorpheusVoiceStore.getState().registerReplyTurn(turn, surface, generation);
     });
     if (!success && generation === operationGeneration) throw new Error(useMorpheusConversationStore.getState().dispatchError ?? 'Conversation delivery failed.');
   }
@@ -333,13 +342,25 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
     const sessionGeneration = ++ambientGeneration;
     let capturedFollowUp = false;
     ambientStarting = (async () => {
-      const presence = await hostApi.morpheus.beginAmbientVoice();
-      if (sessionGeneration !== ambientGeneration || get().ambientScope !== 'companion' || presence.state === 'asleep') return;
-      set({ presence, error: null, errorKind: null });
+      const session = await hostApi.morpheus.prepareAmbientVoiceInput();
+      if (sessionGeneration !== ambientGeneration || get().ambientScope !== 'companion' || !session.sessionId) return;
+      set({ presence: session.presence });
+      let audioSequence = 0;
       const controller = new MorpheusAmbientVoiceCapture({
         inputDeviceId: status.settings.inputDeviceId,
         silenceMs: status.settings.ambientSilenceMs,
         maxUtteranceMs: status.settings.ambientMaxUtteranceMs,
+        async onAudioFrame(pcm) {
+          if (sessionGeneration !== ambientGeneration || microphoneMuteRequested || get().ambientScope !== 'companion') {
+            throw new DOMException('Voice input stopped', 'AbortError');
+          }
+          // A no-wake provider session still proves actual acquisition once;
+          // subsequent room audio stays in Chromium until an admitted recording.
+          if (!session.localWakeEnabled && audioSequence > 0) return;
+          let binary = '';
+          for (const byte of pcm) binary += String.fromCharCode(byte);
+          await hostApi.morpheus.feedAmbientWakeAudio({ sessionId: session.sessionId!, sequence: audioSequence++, pcmBase64: window.btoa(binary) });
+        },
         shouldCapture: () => {
           const presenceState = get().presence?.state;
           if (get().ambientScope !== 'companion' || (presenceState && !['armed', 'listening'].includes(presenceState))) return false;
@@ -397,10 +418,12 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
           set({ phase: 'error', error: error.message, errorKind: classifyMorpheusVoiceError(error) });
         },
       });
+      // Register before acquisition so mute/foreground/quit cancels pending
+      // getUserMedia, graph preparation and queued PCM through this same owner.
+      ambientCapture = controller;
       await controller.start();
       if (sessionGeneration !== ambientGeneration) { controller.stop(); return; }
-      ambientCapture = controller;
-      set({ ambientReady: true });
+      set({ ambientReady: true, error: null, errorKind: null });
     })();
     try {
       await ambientStarting;
@@ -450,6 +473,11 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
     startedAt: null,
     followUpUntil: null,
     replyTurn: null,
+    getReplyGeneration: () => operationGeneration,
+    registerReplyTurn: (turn, surface, expectedGeneration) => {
+      if (expectedGeneration !== undefined && expectedGeneration !== operationGeneration) return;
+      set({ replyTurn: { turn, surface, voiceGeneration: operationGeneration } });
+    },
     clearReplyTurn: (turnId) => { if (get().replyTurn?.turn.turnId === turnId) set({ replyTurn: null }); },
     claimReplyTurn: (turnId) => {
       const reply = get().replyTurn;
@@ -603,7 +631,9 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
           && !ambientCapture
           && !ambientStarting) {
           void get().ensureAmbient().catch(() => undefined);
-        } else if (!presence.ambientEnabled || presence.state === 'asleep' || presence.state === 'error') {
+        } else if (!presence.ambientEnabled || presence.state === 'error'
+          || (presence.state === 'asleep' && !(ambientStarting && presence.sessionStartedAt
+            && get().ambientScope === 'companion' && !microphoneMuteRequested))) {
           stopAmbientLocal();
         }
       });
@@ -619,7 +649,10 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
         get().cancel();
         set((state) => ({ status: state.status ? effectiveVoiceStatus(state.status) : null }));
       }
-      else if (patch.speakResponses === false) { stopMorpheusSpeech(); endFollowUp(); set({ replyTurn: null }); }
+      else if (patch.speakResponses === false || patch.replySpeechMode !== undefined) {
+        stopMorpheusSpeech(); endFollowUp(); set({ replyTurn: null });
+        useMorpheusCommandStore.getState().clearObjectiveSpeech();
+      }
       try {
         const received = await hostApi.morpheus.updateVoiceSettings(patch);
         if (revision !== settingsOperationRevision || authority !== (get().presence?.authorityRevision ?? 0)) return;
@@ -680,6 +713,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
       }
       if (!['idle', 'ready', 'error'].includes(get().phase)) return;
       // Explicit push-to-talk interrupts output before opening the microphone.
+      useMorpheusCommandStore.getState().clearObjectiveSpeech();
       stopMorpheusSpeech();
       const continuing = (get().followUpUntil ?? 0) > Date.now();
       stopMorpheusWakeCue();
@@ -773,7 +807,15 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
 
     cancel() {
       endFollowUp();
+      useMorpheusCommandStore.getState().clearObjectiveSpeech();
       operationGeneration += 1;
+      if (ambientCapture || ambientStarting || get().source === 'ambient') {
+        stopAmbientLocal();
+        const cancelledGeneration = operationGeneration;
+        void hostApi.morpheus.endAmbientVoice().then(() => {
+          if (cancelledGeneration === operationGeneration && !ambientAutoStartBlocked) return get().ensureAmbient();
+        }).catch(() => undefined);
+      }
       discardRecording = true;
       try {
         if (recorder?.state === 'recording') recorder.stop();
@@ -788,6 +830,8 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
 
     dismiss() {
       if (get().phase === 'listening' || get().phase === 'transcribing') return;
+      useMorpheusCommandStore.getState().clearObjectiveSpeech();
+      operationGeneration += 1;
       set({ phase: 'idle', transcript: null, error: null, errorKind: null, source: null, startedAt: null, replyTurn: null });
     },
   };

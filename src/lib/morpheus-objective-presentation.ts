@@ -4,6 +4,7 @@ import type { ExecutionPlan } from '@shared/morpheus/execution-types';
 
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 type SimpleActionOutcome = { kind: 'website'; target: string } | { kind: 'application'; labelKey: string | null };
+const LEGACY_UNINTERPRETED_COMMAND = /^I could not safely turn that objective into an execution plan\. Currently supported capabilities: [a-z][a-zA-Z0-9.]*?(?:, [a-z][a-zA-Z0-9.]*)*\.$/;
 
 const SITE_NAMES: Readonly<Record<string, string>> = {
   'youtube.com': 'YouTube', 'www.youtube.com': 'YouTube', 'music.youtube.com': 'YouTube Music',
@@ -49,7 +50,8 @@ export function morpheusQuietSimpleAction(run: MorpheusObjectiveRun, plan?: Exec
 
 /** One message projection for compact, expanded and spoken task outcomes. */
 export function morpheusObjectiveMessage(run: MorpheusObjectiveRun, t: Translate, plan?: ExecutionPlan | null): string | null {
-  if (run.clarification) return run.clarification;
+  if (run.clarification) return LEGACY_UNINTERPRETED_COMMAND.test(run.clarification)
+    ? t('morpheus.actionOutcome.rephraseCommand') : run.clarification;
   if (run.error) return run.error.message;
   if (run.state === 'waiting-for-approval') return run.summary ?? t('morpheus.objective.states.waiting-for-approval');
   const outcome = morpheusSimpleActionOutcome(run);

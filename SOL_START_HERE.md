@@ -1,4 +1,27 @@
-# Current continuation — per-user OpenRouter correction, 2026-10-04
+# Current continuation — separate command/voice delivery, 2026-10-04
+
+The owner approves the visual direction and requests a separately delivered full
+Windows BYOK application. Preserve the current preview.13 and every profile/key.
+Baseline `70cbb324` was clean and matched fetched origin. Preview.14 normal-package
+qualification and exact-source disposable install/reinstall/uninstall run
+37198664430 succeeded; the first-key activation failure below is historical and
+corrected in that baseline. New source prepares preview.15, not a renamed stable
+build. The single experience specification and Windows checklist remain authority.
+
+Correct explicit site-search intent, selected-microphone tray wake and spoken
+replies for typed/voice orb requests while expanded chat remains quiet. Native
+Windows wake recognition identifies an audio range only; its poor dictated command
+text must never execute. Feed original selected-input PCM to included Whisper and
+require the exact wake prefix. Wake audio is bounded to 21.5 seconds in volatile
+memory; only addressed audio uses the existing guarded temporary STT file, cleaned
+after use. Mute and foreground scope invalidate pending work. Synthetic native
+audio qualification is useful evidence, not physical microphone/echo acceptance.
+Keep purposeful motion, actual audio feedback and available Advanced capabilities.
+Next: finish bounded source and rendered checks, qualify frozen normal package,
+then place its identified installer and concise evidence in a new delivery folder.
+No owner or chat-posted credential may enter source, diagnostics or delivery.
+
+## Previous per-user OpenRouter correction
 
 Latest bounded source work prepares preview.14 while preserving the delivered
 preview.13 and owner profile. OpenRouter model choice is explicit; model-only

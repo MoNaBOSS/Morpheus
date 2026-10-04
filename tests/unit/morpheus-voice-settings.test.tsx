@@ -65,6 +65,16 @@ beforeEach(() => {
 });
 
 describe('Morpheus voice settings', () => {
+  it('shows the orb default and saves a deliberate speech mode without enabling an existing quiet choice', async () => {
+    const quiet = { ...STATUS, settings: { ...STATUS.settings, speakResponses: false } };
+    mocks.voiceStatus.mockResolvedValue(quiet);
+    render(<MorpheusVoiceSettings />);
+    const mode = await screen.findByTestId('morpheus-reply-speech-mode');
+    expect(mode).toHaveValue('orb');
+    expect(screen.getByTestId('morpheus-reply-speech-description')).toHaveTextContent('morpheus.voice.settings.replySpeechDescriptions.orb');
+    fireEvent.change(mode, { target: { value: 'voice' } });
+    await waitFor(() => expect(mocks.updateVoiceSettings).toHaveBeenCalledExactlyOnceWith({ replySpeechMode: 'voice' }));
+  });
   it('reports actual preview fallback and resets the result after a voice change', async () => {
     mocks.play.mockResolvedValue('windows');
     render(<MorpheusVoiceSettings />);

@@ -95,7 +95,7 @@ beforeEach(() => {
   useMorpheusCommandStore.setState({
     input: '', plan: null, unsupported: null, interpreting: false, executing: false,
     planResult: null, consent: null, artifacts: [], objectiveRun: null,
-    objectiveHistory: null, submitting: false, selectedObjectiveRunId: null, consentQueue: [],
+    objectiveHistory: null, objectiveSpeech: null, submitting: false, selectedObjectiveRunId: null, consentQueue: [],
   });
   useMorpheusExecutionContextStore.setState({
     selectedAgentProfileId: null,
@@ -107,6 +107,24 @@ beforeEach(() => {
 });
 
 describe('unified Morpheus objective store', () => {
+  it('correlates the returned typed run with its originating surface and claims each utterance once', async () => {
+    await useMorpheusCommandStore.getState().runObjective('Show system information', 'quick-command');
+    expect(useMorpheusCommandStore.getState().objectiveSpeech).toMatchObject({ objectiveRunId: 'objective-1', origin: { surface: 'compact', input: 'typed' } });
+    expect(useMorpheusCommandStore.getState().claimObjectiveSpeech('different-run', 'complete')).toBe(false);
+    expect(useMorpheusCommandStore.getState().claimObjectiveSpeech('objective-1', 'complete')).toBe(true);
+    expect(useMorpheusCommandStore.getState().claimObjectiveSpeech('objective-1', 'complete')).toBe(false);
+    await useMorpheusCommandStore.getState().runObjective('Show system information', 'chat');
+    expect(useMorpheusCommandStore.getState().objectiveSpeech?.origin).toEqual({ surface: 'full', input: 'typed' });
+  });
+  it('cannot revive a speech target when Stop precedes the delayed admission receipt', async () => {
+    let admit!: (result: unknown) => void;
+    mocks.submitObjective.mockReturnValueOnce(new Promise((resolve) => { admit = resolve; }));
+    const admitted = vi.fn();
+    const pending = useMorpheusCommandStore.getState().runObjective('Show system information', 'quick-command', admitted);
+    useMorpheusCommandStore.getState().clearObjectiveSpeech();
+    admit({ accepted: true, objectiveRunId: 'objective-late' }); await pending;
+    expect(useMorpheusCommandStore.getState().objectiveSpeech).toBeNull(); expect(admitted).not.toHaveBeenCalled();
+  });
   it('keeps task selection stable while background tasks finish and cancels only the selection', async () => {
     let handler!: (value: MorpheusObjectiveEvent) => void;
     mocks.onObjective.mockImplementation((next) => { handler = next; return vi.fn(); });

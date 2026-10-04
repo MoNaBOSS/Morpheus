@@ -577,6 +577,10 @@ export const hostApi = {
       invokeHost('morpheus', 'synthesizeSpeech', payload)
     ),
     beginAmbientVoice: () => invokeHost('morpheus', 'beginAmbientVoice'),
+    prepareAmbientVoiceInput: () => invokeHost('morpheus', 'prepareAmbientVoiceInput'),
+    feedAmbientWakeAudio: (payload: import('@shared/morpheus/wake-audio-types').MorpheusWakeAudioFrame) => (
+      invokeHost('morpheus', 'feedAmbientWakeAudio', payload)
+    ),
     endAmbientVoice: () => invokeHost('morpheus', 'endAmbientVoice'),
     setAmbientVoiceListening: (payload: MorpheusAmbientListeningPayload) => (
       invokeHost('morpheus', 'setAmbientVoiceListening', payload)

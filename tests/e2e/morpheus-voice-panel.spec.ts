@@ -47,7 +47,7 @@ test('Voice panel groups real checks with their controls and keeps mute and repa
           return { id: request.id, ok: true, data: status };
         }
         if (request.module === 'morpheus' && request.action === 'voiceStatus') return { id: request.id, ok: true, data: status };
-        if (request.module === 'morpheus' && ['beginAmbientVoice', 'transcribeAudio', 'synthesizeSpeech', 'prepareVoiceOutput'].includes(request.action)) {
+        if (request.module === 'morpheus' && ['beginAmbientVoice', 'prepareAmbientVoiceInput', 'feedAmbientWakeAudio', 'transcribeAudio', 'synthesizeSpeech', 'prepareVoiceOutput'].includes(request.action)) {
           throw new Error('This presentation test must not start ambient, recognition or output work');
         }
         return original(event, request);

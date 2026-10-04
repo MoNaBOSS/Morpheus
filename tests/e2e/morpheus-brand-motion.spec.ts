@@ -1,6 +1,47 @@
 import { join } from 'node:path';
 import { closeElectronApp, expect, getStableWindow, test } from './fixtures/electron';
 
+test('completed work settles into living presence and compact composer retains focus feedback', async ({ launchElectronApp }, info) => {
+  const app = await launchElectronApp({ skipSetup: true });
+  try {
+    const page = await getStableWindow(app);
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await expect(page).toHaveTitle('Morpheus');
+    await expect(page.locator('vite-error-overlay, nextjs-portal')).toHaveCount(0);
+    await page.getByTestId('morpheus-command-input').fill('Show system information');
+    await page.getByTestId('morpheus-command-submit').click();
+    await expect(page.getByTestId('command-center-objective-state')).toContainText(/complete/i);
+    const fullOrb = page.getByTestId('command-center-page').getByTestId('morpheus-fluid-orb');
+    await expect(fullOrb).toHaveAttribute('data-motion-state', 'complete');
+    const artwork = fullOrb.locator('.morpheus-motion__artwork');
+    // Observe after the finite completion acknowledgement. The real result stays
+    // selected; the companion must keep quiet movement rather than freeze.
+    await expect.poll(() => artwork.evaluate((node) => node.getAnimations().some((animation) =>
+      (animation as CSSAnimation).animationName === 'morpheus-motion-core-presence'
+      && Number(animation.currentTime) > 1100))).toBe(true);
+    const transform = await artwork.evaluate((node) => getComputedStyle(node).transform);
+    await expect.poll(() => artwork.evaluate((node) => getComputedStyle(node).transform)).not.toBe(transform);
+    await page.screenshot({ path: info.outputPath('completed-living-presence.png') });
+
+    await page.getByTestId('signal-nav-presence').click();
+    const compact = page.getByTestId('morpheus-quick-command');
+    await expect(compact).toBeVisible();
+    await page.getByTestId('quick-command-input').fill('Search YouTube for Mr Beast');
+    await expect(page.getByTestId('quick-command-input')).toBeFocused();
+    await expect(compact.locator('.morpheus-setup-composer')).toHaveCSS('border-color', 'rgb(133, 245, 185)');
+    await expect(page.getByTestId('quick-command-settings')).toBeInViewport();
+    await expect(page.getByTestId('quick-command-submit')).toBeInViewport();
+    // A quiet composer must not fabricate audio activity.
+    await expect(compact.getByTestId('morpheus-audio-meter')).toHaveCount(0);
+    await page.screenshot({ path: info.outputPath('compact-focused-composer.png') });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(compact.locator('.morpheus-motion__artwork')).toHaveCSS('animation-name', 'none');
+    await expect(compact.locator('.morpheus-setup-composer')).toHaveCSS('transition-duration', '0s');
+    expect(errors).toEqual([]);
+  } finally { await closeElectronApp(app); }
+});
+
 test('header identity visibly moves, respects reduced motion and pauses with the hidden window', async ({ launchElectronApp }, info) => {
   const app = await launchElectronApp({ skipSetup: true });
   let saveVideo: (() => Promise<void>) | undefined;

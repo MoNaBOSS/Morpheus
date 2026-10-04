@@ -28,6 +28,9 @@ export const MORPHEUS_VOICE_MIME_TYPES = Object.freeze([
 ] as const);
 
 export type MorpheusVoiceMimeType = typeof MORPHEUS_VOICE_MIME_TYPES[number];
+export type MorpheusReplySpeechMode = 'orb' | 'voice' | 'all';
+export type MorpheusReplySurface = 'compact' | 'full';
+export type MorpheusReplySpeechOrigin = { surface: MorpheusReplySurface; input: 'typed' | 'voice' };
 
 export type MorpheusVoiceSettings = {
   /** Included local voice is the default; preserved provider configuration is opt-in. */
@@ -38,6 +41,8 @@ export type MorpheusVoiceSettings = {
   providerAccountId: string | null;
   modelId: string;
   speakResponses: boolean;
+  /** Master speakResponses remains authoritative. Missing mode uses orb replies. */
+  replySpeechMode?: MorpheusReplySpeechMode;
   /** Null reuses the selected/default compatible provider. */
   speechProviderAccountId: string | null;
   speechModelId: string;
@@ -122,6 +127,7 @@ export type MorpheusVoiceSettingsPatch = Partial<Pick<
   | 'providerAccountId'
   | 'modelId'
   | 'speakResponses'
+  | 'replySpeechMode'
   | 'speechProviderAccountId'
   | 'speechModelId'
   | 'speechVoice'

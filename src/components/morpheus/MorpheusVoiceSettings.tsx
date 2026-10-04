@@ -13,6 +13,7 @@ import {
   type MorpheusVoicePresetId,
 } from '@shared/morpheus/provider-policy';
 import { MorpheusVoiceCheck } from './MorpheusVoiceCheck';
+import { MorpheusReplySpeechControl } from './MorpheusReplySpeechControl';
 
 export function MorpheusVoiceSettings() {
   const { t } = useTranslation('dashboard');
@@ -254,6 +255,8 @@ export function MorpheusVoiceSettings() {
           testId="morpheus-voice-speak-responses"
           onChange={(speakResponses) => void updateSettings({ speakResponses })}
         />
+        <MorpheusReplySpeechControl settings={settings}
+          onChange={(replySpeechMode) => void updateSettings({ replySpeechMode })} />
         <SettingToggle
           label={t('morpheus.voice.settings.handsFreeFollowUp')}
           description={t('morpheus.voice.settings.handsFreeFollowUpDescription')}

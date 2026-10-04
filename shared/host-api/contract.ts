@@ -7,6 +7,7 @@ import type {
 } from '../acp-chat/types';
 import type { RawMessage } from '../chat/types';
 import type { ManagedAccountSnapshot, ManagedAuthResult } from '../morpheus/managed-types';
+import type { MorpheusAmbientInputSession, MorpheusWakeAudioFrame } from '../morpheus/wake-audio-types';
 import type { MorpheusPublicationConnectionInput, MorpheusPublicationPreview, MorpheusPublicationReceipt, MorpheusPublicationResult, MorpheusPublicationSource, MorpheusPublicationState } from '../morpheus/publication-types';
 import type { AgentsSnapshot } from '../types/agent';
 import type { CronJob, CronJobCreateInput, CronJobUpdateInput } from '../types/cron';
@@ -1285,6 +1286,8 @@ export type HostApiContract = {
     synthesizeSpeech: (payload: MorpheusSynthesizeSpeechPayload) => MorpheusSynthesizeSpeechResult;
     cancelSpeech: () => void;
     beginAmbientVoice: () => MorpheusVoicePresence;
+    prepareAmbientVoiceInput: () => MorpheusAmbientInputSession;
+    feedAmbientWakeAudio: (payload: MorpheusWakeAudioFrame) => { ready: boolean };
     endAmbientVoice: () => MorpheusVoicePresence;
     setAmbientVoiceListening: (payload: MorpheusAmbientListeningPayload) => MorpheusVoicePresence;
     transcribeAmbientAudio: (payload: MorpheusTranscribeAudioPayload) => MorpheusTranscriptionResult;

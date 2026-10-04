@@ -22,9 +22,21 @@ describe('Morpheus Ask, Auto, and Act routing', () => {
     'Can you open Notepad?',
     'I need you to prepare a launch plan',
     'Set up a reminder for tomorrow',
+    'go to youtube and search mr beast',
+    'Open the YouTube and search for RNR.',
+    'Could you visit YouTube please?',
+    'Look up mr beast on YouTube',
+    'YouTube search mr beast',
   ])('routes a clear Auto objective: %s', (text) => {
     expect(routeMorpheusInteraction({ text, mode: 'auto', surface: 'chat' }).route).toBe('objective');
   });
+
+  it.each(['command-center', 'presence', 'quick-command', 'voice', 'chat'] as const)(
+    'routes an explicit site search consistently from %s', (surface) => {
+      expect(routeMorpheusInteraction({ text: 'go to youtube and search mr beast', mode: 'auto', surface }))
+        .toMatchObject({ route: 'objective', reason: 'actionable-intent', confidence: 'high' });
+    },
+  );
 
   it.each([
     'Why is the sky blue?',

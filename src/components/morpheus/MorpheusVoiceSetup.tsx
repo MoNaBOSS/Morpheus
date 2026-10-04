@@ -5,6 +5,7 @@ import { AudioLines, ChevronDown, Mic, MicOff, RefreshCw, Radio, Volume2 } from 
 import { Switch } from '@/components/ui/switch';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { MorpheusVoiceCheck } from './MorpheusVoiceCheck';
+import { MorpheusReplySpeechControl } from './MorpheusReplySpeechControl';
 import { morpheusAdvancedSettingsPath } from '@/lib/morpheus-settings-route';
 import { useSettingsStore, type VoiceCaptionMode } from '@/stores/settings';
 
@@ -121,6 +122,8 @@ export function MorpheusVoiceSetup() {
           <Switch className="data-[state=checked]:bg-[hsl(var(--morpheus-accent))]" id="morpheus-spoken-replies" data-testid="morpheus-spoken-replies"
             checked={settings.speakResponses} onCheckedChange={(speakResponses) => void update({ speakResponses })} />
         </div>
+        <MorpheusReplySpeechControl settings={settings}
+          onChange={(replySpeechMode) => void update({ replySpeechMode })} />
         <p className="text-xs leading-relaxed text-muted-foreground">{t(local ? 'morpheus.experience.voice.panel.localDisclosure' : 'morpheus.voice.check.description')}</p>
       </div>
     </div>

@@ -205,6 +205,7 @@
       "deliveryFailed": "Conversation delivery failed."
     },
     "actionOutcome": {
+      "rephraseCommand": "I didn’t catch the action. Tell me which app or website to use and what you want me to do.",
       "openedWebsite": "Opened {{target}}.",
       "openedApplication": "Opened {{target}}.",
       "applicationOpened": "Application opened.",
@@ -1421,7 +1422,7 @@
     "voice": {
       "localWake": {
         "title": "Detect my name on this PC",
-        "description": "Windows English speech recognition. Say the name, pause for acknowledgement, then speak. No background transcription requests before activation. Requires an installed recognizer and microphone.",
+        "description": "Say “Morpheus” and your command, or wait for the listening cue. Uses your selected microphone and installed Windows English recognition. Only addressed audio is transcribed.",
         "disclosure": "Name detection stays on this PC. After activation, your command audio is sent to {{provider}} for transcription. No audio is saved."
       },
       "dialogue": {
@@ -1500,6 +1501,13 @@
         "autoSubmit": "Run after transcription",
         "autoSubmitDescription": "Send a successful transcript into the same Objective Core without another click.",
         "speakResponses": "Speak final responses",
+        "replySpeechMode": "Which replies to speak",
+        "replySpeechModes": { "orb": "Orb replies", "voice": "Voice requests only", "all": "All requests" },
+        "replySpeechDescriptions": {
+          "orb": "Speak typed and voice replies from the orb. Expanded chat stays quiet.",
+          "voice": "Speak replies to voice requests in the orb and expanded chat. Typed requests stay quiet.",
+          "all": "Speak typed and voice replies in both the orb and expanded chat."
+        },
         "speakResponsesDescription": "Speak concise results through a configured neural voice, with Windows speech as fallback.",
         "handsFreeFollowUp": "Continue the conversation",
         "handsFreeFollowUpDescription": "After a voice result, listen for one bounded follow-up turn without requiring the wake phrase again.",
@@ -1573,7 +1581,7 @@
           "deviceRepair": "Choose a connected microphone, refresh the device list, then run the input check.",
           "localDisclosure": "Natural English voice is included. No separate voice API key. This sample stays on your PC.",
           "moreOptions": "Captions, wake phrase and more",
-          "wakeBody": "Name detection uses the Windows default microphone. Companion listening pauses while a chatbox or Settings is open; hiding can keep it active when enabled. Master mute stops all capture.",
+          "wakeBody": "Uses your selected microphone. Companion listening pauses while chat or Settings is open; hiding keeps it available when enabled. Master mute stops all capture.",
           "interruptionBody": "Stop, typing or the microphone control interrupts a reply. When enabled and the companion is active, a recognized wake phrase can also interrupt. Talking over speech is not supported yet."
         },
         "included": "Included English voice",
@@ -1588,7 +1596,7 @@
         "warm": "Warm · Michael",
         "bright": "Bright · Heart",
         "wake": "Listen for “Morpheus”",
-        "wakeBody": "Optional local wake listening uses the Windows default microphone. Hiding keeps enabled wake listening active; manual mute stops it.",
+        "wakeBody": "Optional local wake listening uses your selected microphone. Hiding keeps enabled listening active; chat, Settings and manual mute pause it.",
         "advanced": "Advanced voice and provider options",
         "engine": "Voice service",
         "local": "Included local voice",

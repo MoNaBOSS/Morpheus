@@ -7,6 +7,7 @@ import { MorpheusBrandMark } from './MorpheusBrandMark';
 import { MorpheusLiveVoiceCaption } from './MorpheusLiveVoiceCaption';
 import { morpheusSettingsPath, type MorpheusSettingsSection } from '@/lib/morpheus-settings-route';
 import { MorpheusFluidOrb } from './MorpheusFluidOrb';
+import { MorpheusAudioMeter } from './MorpheusAudioMeter';
 import { MorpheusTaskSwitcher } from './MorpheusTaskSwitcher';
 import { MorpheusVoiceButton } from './MorpheusVoiceButton';
 import { MorpheusConversationThread } from './MorpheusConversationThread';
@@ -69,8 +70,11 @@ export function MorpheusQuickCommand() {
   const objectiveActive = Boolean(objectiveRun && !isObjectiveTerminalState(objectiveRun.state));
   const awaitingAnswer = Boolean(clarification) || objectiveRun?.state === 'needs-clarification' || objectiveRun?.state === 'waiting-for-approval';
   const busy = submitting || conversationSubmitting || voiceBusy;
+  const speaking = voicePresence === 'speaking';
+  const preparingSpeech = voicePresence === 'preparing-speech';
   const compact = trigger !== null;
   const signalState = resolveMorpheusSignalState({ voicePhase, voicePresence: voicePresence === 'asleep' ? 'armed' : voicePresence, objectiveState: conversationWorking || conversationSubmitting ? 'understanding' : objectiveRun?.state });
+  const audioState = signalState === 'listening' || signalState === 'speaking' ? signalState : null;
   const recentRuns = (history?.runOrder ?? []).slice(0, 2).map((id) => history?.runsById[id]).filter((run) => run != null);
 
   useEffect(() => hostEvents.onMorpheusQuickCommand((payload) => show(payload.trigger)), [show]);
@@ -152,7 +156,18 @@ export function MorpheusQuickCommand() {
       </header>
       {showTasks ? <div className="relative z-20 border-b border-white/10 bg-[#0e1b15] p-3"><MorpheusTaskSwitcher /></div> : null}
       <div className="relative z-10 flex min-h-0 flex-1 flex-col px-4 py-3">
-        <div className="morpheus-compact-presence flex items-center gap-3"><MorpheusFluidOrb state={signalState} className="h-14 w-14" label={t(`morpheus.signalOs.signal.${signalState}`)} /><div><p className="text-lg font-semibold text-[#edf5ef]">{t('morpheus.workspace.greeting')}</p><p data-testid="quick-command-live-state" className="text-xs text-[#a0b6aa]">{voiceBusy ? t(`morpheus.voice.states.${voicePhase}`) : t('morpheus.workspace.subtitle')}</p></div></div>
+        <div className="morpheus-compact-presence flex items-center gap-3" data-signal-state={signalState}>
+          <MorpheusFluidOrb state={signalState} className="h-14 w-14" label={t(`morpheus.signalOs.signal.${signalState}`)} />
+          <div className="min-w-0 flex-1">
+            <p className="text-lg font-semibold text-[#edf5ef]">{t('morpheus.workspace.greeting')}</p>
+            <div className="morpheus-compact-feedback">
+              {audioState ? <MorpheusAudioMeter state={audioState} /> : null}
+              <p data-testid="quick-command-live-state" role="status" className="text-xs text-[#a0b6aa]">{audioState === 'listening' ? t('morpheus.voice.states.listening') : speaking ? t('morpheus.voice.speaking') : preparingSpeech || voicePhase === 'transcribing' || voicePresence === 'transcribing' ? t('morpheus.voice.preparingSpeech') : voiceBusy ? t(`morpheus.voice.states.${voicePhase}`) : t('morpheus.workspace.subtitle')}</p>
+            </div>
+          </div>
+          {speaking || preparingSpeech ? <button type="button" data-testid="quick-command-stop-speech" onClick={cancelVoice}
+            className="morpheus-compact-stop" aria-label={t('morpheus.signalOs.stop')}><Square size={13} aria-hidden /><span>{t('morpheus.signalOs.stop')}</span></button> : null}
+        </div>
         <div ref={logRef} onWheel={(event) => { if (event.deltaY < 0 && event.currentTarget.scrollHeight > event.currentTarget.clientHeight) readingHistory.current = true; }} onScroll={(event) => { const node = event.currentTarget; if (node.scrollHeight - node.scrollTop - node.clientHeight < 40) readingHistory.current = false; }} onKeyDown={(event) => { if (['ArrowUp', 'PageUp', 'Home'].includes(event.key)) readingHistory.current = true; }} tabIndex={0} className="morpheus-compact-log min-h-0 flex-1 space-y-4 overflow-y-auto" role="log" aria-label={t('morpheus.workspace.conversation')}>
           <MorpheusConversationThread sessionKey={selectedConversationId} compact objectiveRuns={recentRuns} onOpenSettings={openSettings}
             renderObjective={(run) => {

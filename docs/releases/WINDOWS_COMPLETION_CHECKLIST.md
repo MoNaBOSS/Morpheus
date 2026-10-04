@@ -1,5 +1,45 @@
 # Current Windows experience completion checklist
 
+## Active correction — command intent, tray wake and spoken companion replies
+
+- [x] Verify actual source/remotes/clean `70cbb324`, fetch without overwrite,
+  identify owner preview.13, and check C:/E: storage before building.
+- [x] Recover completed preview.14 normal qualification (zero recorded errors)
+  and successful exact-source installed run 37198664430 after interruption.
+  These remain previous-build evidence, not acceptance of this correction.
+- [x] Reproduce and correct explicit YouTube search routing without losing query
+  text or silently ignoring other requested actions.
+- [x] Implement selected-input acquisition/readiness, bounded native-range Whisper
+  verification, duplicate/cancel/session guards and pause/mute authority. Generated
+  PCM through actual native helper and included Whisper passed; full normal-package
+  and physical audio qualification remain separate below.
+- [x] Speak orb/compact voice and typed replies; expanded chat stays quiet, with
+  persistent user controls and no historical reply replay.
+- [x] Refine meaningful feedback/motion within the approved visual direction.
+- [ ] Focused source, rendered interaction and actual normal-package tests;
+  preserve failure evidence and distinguish physical from synthetic audio.
+- [ ] Build and verify a separate identified installer and delivery; preserve
+  current application, historical packages, profiles and credentials.
+
+The owner requests a stable final delivery. Unverified live/physical behavior and
+unfinished engineering cannot be accepted by renaming the preview. Hosted plans,
+payments and NerdGPT remain deferred under the confirmed BYOK-first scope.
+
+Source qualification: Node/web/managed types, scoped lint and communication replay/
+comparison passed. Full lint has 12 inherited refresh warnings; its one test-only
+newline error was corrected and changed-file lint passed. Harness validation,
+dry-run and 18 baseline cases passed. Focused routing, voice, admission, reply,
+API and presentation tests passed; an integrated exact API list needed the new
+bounded preparation/feed methods, then its 50 cases passed. Ten rendered Electron
+journeys passed across the initial run and one targeted rerun of updated microphone
+repair copy. Included PCM/meter/Stop, native orb replies without microphone capture,
+scope persistence, named-site admission, motion and error repair were exercised.
+Model answers/input in speech presentation tests are controlled fixtures, with real
+included synthesis/playback; OS browser delegation is recorded by the fixture.
+The fixed AudioWorklet must be an external same-origin asset, not Vite's default
+inline data URL blocked by the application's CSP. Verify that emitted asset and
+the complete generated-PCM/native-wake/Whisper/Core path in the normal package next.
+
 ## Current bounded checkpoint — per-user OpenRouter setup
 
 - [x] Reverify clean source `4ee81a2a`, branch, remotes, fetched application branch
@@ -21,9 +61,12 @@
   Screenshots and full control rectangles passed at 1280×800 and 800×720 after
   moving Add Provider into a fixed footer. Initial failures and corrections are
   retained; same-vendor fixtures were not weakened to hide destructive listing.
-- [ ] Qualify the identified normal package and installer without owner credentials
-  or profiles. Source/fixture success is not live-service or physical acceptance.
-- [ ] Correct the normal-package first-key activation failure reproduced twice at
+- [x] Normal package `70cbb324` completed with zero recorded errors after interruption;
+  exact-source CI run 37198664430 passed disposable install/reinstall/retained
+  uninstall. CI installer bytes differ from the locally qualified unpacked app.
+  Preview.14 installer was not locally delivered; source/fixture success is not
+  live-service or physical acceptance.
+- [x] Correct the normal-package first-key activation failure reproduced twice at
   `b7a63142`: account/key persist, but old Gateway `config.set` rejects the new
   SecretRef env before restart. Preserve both failures and require normal runtime
   success after the bounded owned configuration/environment correction.

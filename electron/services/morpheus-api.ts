@@ -94,6 +94,7 @@ import {
   type MorpheusVoiceSettingsPatch,
 } from '@shared/morpheus/voice-types';
 import type { MorpheusVoiceService } from './morpheus/voice/voice-service';
+import { isMorpheusWakeAudioFrame } from '@shared/morpheus/wake-audio-types';
 import type { SetMorpheusRuntimePausedPayload } from '@shared/morpheus/runtime-control-types';
 import {
   isMorpheusWorkspaceId,
@@ -1025,9 +1026,10 @@ export function validateVoiceSettingsPatch(payload: unknown): MorpheusVoiceSetti
     'enabled', 'providerAccountId', 'modelId', 'speakResponses', 'autoSubmitTranscript',
     'speechProviderAccountId', 'speechModelId', 'speechVoice',
     'ambientEnabled', 'localWakeEnabled', 'wakePhrase', 'ambientSilenceMs', 'ambientMaxUtteranceMs', 'bargeIn',
-    'handsFreeFollowUp', 'engine', 'inputDeviceId',
+    'handsFreeFollowUp', 'engine', 'inputDeviceId', 'replySpeechMode',
   ], 'updateVoiceSettings payload');
   if (record.engine !== undefined && !['local', 'provider'].includes(record.engine as string)) throw new MorpheusValidationError('invalid voice engine');
+  if (record.replySpeechMode !== undefined && !['orb', 'voice', 'all'].includes(record.replySpeechMode as string)) throw new MorpheusValidationError('invalid spoken reply preference');
   if (record.inputDeviceId !== undefined && (typeof record.inputDeviceId !== 'string' || record.inputDeviceId.length > 256)) throw new MorpheusValidationError('invalid microphone device');
   for (const key of ['enabled', 'speakResponses', 'autoSubmitTranscript', 'ambientEnabled', 'localWakeEnabled', 'bargeIn', 'handsFreeFollowUp'] as const) {
     if (record[key] !== undefined && typeof record[key] !== 'boolean') {
@@ -1715,6 +1717,11 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     synthesizeSpeech: (payload) => voice.synthesize(validateSynthesizeSpeechPayload(payload)),
     cancelSpeech: () => voice.cancelSpeech(),
     beginAmbientVoice: () => voice.beginAmbientSession(),
+    prepareAmbientVoiceInput: () => voice.prepareAmbientInput(),
+    feedAmbientWakeAudio: (payload) => {
+      if (!isMorpheusWakeAudioFrame(payload)) throw new MorpheusValidationError('invalid local wake audio frame');
+      return voice.feedWakeAudio(payload);
+    },
     prepareVoiceOutput: () => voice.prepareOutput(),
     endAmbientVoice: () => voice.endAmbientSession(),
     setAmbientVoiceListening: (payload) => (

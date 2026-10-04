@@ -20,18 +20,21 @@ import { createMorpheusConversationSpeechOwner } from '@/lib/morpheus-conversati
 import { morpheusSettingsPath, readMorpheusSettingsContext } from '@/lib/morpheus-settings-route';
 import { observeMorpheusPresentationVisibility } from '@/lib/morpheus-presentation-visibility';
 import { morpheusObjectiveMessage, morpheusSimpleActionOutcome } from '@/lib/morpheus-objective-presentation';
+import { shouldSpeakMorpheusReply } from '@/lib/morpheus-reply-speech';
 import './morpheus-experience.css';
 
 export function MorpheusVoiceRuntime() {
   const { t } = useTranslation('dashboard');
   const showQuickCommand = useMorpheusQuickCommandStore((state) => state.show);
   const continueAfterResponse = useMorpheusVoiceStore((state) => state.continueAfterResponse);
-  const source = useMorpheusVoiceStore((state) => state.source);
   const status = useMorpheusVoiceStore((state) => state.status);
   const loadStatus = useMorpheusVoiceStore((state) => state.loadStatus);
   const startListening = useMorpheusVoiceStore((state) => state.startListening);
-  const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
-  const spokenStateKey = useRef<string | null>(null);
+  const objectiveSpeech = useMorpheusCommandStore((state) => state.objectiveSpeech);
+  const objectiveRun = useMorpheusCommandStore((state) => objectiveSpeech
+    ? state.objectiveHistory?.runsById[objectiveSpeech.objectiveRunId]
+      ?? (state.objectiveRun?.objectiveRunId === objectiveSpeech.objectiveRunId ? state.objectiveRun : null)
+    : null);
   const message = morpheusVoiceSpeechFor(objectiveRun, (run) => morpheusObjectiveMessage(run, t));
   const latestMessage = useRef(message);
   useEffect(() => { latestMessage.current = message; }, [message]);
@@ -41,7 +44,8 @@ export function MorpheusVoiceRuntime() {
   const stateKey = objectiveRun && message
     ? JSON.stringify([objectiveRun.objectiveRunId, objectiveRun.state,
       objectiveRun.summary, objectiveRun.clarification, morpheusSimpleActionOutcome(objectiveRun)]) : null;
-  const voiceOrigin = objectiveRun?.origin.type === 'voice';
+  const voiceOrigin = objectiveSpeech?.origin.input === 'voice';
+  const speakObjective = objectiveSpeech ? shouldSpeakMorpheusReply(status?.settings, objectiveSpeech.origin) : false;
 
   useEffect(() => {
     const syncScope = () => {
@@ -75,11 +79,14 @@ export function MorpheusVoiceRuntime() {
       read: () => {
         const voice = useMorpheusVoiceStore.getState();
         const acp = useAcpChatSessionStore.getState();
+        const reply = voice.replyTurn;
         return { reply: voice.replyTurn, snapshot: useMorpheusConversationStore.getState().snapshot,
           activeSessionKey: acp.activeSessionKey, generation: acp.generation,
           loading: acp.loading, sending: acp.sending, cancelling: acp.cancelling, error: acp.error,
           timeline: acp.timeline, timings: acp.turnTimingsByUserMessageId,
-          enabled: voice.status?.settings.enabled === true, speakResponses: voice.status?.settings.speakResponses === true };
+          enabled: voice.status?.settings.enabled === true,
+          speakResponses: reply ? shouldSpeakMorpheusReply(voice.status?.settings,
+            { surface: reply.surface, input: reply.turn.source === 'voice' ? 'voice' : 'typed' }) : false };
       },
       play: (text, signal) => {
         const voice = useMorpheusVoiceStore.getState();
@@ -99,26 +106,29 @@ export function MorpheusVoiceRuntime() {
 
   useEffect(() => {
     const speech = latestMessage.current;
-    if (!voiceOrigin || !speech || spokenStateKey.current === stateKey) return;
-
-    spokenStateKey.current = stateKey;
-    if (!source || source === 'onboarding' || status?.settings.enabled === false) return;
-    if (!status?.settings.speakResponses) {
-      void continueAfterResponse();
-      return;
-    }
-    void playMorpheusSpeech(speech, {
-      format: status?.speechFormat,
-      neuralAvailable: status.neuralSpeechAvailable,
-    }).then((result) => {
-      if (result !== 'cancelled') void continueAfterResponse();
-    }).catch(() => {
-      useMorpheusVoiceStore.getState().reportSpeechFailure();
+    const runId = objectiveSpeech?.objectiveRunId;
+    if (!runId || !speech || !stateKey) return;
+    const controller = new AbortController();
+    // An ephemeral live run claim survives real remounts, but a discarded
+    // StrictMode effect never consumes it. History loading creates no claim.
+    queueMicrotask(() => {
+      if (controller.signal.aborted || !useMorpheusCommandStore.getState().claimObjectiveSpeech(runId, stateKey)) return;
+      if (!speakObjective) {
+        if (voiceOrigin && status?.settings.enabled) void continueAfterResponse();
+        return;
+      }
+      void playMorpheusSpeech(speech, {
+        signal: controller.signal, format: status?.speechFormat,
+        neuralAvailable: status?.neuralSpeechAvailable === true,
+      }).then((result) => {
+        if (result !== 'cancelled' && !controller.signal.aborted && voiceOrigin) void continueAfterResponse();
+      }).catch(() => {
+        if (!controller.signal.aborted) useMorpheusVoiceStore.getState().reportSpeechFailure();
+      });
     });
-    return () => {
-      stopMorpheusSpeech();
-    };
-  }, [continueAfterResponse, voiceOrigin, stateKey, source, status?.neuralSpeechAvailable, status?.speechFormat, status?.settings.speakResponses, status?.settings.enabled]);
+    return () => controller.abort();
+  }, [continueAfterResponse, objectiveSpeech?.objectiveRunId, voiceOrigin, stateKey, speakObjective,
+    status?.neuralSpeechAvailable, status?.speechFormat, status?.settings.enabled]);
 
   return null;
 }

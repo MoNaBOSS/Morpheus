@@ -24,7 +24,7 @@ test('generated local speech receives one live ACP answer with actual PCM playba
         return result.data;
       };
       await invoke('updateVoiceSettings', { engine: 'local', enabled: true, ambientEnabled: false,
-        localWakeEnabled: false, speakResponses: true, handsFreeFollowUp: false, autoSubmitTranscript: true });
+        localWakeEnabled: false, speakResponses: true, replySpeechMode: 'voice', handsFreeFollowUp: false, autoSubmitTranscript: true });
       const streamId = crypto.randomUUID();
       const chunks: Array<{ sequence: number; bytes: Uint8Array }> = [];
       const unsubscribe = window.electron.ipcRenderer.on('morpheus:speech-chunk', (value) => {

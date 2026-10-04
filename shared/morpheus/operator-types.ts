@@ -1,4 +1,5 @@
 /** Platform-neutral interaction routing for every Morpheus surface. */
+import { parseBrowserSearch } from './interpreter/browser-search';
 
 export const MORPHEUS_INTERACTION_MODES = Object.freeze(['ask', 'auto', 'act'] as const);
 export type MorpheusInteractionMode = typeof MORPHEUS_INTERACTION_MODES[number];
@@ -61,6 +62,7 @@ const DESIRE_ACTION = new RegExp(
 const ACTION_NOUN_REQUEST = /^(?:set|create)\s+(?:up\s+)?(?:a\s+)?(?:reminder|schedule|workflow|project|website|site)\b/i;
 const CONVERSATIONAL_QUESTION = /^(?:what|why|who|where|when|how|which|is|are|am|do|does|did|can|could|would|should)\b/i;
 const COMPANION_CONVERSATION = /^(?:(?:hi|hello|hey|good morning|good evening|thanks|thank you)(?:[\s,!].*)?|(?:i prefer|remember(?: that)?|call me)\s+.+|(?:please\s+)?(?:don't|do not)\s+(?:roast|mock|joke|make jokes|use jokes|make fun|tease)\b.*)[.!?]?$/i;
+const NAVIGATION_REQUEST = /^(?:(?:(?:can|could|would|will)\s+you|i\s+(?:want|need)\s+you\s+to|help\s+me)\s+)?(?:(?:please|kindly)\s+)?(?:go\s+to|navigate\s+to|take\s+me\s+to|visit|browse|look\s+up)\s+\S/i;
 
 /**
  * Bounded deterministic routing for Auto mode.
@@ -81,7 +83,8 @@ export function routeMorpheusInteraction(
   }
 
   if (IMPERATIVE_ACTION.test(text) || REQUEST_ACTION.test(text)
-    || DESIRE_ACTION.test(text) || ACTION_NOUN_REQUEST.test(text)) {
+    || DESIRE_ACTION.test(text) || ACTION_NOUN_REQUEST.test(text)
+    || NAVIGATION_REQUEST.test(text) || parseBrowserSearch(text)?.kind === 'search') {
     return { route: 'objective', reason: 'actionable-intent', confidence: 'high', text };
   }
 

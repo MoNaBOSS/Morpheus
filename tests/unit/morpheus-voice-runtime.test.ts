@@ -23,6 +23,8 @@ describe('Morpheus spoken objective outcomes', () => {
   it('speaks concise completed results and necessary clarification', () => {
     expect(morpheusVoiceSpeechFor(run('complete', { summary: 'The website is ready.' }))).toBe('The website is ready.');
     expect(morpheusVoiceSpeechFor(run('needs-clarification', { clarification: 'Which workspace should I use?' }))).toBe('Which workspace should I use?');
+    expect(morpheusVoiceSpeechFor(run('needs-clarification', { clarification: 'Internal capability list' }), () => 'Which app or website should I use?'))
+      .toBe('Which app or website should I use?');
   });
 
   it('does not narrate intermediate execution states or empty messages', () => {

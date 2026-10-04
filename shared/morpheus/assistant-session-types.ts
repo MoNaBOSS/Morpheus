@@ -56,7 +56,7 @@ export type MorpheusAssistantSnapshot = {
   pendingTurns: MorpheusAssistantPendingTurn[];
 };
 
-/** The event is a content-free invalidation hint; reconnect reads a snapshot. */
+/** Content-free invalidation and live admission hint; reconnect reads a snapshot. */
 export type MorpheusAssistantSessionChanged = {
   schemaVersion: typeof MORPHEUS_ASSISTANT_SESSION_VERSION;
   sequence: number;
@@ -64,4 +64,6 @@ export type MorpheusAssistantSessionChanged = {
   conversationId: string;
   timestamp: string;
   type: 'selection' | 'draft' | 'turn-admitted' | 'turn-dispatched' | 'turn-updated';
+  /** Exact live identity only. No request text; snapshots never grant speech. */
+  admittedTurn?: MorpheusAssistantTurn;
 };

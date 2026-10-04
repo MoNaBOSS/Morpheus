@@ -182,14 +182,19 @@ Retain the current voice service/provider adapters; do not build a new speech
 vendor backend. Keep a VoiceEngine contract for detection, addressed capture, VAD,
 transcription and speech so an engine can change without changing UX or authority.
 
-Local wake remains opt-in and local; no silent cloud-monitor fallback. Current
-System.Speech exact-name recognition does not prove same-breath commands. Evaluate
-with a real microphone first, then implement a bounded volatile pre-roll/wake
-handoff if necessary. A capture ring, if introduced, must be local-only, short
-(initial ceiling 1.5 seconds), cleared on mute/lock/session end, never recorded,
-and handed to STT only for an audited addressed turn. Exclude the wake phrase and
-unrelated pre-wake speech where possible. Device ownership/concurrent capture
-must be tested; do not assume the helper and Chromium mic can share every device.
+Local wake remains opt-in and local; no silent cloud-monitor fallback. The October
+4 correction replaces independent default-device capture with selected Chromium
+PCM, resampled to mono 16 kHz by a fixed AudioWorklet. Main accepts bounded,
+sequenced 200 ms frames under a fresh session token; only acquired audio and a
+ready helper permit armed state. System.Speech supplies an addressed sample range,
+never executable dictation. Included Whisper verifies the original audio and exact
+wake prefix before routing once. A volatile rolling buffer holds at most 21.5
+seconds (one bounded 20-second utterance plus context/recognition delay), replacing
+the initial 1.5-second pre-roll proposal. Unaddressed audio is never written or
+uploaded; addressed audio uses existing guarded temporary WAV cleanup. Keep 300 ms
+of available context around the range so recognition does not clip the name.
+Clear on mute, lock and session end; foreground chat/Settings suspend automatic
+input. Generated PCM/native tests do not prove physical mic, echo or accent quality.
 
 STT currently receives completed recordings. Add streaming only through an adapter
 whose actual protocol/price/behavior is verified. Partial transcripts are display

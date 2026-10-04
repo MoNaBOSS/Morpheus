@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   routeInteraction: vi.fn(),
   expandCompanionSurface: vi.fn(),
   beginAmbientVoice: vi.fn(),
+  feedAmbientWakeAudio: vi.fn(async () => ({ ready: true })),
   endAmbientVoice: vi.fn(),
   setVoiceSpeaking: vi.fn(),
   submitConversation: vi.fn(),
@@ -25,7 +26,9 @@ vi.mock('@/lib/host-api', () => ({
       submitObjective: mocks.submitObjective,
       routeInteraction: mocks.routeInteraction,
       expandCompanionSurface: mocks.expandCompanionSurface,
-      beginAmbientVoice: mocks.beginAmbientVoice,
+      prepareAmbientVoiceInput: async () => ({ sessionId: 'voice-00000000-0000-0000-0000-000000000001', localWakeEnabled: true,
+        presence: await mocks.beginAmbientVoice() }),
+      feedAmbientWakeAudio: mocks.feedAmbientWakeAudio,
       endAmbientVoice: mocks.endAmbientVoice,
       setVoiceSpeaking: mocks.setVoiceSpeaking,
       cancelSpeech: vi.fn(),
@@ -77,7 +80,15 @@ const getUserMedia = vi.fn(async () => ({ getTracks: () => [track], getAudioTrac
 beforeEach(async () => {
   vi.clearAllMocks();
   getUserMedia.mockResolvedValue({ getTracks: () => [track], getAudioTracks: () => [] });
+  vi.stubGlobal('AudioWorkletNode', class {
+    port = { onmessage: null as ((event: MessageEvent) => void) | null };
+    constructor() { queueMicrotask(() => this.port.onmessage?.({ data: new ArrayBuffer(6400) } as MessageEvent)); }
+    connect = vi.fn((node) => node); disconnect = vi.fn();
+  });
   vi.stubGlobal('AudioContext', class {
+    state = 'running'; resume = vi.fn(async () => undefined);
+    audioWorklet = { addModule: vi.fn(async () => undefined) };
+    destination = {}; createGain() { return { gain: { value: 0 }, connect: vi.fn((node) => node), disconnect: vi.fn() }; }
     createAnalyser() { return { fftSize: 32, getByteTimeDomainData: (sample: Uint8Array) => sample.fill(128) }; }
     createMediaStreamSource() { return { connect: vi.fn() }; }
     close = vi.fn(async () => undefined);
@@ -157,6 +168,20 @@ describe('Morpheus renderer voice controller', () => {
     await useMorpheusVoiceStore.getState().startListening('quick-command');
     expect(useMorpheusVoiceStore.getState().phase).toBe('listening');
     expect(getUserMedia).toHaveBeenCalledOnce(); expect(mocks.prepareVoiceOutput).toHaveBeenCalledOnce();
+  });
+  it('cancel revokes its current ambient token, then resumes fresh tray capture without changing consent', async () => {
+    const status = await companionStatus(); mocks.voiceStatus.mockResolvedValue(status);
+    await useMorpheusVoiceStore.getState().loadStatus();
+    await useMorpheusVoiceStore.getState().setAmbientScope('companion');
+    expect(getUserMedia).toHaveBeenCalledOnce();
+    useMorpheusVoiceStore.setState({ source: 'ambient', phase: 'transcribing' });
+    useMorpheusVoiceStore.getState().cancel();
+    expect(track.stop).toHaveBeenCalledOnce(); expect(mocks.endAmbientVoice).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(getUserMedia).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().ambientReady).toBe(true));
+    expect(mocks.beginAmbientVoice).toHaveBeenCalledTimes(2);
+    expect(useMorpheusVoiceStore.getState().status?.settings.ambientEnabled).toBe(true);
+    expect(useMorpheusVoiceStore.getState().status?.settings.enabled).toBe(true);
   });
   it('starts consented companion capture once and releases it on returning to typed conversation', async () => {
     const status = await companionStatus(); mocks.voiceStatus.mockResolvedValue(status);
@@ -561,6 +586,8 @@ describe('Morpheus renderer voice controller', () => {
     expect(classifyMorpheusVoiceError(new DOMException('The selected input vanished', 'NotFoundError'))).toBe('device');
     expect(classifyMorpheusVoiceError(new DOMException('This request cannot proceed', 'NotAllowedError'))).toBe('permission');
     expect(classifyMorpheusVoiceError(new Error('Test microphone is disconnected'))).toBe('device');
+    expect(classifyMorpheusVoiceError(new Error('The selected microphone supplied no audio. Reconnect it and restart companion voice.'))).toBe('device');
+    expect(classifyMorpheusVoiceError(new Error('Local microphone audio stalled. Restart companion voice.'))).toBe('device');
   });
   it('dispatches a Main-audited local command once without recording or paid transcription', async () => {
     const status = await mocks.voiceStatus();

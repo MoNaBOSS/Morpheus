@@ -30,6 +30,9 @@ requiredRules:
   - morpheus-production-companion-safety
   - morpheus-phase7-assistant-contract
 expectedUserBehavior:
+  - An explicit YouTube search retains its destination and query instead of becoming a generic web search; unrelated additional requested actions are not silently dropped.
+  - Enabled tray companion wake becomes ready only after the chosen input is acquired, pauses in visible chat or Settings, and cannot defeat manual mute.
+  - Orb and compact voice or typed submissions can receive spoken replies while expanded chat remains quiet, according to persistent user controls and the originating turn rather than the current screen.
   - Ordinary conversation and contextual settings never unexpectedly expose the technical sidebar.
   - Compact and expanded surfaces preserve the selected conversation, draft, task and personality.
   - Native compact window resizing keeps the latest reply visible unless the user deliberately scrolls to read older history.
@@ -42,7 +45,7 @@ expectedUserBehavior:
   - Public research rejects credential-bearing URLs and retries only validated transport connection failures.
   - Completed task exchanges stay beside their original request in the continuous conversation.
   - Reloading an active reply restores original ACP history without duplicating the admitted turn; Main settles successful delivery independently of the renderer.
-  - Live voice-origin ACP replies use the existing cancellable speech queue exactly once, without replaying historical or typed replies.
+  - Eligible live ACP replies use the existing cancellable speech queue exactly once according to the saved response preference, without replaying historical replies.
   - The approved animated arrival, actual audio-reactive companion and conversation card retain one draft, history and task owner.
   - Contextual settings return to the interrupted compact or expanded conversation.
   - Companion drag and keyboard placement stay within actual display work areas and survive display changes safely.
@@ -95,6 +98,12 @@ requested autonomous completion and testing. The next preview.7 change is bounde
 speech responsiveness, verified conversation chronology, public capability reliability,
 and disposable hosted Windows installation qualification. No paid provider, checkout,
 signing identity or NerdGPT deployment is invented.
+
+October 4 latest amendment: preserve the approved visual design, correct explicit
+site-search intent and enabled tray wake, and speak both typed and voice companion
+replies while expanded chat remains quiet. The owner confirmed this reply policy
+and requests a separate final delivery. Preserve old packages and data; actual
+normal runtime and physical acceptance remain distinct from fixture tests.
 
 October 4 per-user amendment: the owner requests OpenRouter and preparation for
 each user. Do not use the exposed chat credential; its replacement must be entered

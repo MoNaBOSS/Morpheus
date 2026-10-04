@@ -37,6 +37,18 @@ async function translator(language = 'en') {
 }
 
 describe('evidence-bound simple action presentation', () => {
+  it.each(['en', 'zh', 'ja', 'ru'])('makes the fixed unknown-command repair understandable in %s without rewriting evidence', async (language) => {
+    const clarification = 'I could not safely turn that objective into an execution plan. Currently supported capabilities: app.launch, web.openUrl, file.delete.';
+    const run = { ...completed(), state: 'needs-clarification' as const, clarification };
+    const t = await translator(language);
+    const message = morpheusObjectiveMessage(run, t);
+    expect(message).toBe(t('morpheus.actionOutcome.rephraseCommand'));
+    expect(message).not.toContain('morpheus.actionOutcome');
+    expect(message).not.toContain('file.delete');
+    expect(run.clarification).toBe(clarification);
+    expect(morpheusObjectiveMessage({ ...run, clarification: 'Which browser should I use?' }, t)).toBe('Which browser should I use?');
+    expect(morpheusObjectiveMessage({ ...run, clarification: `${clarification} A custom authored question.` }, t)).toBe(`${clarification} A custom authored question.`);
+  });
   it.each([['en', 'Opened YouTube.'], ['zh', '已打开 YouTube。'], ['ja', 'YouTubeを開きました。'], ['ru', 'Открыт YouTube.']])('uses the same localized visible and spoken outcome in %s', async (language, expected) => {
     const t = await translator(language);
     const run = completed();

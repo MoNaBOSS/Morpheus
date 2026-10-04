@@ -10,6 +10,6 @@ export function morpheusVoiceSpeechFor(run: MorpheusObjectiveRun | null, message
     const sentenceEnd = Math.max(prefix.lastIndexOf('. '), prefix.lastIndexOf('。'));
     return sentenceEnd >= 180 ? prefix.slice(0, sentenceEnd + 1) : `${prefix.trimEnd()}…`;
   }
-  if (run?.state === 'needs-clarification') return run.clarification?.trim() || null;
+  if (run?.state === 'needs-clarification') return (messageFor ? messageFor(run) : run.clarification)?.trim() || null;
   return null;
 }

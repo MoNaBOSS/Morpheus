@@ -91,7 +91,10 @@
   animation: morpheus-motion-core-recognize 520ms ease-out both;
 }
 .morpheus-motion[data-motion-state='complete'] .morpheus-motion__artwork {
-  animation: morpheus-motion-core-complete 650ms ease-out both;
+  /* A completed task can remain selected for hours. Its acknowledgement settles
+     into quiet presence instead of freezing the companion on its final frame. */
+  animation: morpheus-motion-core-complete 650ms ease-out both,
+    morpheus-motion-core-presence 5.6s steps(84, end) 800ms infinite;
 }
 .morpheus-motion[data-motion-state='attention'] .morpheus-motion__artwork {
   animation: morpheus-motion-core-attention 500ms ease-out both;
@@ -226,7 +229,10 @@
   background: conic-gradient(transparent 0deg, transparent 225deg, rgb(191 255 225 / .75) 302deg, transparent 355deg);
   animation: morpheus-motion-work 1.6s steps(48, end) infinite;
 }
-.morpheus-motion[data-motion-state='complete'] .morpheus-motion__halo { animation: morpheus-motion-complete .8s ease-out both; }
+.morpheus-motion[data-motion-state='complete'] .morpheus-motion__halo {
+  animation: morpheus-motion-complete .8s ease-out both,
+    morpheus-motion-breathe 5.6s steps(84, end) 800ms infinite;
+}
 @keyframes morpheus-motion-recognize { 0% { transform: scale(1); } 40% { transform: scale(.87); } 75% { transform: scale(1.1); } 100% { transform: scale(1); } }
 @keyframes morpheus-motion-complete { 0% { opacity: .4; transform: scale(.95); } 35% { opacity: 1; } 100% { opacity: .55; transform: scale(1.12); } }
 

@@ -6,6 +6,7 @@ import i18n from '@/i18n';
 import { ensureAcpChatSubscriptions, useAcpChatSessionStore } from './acp-chat-session';
 import { useChatStore } from './chat';
 import { useSettingsStore } from './settings';
+import { useMorpheusVoiceStore } from './morpheus-voice';
 import type {
   MorpheusAssistantSnapshot,
   MorpheusAssistantTurn,
@@ -34,6 +35,7 @@ let unsubscribeSession: (() => void) | null = null;
 let unsubscribeChat: (() => void) | null = null;
 let unsubscribeAcp: (() => void) | null = null;
 let refreshRequest = 0;
+let liveAdmissionSequence = 0;
 let inFlightTurnId: string | null = null;
 let draining = false;
 let draftWriterActive = false;
@@ -214,7 +216,18 @@ export const useMorpheusConversationStore = create<MorpheusConversationState>((s
     activeListeners += 1;
     if (activeListeners === 1) {
       ensureAcpChatSubscriptions();
-      unsubscribeSession = hostEvents.onMorpheusAssistantSessionChanged(() => {
+      unsubscribeSession = hostEvents.onMorpheusAssistantSessionChanged((event) => {
+        const turn = event.admittedTurn;
+        // Native orb admission bypasses submit(). Only its exact live Main hint
+        // grants speech, before dispatch; reconnect/pending history grants none.
+        if (event.type === 'turn-admitted' && event.sequence > liveAdmissionSequence) {
+          liveAdmissionSequence = event.sequence;
+          if (turn?.source === 'orb' && turn.status === 'admitted'
+            && turn.conversationId === event.conversationId && turn.generation === event.generation) {
+            const voice = useMorpheusVoiceStore.getState();
+            voice.registerReplyTurn(turn, 'compact', voice.getReplyGeneration());
+          }
+        }
         void get().refresh();
       });
       unsubscribeChat = useChatStore.subscribe((state, previous) => {
@@ -268,6 +281,7 @@ export const useMorpheusConversationStore = create<MorpheusConversationState>((s
     const conversationId = get().snapshot?.selectedConversationId;
     if (!conversationId || !normalized) return false;
     set({ submitting: true, submissionSource: source, dispatchError: null });
+    const replyGeneration = useMorpheusVoiceStore.getState().getReplyGeneration();
     try {
       const turn = await hostApi.morpheus.admitAssistantTurn({
         conversationId,
@@ -278,6 +292,9 @@ export const useMorpheusConversationStore = create<MorpheusConversationState>((s
       // Bind optional live presentation before the existing dispatch refresh.
       // The returned Main identity, rather than text/history, owns correlation.
       onAdmitted?.(turn);
+      if (source === 'compact' || source === 'orb' || source === 'full') {
+        useMorpheusVoiceStore.getState().registerReplyTurn(turn, source === 'full' ? 'full' : 'compact', replyGeneration);
+      }
       if (get().draftText.trim() === normalized) get().setDraft('');
       await get().refresh();
       return true;

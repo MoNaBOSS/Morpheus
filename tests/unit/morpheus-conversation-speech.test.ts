@@ -14,7 +14,7 @@ function input(): MorpheusConversationSpeechInput {
     thought: { kind: 'thought', id: 'thought', messageId: 'reasoning', parts: [{ kind: 'markdown', text: 'Private reasoning must not speak.' }] },
     'answer:0': { kind: 'message-segment', id: 'answer:0', messageId: 'answer', role: 'assistant', segmentIndex: 0, parts: [{ kind: 'markdown', text: 'I’m here and ready to help.' }] },
   };
-  return { reply: { turn, voiceGeneration: 4 }, snapshot: { schemaVersion: 1, sequence: 2, selectedConversationId: 'chat', conversationId: 'chat',
+  return { reply: { turn, voiceGeneration: 4, surface: 'compact' }, snapshot: { schemaVersion: 1, sequence: 2, selectedConversationId: 'chat', conversationId: 'chat',
     draft: { conversationId: 'chat', revision: 0, text: '' }, turns: [turn], pendingTurns: [] },
   activeSessionKey: 'chat', generation: 7, loading: false, sending: false, cancelling: false, error: null,
   timeline, timings: { 'voice-turn': { source: 'live', status: 'complete', durationMs: 100 } }, enabled: true, speakResponses: true };
@@ -43,8 +43,30 @@ describe('original live voice conversation speech', () => {
     finish('neural'); await Promise.resolve();
     expect(followUp).toHaveBeenCalledOnce(); expect(play).toHaveBeenCalledOnce(); runtime.dispose();
   });
-  it('never speaks typed input, a fresh reload or historical timing', async () => {
+  it('speaks a live typed orb admission exactly once without opening voice follow-up', async () => {
+    state.reply!.turn = { ...state.reply!.turn, source: 'compact' };
+    state.snapshot!.turns[0] = state.reply!.turn;
+    const runtime = owner(); runtime.sync(); await Promise.resolve(); await Promise.resolve();
+    expect(play).toHaveBeenCalledOnce(); expect(followUp).not.toHaveBeenCalled();
+    runtime.sync(); expect(play).toHaveBeenCalledOnce(); runtime.dispose();
+  });
+  it('speaks a new typed orb reply while the microphone is muted without acquiring input', async () => {
+    state.reply!.turn = { ...state.reply!.turn, source: 'compact' };
+    state.snapshot!.turns[0] = state.reply!.turn; state.enabled = false;
+    const runtime = owner(); runtime.sync(); await Promise.resolve(); await Promise.resolve();
+    expect(play).toHaveBeenCalledExactlyOnceWith('I’m here and ready to help.', expect.any(AbortSignal));
+    expect(followUp).not.toHaveBeenCalled(); runtime.dispose();
+  });
+  it('consumes a quiet expanded reply without replaying it after settings change', async () => {
     state.reply!.turn = { ...state.reply!.turn, source: 'full' };
+    state.reply!.surface = 'full'; state.snapshot!.turns[0] = state.reply!.turn; state.speakResponses = false;
+    const runtime = owner(); runtime.sync(); await Promise.resolve();
+    expect(play).not.toHaveBeenCalled(); expect(followUp).not.toHaveBeenCalled();
+    state.speakResponses = true; runtime.sync(); await Promise.resolve();
+    expect(play).not.toHaveBeenCalled(); runtime.dispose();
+  });
+  it('never speaks a fresh reload, onboarding or historical timing', async () => {
+    state.reply!.turn = { ...state.reply!.turn, source: 'onboarding' };
     owner().sync(); await Promise.resolve(); expect(play).not.toHaveBeenCalled();
     state = input(); state.reply = null; owner().sync(); await Promise.resolve(); expect(play).not.toHaveBeenCalled();
     state = input(); state.timings = { 'voice-turn': { source: 'transcript', status: 'complete', durationMs: 100 } };

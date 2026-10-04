@@ -1,6 +1,6 @@
 import { closeElectronApp, expect, getRecordedHostInvocations, getStableWindow, installIpcMocks, test } from './fixtures/electron';
 
-test('a local wake command presence admits one direct turn without second capture or STT', async ({ launchElectronApp }, testInfo) => {
+test('a verified Main wake-command fixture admits one direct turn without a second renderer capture', async ({ launchElectronApp }, testInfo) => {
   const app = await launchElectronApp({ skipSetup: true, additionalArgs: ['--morpheus-test-wake-orb'] });
   try {
     const page = await getStableWindow(app);
@@ -25,7 +25,8 @@ test('a local wake command presence admits one direct turn without second captur
     await expect.poll(async () => (await getRecordedHostInvocations(app))
       .filter((request) => request.action === 'voiceStatus').length).toBeGreaterThan(0);
     // Main emits the same audited sequence twice to exercise real Electron IPC
-    // and renderer subscription deduplication. System.Speech is not mocked as real.
+    // and renderer subscription deduplication. This fixture begins after included
+    // Whisper verification; it does not qualify microphone or native recognition.
     await app.evaluate(({ BrowserWindow }) => {
       const main = BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus');
       if (!main) throw new Error('Main window missing');
@@ -43,7 +44,7 @@ test('a local wake command presence admits one direct turn without second captur
     expect(routes).toHaveLength(1);
     expect(submissions).toHaveLength(1);
     expect(submissions[0].payload).toMatchObject({ objective: 'Show system information', originType: 'voice' });
-    expect(calls.filter((request) => ['beginAmbientVoice', 'setAmbientVoiceListening', 'transcribeAudio', 'transcribeAmbientAudio', 'synthesizeSpeech'].includes(request.action ?? ''))).toEqual([]);
+    expect(calls.filter((request) => ['beginAmbientVoice', 'prepareAmbientVoiceInput', 'feedAmbientWakeAudio', 'setAmbientVoiceListening', 'transcribeAudio', 'transcribeAmbientAudio', 'synthesizeSpeech'].includes(request.action ?? ''))).toEqual([]);
     const orb = app.windows().find((window) => window !== page);
     if (process.platform === 'win32') {
       await expect.poll(() => app.windows().length).toBeGreaterThanOrEqual(2);
@@ -79,7 +80,7 @@ test('missing microphone shows localized reconnect guidance without transcriptio
       } });
     });
     await page.getByTestId('morpheus-voice-button-command-center').click();
-    await expect(page.getByTestId('morpheus-voice-error')).toContainText('Reconnect it, then turn ambient voice off and on');
+    await expect(page.getByTestId('morpheus-voice-error')).toContainText('Reconnect it or choose another microphone in Voice settings, then retry.');
     expect((await getRecordedHostInvocations(app)).filter((request) =>
       ['transcribeAudio', 'transcribeAmbientAudio', 'submitObjective'].includes(request.action ?? ''))).toEqual([]);
   } finally { await closeElectronApp(app); }

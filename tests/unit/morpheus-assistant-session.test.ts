@@ -27,6 +27,8 @@ describe('Main assistant session projection', () => {
     const first = session.admitTurn(request);
     expect(session.admitTurn(request)).toEqual(first);
     expect(emit).toHaveBeenCalledTimes(1);
+    expect(emit).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'turn-admitted', admittedTurn: first }));
+    expect(JSON.stringify(emit.mock.calls)).not.toContain(request.text);
     expect(session.snapshot().pendingTurns).toMatchObject([{ turnId: first.turnId, text: request.text }]);
 
     const dispatched = session.ackTurn({ conversationId: request.conversationId, turnId: first.turnId });
