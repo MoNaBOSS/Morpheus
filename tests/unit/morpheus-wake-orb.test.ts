@@ -56,6 +56,19 @@ vi.mock('electron', async () => {
 });
 
 describe.skipIf(process.platform !== 'win32')('native orb visibility across delayed loading', () => {
+  it('restores and updates the validated appearance across native loading without changing visibility or presence', () => {
+    const orb = new MorpheusWakeOrb(vi.fn());
+    orb.updateAppearance('unrestricted-preview');
+    orb.show(); const window = mock.windows[0]; window.finishLoad();
+    const scripts = () => window.webContents.executeJavaScript.mock.calls.map(([script]) => script as string);
+    expect(scripts().some((script) => script.includes('dataset.morpheusAppearance = "unrestricted-preview"'))).toBe(true);
+    expect(scripts().some((script) => script.includes('dataset.state = "armed"'))).toBe(true);
+    expect(window.hide).not.toHaveBeenCalled(); expect(window.focus).not.toHaveBeenCalled();
+    window.webContents.executeJavaScript.mockClear();
+    orb.updateAppearance('unrestricted');
+    expect(scripts()).toEqual([expect.stringContaining('dataset.morpheusAppearance = "green"')]);
+    orb.dispose();
+  });
   it('counts a keyboard position reset as activity before idle dismissal', () => {
     vi.useFakeTimers(); const orb = new MorpheusWakeOrb(vi.fn());
     try {

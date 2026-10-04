@@ -10,8 +10,11 @@ import { autoUpdater, UpdateInfo, ProgressInfo, UpdateDownloadedEvent } from 'el
 import { BrowserWindow, app, ipcMain } from 'electron';
 import { logger } from '../utils/logger';
 import { EventEmitter } from 'events';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import YAML from 'yaml';
 import { setQuitting } from './app-state';
-import { resolveUpdateConfiguration } from './updater-policy';
+import { hasTrustedUpdatePublisherMetadata, resolveUpdateConfiguration } from './updater-policy';
 
 export interface UpdateStatus {
   /**
@@ -85,6 +88,21 @@ export class AppUpdater extends EventEmitter {
       logger.info(
         `[Updater] Version: ${version}. Update feed ${configuration.reason}; auto-update is inert.`,
       );
+      return;
+    }
+
+    // The pinned Windows updater silently skips signature checks without
+    // publisherName in app-update.yml. A source readiness flag cannot replace it.
+    let trustedPublisher = false;
+    if (process.platform === 'win32' && app.isPackaged) {
+      try {
+        const metadata: unknown = YAML.parse(readFileSync(join(process.resourcesPath, 'app-update.yml'), 'utf8'));
+        trustedPublisher = hasTrustedUpdatePublisherMetadata(configuration.publisherNames, metadata);
+      } catch { /* Missing or malformed metadata keeps updates inert. */ }
+    }
+    if (!trustedPublisher) {
+      this.status = { status: 'not-configured' };
+      logger.warn('[Updater] Trusted packaged publisher metadata is unavailable; auto-update is inert.');
       return;
     }
 

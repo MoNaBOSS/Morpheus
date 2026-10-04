@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
 import { clampPresenceBounds, wakeOrbBounds, wakeOrbHoverBounds } from './morpheus-presence-layout';
 import type { MorpheusOrbPlacement, OrbPresentationAction } from '@shared/morpheus/orb-presentation';
+import { normalizeMorpheusAppearance, type MorpheusAppearance } from '@shared/morpheus/appearance-types';
 
 /** A narrow native companion surface. Main owns draft/turn admission and the hidden renderer owns execution. */
 export class MorpheusWakeOrb {
@@ -11,6 +12,7 @@ export class MorpheusWakeOrb {
   private wantsVisible = false;
   private ready = false;
   private hovered = false;
+  private appearance: MorpheusAppearance = 'green';
   private presentationLevel = 0;
   private lastLevelAt = Number.NEGATIVE_INFINITY;
   private pendingLevelTimer: ReturnType<typeof setTimeout> | null = null;
@@ -25,6 +27,11 @@ export class MorpheusWakeOrb {
   restorePlacement(value: MorpheusOrbPlacement | null): void {
     if (value && Number.isSafeInteger(value.displayId) && Number.isFinite(value.x) && Number.isFinite(value.y)
       && value.x >= 0 && value.x <= 1 && value.y >= 0 && value.y <= 1) this.placement = value;
+  }
+
+  updateAppearance(value: unknown): void {
+    this.appearance = normalizeMorpheusAppearance(value);
+    this.applyAppearance();
   }
 
   private workArea(): Rectangle {
@@ -137,6 +144,7 @@ export class MorpheusWakeOrb {
     window.webContents.on('did-finish-load', () => {
       if (window.isDestroyed() || this.window !== window) return;
       this.ready = true;
+      this.applyAppearance();
       this.applyPresence();
       this.applyVisibility();
       this.applyLevel();
@@ -298,6 +306,17 @@ export class MorpheusWakeOrb {
     const state = JSON.stringify(this.presence);
     void window.webContents.executeJavaScript(`document.documentElement.dataset.state = ${state}`, true)
       .catch(() => undefined);
+  }
+
+  private applyAppearance(): void {
+    const window = this.window;
+    if (!window || window.isDestroyed() || !this.ready) return;
+    // A validated enum only. No account, personality or execution data enters.
+    const appearance = JSON.stringify(this.appearance);
+    void window.webContents.executeJavaScript(
+      `document.documentElement.dataset.morpheusAppearance = ${appearance}; document.querySelector('.orb').dataset.appearance = ${appearance}`,
+      true,
+    ).catch(() => undefined);
   }
 
   private applyHover(): void | Promise<void> {

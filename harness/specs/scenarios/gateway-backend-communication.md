@@ -97,3 +97,11 @@ Scheduled-task history is Main-owned backend data. Current OpenClaw versions mus
 The local HTML Preview privileged bridge is also Main-owned: Renderer may load a validated local HTML file or open that current file externally through the typed Host API. The guest is an implementation detail of the existing `preview` tab; there is no `web-browser` artifact tab or general address navigation. The durable guest contract is `harness/reference/web-browser.md`.
 
 Gateway session-catalog subscription, normalization, ordered list/event replay, attention transitions, and reconnect recovery are documented in `harness/reference/sidebar-session-attention.md`.
+
+Morpheus appearance uses the existing validated `settings.set` owner. A saved
+green/red-preview choice projects to native and React surfaces on startup and
+after a successful save. It never changes account entitlement, voice consent or
+tool grants. Contextual plan and payment details preserve the active conversation;
+unconfigured Stripe/USDT/USDC selectors cannot dispatch checkout or payment work.
+Command qualification compares actual local-engine transcripts with expected
+intent and destination; compound requests cannot silently lose later actions.

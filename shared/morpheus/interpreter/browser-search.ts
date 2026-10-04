@@ -3,7 +3,8 @@ export type BrowserSearch =
   | { kind: 'search'; query: string; url: string }
   | { kind: 'unsupported' };
 
-const PREFIX = '(?:(?:(?:can|could|would|will)\\s+you|i\\s+(?:want|need)\\s+you\\s+to|help\\s+me)\\s+)?(?:(?:please|kindly)\\s+)?';
+export const COMMAND_REQUEST_PREFIX = '(?:(?:(?:can|could|would|will)\\s+you|i\\s+(?:want|need)\\s+you\\s+to|help\\s+me)\\s+)?(?:(?:please|kindly)\\s+)?';
+const PREFIX = COMMAND_REQUEST_PREFIX;
 const SITE = '(?:youtube(?:\\s+music)?|google|github|instagram|pornhub|gmail|(?:https?://)?(?:music\\.youtube\\.com|(?:www\\.)?(?:youtube|google|github)\\.com)/?)';
 const DOMAIN = '(?:https?://)?(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,24}/?';
 const SITE_SEARCH = [
@@ -23,7 +24,37 @@ const UNKNOWN_DOMAIN_SEARCH = [
   new RegExp(`^${PREFIX}(?:search|look\\s+up|find)(?:\\s+for)?\\s+[\\s\\S]+\\s+(?:on|in|at)\\s+${DOMAIN}[.!?]?$`, 'i'),
   new RegExp(`^${PREFIX}(?:open|launch|visit|browse|go\\s+to)\\s+${DOMAIN}\\s*(?:,?\\s+(?:and(?:\\s+then)?|then)\\s+|[,;]\\s*)(?:search|look\\s+up|find)\\b`, 'i'),
 ];
-const ACTION_TAIL = /(?:\b(?:and(?:\s+then)?|then|afterwards|also)\b|[,;.!?&]|\r?\n)\s*(?:(?:please|can\s+you|could\s+you)\s+)?(?:open|close|delete|remove|erase|send|publish|post|buy|purchase|pay|transfer|book|reserve|cancel|submit|approve|grant|share|set|edit|update|build|generate|prepare|organize|save|download|subscribe|like|comment|log\s+in|sign\s+in|create|make|write|read|copy|move|append|rename|launch|run|start|stop|turn|take|capture|show|check|search|look\s+up|find|schedule|remind|notify|upload|install|uninstall|watch|play|select|click|summarize|explain|translate|research|go\s+to|navigate\s+to|visit|browse)\b/i;
+const ACTION_TAIL = new RegExp(String.raw`(?:\b(?:and(?:\s+then)?|then|afterwards|also)\b|[,;.!?&]|\r?\n)\s*${COMMAND_REQUEST_PREFIX}(?:open|close|delete|remove|erase|send|publish|post|buy|purchase|pay|transfer|book|reserve|cancel|submit|approve|grant|share|set|edit|update|build|generate|prepare|organize|save|download|subscribe|like|comment|log\s+in|sign\s+in|create|make|write|read|copy|move|append|rename|launch|run|start|stop|turn|take|capture|show|check|search|look\s+up|find|schedule|remind|notify|upload|install|uninstall|watch|play|pause|focus|verify|minimi[sz]e|restore|switch\s+to|select|click|summarize|explain|translate|research|go\s+to|navigate\s+to|take\s+me\s+to|visit|browse)\b`, 'i');
+
+export function hasSeparateCommand(value: string): boolean {
+  // URL punctuation and query keys are resource data, not an instruction
+  // separator. Mask only independently valid literal URL/domain tokens; an
+  // action following the token remains visible to the guard.
+  const withoutUrls = value.replace(/\b(?:https?:\/\/[^\s<>"'“”]+|(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}(?=$|[\s,;.!?"'“”]))/gi, (token) => {
+    try {
+      const parsed = new URL(/^https?:\/\//i.test(token) ? token : `https://${token}`);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? ' '.repeat(token.length) : token;
+    } catch { return token; }
+  });
+  // Mask quoted portions before looking for a separate instruction. Words
+  // such as "delete file" are valid search text, never executable commands.
+  let outsideQuotes = '';
+  let quote: string | null = null;
+  for (let index = 0; index < withoutUrls.length; index += 1) {
+    const character = withoutUrls[index];
+    if (quote) {
+      if (character === quote) quote = null;
+      outsideQuotes += ' ';
+    } else if (character === '"' || character === '“'
+      || (character === "'" && (index === 0 || /\s/.test(value[index - 1])))) {
+      quote = character === '“' ? '”' : character;
+      outsideQuotes += ' ';
+    } else {
+      outsideQuotes += character;
+    }
+  }
+  return Boolean(quote) || ACTION_TAIL.test(outsideQuotes);
+}
 
 function queryText(value: string): string | null {
   const query = value.trim().replace(/\s+please[.!?]?$/i, '').trim();
@@ -32,24 +63,7 @@ function queryText(value: string): string | null {
     const literal = quoted[1] ?? quoted[2] ?? quoted[3];
     return literal.trim() && literal.length <= 200 ? literal : null;
   }
-  // Mask quoted portions before looking for a separate instruction. Words
-  // such as "delete file" are valid search text, never executable commands.
-  let outsideQuotes = '';
-  let quote: string | null = null;
-  for (let index = 0; index < query.length; index += 1) {
-    const character = query[index];
-    if (quote) {
-      if (character === quote) quote = null;
-      outsideQuotes += ' ';
-    } else if (character === '"' || character === '“'
-      || (character === "'" && (index === 0 || /\s/.test(query[index - 1])))) {
-      quote = character === '“' ? '”' : character;
-      outsideQuotes += ' ';
-    } else {
-      outsideQuotes += character;
-    }
-  }
-  if (quote || ACTION_TAIL.test(outsideQuotes)) return null;
+  if (hasSeparateCommand(query)) return null;
   const normalized = query.replace(/[.!?]+$/, '').trim();
   return normalized && normalized.length <= 200 ? normalized : null;
 }

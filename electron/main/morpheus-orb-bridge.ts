@@ -78,6 +78,7 @@ export function createMorpheusOrbHandlers(options: MorpheusOrbBridgeOptions) {
           placeholder: messages.workspace.placeholder,
           submit: messages.activationV2.send,
           open: messages.workspace.openCompact,
+          appearancePreview: messages.experience.unrestrictedPreview.badge,
         },
       };
     },

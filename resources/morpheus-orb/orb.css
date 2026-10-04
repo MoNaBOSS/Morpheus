@@ -25,3 +25,14 @@ body { transition: opacity 180ms ease; }
 .orb { left: var(--orb-x, auto); top: var(--orb-y, auto); touch-action: none; cursor: grab; }
 .orb:active { cursor: grabbing; }
 .hover-composer, .social-caption { top: var(--panel-y, auto); }
+
+html[data-morpheus-appearance='unrestricted-preview'] .hover-composer { border-color: #ff899254; background: linear-gradient(120deg, #2b101af2, #190910f7); color: #f4d9e0; }
+html[data-morpheus-appearance='unrestricted-preview'] .hover-composer input { color: #fff0f3; }
+html[data-morpheus-appearance='unrestricted-preview'] .hover-composer input::placeholder { color: #d6aeb9; }
+html[data-morpheus-appearance='unrestricted-preview'] .hover-composer-send { background: #ffabb5; color: #2b101a; }
+html[data-morpheus-appearance='unrestricted-preview'] .hover-composer-expand { background: #63313e; color: #fff0f3; }
+html[data-morpheus-appearance='unrestricted-preview'] .hover-composer:focus-within { border-color: #ffc9d1; box-shadow: 0 0 0 2px #ff899244, 0 14px 40px #0008; }
+html[data-morpheus-appearance='unrestricted-preview'] .social-caption { border-color: #ff899254; background: #2b101af5; color: #fff0f3; }
+html[data-morpheus-appearance='unrestricted-preview'] body { transition: opacity 180ms ease, transform 180ms ease; }
+html[data-morpheus-appearance='unrestricted-preview'][data-visible='false'] body { transform: translateY(3px) scale(.97); }
+@media (prefers-reduced-motion: reduce) { html[data-morpheus-appearance='unrestricted-preview'] body { transition: none; transform: none; } }

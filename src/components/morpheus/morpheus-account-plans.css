@@ -1,0 +1,57 @@
+.morpheus-account-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.morpheus-account-plan {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 18px 16px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 18px;
+  background: hsl(var(--morpheus-surface-2));
+  animation: morpheus-account-arrive 280ms ease-out both;
+}
+.morpheus-account-plan:nth-child(2) { animation-delay: 35ms; }
+.morpheus-account-plan:nth-child(3) { animation-delay: 70ms; }
+.morpheus-account-plan-heading { display: flex; align-items: center; gap: 10px; }
+.morpheus-account-plan-icon {
+  display: grid; width: 34px; height: 34px; flex-shrink: 0; place-items: center;
+  border-radius: 11px; color: hsl(var(--morpheus-accent));
+  background: hsl(var(--morpheus-accent) / .08);
+}
+.morpheus-account-plan-status { color: hsl(var(--morpheus-accent)); font-size: 11px; line-height: 1.5; }
+.morpheus-account-plan-features { display: grid; gap: 10px; padding: 3px 0 5px; font-size: 12px; line-height: 1.5; }
+.morpheus-account-plan-features li { display: flex; align-items: flex-start; gap: 8px; }
+.morpheus-account-plan-features svg { flex-shrink: 0; margin-top: 2px; color: hsl(var(--muted-foreground)); }
+.morpheus-account-plan-footer { display: flex; align-items: center; min-height: 38px; padding-top: 10px; margin-top: auto; border-top: 1px solid hsl(var(--border)); }
+.morpheus-account-plan-action { display: inline-flex; gap: 8px; align-items: center; min-height: 30px; font-size: 12px; color: hsl(var(--morpheus-accent)); border-radius: 5px; }
+.morpheus-account-plan-action:hover { text-decoration: underline; text-underline-offset: 4px; }
+.morpheus-account-plan-action:focus-visible, .morpheus-payment-methods button:focus-visible { outline: 2px solid hsl(var(--morpheus-accent)); outline-offset: 4px; }
+.morpheus-payment-options { border: 1px solid hsl(var(--border)); border-radius: 18px; padding: 20px; background: hsl(var(--morpheus-surface-2)); }
+.morpheus-payment-heading { display: flex; align-items: flex-start; gap: 16px; justify-content: space-between; }
+.morpheus-payment-availability { flex-shrink: 0; padding: 5px 9px; border-radius: 99px; background: hsl(var(--muted) / .6); color: hsl(var(--muted-foreground)); font-size: 11px; }
+.morpheus-payment-methods { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+.morpheus-payment-methods button { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 13px 12px; border: 1px solid hsl(var(--border)); border-radius: 12px; text-align: left; background: hsl(var(--morpheus-surface-1)); color: hsl(var(--muted-foreground)); transition: background-color 160ms, border-color 160ms, color 160ms; }
+.morpheus-payment-methods button:hover { border-color: hsl(var(--morpheus-accent) / .35); }
+.morpheus-payment-methods button[aria-pressed="true"] { border-color: hsl(var(--morpheus-accent) / .55); color: hsl(var(--foreground)); background: hsl(var(--morpheus-accent) / .065); }
+.morpheus-payment-methods button > svg { flex-shrink: 0; }
+.morpheus-payment-methods strong { display: block; font-size: 13px; font-weight: 500; }
+.morpheus-payment-methods small { display: block; margin-top: 2px; font-size: 10px; color: hsl(var(--muted-foreground)); }
+.morpheus-payment-details { display: flex; align-items: flex-start; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid hsl(var(--border)); }
+.morpheus-payment-details > svg { color: hsl(var(--morpheus-accent)); flex-shrink: 0; margin-top: 2px; }
+@keyframes morpheus-account-arrive { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 700px) {
+  .morpheus-account-plan-grid { grid-template-columns: 1fr; }
+  .morpheus-account-plan { padding: 18px; }
+  .morpheus-payment-heading { flex-wrap: wrap; gap: 10px; }
+  .morpheus-payment-methods { grid-template-columns: 1fr; }
+  .morpheus-payment-options { padding: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .morpheus-account-plan { animation: none; }
+  .morpheus-payment-methods button { transition: none; }
+}
+html[data-morpheus-window-visible="false"] .morpheus-account-plan { animation: none; }

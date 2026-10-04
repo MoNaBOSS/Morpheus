@@ -8,6 +8,7 @@ import i18n from '@/i18n';
 import { hostApi } from '@/lib/host-api';
 import { resolveSupportedLanguage } from '@shared/language';
 import { DEFAULT_WORKSPACE_CWD, MAX_RECENT_WORKSPACES } from '@shared/workspace';
+import { isMorpheusAppearance, normalizeMorpheusAppearance, type MorpheusAppearance } from '@shared/morpheus/appearance-types';
 import {
   getWorkspaceDisplayLabel,
   isDefaultWorkspacePath,
@@ -44,6 +45,7 @@ interface SettingsState {
   sidebarCollapsed: boolean;
   sidebarWidth: number;
   voiceCaptionMode: VoiceCaptionMode;
+  morpheusAppearance: MorpheusAppearance;
   devModeUnlocked: boolean;
   chatWorkspacePath: string;
   recentWorkspacePaths: string[];
@@ -72,6 +74,7 @@ interface SettingsState {
   setSidebarCollapsed: (value: boolean) => void;
   setSidebarWidth: (value: number) => void;
   setVoiceCaptionMode: (value: VoiceCaptionMode) => void;
+  setMorpheusAppearance: (appearance: MorpheusAppearance) => Promise<void>;
   setDevModeUnlocked: (value: boolean) => void;
   setChatWorkspacePath: (workspacePath: string) => void;
   setWorkspaceLabel: (workspacePath: string, label: string) => void;
@@ -101,6 +104,7 @@ const defaultSettings = {
   sidebarCollapsed: false,
   sidebarWidth: 280,
   voiceCaptionMode: 'automatic' as VoiceCaptionMode,
+  morpheusAppearance: 'green' as MorpheusAppearance,
   devModeUnlocked: false,
   chatWorkspacePath: DEFAULT_WORKSPACE_CWD,
   recentWorkspacePaths: [DEFAULT_WORKSPACE_CWD],
@@ -126,6 +130,7 @@ export const useSettingsStore = create<SettingsState>()(
           set((state) => ({
             ...state,
             ...settings,
+            morpheusAppearance: normalizeMorpheusAppearance(settings.morpheusAppearance),
             telemetryEnabled: settings.telemetryEnabled === true && settings.telemetryConsentVersion === 1,
             ...(resolvedLanguage ? { language: resolvedLanguage } : {}),
             ...(typeof settings.sidebarWidth === 'number'
@@ -144,6 +149,13 @@ export const useSettingsStore = create<SettingsState>()(
       setTheme: (theme) => {
         set({ theme });
         void hostApi.settings.set('theme', theme).catch(() => { });
+      },
+      setMorpheusAppearance: async (appearance) => {
+        if (!isMorpheusAppearance(appearance)) throw new Error('Invalid Morpheus appearance');
+        // Show a saved choice only after Main commits it, including the native orb.
+        const result = await hostApi.settings.set('morpheusAppearance', appearance);
+        if (!result.success) throw new Error('Morpheus appearance was not saved');
+        set({ morpheusAppearance: appearance });
       },
       setLanguage: (language) => {
         const resolvedLanguage = resolveSupportedLanguage(language);

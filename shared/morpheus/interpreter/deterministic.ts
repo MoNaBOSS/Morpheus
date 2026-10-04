@@ -28,7 +28,7 @@ import {
   type PermissionRequirement,
 } from '../execution-types';
 import type { MorpheusActionParams } from '../action-types';
-import { parseBrowserSearch } from './browser-search';
+import { COMMAND_REQUEST_PREFIX, hasSeparateCommand, parseBrowserSearch } from './browser-search';
 
 export type InterpretOptions = {
   objective: string;
@@ -73,7 +73,7 @@ const PROJECT_PATTERNS = [
  * already know is a truthful refusal, not a path lookup.
  */
 const APP_LAUNCH_ALIASES: ReadonlyArray<[RegExp, MorpheusApplicationKey]> = [
-  [/\bnotepad\b/i, 'notepad'],
+  [/\bnote\s*pad\b/i, 'notepad'],
   [/\b(calculator|calc)\b/i, 'calculator'],
   [/\b(paint|mspaint)\b/i, 'paint'],
   [/\bspotify\b/i, 'spotify'],
@@ -87,7 +87,8 @@ const NAMED_SITES: Readonly<Record<string, string>> = Object.freeze({
   gmail: 'https://mail.google.com/', google: 'https://www.google.com/',
 });
 
-const SIMPLE_APP_REQUEST = /^(?:(?:can|could|would) you\s+)?(?:please\s+)?(?:(?:open|launch|start|run)\s+)?(?:notepad|calculator|calc|paint|mspaint|spotify)(?:\s+please)?[.!?]?$/i;
+const REQUEST_END = '(?:\\s*,?\\s*please)?[.!?]*';
+const SIMPLE_APP_REQUEST = new RegExp(`^${COMMAND_REQUEST_PREFIX}(?:(?:open|launch|start|run)\\s+)?(?:note\\s*pad|calculator|calc|paint|mspaint|spotify)${REQUEST_END}$`, 'i');
 
 const CLIPBOARD_READ_PATTERNS = [
   /\b(read|get|show|what(?:'s|\s+is))\b[^.]*\bclipboard\b/i,
@@ -302,6 +303,12 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
       'morpheus.plan.steps.webSearch', { query: browserSearch.query })]) };
   }
 
+  // A one-step keyword match must not quietly discard another requested
+  // action. Browser queries were handled above; quoted content stays literal.
+  if (hasSeparateCommand(text)) {
+    return { ok: false, unsupported: { objective: text, reason: 'not-understood', supportedCapabilities } };
+  }
+
   const readPage = /^(?:read|retrieve)\s+(https:\/\/\S+)$/i.exec(text);
   if (readPage) {
     try {
@@ -463,11 +470,12 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
     };
   }
 
-  const namedSite = /^(?:(?:can|could|would)\s+you\s+)?(?:please\s+)?(?:open|launch|visit|go\s+to)\s+(?:the\s+)?(youtube(?:\s+music)?|instagram|pornhub|github|gmail|google)(?:\s+(?:website|site))?(?:\s+please)?[.!?]?$/i.exec(text.trim());
-  const bareDomain = /^(?:please\s+)?(?:open|visit|go\s+to)\s+((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24})(?:[.!?])?$/i.exec(text.trim());
+  const navigation = '(?:open|launch|visit|browse|go\\s+to|navigate\\s+to|take\\s+me\\s+to)';
+  const namedSite = new RegExp(`^${COMMAND_REQUEST_PREFIX}${navigation}\\s+(?:the\\s+)?(youtube(?:\\s+music)?|instagram|pornhub|github|gmail|google)(?:\\s+(?:website|site))?${REQUEST_END}$`, 'i').exec(text);
+  const bareDomain = new RegExp(`^${COMMAND_REQUEST_PREFIX}${navigation}\\s+((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,24})${REQUEST_END}$`, 'i').exec(text);
   const url = namedSite ? NAMED_SITES[namedSite[1].toLowerCase().replace(/\s+/g, ' ')]
     : bareDomain ? `https://${bareDomain[1].toLowerCase()}/`
-      : /^(?:(?:please\s+)?(?:open|visit|browse|go\s+to)\s+)?https?:\/\/[^\s<>"']+(?:\s+please)?$/i.test(text)
+      : new RegExp(`^(?:${COMMAND_REQUEST_PREFIX}${navigation}\\s+)?https?://[^\\s<>"']+${REQUEST_END}$`, 'i').test(text)
         ? extractHttpUrl(text) : null;
   if (url) {
     let origin: string;
@@ -695,10 +703,10 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
     return { ok: true, plan: basePlan([makeStep('step-1', 'audio.setVolume', { level },
       buildPermission('audio.setVolume', platform, 'runtime'), 'morpheus.plan.steps.audioVolume', { level })]) };
   }
-  const windowRequest = /^(?:please\s+)?(focus|switch to|minimi[sz]e|restore)\s+(notepad|calculator|paint|spotify)(?:\s+please)?[.!]?$/i.exec(text.trim());
+  const windowRequest = /^(?:please\s+)?(focus|switch to|minimi[sz]e|restore)\s+(note\s*pad|calculator|paint|spotify)(?:\s+please)?[.!]?$/i.exec(text.trim());
   if (windowRequest) {
     const operation = windowRequest[1].toLowerCase().startsWith('minimi') ? 'minimize' : windowRequest[1].toLowerCase() === 'restore' ? 'restore' : 'focus';
-    const application = windowRequest[2].toLowerCase();
+    const application = APP_LAUNCH_ALIASES.find(([pattern]) => pattern.test(windowRequest[2]))![1];
     return { ok: true, plan: basePlan([makeStep('step-1', 'app.controlWindow', { applicationKey: application, operation },
       buildPermission('app.controlWindow', platform, application), `morpheus.plan.steps.window${operation[0].toUpperCase()}${operation.slice(1)}`, { application })]) };
   }

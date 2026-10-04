@@ -7,6 +7,7 @@ import type {
 } from '../acp-chat/types';
 import type { RawMessage } from '../chat/types';
 import type { ManagedAccountSnapshot, ManagedAuthResult } from '../morpheus/managed-types';
+import type { MorpheusAppearance } from '../morpheus/appearance-types';
 import type { MorpheusAmbientInputSession, MorpheusWakeAudioFrame } from '../morpheus/wake-audio-types';
 import type { MorpheusPublicationConnectionInput, MorpheusPublicationPreview, MorpheusPublicationReceipt, MorpheusPublicationResult, MorpheusPublicationSource, MorpheusPublicationState } from '../morpheus/publication-types';
 import type { AgentsSnapshot } from '../types/agent';
@@ -243,6 +244,7 @@ export type UpdateSetAutoDownloadPayload = { enable: boolean };
 
 export type SettingsSnapshot = Partial<{
   theme: 'light' | 'dark' | 'system';
+  morpheusAppearance: MorpheusAppearance;
   language: string;
   startMinimized: boolean;
   launchAtStartup: boolean;

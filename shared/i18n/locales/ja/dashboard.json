@@ -1502,7 +1502,11 @@
         "autoSubmitDescription": "文字起こし成功後、追加クリックなしで同じ Objective Core に送ります。",
         "speakResponses": "最終応答を読み上げる",
         "replySpeechMode": "読み上げる返信",
-        "replySpeechModes": { "orb": "オーブの返信", "voice": "音声リクエストのみ", "all": "すべてのリクエスト" },
+        "replySpeechModes": {
+          "orb": "オーブの返信",
+          "voice": "音声リクエストのみ",
+          "all": "すべてのリクエスト"
+        },
         "replySpeechDescriptions": {
           "orb": "オーブからの入力と音声の返信を読み上げます。展開したチャットでは読み上げません。",
           "voice": "オーブと展開したチャットで音声リクエストへの返信を読み上げます。文字入力の返信は読み上げません。",
@@ -1555,7 +1559,7 @@
         "connectionsBody": "タスクモデルの API を安全に接続します。既存の接続は保持されます。Basic はお客様の API を使用し、ホスト型プランはまだ利用できません。モデルに送信する前に接続をテストしてください。",
         "voiceBody": "マイクを設定し、Morpheus の声を試します。標準の英語音声はこの PC で動作し、音声 API キーは不要です。",
         "personalityBody": "相棒の個性を設定します。会話、音声、タスクモデルで設定を共有します。",
-        "accountBody": "Basic は自分のタスクモデル API を使用します。Premium と Unrestricted はホスト型サービスが必要です。価格と決済は未提供で、NerdGPT は計画中です。",
+        "accountBody": "プラン、アカウント、お支払い方法。Basic は自分の API で今すぐ使えます。",
         "advancedBody": "既存のツールをすべて利用できます。フルワークスペースには添付、スキル、エージェント、履歴管理、技術設定があります。"
       },
       "voice": {
@@ -1621,7 +1625,11 @@
         "tryTitle": "便利な機能を試す",
         "tryHint": "例を選んで送信してください。これらはモデル接続なしで使えます。",
         "local": "このPCで実行",
-        "examples": { "youtube": "YouTubeを開く", "calculator": "電卓を開く", "system": "システム情報を表示" },
+        "examples": {
+          "youtube": "YouTubeを開く",
+          "calculator": "電卓を開く",
+          "system": "システム情報を表示"
+        },
         "configured": "タスクモデルの設定が見つかりました。会話、調査、サイト生成を使う前に設定から接続をテストしてください。",
         "unconfigured": "アプリとサイトはローカルで開けます。モデルとの会話、調査、サイト生成にはタスクモデルの接続が必要です。設定からいつでも続けられます。"
       },
@@ -1632,8 +1640,8 @@
         "available": "自分の API で利用可能",
         "planned": "計画中 · サービス未提供",
         "basicBody": "自分のタスクモデル API、標準のローカル英語音声、既存のローカルツール。",
-        "premiumBody": "高品質のホスト型モデルと音声サポート。運営資金とアカウントサービスが必要です。",
-        "unrestrictedBody": "Premium の機能と将来の NerdGPT による辛口ジョーク、罵り、ローストの個性。NerdGPT は未接続です。"
+        "premiumBody": "高品質なホスト型モデルとサポート付きの音声体験。今後提供予定です。",
+        "unrestrictedBody": "Premium の機能に、将来の NerdGPT による辛口ユーモアを追加。下から赤い外観を試せます。"
       },
       "personality": {
         "gentle": "一歩ずつ進めましょう。面倒な部分は任せてください。",
@@ -1648,6 +1656,59 @@
         "footer": "話したいときは声で。文字入力はいつでも。",
         "returning": "来てくれてうれしいです。",
         "continue": "会話を続ける"
+      },
+      "unrestrictedPreview": {
+        "title": "Morpheus の外観",
+        "description": "いつもの緑の姿を使うか、暗い赤の外観をプレビューできます。",
+        "green": "オリジナルの緑",
+        "greenBody": "いつもの Morpheus の姿。",
+        "red": "Unrestricted の赤 · プレビュー",
+        "redBody": "赤い光と落ち着いた動きによる、よりダークな姿。",
+        "boundary": "外観のみの変更です。NerdGPT は未接続です。プラン、個性、モデル、ツールの権限は変わりません。",
+        "badge": "プレビュー",
+        "saving": "外観を保存中…",
+        "failed": "外観を保存できませんでした。もう一度お試しください。"
+      },
+      "payments": {
+        "title": "お支払い方法",
+        "description": "ホスト型プランの提供開始後に予定しているお支払い方法をご覧ください。",
+        "unavailable": "まだ利用できません",
+        "methodsLabel": "お支払い方法を見る",
+        "connect": "API を接続",
+        "previewAppearance": "赤い外観をプレビュー",
+        "pricingLater": "料金は後日発表",
+        "availabilityNote": "プランはまだ販売していません。決済画面や送金先アドレスはありません。",
+        "features": {
+          "ownApi": "タスクモデルの API を自由に選択",
+          "includedVoice": "ローカル英語音声を内蔵",
+          "existingTools": "ブラウザー、アプリ、既存のツール",
+          "hostedModels": "高品質なホスト型モデル",
+          "supportedVoice": "サポート付きの音声体験",
+          "managedUsage": "アカウントと使用量の管理",
+          "premiumFeatures": "Premium の機能",
+          "redAppearance": "動く赤いコンパニオン",
+          "futureNerdgpt": "将来の NerdGPT パーソナリティ"
+        },
+        "methods": {
+          "stripe": {
+            "label": "Stripe",
+            "hint": "カードとウォレット",
+            "title": "安全なカード決済",
+            "body": "予定：Stripe の安全な決済画面で支払い、アカウントからプランを管理できます。支払い前に利用可能なプランと条件を表示します。"
+          },
+          "usdt": {
+            "label": "USDT",
+            "hint": "暗号資産で支払い",
+            "title": "支払い確認後に利用開始",
+            "body": "予定：アカウントの請求書に対応ネットワーク、USDT トークン、正確な金額を表示します。決済サービスがブロックチェーンの確認を検証した後に利用権限を付与します。"
+          },
+          "usdc": {
+            "label": "USDC",
+            "hint": "暗号資産で支払い",
+            "title": "支払い確認後に利用開始",
+            "body": "予定：アカウントの請求書に対応ネットワーク、USDC トークン、正確な金額を表示します。決済サービスがブロックチェーンの確認を検証した後に利用権限を付与します。"
+          }
+        }
       }
     }
   }

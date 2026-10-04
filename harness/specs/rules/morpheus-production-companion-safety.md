@@ -81,3 +81,19 @@ with space for the taskbar. Wake, tray and global shortcuts use the same compact
 anchor; the compact panel grows upward and stays inside the available work area.
 Waking the orb must not steal focus. Full workspace expansion remains explicit.
 Browser hover designs are not evidence of native hover or audio integration.
+
+Unrestricted appearance is a local, labelled preview until the service is
+configured. Persist only the validated presentation enum through existing Main
+settings; a red theme cannot alter entitlement, execution authority or microphone
+consent. Payment presentation must distinguish plans and service availability.
+Absent billing configuration, expose no invented price, address or working checkout.
+
+Voice precision reports retain their corpus version, exact transcript, destination
+and engine identity. Generated speech is useful regression evidence, not proof of
+human accent, room-noise or microphone performance. Preserve literal search text
+and route multi-action requests as complete objectives rather than running only
+the first matched utility command.
+
+Public Windows release and update checks require the configured publisher and
+valid timestamped signatures for the actual installer and embedded application.
+An unsigned preview or self-signed test cannot satisfy commercial signing.

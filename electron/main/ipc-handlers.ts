@@ -87,6 +87,7 @@ import type { PermissionProfile } from '@shared/morpheus/permission-types';
 import type { MorpheusRuntimeControlSnapshot } from '@shared/morpheus/runtime-control-types';
 import type { MorpheusCompanionSurfaceStatus } from '@shared/morpheus/companion-types';
 import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
+import type { MorpheusAppearance } from '@shared/morpheus/appearance-types';
 import { writeMorpheusMemoryExport } from '../services/morpheus/memory/memory-export';
 
 type MorpheusCompanionSurfaceControls = {
@@ -94,6 +95,7 @@ type MorpheusCompanionSurfaceControls = {
   wake?(): void;
   presence?(presence: MorpheusVoicePresence): void;
   level?(level: number): void;
+  appearance?(appearance: MorpheusAppearance): void;
   socialAvailable?(): boolean;
   socialCaption?(text: string | null): void;
   status(): MorpheusCompanionSurfaceStatus;
@@ -321,7 +323,7 @@ function registerTypedHostHandlers(
     window: createWindowApi(mainWindow),
     updates: createUpdatesApi(appUpdater),
     uv: createUvApi(),
-    settings: createSettingsApi(gatewayManager),
+    settings: createSettingsApi(gatewayManager, companionSurface.appearance),
     gateway: createGatewayApi(gatewayManager),
     logs: createLogsApi(),
     channels: createChannelsApi({ gatewayManager, mainWindow }),

@@ -9,6 +9,16 @@
      is exactly zero; the audio service remains the sole owner of the meter. */
   --morpheus-motion-amplitude: clamp(0, calc(var(--morpheus-audio-level) * 1.5), 1);
   --morpheus-motion-ease: cubic-bezier(.2, .7, .25, 1);
+  --morpheus-motion-light: 133 245 185;
+  --morpheus-motion-glow: 83 237 180;
+  --morpheus-motion-shadow: 44 170 110;
+  --morpheus-motion-soft: 120 245 179;
+  --morpheus-motion-bright: 191 255 225;
+  --morpheus-motion-audio-glow: 110 255 190;
+  --morpheus-motion-cue: 196 255 218;
+  --morpheus-motion-cue-background: #10231b;
+  --morpheus-motion-cue-ink: #eafff1;
+  --morpheus-artwork-filter: none;
 }
 
 .morpheus-motion__aurora,
@@ -21,9 +31,9 @@
 .morpheus-motion__aurora {
   z-index: 2;
   inset: -3%;
-  border: 1px solid rgb(133 245 185 / .6);
+  border: 1px solid rgb(var(--morpheus-motion-light) / .6);
   border-radius: 46% 54% 59% 41% / 53% 42% 58% 47%;
-  background: conic-gradient(from 40deg, transparent 7%, rgb(83 237 180 / 0.34) 27%, transparent 52%, rgb(44 170 110 / 0.28) 78%, transparent 96%);
+  background: conic-gradient(from 40deg, transparent 7%, rgb(var(--morpheus-motion-glow) / .34) 27%, transparent 52%, rgb(var(--morpheus-motion-shadow) / .28) 78%, transparent 96%);
   opacity: 0.65;
   transform: translateZ(0);
   mask-image: radial-gradient(circle, transparent 57%, #000 69%);
@@ -35,9 +45,9 @@
   /* A fixed footprint avoids a layout-sized jump between idle and capture.
      Audio expansion stays inside the native 56-DIP interaction target. */
   inset: 8%;
-  border: 1px solid rgb(120 245 179 / 0.46);
+  border: 1px solid rgb(var(--morpheus-motion-soft) / .46);
   border-radius: 50%;
-  box-shadow: 0 0 15px rgb(83 237 180 / 0.18);
+  box-shadow: 0 0 15px rgb(var(--morpheus-motion-glow) / .18);
   opacity: 0.52;
   transition: transform 160ms var(--morpheus-motion-ease), opacity 180ms ease-out;
 }
@@ -52,10 +62,10 @@
   box-sizing: border-box;
   width: 21%;
   aspect-ratio: 1;
-  border: 1px solid rgb(196 255 218 / 0.9);
+  border: 1px solid rgb(var(--morpheus-motion-cue) / .9);
   border-radius: 50%;
-  background: #10231b;
-  color: #eafff1;
+  background: var(--morpheus-motion-cue-background);
+  color: var(--morpheus-motion-cue-ink);
   font: 700 12px/1 "Segoe UI", sans-serif;
   opacity: 0;
   pointer-events: none;
@@ -73,6 +83,7 @@
   object-fit: contain;
   clip-path: circle(34.48% at center);
   user-select: none;
+  filter: var(--morpheus-artwork-filter);
   transform-origin: center;
   transition: transform 140ms var(--morpheus-motion-ease);
 }
@@ -157,11 +168,11 @@
 .morpheus-motion[data-motion-state='speaking'] .morpheus-motion__halo {
   transform: scale(calc(1 + var(--morpheus-motion-amplitude) * .17));
   opacity: calc(.6 + var(--morpheus-motion-amplitude) * .35);
-  box-shadow: 0 0 24px rgb(110 255 190 / 0.38);
+  box-shadow: 0 0 24px rgb(var(--morpheus-motion-audio-glow) / .38);
 }
 
 .morpheus-motion[data-motion-state='attention'] .morpheus-motion__halo {
-  border-color: rgb(196 255 218 / 0.84);
+  border-color: rgb(var(--morpheus-motion-cue) / .84);
   opacity: 0.9;
 }
 
@@ -225,8 +236,8 @@
 }
 .morpheus-motion[data-motion-state='understanding'] .morpheus-motion__aurora,
 .morpheus-motion[data-motion-state='working'] .morpheus-motion__aurora {
-  border-color: rgb(133 245 185 / .25);
-  background: conic-gradient(transparent 0deg, transparent 225deg, rgb(191 255 225 / .75) 302deg, transparent 355deg);
+  border-color: rgb(var(--morpheus-motion-light) / .25);
+  background: conic-gradient(transparent 0deg, transparent 225deg, rgb(var(--morpheus-motion-bright) / .75) 302deg, transparent 355deg);
   animation: morpheus-motion-work 1.6s steps(48, end) infinite;
 }
 .morpheus-motion[data-motion-state='complete'] .morpheus-motion__halo {
@@ -246,11 +257,60 @@
   to { transform: rotate(360deg); }
 }
 
+/* The red preview preserves the M silhouette. Only the color treatment and
+   compositor motion change; capture, progress and speech retain their owners. */
+.morpheus-motion[data-appearance='unrestricted-preview'] {
+  --morpheus-motion-light: 255 137 146;
+  --morpheus-motion-glow: 244 67 87;
+  --morpheus-motion-shadow: 151 27 57;
+  --morpheus-motion-soft: 247 99 118;
+  --morpheus-motion-bright: 255 201 210;
+  --morpheus-motion-audio-glow: 255 103 128;
+  --morpheus-motion-cue: 255 206 214;
+  --morpheus-motion-cue-background: #2b101a;
+  --morpheus-motion-cue-ink: #fff0f3;
+  --morpheus-artwork-filter: hue-rotate(195deg) saturate(1.15);
+}
+.morpheus-motion[data-appearance='unrestricted-preview'][data-motion-state='idle'] .morpheus-motion__artwork,
+.morpheus-motion[data-appearance='unrestricted-preview'][data-motion-state='quiet'] .morpheus-motion__artwork {
+  animation-name: morpheus-motion-red-presence;
+}
+.morpheus-motion[data-appearance='unrestricted-preview'][data-motion-state='working'] .morpheus-motion__artwork {
+  animation-name: morpheus-motion-red-work;
+}
+.morpheus-motion[data-appearance='unrestricted-preview'][data-motion-state='working'] .morpheus-motion__aurora {
+  animation-direction: reverse;
+}
+.morpheus-motion__preview {
+  display: none;
+  position: absolute;
+  z-index: 5;
+  left: 8%; right: 8%; bottom: 7%;
+  overflow: hidden;
+  color: #ffe9ed;
+  background: #2b101ad9;
+  border-radius: 4px;
+  font: 600 7px/1.3 'Segoe UI', sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+.morpheus-motion[data-appearance='unrestricted-preview'] .morpheus-motion__preview { display: block; }
+.morpheus-motion[data-appearance='unrestricted-preview'][data-motion-state='attention'] .morpheus-motion__preview { right: 30%; }
+@keyframes morpheus-motion-red-presence {
+  0%, 100% { transform: translateY(1px) rotate(-5deg) scale(.92); }
+  50% { transform: translateY(-1px) rotate(1deg) scale(1); }
+}
+@keyframes morpheus-motion-red-work {
+  0%, 100% { transform: rotate(5deg) scale(.93); }
+  50% { transform: rotate(-5deg) scale(.99); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .morpheus-motion[data-motion-state] .morpheus-motion__aurora,
   .morpheus-motion[data-motion-state] .morpheus-motion__halo,
   .morpheus-motion[data-motion-state] .morpheus-motion__artwork,
-  .morpheus-motion[data-motion-state] .morpheus-motion__cue {
+  .morpheus-motion[data-motion-state] .morpheus-motion__cue,
+  .morpheus-motion[data-appearance][data-motion-state] .morpheus-motion__artwork {
     animation: none;
     transition: none;
     transform: none;

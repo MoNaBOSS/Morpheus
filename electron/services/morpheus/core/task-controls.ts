@@ -8,11 +8,11 @@ export async function handleMorpheusTaskControl(text: string, options: {
   runtime: MorpheusRuntime;
   stopSpeech: () => void;
 }): Promise<MorpheusInteractionDecision | null> {
-  const normalized = text.trim().replace(/[.!]+$/, '').toLowerCase();
+  const normalized = text.trim().replace(/[.!?]+$/, '').toLowerCase();
   const result = (control: NonNullable<MorpheusInteractionDecision['control']>): MorpheusInteractionDecision => ({
     route: 'control', reason: 'task-control', confidence: 'explicit', text, control,
   });
-  if (/^(?:please )?(?:stop talking|stop speaking|be quiet|silence)$/.test(normalized)) {
+  if (/^(?:(?:can|could|would|will)\s+you\s+)?(?:please\s+)?(?:stop talking|stop speaking|be quiet|silence)(?:\s*,?\s*please)?$/.test(normalized)) {
     options.stopSpeech();
     return result('speech-stopped');
   }

@@ -16,6 +16,7 @@ import { MorpheusPlanConsentDialog } from './MorpheusPlanConsentDialog';
 import { MorpheusVoiceRuntime } from './MorpheusVoiceRuntime';
 import { MorpheusOperatorNavigation } from './operator/MorpheusOperatorNavigation';
 import { MorpheusSocialCheckIn } from './MorpheusSocialCheckIn';
+import { MorpheusAppearanceRuntime } from './MorpheusAppearanceRuntime';
 import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
 
 export function MorpheusGlobalRuntime() {
@@ -98,6 +99,7 @@ export function MorpheusGlobalRuntime() {
 
   return (
     <>
+      <MorpheusAppearanceRuntime />
       <div className="pointer-events-none fixed left-1/2 top-10 z-[100000] -translate-x-1/2">
         <MorpheusCaptureIndicator />
       </div>

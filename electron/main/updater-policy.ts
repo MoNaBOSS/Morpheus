@@ -31,6 +31,9 @@ export const MORPHEUS_UPDATE_FEED: string | null = null;
 /** Keep false until trusted-publisher checks have passed on a signed package. */
 export const MORPHEUS_UPDATE_SIGNING_READY = false;
 
+/** Exact certificate common names; empty until the publisher identity is verified. */
+export const MORPHEUS_UPDATE_PUBLISHERS: readonly string[] = [];
+
 /** Hosts and repositories that must never serve a Morpheus update. */
 const FORBIDDEN_FEED_PATTERNS = [
   /oss\.intelli-spectrum\.com/i,
@@ -41,8 +44,24 @@ const FORBIDDEN_FEED_PATTERNS = [
 export type UpdateConfigurationState =
   | { configured: false; reason: 'not-configured' }
   | { configured: false; reason: 'rejected-inherited-feed' }
-  | { configured: false; reason: 'invalid-feed' | 'signing-not-ready' }
-  | { configured: true; feedUrl: string };
+  | { configured: false; reason: 'invalid-feed' | 'signing-not-ready' | 'publisher-not-configured' }
+  | { configured: true; feedUrl: string; publisherNames: string[] };
+
+function validPublisherNames(value: unknown): value is string[] {
+  return Array.isArray(value) && value.length > 0
+    && value.every((name) => typeof name === 'string' && name.length > 0
+      && name === name.trim() && !/[\r\n\0]|ValueCell|ClawX/i.test(name))
+    && new Set(value).size === value.length;
+}
+
+/** electron-updater skips Authenticode verification if this packaged field is absent. */
+export function hasTrustedUpdatePublisherMetadata(expected: readonly string[], metadata: unknown): boolean {
+  if (!validPublisherNames(expected) || !metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return false;
+  const publisher = (metadata as Record<string, unknown>).publisherName;
+  const names = typeof publisher === 'string' ? [publisher] : publisher;
+  return validPublisherNames(names) && names.length === expected.length
+    && expected.every((name) => names.includes(name));
+}
 
 export function isForbiddenUpdateFeed(url: string): boolean {
   return FORBIDDEN_FEED_PATTERNS.some((pattern) => pattern.test(url));
@@ -58,6 +77,7 @@ export function isForbiddenUpdateFeed(url: string): boolean {
 export function resolveUpdateConfiguration(
   feed: string | null = MORPHEUS_UPDATE_FEED,
   signingReady: boolean = MORPHEUS_UPDATE_SIGNING_READY,
+  publisherNames: readonly string[] = MORPHEUS_UPDATE_PUBLISHERS,
 ): UpdateConfigurationState {
   if (!feed || !feed.trim()) return { configured: false, reason: 'not-configured' };
   if (isForbiddenUpdateFeed(feed)) return { configured: false, reason: 'rejected-inherited-feed' };
@@ -68,7 +88,8 @@ export function resolveUpdateConfiguration(
     return { configured: false, reason: 'invalid-feed' };
   }
   if (!signingReady) return { configured: false, reason: 'signing-not-ready' };
-  return { configured: true, feedUrl: endpoint.href.replace(/\/$/, '') };
+  if (!validPublisherNames(publisherNames)) return { configured: false, reason: 'publisher-not-configured' };
+  return { configured: true, feedUrl: endpoint.href.replace(/\/$/, ''), publisherNames: [...publisherNames] };
 }
 
 export function isUpdateFeedConfigured(): boolean {

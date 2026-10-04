@@ -35,7 +35,7 @@ function setup(upstream = vi.fn<typeof fetch>(async (url) => String(url).endsWit
   const healthy = vi.fn(() => true);
   const providerService = { listAccounts: vi.fn(async () => []), getAccountRuntimeApiKey: vi.fn() };
   const chunks: MorpheusSpeechChunk[] = [];
-  const wakeStop = vi.fn(), startLocalWake = vi.fn(() => ({ ready: Promise.resolve(), stop: wakeStop }));
+  const wakeStop = vi.fn(), startLocalWake = vi.fn(() => ({ ready: Promise.resolve(), stop: wakeStop, pushAudio: vi.fn(() => true) }));
   const service = createMorpheusVoiceService({ userDataDir: dir, providerService: providerService as never,
     audit: { recordControl, isHealthy: healthy } as never, appVersion: 'test', getManagedRuntime: () => bridge,
     emitSpeechChunk: (chunk) => chunks.push(chunk), startLocalWake });
@@ -108,6 +108,12 @@ describe('managed voice joined to the original Main voice owner', () => {
     const upstream = vi.fn<typeof fetch>((_url, init) => new Promise((_resolve, reject) => init!.signal!.addEventListener('abort', () => reject(new Error('stopped')), { once: true })));
     const h = setup(upstream);
     await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true });
+    expect(h.startLocalWake).not.toHaveBeenCalled();
+    const input = await h.service.prepareAmbientInput();
+    await expect(h.service.feedWakeAudio({ sessionId: input.sessionId!, sequence: 0,
+      pcmBase64: Buffer.alloc(6400).toString('base64') })).resolves.toEqual({ ready: true });
+    expect(h.startLocalWake).toHaveBeenCalledOnce();
+    expect(h.service.presence().state).toBe('armed');
     const before = readFileSync(join(h.dir, 'morpheus', 'voice-settings.json'), 'utf8');
     const request = h.service.transcribe(payload); const rejection = expect(request).rejects.toThrow('cancelled');
     await vi.waitFor(() => expect(upstream).toHaveBeenCalledOnce());

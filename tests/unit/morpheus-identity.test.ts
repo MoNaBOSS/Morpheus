@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   MORPHEUS_UPDATE_FEED,
   MORPHEUS_UPDATE_SIGNING_READY,
+  MORPHEUS_UPDATE_PUBLISHERS,
   isForbiddenUpdateFeed,
   isUpdateFeedConfigured,
   resolveUpdateConfiguration,
@@ -19,7 +20,7 @@ describe('package identity', () => {
 
   it('is named and versioned as the Morpheus 1.2.0 preview candidate', () => {
     expect(pkg.name).toBe('morpheus');
-    expect(pkg.version).toBe('1.2.0-preview.13');
+    expect(pkg.version).toBe('1.2.0-preview.16');
     expect(pkg.description).toContain('Morpheus');
     expect(pkg.description).not.toContain('ClawX');
   });
@@ -59,6 +60,7 @@ describe('update feed', () => {
   it('ships with no update feed configured', () => {
     expect(MORPHEUS_UPDATE_FEED).toBeNull();
     expect(MORPHEUS_UPDATE_SIGNING_READY).toBe(false);
+    expect(MORPHEUS_UPDATE_PUBLISHERS).toEqual([]);
     expect(isUpdateFeedConfigured()).toBe(false);
     expect(resolveUpdateConfiguration()).toEqual({ configured: false, reason: 'not-configured' });
   });
@@ -81,7 +83,10 @@ describe('update feed', () => {
       configured: false, reason: 'signing-not-ready',
     });
     expect(resolveUpdateConfiguration('https://updates.morpheus.example/latest', true)).toEqual({
-      configured: true, feedUrl: 'https://updates.morpheus.example/latest',
+      configured: false, reason: 'publisher-not-configured',
+    });
+    expect(resolveUpdateConfiguration('https://updates.morpheus.example/latest', true, ['Fixture Publisher'])).toEqual({
+      configured: true, feedUrl: 'https://updates.morpheus.example/latest', publisherNames: ['Fixture Publisher'],
     });
     expect(read('electron-builder.yml')).toContain('verifyUpdateCodeSignature: true');
   });

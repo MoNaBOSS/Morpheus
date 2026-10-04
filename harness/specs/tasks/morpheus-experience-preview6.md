@@ -30,6 +30,8 @@ requiredRules:
   - morpheus-production-companion-safety
   - morpheus-phase7-assistant-contract
 expectedUserBehavior:
+  - Unrestricted appearance previews are explicitly labelled and cannot grant paid entitlement, connect unavailable NerdGPT, enable a microphone or widen execution authority.
+  - Command accuracy is measured with retained actual-engine transcripts and exact intent/destination assertions; generated input is never claimed as human microphone precision.
   - An explicit YouTube search retains its destination and query instead of becoming a generic web search; unrelated additional requested actions are not silently dropped.
   - Enabled tray companion wake becomes ready only after the chosen input is acquired, pauses in visible chat or Settings, and cannot defeat manual mute.
   - Orb and compact voice or typed submissions can receive spoken replies while expanded chat remains quiet, according to persistent user controls and the originating turn rather than the current screen.
@@ -72,6 +74,8 @@ expectedUserBehavior:
   - Saving a new protected provider key while the owned Gateway runs delivers selected configuration and its fresh child environment together; the old child must not reject a newly introduced SecretRef before refresh.
   - Interrupted service delivery reveals the already saved connection with translated repair guidance; Add must not invite duplicate account creation.
 requiredTests:
+  - pnpm exec vitest run tests/unit/morpheus-voice-command-corpus.test.ts tests/unit/morpheus-appearance.test.ts
+  - pnpm exec playwright test tests/e2e/morpheus-payment-options.spec.ts --workers=1
   - pnpm run typecheck
   - pnpm run lint:check
   - pnpm exec vitest run tests/unit/provider-service-stale-cleanup.test.ts tests/unit/provider-migration.test.ts tests/unit/provider-runtime-sync.test.ts tests/unit/provider-secret-adapter.test.ts tests/unit/provider-settings-locales.test.ts
@@ -100,6 +104,13 @@ requested autonomous completion and testing. The next preview.7 change is bounde
 speech responsiveness, verified conversation chronology, public capability reliability,
 and disposable hosted Windows installation qualification. No paid provider, checkout,
 signing identity or NerdGPT deployment is invented.
+
+October 4 public-release amendment: the owner requests full signed distribution,
+broader voice precision and Stripe/existing-contract integration. Prepare the red
+Unrestricted appearance now; NerdGPT API/personality follow later. Verify supplied
+publisher/payment deployment assets and actual signed/runtime behavior before
+public acceptance. Local visual/voice/release hardening can proceed while ABI,
+chain/address, Stripe/backend/prices and signing configuration are pending.
 
 October 4 latest amendment: preserve the approved visual design, correct explicit
 site-search intent and enabled tray wake, and speak both typed and voice companion

@@ -13,6 +13,7 @@ import {
   setSetting,
 } from '../utils/store';
 import { isRecord } from './payload-utils';
+import { isMorpheusAppearance, normalizeMorpheusAppearance, type MorpheusAppearance } from '../../shared/morpheus/appearance-types';
 
 type KeyPayload = {
   key?: unknown;
@@ -55,12 +56,19 @@ async function requireSettingsPatch(payload: unknown): Promise<Partial<AppSettin
     throw new Error('Invalid settings patch');
   }
   const entries = Object.entries(patch);
-  for (const [key] of entries) {
+  for (const [key, value] of entries) {
     if (!await validateSettingKey(key)) {
       throw new Error('Invalid settings key');
     }
+    requireSettingValue(key, value);
   }
   return Object.fromEntries(entries) as Partial<AppSettings>;
+}
+
+function requireSettingValue(key: string, value: unknown): void {
+  if (key === 'morpheusAppearance' && !isMorpheusAppearance(value)) {
+    throw new Error('Invalid Morpheus appearance');
+  }
 }
 
 function patchTouchesProxy(patch: Partial<AppSettings>): boolean {
@@ -103,7 +111,10 @@ async function runSettingsSideEffects(
   }
 }
 
-export function createSettingsApi(gatewayManager: GatewayManager): CompleteHostServiceRegistry['settings'] {
+export function createSettingsApi(
+  gatewayManager: GatewayManager,
+  appearanceChanged?: (appearance: MorpheusAppearance) => void,
+): CompleteHostServiceRegistry['settings'] {
   return {
     getAll: () => getAllSettings(),
     get: async (payload) => {
@@ -113,7 +124,9 @@ export function createSettingsApi(gatewayManager: GatewayManager): CompleteHostS
     set: async (payload) => {
       const body = payload as SetPayload | undefined;
       const key = await requireSettingKey(body);
+      requireSettingValue(key, body?.value);
       await setSetting(key as never, body?.value as never);
+      if (key === 'morpheusAppearance') appearanceChanged?.(normalizeMorpheusAppearance(body?.value));
       await runSettingsSideEffects(gatewayManager, { [key]: body?.value } as Partial<AppSettings>);
       return { success: true };
     },
@@ -122,6 +135,7 @@ export function createSettingsApi(gatewayManager: GatewayManager): CompleteHostS
       const entries = Object.entries(patch) as Array<[keyof AppSettings, AppSettings[keyof AppSettings]]>;
       for (const [key, value] of entries) {
         await setSetting(key, value as never);
+        if (key === 'morpheusAppearance') appearanceChanged?.(normalizeMorpheusAppearance(value));
       }
       await runSettingsSideEffects(gatewayManager, patch);
       return { success: true };
@@ -131,6 +145,7 @@ export function createSettingsApi(gatewayManager: GatewayManager): CompleteHostS
       await handleProxySettingsChange(gatewayManager);
       await syncLaunchAtStartupSettingFromStore();
       const settings = await getAllSettings();
+      appearanceChanged?.(normalizeMorpheusAppearance(settings.morpheusAppearance));
       await createMenu(settings.language);
       return { success: true, settings };
     },

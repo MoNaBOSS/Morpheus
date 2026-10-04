@@ -1502,7 +1502,11 @@
         "autoSubmitDescription": "Send a successful transcript into the same Objective Core without another click.",
         "speakResponses": "Speak final responses",
         "replySpeechMode": "Which replies to speak",
-        "replySpeechModes": { "orb": "Orb replies", "voice": "Voice requests only", "all": "All requests" },
+        "replySpeechModes": {
+          "orb": "Orb replies",
+          "voice": "Voice requests only",
+          "all": "All requests"
+        },
         "replySpeechDescriptions": {
           "orb": "Speak typed and voice replies from the orb. Expanded chat stays quiet.",
           "voice": "Speak replies to voice requests in the orb and expanded chat. Typed requests stay quiet.",
@@ -1555,7 +1559,7 @@
         "connectionsBody": "Connect your own task-model API securely. Existing connections are preserved. Basic uses your API; hosted plans require a service that is not available yet. Use Test connection before sending a model request.",
         "voiceBody": "Set up your microphone and hear Morpheus. Standard English voice runs on this PC and needs no voice API key.",
         "personalityBody": "Make Morpheus feel like your companion. These preferences follow you across conversation, voice and task models.",
-        "accountBody": "Basic brings your own task-model API. Premium and Unrestricted need hosted services. Pricing and checkout are not available yet; NerdGPT is planned.",
+        "accountBody": "Your plan, account and payment options. You can use Basic with your own API today.",
         "advancedBody": "All existing tools remain available here. Open the full workspace for attachments, skills, agents, history management and technical controls."
       },
       "voice": {
@@ -1621,7 +1625,11 @@
         "tryTitle": "Try something useful",
         "tryHint": "Choose an example, then send it. These work without a model connection.",
         "local": "On this PC",
-        "examples": { "youtube": "Open YouTube", "calculator": "Open Calculator", "system": "Show system information" },
+        "examples": {
+          "youtube": "Open YouTube",
+          "calculator": "Open Calculator",
+          "system": "Show system information"
+        },
         "configured": "Task-model settings found. Test your connection in Settings before using conversation, research or website generation.",
         "unconfigured": "You can open apps and websites locally. Model conversation, research and website generation need a task-model connection. Setup can be revisited in Settings."
       },
@@ -1632,8 +1640,8 @@
         "available": "Available with your API",
         "planned": "Planned · service unavailable",
         "basicBody": "Your task-model API, included local English voice and existing local tools.",
-        "premiumBody": "Hosted quality models and supported voice. Requires funded hosting and an account service.",
-        "unrestrictedBody": "Premium capabilities plus future NerdGPT spicy humor, profanity and roast-style personality. NerdGPT is not connected."
+        "premiumBody": "Quality hosted models and a supported voice experience. Coming later.",
+        "unrestrictedBody": "Premium features with a future NerdGPT personality for spicy humor and roasts. Try the red appearance below."
       },
       "personality": {
         "gentle": "One step at a time. I’ll handle the fiddly bits.",
@@ -1648,6 +1656,59 @@
         "footer": "Voice when you want it. Typing, always.",
         "returning": "Good to have you here.",
         "continue": "Continue conversation"
+      },
+      "unrestrictedPreview": {
+        "title": "Morpheus appearance",
+        "description": "Keep the familiar green companion, or preview its darker red look.",
+        "green": "Original green",
+        "greenBody": "The familiar Morpheus identity.",
+        "red": "Unrestricted red · Preview",
+        "redBody": "A darker presence with red light and deliberate motion.",
+        "boundary": "Appearance only. NerdGPT is not connected. Your plan, personality, models and tool permissions stay the same.",
+        "badge": "Preview",
+        "saving": "Saving appearance…",
+        "failed": "The appearance could not be saved. Try again."
+      },
+      "payments": {
+        "title": "Payment options",
+        "description": "Explore the planned ways to pay when hosted plans launch.",
+        "unavailable": "Not open yet",
+        "methodsLabel": "Explore payment options",
+        "connect": "Connect your API",
+        "previewAppearance": "Preview red appearance",
+        "pricingLater": "Pricing will be announced",
+        "availabilityNote": "Plans are not on sale yet. No checkout or payment address is available.",
+        "features": {
+          "ownApi": "Your choice of task-model API",
+          "includedVoice": "Included local English voice",
+          "existingTools": "Browser, apps and existing tools",
+          "hostedModels": "Hosted quality models",
+          "supportedVoice": "Supported voice experience",
+          "managedUsage": "Account and usage management",
+          "premiumFeatures": "Premium capabilities",
+          "redAppearance": "Animated red companion appearance",
+          "futureNerdgpt": "Future NerdGPT personality"
+        },
+        "methods": {
+          "stripe": {
+            "label": "Stripe",
+            "hint": "Cards and wallets",
+            "title": "Secure card checkout",
+            "body": "Planned: pay through Stripe’s secure checkout and manage your plan through your account. Available plans and terms will be shown before payment."
+          },
+          "usdt": {
+            "label": "USDT",
+            "hint": "Crypto payment",
+            "title": "Access after payment confirmation",
+            "body": "Planned: an account invoice will show the supported network, USDT token and exact amount. Access will be granted after the payment service verifies the blockchain confirmation."
+          },
+          "usdc": {
+            "label": "USDC",
+            "hint": "Crypto payment",
+            "title": "Access after payment confirmation",
+            "body": "Planned: an account invoice will show the supported network, USDC token and exact amount. Access will be granted after the payment service verifies the blockchain confirmation."
+          }
+        }
       }
     }
   }

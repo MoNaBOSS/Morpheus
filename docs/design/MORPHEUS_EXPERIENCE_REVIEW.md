@@ -1,5 +1,56 @@
 # Morpheus experience specification
 
+## Current extension — October 4, public release and Unrestricted appearance
+
+The owner now requests a complete signed public Windows release, broader measured
+voice-command precision, Stripe and an existing smart-contract payment integration,
+and a red animated evil-Morpheus presentation for Unrestricted. This supersedes the
+earlier BYOK-only delivery scope. Preserve preview.15 and all existing user data.
+Verified continuation source is clean `cbc43c60505cf431d0af86ce621ab0251f55185e`,
+matching fetched origin; the delivered application remains `b27a40af`.
+
+Confirmed requirements:
+- Preserve the approved green identity and simple ordinary experience. Prepare
+  the requested red Unrestricted appearance with meaningful state motion across
+  the existing surfaces, including reduced-motion and hidden-window behavior.
+- Appearance, personality preferences, verified subscription entitlement and
+  actual service availability remain separate. A clearly labelled appearance
+  preview grants no service access or extra execution authority.
+- NerdGPT API and its final personality configuration will be supplied later.
+  Prepare the integration boundary; never present that service as connected.
+- Test multiple spoken commands through the actual included engine, record
+  transcription plus destination/intent correctness and latency, retain failures,
+  and distinguish generated audio from human/acoustic acceptance. No unmeasured
+  claim of Siri-equivalent precision or universal Windows control.
+- Complete production signing and payments with actual publisher/service assets;
+  verify the resulting signed installer before public-release labelling.
+
+Owner clarification: no signing certificate/service or Stripe account is set up.
+Prepare payment options now; live configuration follows later. Intended crypto
+flow is USDT/USDC paid to a contract, followed by confirmed on-chain payment and
+server-verified account access. The chain, token contracts, ABI, recipient and
+pricing/access periods remain unspecified; a new contract may be supplied later.
+Signing/publisher setup, backend/domain, prices/currencies and cancellation/refund
+rules remain external inputs. No deployed payment service has been inspected. Request
+public configuration/paths in chat and keep service secrets, certificates and
+wallet private material in secure operator configuration, never in the desktop.
+Hosted model funding, runtime coverage and service operations still need acceptance.
+
+Implemented locally for preview.16: saved green/red appearance across native and
+React surfaces, distinct red idle/working motion with real RMS-only audio response,
+connected Account & Plan/payment explanations, and anchored natural-command/compound
+request corrections. Text routing, Main appearance boundaries and real rendered
+journeys pass. The 40-case included-engine experiment exposes material recognition
+misses; larger base/distil models and changed padding introduced regressions and
+were not adopted. Strict transcripts/slots and all failures remain in the checklist.
+Generated samples do not qualify human/acoustic behavior or a Siri-equivalence claim.
+
+Exact next work: freeze and qualify a separate preview.16 package, verify a real
+previous-version upgrade on a disposable Windows runner, and attach actual motion
+and local voice output evidence. Signing and service availability remain blocked
+by the confirmed external inputs above. Existing successful preview.15 evidence
+remains specific to that build; it never approves a changed package.
+
 ## Current correction — October 4, command intent and companion voice
 
 Delivery receipt: frozen application `b27a40af226096280a6abc468ecbd6ffb67ba105`,

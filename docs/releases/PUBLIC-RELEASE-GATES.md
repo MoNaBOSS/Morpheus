@@ -47,8 +47,31 @@ voice can be shared without inventing live Premium, prices, payment or NerdGPT.
 Secret: `SIGNPATH_API_TOKEN`.
 Repository variables: `MORPHEUS_SIGNPATH_ORGANIZATION_ID`,
 `MORPHEUS_SIGNPATH_PROJECT_SLUG`, `MORPHEUS_SIGNPATH_POLICY_SLUG`.
+Also set the exact verified `MORPHEUS_EXPECTED_PUBLISHER`. No signing account,
+certificate or service exists yet (owner confirmation, October 5). The current
+SignPath adapter is preparation, not an enrolled service or completed signing.
+The inner app must be signed during packaging; signing the installer afterwards
+cannot fix an unsigned embedded app. The final gate also needs actual installed
+uninstaller trust evidence tied to the exact signed installer on a disposable VM.
 No values belong in this repository or in chat. CI requires these for stable tags.
 Tagged builds create drafts; publication is a separate owner-reviewed action.
+
+Auto-update remains unconfigured. Activation now additionally requires matching
+packaged publisher metadata; no post-sign stale blockmap or update manifest is
+uploaded. Real signing, signed installation and exact-byte update tests remain open.
+
+## Payment preparation boundary
+
+The owner has no Stripe account yet and requested payment options now, with live
+configuration later. Account & Plan describes Stripe, USDT and USDC without prices,
+a checkout, wallet address or access grant. Future card fulfillment belongs to the
+authenticated server and verified Stripe lifecycle events; browser return pages
+cannot activate access. Future crypto invoices must bind account, network, actual
+token contract, amount and expiration, then verify recipient/contract events,
+confirmations, replay protection and chain reorganization before granting access.
+The contract ABI/address/network, pricing, access duration, backend and operating
+arrangements remain unspecified. No wallet transaction or payment service was tested.
+Red Unrestricted appearance is a labelled local preview; NerdGPT remains unconnected.
 
 Never describe a locally green suite, unsigned build, mocked voice error or
 unreconciled cost estimate as passing these independent gates.

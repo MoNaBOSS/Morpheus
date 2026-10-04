@@ -14,6 +14,9 @@ const mocks = vi.hoisted(() => ({
   language: 'en',
 }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string, values?: { target?: string }) => key === 'morpheus.actionOutcome.openedWebsite' ? `${mocks.language}: ${values?.target}` : key }) }));
+// Appearance is a separate settings owner; playback tests keep its boundary
+// fixed without initializing the application i18n/settings side effects.
+vi.mock('@/stores/settings', () => ({ useSettingsStore: (select: (state: { morpheusAppearance: 'green' }) => unknown) => select({ morpheusAppearance: 'green' }) }));
 vi.mock('@/lib/morpheus-speech-player', () => ({ playMorpheusSpeech: mocks.play, stopMorpheusSpeech: mocks.stop }));
 vi.mock('@/lib/host-events', () => ({ hostEvents: { onMorpheusVoiceCommand: () => () => undefined } }));
 vi.mock('@/stores/morpheus-command', () => {

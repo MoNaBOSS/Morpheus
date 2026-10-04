@@ -510,6 +510,7 @@ async function initialize(): Promise<void> {
   }
   shouldStartHidden = Boolean(await getSetting('startMinimized'));
   wakeOrb.restorePlacement(await getSetting('morpheusOrbPlacement'));
+  wakeOrb.updateAppearance(await getSetting('morpheusAppearance'));
 
   // Set application menu
   await createMenu();
@@ -560,6 +561,7 @@ async function initialize(): Promise<void> {
       expand: () => companionSurfaceController.expand(window),
       presence: (presence) => wakeOrb.updatePresence(presence),
       level: (level) => wakeOrb.updateLevel(level),
+      appearance: (appearance) => wakeOrb.updateAppearance(appearance),
       socialAvailable: () => wakeOrb.isAvailableForSocial(),
       socialCaption: (text) => wakeOrb.showCaption(text),
       wake: () => {

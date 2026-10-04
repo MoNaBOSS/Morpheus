@@ -1,5 +1,73 @@
 # Current Windows experience completion checklist
 
+## Active public-release extension — October 4
+
+- [x] Verify clean continuation `cbc43c60`, exact remote/branch, fetched 0/0 origin
+  divergence and available storage (C: 7.4 GiB, E: 124.6 GiB); preserve preview.15.
+- [x] Build and run a representative real-engine command corpus with exact intent,
+  destination, query and cancellation/recovery outcomes; retain recognition failures.
+- [x] Prepare red Unrestricted/evil-Morpheus appearance, state motion and connected
+  preview controls without fake entitlement, NerdGPT connection or broader authority.
+- [x] Prepare connected Stripe/USDT/USDC payment-option presentation with honest
+  unavailable status and no checkout, wallet address or entitlement mutation.
+- [ ] Later external integration: Stripe lifecycle and confirmed contract payments
+  with authenticated server-owned entitlement and replay/cancellation/refund tests.
+- [ ] Receive and validate ABI, chain/network/address, Stripe deployment/prices,
+  and hosting/service configuration. No payment or wallet secret in chat/desktop.
+- [ ] Configure actual publisher signing, fail on invalid/absent required signatures,
+  and verify signed app/installer/updater identities and preserved-profile upgrades.
+- [ ] Complete the remaining live/physical/long-use Windows acceptance gates below
+  before identifying a build as a stable public release.
+
+The owner has authorized this wider scope. NerdGPT API/personality are later inputs;
+its appearance and integration preparation are current work. No new stable/signed
+artifact has been produced by this extension yet. Signing method, payment terms,
+backend/domain and contract public details were requested; independent local work
+continues while those inputs are pending. The owner subsequently confirmed no
+Stripe account or signing service yet: prepare payment options now and connect
+them later. USDT/USDC contract payments should grant access only after verified
+chain confirmation; deployment, pricing and access duration are unspecified.
+Current specification is authoritative.
+
+October 5 local verification in progress (preview.16, not yet packaged): native,
+compact and expanded red presentation, four locales, process restart persistence,
+unchanged account/permission/voice settings, hidden/reduced-motion behavior passed
+the new Electron journey. Real included PCM output drove the red speaking motion;
+Stop cleared playback and no microphone was acquired. Payment choices and contextual
+return retained the draft at 1280/800/430 widths. First layout assertion sampled the
+finite card entrance; it now waits for the animation. The first audio-motion assertion
+mistook a real RMS transform transition for a keyframe loop; it now distinguishes
+finite transitions and still rejects keyframe/fabricated motion. Both reruns passed.
+Evidence: `E:\Morpheus-builds\experience-preview16-ui-evidence` (screenshots/video).
+
+The actual generated-speech baseline exposed recognition limitations: strict exact
+intent/slots passed 23/40 with the original included tiny.en settings; the bounded
+Notepad spacing fix brings those same saved transcripts to 24/40. Some misses are
+capitalization, others change words or the wake name. The unchanged 40 WAVs were
+replayed against base.en (26/40, four regressions), base.en with 50 padding frames
+(20/40, eight regressions), distil-small.en (28/40, four regressions), and tiny.en
+with 50 padding frames (21/40, four regressions). No candidate is a clear replacement;
+the pinned included engine remains unchanged. Median ASR was approximately 520 ms
+for original tiny, 774 ms for base and 885 ms for distil on this PC, excluding capture,
+wake detection, execution and speech output. These are generated-input diagnostics,
+not human microphone precision or a universal accuracy percentage. No tested case
+produced an unsafe partial plan or accepted the one unaddressed negative. That small
+negative set does not establish a false-wake rate. Raw WAV/transcript/hash/timing
+evidence is retained under `E:\Morpheus-builds\experience-preview16-voice-*` and the
+separately named base/distil/tiny comparison directories. Voice quality remains a
+public-release gate, alongside signing and live service requirements.
+
+Source qualification: Node/web/managed types passed. Full unit run passed 342 suites,
+3896 tests (two suites/seven tests deliberately skipped); test-worker listener
+warnings remain distinct from app runtime behavior. The first full run exposed
+two stale fixtures: playback needed its independent appearance-settings boundary,
+and managed wake cancellation needed the actual prepare/selected-PCM acquisition
+before asserting native helper stop. Those fixtures were corrected without changing
+production cancellation. Full lint passed with the same 12 inherited refresh
+warnings. Harness validation/dry-run and 18 baseline harness tests passed; comms
+replay/comparison passed. Final literal-URL guard refinements receive focused
+regressions before packaging. This evidence does not replace installed qualification.
+
 ## Active correction — command intent, tray wake and spoken companion replies
 
 - [x] Verify actual source/remotes/clean `70cbb324`, fetch without overwrite,

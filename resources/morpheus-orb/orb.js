@@ -8,6 +8,7 @@ const expand = document.querySelector('.hover-composer-expand');
 const status = document.querySelector('#orb-status');
 const presenceStatus = document.querySelector('#orb-presence-status');
 const motionCue = document.querySelector('.morpheus-motion__cue');
+const previewBadge = document.querySelector('.morpheus-motion__preview');
 const root = document.documentElement;
 let language = 'en';
 
@@ -36,7 +37,9 @@ function syncMotionState() {
   orb.dataset.motionState = motionStates[state] || 'idle';
   orb.dataset.motionTone = state === 'error' ? 'error' : 'normal';
   motionCue.textContent = state === 'error' ? '!' : state === 'waiting-for-approval' ? '?' : '';
-  const label = motionLabels[language][state] || motionLabels[language].armed;
+  const stateLabel = motionLabels[language][state] || motionLabels[language].armed;
+  const label = root.dataset.morpheusAppearance === 'unrestricted-preview' && previewBadge.textContent
+    ? `${stateLabel} · ${previewBadge.textContent}` : stateLabel;
   orb.ariaLabel = label;
   orb.title = label;
   presenceStatus.textContent = state === 'error' || state === 'waiting-for-approval' ? label : '';
@@ -49,6 +52,7 @@ function syncMotionVisibility() {
 }
 
 new MutationObserver(syncMotionState).observe(root, { attributes: true, attributeFilter: ['data-state'] });
+new MutationObserver(syncMotionState).observe(root, { attributes: true, attributeFilter: ['data-morpheus-appearance'] });
 new MutationObserver(syncMotionVisibility).observe(root, { attributes: true, attributeFilter: ['data-window-visible'] });
 document.addEventListener('visibilitychange', syncMotionVisibility);
 syncMotionState();
@@ -101,6 +105,7 @@ async function snapshot({ preserveLocal = false } = {}) {
   conversationId = result.conversationId;
   revision = result.draft.revision;
   language = result.presentation?.language in notices ? result.presentation.language : 'en';
+  previewBadge.textContent = result.presentation?.appearancePreview || '';
   document.documentElement.lang = language;
   syncMotionState();
   input.placeholder = result.presentation?.placeholder || 'Ask Morpheus…';

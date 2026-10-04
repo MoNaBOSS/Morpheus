@@ -3,10 +3,11 @@ name: Windows Build Test
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: "Version for SignPath parameter (e.g., 1.0.0-test.1)"
+      sign:
+        description: 'Verify and sign using explicitly configured Morpheus publisher assets.'
+        type: boolean
         required: false
-        default: "dev"
+        default: false
 
 permissions:
   contents: read
@@ -15,98 +16,99 @@ permissions:
 jobs:
   windows-build-sign:
     runs-on: windows-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
+      - name: Bind checkout
+        id: source
+        shell: pwsh
+        run: |
+          $source = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to bind source.' }
+          "sha=$source" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "24"
-          cache: "pnpm"
-
+          node-version: '24'
+          cache: pnpm
       - name: Prefer HTTPS for public GitHub git dependencies
         run: |
           git config --global "url.https://github.com/.insteadOf" "git@github.com:"
           git config --global --add "url.https://github.com/.insteadOf" "ssh://git@github.com/"
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Download uv binaries for Windows
-        run: pnpm run uv:download:win
-
-      - name: Download agent-browser binaries for Windows
-        run: pnpm run agent-browser:download:win
-
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Require explicit Morpheus signing configuration
+        if: inputs.sign
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.MORPHEUS_SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.MORPHEUS_SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_POLICY_SLUG: ${{ vars.MORPHEUS_SIGNPATH_POLICY_SLUG }}
+          MORPHEUS_EXPECTED_PUBLISHER: ${{ vars.MORPHEUS_EXPECTED_PUBLISHER }}
+        run: node scripts/windows/public-release-policy.mjs --configuration
       - name: Build Windows
         run: pnpm run package:win
-
-      - name: Validate unsigned Windows artifacts before SignPath
+      - name: Verify signed application before outer signing
+        if: inputs.sign
         shell: pwsh
-        run: |
-          $unsignedExeFiles = Get-ChildItem -Path "release" -Filter *.exe -File
-          if (-not $unsignedExeFiles) {
-            throw "No unsigned .exe files found in release/ before SignPath upload"
-          }
-          $unsignedCount = $unsignedExeFiles.Count
-          "UNSIGNED_EXE_COUNT=$unsignedCount" | Out-File -FilePath $env:GITHUB_ENV -Append
-          Write-Host "Found $unsignedCount unsigned .exe file(s):"
-          $unsignedExeFiles | ForEach-Object { Write-Host " - $($_.Name)" }
-
-      # Required by SignPath Trusted Build: artifact must exist on GitHub first.
-      - name: Upload unsigned Windows artifacts for SignPath
-        id: upload-unsigned-windows-artifact
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.MORPHEUS_SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.MORPHEUS_SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_POLICY_SLUG: ${{ vars.MORPHEUS_SIGNPATH_POLICY_SLUG }}
+          MORPHEUS_EXPECTED_PUBLISHER: ${{ vars.MORPHEUS_EXPECTED_PUBLISHER }}
+        run: ./scripts/windows/assert-public-signatures.ps1 -Stage payload -ExpectedSource '${{ steps.source.outputs.sha }}'
+      - name: Upload unsigned installer for SignPath
+        if: inputs.sign
+        id: unsigned
         uses: actions/upload-artifact@v4
         with:
-          name: unsigned-win-exe-${{ github.run_id }}-${{ github.run_attempt }}
-          path: release/*.exe
+          name: unsigned-morpheus-win-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release/Morpheus-*-win-x64.exe
+          if-no-files-found: error
           retention-days: 1
-
-      - name: Sign Windows artifacts via SignPath
-        id: signpath-sign-windows
+      - name: Sign installer using configured Morpheus identity
+        if: inputs.sign
         uses: signpath/github-action-submit-signing-request@v2
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: "78e37079-23df-4800-b41c-33312ad7c1e3"
-          project-slug: "ValueCell"
-          signing-policy-slug: "ValueCell-sign"
-          github-artifact-id: ${{ steps.upload-unsigned-windows-artifact.outputs.artifact-id }}
+          organization-id: ${{ vars.MORPHEUS_SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.MORPHEUS_SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.MORPHEUS_SIGNPATH_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: release/signed
-
-      - name: Replace unsigned executables with signed ones
+      - name: Install signed artifact
+        if: inputs.sign
         shell: pwsh
         run: |
-          Write-Host "SignPath GitHub artifact ID: ${{ steps.upload-unsigned-windows-artifact.outputs.artifact-id }}"
-          $signedExeFiles = Get-ChildItem -Path "release/signed" -Filter *.exe -File -Recurse
-          if (-not $signedExeFiles) {
-            throw "No signed .exe files found in release/signed"
-          }
-          $signedCount = $signedExeFiles.Count
-          if ($env:UNSIGNED_EXE_COUNT -and ($signedCount -ne [int]$env:UNSIGNED_EXE_COUNT)) {
-            throw "Signed .exe count ($signedCount) does not match unsigned count ($env:UNSIGNED_EXE_COUNT)"
-          }
-          foreach ($file in $signedExeFiles) {
-            Copy-Item -Path $file.FullName -Destination "release/$($file.Name)" -Force
-          }
-          $finalExeFiles = Get-ChildItem -Path "release" -Filter *.exe -File
-          if ($env:UNSIGNED_EXE_COUNT -and ($finalExeFiles.Count -ne [int]$env:UNSIGNED_EXE_COUNT)) {
-            throw "Final release .exe count ($($finalExeFiles.Count)) does not match unsigned count ($env:UNSIGNED_EXE_COUNT)"
-          }
-          Write-Host "Signed executables copied to release/ ($($finalExeFiles.Count) file(s))"
-
-      - name: Upload signed Windows artifacts
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $expected = "Morpheus-$version-win-x64.exe"
+          $signed = @(Get-ChildItem release/signed -Filter 'Morpheus-*-win-x64.exe' -File -Recurse)
+          if ($signed.Count -ne 1 -or $signed[0].Name -cne $expected) { throw 'Signed installer filename/version mismatch.' }
+          Copy-Item -LiteralPath $signed[0].FullName -Destination "release/$expected" -Force
+      - name: Verify final publisher and embedded signed application
+        if: inputs.sign
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.MORPHEUS_SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.MORPHEUS_SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_POLICY_SLUG: ${{ vars.MORPHEUS_SIGNPATH_POLICY_SLUG }}
+          MORPHEUS_EXPECTED_PUBLISHER: ${{ vars.MORPHEUS_EXPECTED_PUBLISHER }}
+        run: ./scripts/windows/assert-public-signatures.ps1 -Stage final -ExpectedSource '${{ steps.source.outputs.sha }}'
+      - name: Upload Windows build for review
         uses: actions/upload-artifact@v4
         with:
-          name: signed-win-exe-${{ github.run_id }}-${{ github.run_attempt }}
+          name: morpheus-win-${{ inputs.sign && 'signed-verified' || 'unsigned-preview' }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            release/*.exe
-            release/latest*.yml
+            release/Morpheus-*-win-x64.exe
+            release/public-signing-verification.json
+          if-no-files-found: error
           retention-days: 7
+
+# No public release or update metadata is published by this manual build workflow.

@@ -1,0 +1,58 @@
+/* Presentation only; account tiers and runtime permissions have no selectors. */
+html[data-morpheus-appearance='unrestricted-preview'] [data-morpheus] {
+  --morpheus-accent: 351 81% 65%;
+  --morpheus-accent-dim: 351 55% 48% / .5;
+  --morpheus-glow: 351 81% 65% / .28;
+  --morpheus-grid: 351 38% 56% / .11;
+  --morpheus-surface-1: 345 29% 7%;
+  --morpheus-surface-2: 345 28% 10%;
+  --morpheus-surface-3: 345 24% 14%;
+}
+html[data-morpheus-appearance='unrestricted-preview'] [data-morpheus].morpheus-settings {
+  --background: 345 29% 7%; --foreground: 345 60% 97%; --muted-foreground: 345 19% 73%;
+  --border: 345 34% 29%; --surface-input: 345 33% 9%; --surface-modal: 345 31% 11%;
+  --card: 345 31% 11%; --card-foreground: 345 60% 97%;
+}
+html[data-morpheus-appearance='unrestricted-preview'] .morpheus-settings-tabs button[aria-pressed='true'] { color: #ffd0d7; background: #3b1925; }
+html[data-morpheus-appearance='unrestricted-preview'] :is(.morpheus-workspace-header, .morpheus-workspace-footer, .morpheus-workspace-presence, .morpheus-compact-presence) { border-color: #4d2934; }
+html[data-morpheus-appearance='unrestricted-preview'] :is(.morpheus-workspace, .morpheus-conversation-shell) :is([data-testid='morpheus-conversation-user'], [data-testid='morpheus-conversation-queued'], .morpheus-conversation-user-bubble) { background: #311620; border-color: #63313e; }
+html[data-morpheus-appearance='unrestricted-preview'] .morpheus-settings-button { color: #f4d9e0; border-color: #63313e; background: #2b101a; }
+html[data-morpheus-appearance='unrestricted-preview'] .morpheus-settings-button:hover { background: #3b1925; border-color: #a44d60; }
+html[data-morpheus-appearance='unrestricted-preview'] [data-morpheus].morpheus-voice-strip { border-color: #4d2934; background: #211019; color: #f4d9e0; --foreground: 345 60% 97%; --muted-foreground: 345 19% 73%; }
+html[data-morpheus-appearance='unrestricted-preview'] :is(.morpheus-voice-settings-link, .morpheus-live-caption-label, .morpheus-live-caption button) { color: #ffabb5; }
+html[data-morpheus-appearance='unrestricted-preview'] .morpheus-workspace-footer > [data-testid='signal-os-live-state']::before { background: #ff8992; }
+html[data-morpheus-appearance='unrestricted-preview'] .morpheus-welcome .morpheus-fluid-button:not(.morpheus-fluid-button-secondary) { color: #2b101a; background: #ffabb5; border-color: #ffd0d7; }
+html[data-morpheus-appearance='unrestricted-preview'] [data-morpheus] :is(button, a, input, select):focus-visible { outline-color: #ff8992; }
+html[data-morpheus-appearance='unrestricted-preview'] [data-morpheus]:is(.morpheus-opening, .morpheus-first-launch, .morpheus-welcome, .morpheus-workspace, .morpheus-settings, .morpheus-voice-strip, .morpheus-conversation-shell) {
+  --experience-background: #11090e;
+  --experience-panel: #211019;
+  --experience-input: #180c12;
+  --experience-ink: #fff0f3;
+  --experience-soft: #c9aeb8;
+  --experience-accent: #ff8992;
+  --experience-border: #63313e;
+}
+html[data-morpheus-appearance='unrestricted-preview'] :is(.morpheus-workspace, .morpheus-conversation-shell) :is(.morpheus-workspace-composer, .morpheus-setup-composer):focus-within { border-color: #e46b7d; box-shadow: 0 0 0 3px #ff899214; }
+html[data-morpheus-appearance='unrestricted-preview'] :is(.morpheus-workspace, .morpheus-conversation-shell) button[type='submit']:enabled { color: #2b101a; background: #ffabb5; }
+html[data-morpheus-appearance='unrestricted-preview'] :is(.morpheus-workspace, .morpheus-conversation-shell) :is([data-testid='morpheus-conversation-assistant'], .morpheus-conversation-reply) { border-left-color: #a44d60; }
+html[data-morpheus-appearance='unrestricted-preview'] .morpheus-motion--arrival { background: radial-gradient(circle at 35% 22%, #461c2a, #17080f 70%); box-shadow: 0 0 38px #f4435724; }
+html[data-morpheus-appearance='unrestricted-preview'] .morpheus-motion__mark { filter: hue-rotate(195deg) saturate(1.15) drop-shadow(0 0 7px #f443574d); }
+html[data-morpheus-appearance='unrestricted-preview'] [data-morpheus].morpheus-opening { background: radial-gradient(ellipse at 50% 40%, #421b2aaa, transparent 53%), linear-gradient(125deg, #21131c, #10080e 70%); }
+html[data-morpheus-appearance='unrestricted-preview'] [data-morpheus]:is(.morpheus-first-launch, .morpheus-welcome) { background: radial-gradient(ellipse at 50% 28%, #421b2aaa, transparent 52%), var(--experience-background); }
+
+.morpheus-appearance-settings { border: 1px solid var(--experience-border, hsl(var(--border))); border-radius: 14px; padding: 20px; background: var(--experience-panel, hsl(var(--morpheus-surface-2))); }
+.morpheus-appearance-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.morpheus-appearance-heading h2 { font-size: 18px; font-weight: 500; letter-spacing: -.02em; }
+.morpheus-appearance-heading p, .morpheus-appearance-boundary { font-size: 13px; line-height: 1.6; color: var(--experience-soft, hsl(var(--muted-foreground))); }
+.morpheus-appearance-heading p { margin-top: 6px; max-width: 430px; }
+.morpheus-appearance-orb { flex: none; width: 72px; height: 72px; }
+.morpheus-appearance-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 20px 0 14px; border: 0; padding: 0; }
+.morpheus-appearance-choice { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; border: 1px solid var(--experience-border, hsl(var(--border))); border-radius: 12px; padding: 14px; background: var(--experience-input, hsl(var(--morpheus-surface-1))); }
+.morpheus-appearance-choice[data-selected='true'] { border-color: var(--experience-accent, hsl(var(--morpheus-accent))); }
+.morpheus-appearance-choice:focus-within { outline: 2px solid var(--experience-accent, hsl(var(--morpheus-accent))); outline-offset: 3px; }
+.morpheus-appearance-choice input { flex: none; margin-top: 4px; accent-color: var(--experience-accent, hsl(var(--morpheus-accent))); }
+.morpheus-appearance-choice strong { display: block; font-size: 14px; font-weight: 500; }
+.morpheus-appearance-choice span span { display: block; margin-top: 4px; font-size: 12px; line-height: 1.5; color: var(--experience-soft, hsl(var(--muted-foreground))); }
+.morpheus-appearance-options:disabled .morpheus-appearance-choice { cursor: wait; opacity: .65; }
+.morpheus-appearance-settings > [role] { margin-top: 10px; font-size: 12px; }
+@media (max-width: 560px) { .morpheus-appearance-options { grid-template-columns: 1fr; } .morpheus-appearance-settings { padding: 16px; } }

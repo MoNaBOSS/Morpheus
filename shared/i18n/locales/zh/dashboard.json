@@ -1502,7 +1502,11 @@
         "autoSubmitDescription": "转录成功后无需再次点击，直接进入同一目标核心。",
         "speakResponses": "朗读最终响应",
         "replySpeechMode": "选择朗读哪些回复",
-        "replySpeechModes": { "orb": "悬浮球回复", "voice": "仅语音请求", "all": "所有请求" },
+        "replySpeechModes": {
+          "orb": "悬浮球回复",
+          "voice": "仅语音请求",
+          "all": "所有请求"
+        },
         "replySpeechDescriptions": {
           "orb": "朗读来自悬浮球的文字和语音回复。展开的聊天保持安静。",
           "voice": "朗读悬浮球和展开聊天中的语音请求回复。文字请求保持安静。",
@@ -1555,7 +1559,7 @@
         "connectionsBody": "安全连接您自己的任务模型 API。保留现有连接。Basic 使用您的 API；托管方案尚未开放。发送模型请求前请测试连接。",
         "voiceBody": "设置麦克风并试听 Morpheus。标准英语语音在本机运行，无需语音 API 密钥。",
         "personalityBody": "定制您的伙伴。对话、语音和任务模型共享这些偏好。",
-        "accountBody": "Basic 使用自带任务模型 API。Premium 和 Unrestricted 需要托管服务。目前没有价格或结账功能；NerdGPT 仍在规划中。",
+        "accountBody": "您的方案、账户和付款方式。现在即可使用自己的 API 体验 Basic。",
         "advancedBody": "所有现有工具仍可使用。完整工作区提供附件、技能、智能体、历史管理和技术控制。"
       },
       "voice": {
@@ -1621,7 +1625,11 @@
         "tryTitle": "试试实用功能",
         "tryHint": "选择示例后发送。这些操作无需连接模型。",
         "local": "在本机运行",
-        "examples": { "youtube": "打开 YouTube", "calculator": "打开计算器", "system": "查看系统信息" },
+        "examples": {
+          "youtube": "打开 YouTube",
+          "calculator": "打开计算器",
+          "system": "查看系统信息"
+        },
         "configured": "已找到任务模型设置。使用对话、研究或网站生成前，请在设置中测试连接。",
         "unconfigured": "可在本机打开应用和网站。模型对话、研究和网站生成需要连接任务模型。可随时在设置中继续。"
       },
@@ -1632,8 +1640,8 @@
         "available": "自带 API 可用",
         "planned": "计划中 · 服务未开放",
         "basicBody": "您的任务模型 API、内置本地英语语音和现有本地工具。",
-        "premiumBody": "托管高质量模型和受支持语音。需要运营资金和账户服务。",
-        "unrestrictedBody": "Premium 功能以及未来 NerdGPT 的辛辣幽默、粗话和吐槽个性。NerdGPT 尚未连接。"
+        "premiumBody": "优质托管模型和受支持的语音体验。稍后推出。",
+        "unrestrictedBody": "Premium 功能，加上未来 NerdGPT 的辛辣幽默和吐槽个性。可在下方试用红色外观。"
       },
       "personality": {
         "gentle": "一步一步来。麻烦的部分交给我。",
@@ -1648,6 +1656,59 @@
         "footer": "想说就说，也随时可以打字。",
         "returning": "很高兴你来了。",
         "continue": "继续对话"
+      },
+      "unrestrictedPreview": {
+        "title": "Morpheus 外观",
+        "description": "保留熟悉的绿色助手，或预览深色红光外观。",
+        "green": "经典绿色",
+        "greenBody": "熟悉的 Morpheus 形象。",
+        "red": "Unrestricted 红色 · 预览",
+        "redBody": "更深沉的形象，配以红光和从容的动态。",
+        "boundary": "仅改变外观。NerdGPT 尚未连接。套餐、个性、模型和工具权限保持不变。",
+        "badge": "预览",
+        "saving": "正在保存外观…",
+        "failed": "无法保存外观，请重试。"
+      },
+      "payments": {
+        "title": "付款方式",
+        "description": "了解托管方案推出后计划支持的付款方式。",
+        "unavailable": "尚未开放",
+        "methodsLabel": "了解付款方式",
+        "connect": "连接您的 API",
+        "previewAppearance": "预览红色外观",
+        "pricingLater": "价格将另行公布",
+        "availabilityNote": "方案尚未开售。目前没有结账页面或收款地址。",
+        "features": {
+          "ownApi": "自由选择任务模型 API",
+          "includedVoice": "内置本地英语语音",
+          "existingTools": "浏览器、应用和现有工具",
+          "hostedModels": "托管优质模型",
+          "supportedVoice": "受支持的语音体验",
+          "managedUsage": "账户与用量管理",
+          "premiumFeatures": "Premium 功能",
+          "redAppearance": "动态红色伙伴外观",
+          "futureNerdgpt": "未来的 NerdGPT 个性"
+        },
+        "methods": {
+          "stripe": {
+            "label": "Stripe",
+            "hint": "银行卡与钱包",
+            "title": "安全的银行卡付款",
+            "body": "计划支持：通过 Stripe 安全结账，并在账户中管理方案。付款前会显示可用方案和条款。"
+          },
+          "usdt": {
+            "label": "USDT",
+            "hint": "加密货币付款",
+            "title": "确认付款后获得访问权限",
+            "body": "计划支持：账户账单将显示支持的网络、USDT 代币和准确金额。付款服务验证区块链确认后才会授予访问权限。"
+          },
+          "usdc": {
+            "label": "USDC",
+            "hint": "加密货币付款",
+            "title": "确认付款后获得访问权限",
+            "body": "计划支持：账户账单将显示支持的网络、USDC 代币和准确金额。付款服务验证区块链确认后才会授予访问权限。"
+          }
+        }
       }
     }
   }

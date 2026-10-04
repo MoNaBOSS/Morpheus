@@ -1,5 +1,15 @@
 # Current continuation — separate command/voice delivery, 2026-10-04
 
+**Latest owner extension:** proceed toward a signed public release, test broader
+voice-command precision, prepare Unrestricted red evil-Morpheus state animations,
+and integrate Stripe plus the owner's existing contract once ABI/deployment/payment
+terms are supplied. NerdGPT API/final personality remain later inputs. Signing and
+live commercial readiness are not achieved by changing the version label. The
+single specification and checklist now record this active scope and missing inputs.
+Continuation `cbc43c60` was clean and matched fetched origin; preserve the delivery
+and its evidence below. No posted credential, publisher key or wallet secret may
+enter source, diagnostics, chat or the desktop package.
+
 **Delivered separately:** `1.2.0-preview.15`, frozen application source
 `b27a40af226096280a6abc468ecbd6ffb67ba105`. Installer and guide:
 `C:\Users\monir\Documents\Codex\2026-10-02\continue-morpheus-from-the-existing-project\outputs\Morpheus-Windows-BYOK-1.2.0-preview.15`.
