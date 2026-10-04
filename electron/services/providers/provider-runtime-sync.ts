@@ -1,4 +1,5 @@
 import type { GatewayManager } from '../../gateway/manager';
+import { createHash } from 'node:crypto';
 import { getProviderAccount, listProviderAccounts } from './provider-store';
 import { getProviderSecret } from '../secrets/secret-store';
 import type { ProviderConfig } from '../../utils/secure-storage';
@@ -183,6 +184,12 @@ export async function syncProviderApiKeyToRuntime(
   previousKey?: string,
   gatewayManager?: GatewayManager,
 ): Promise<void> {
+  if (gatewayManager) {
+    return deliverProviderRuntimeConfiguration(gatewayManager, async () => {
+      const currentKey = await getApiKey(providerId);
+      if (currentKey) await syncProviderApiKeyToRuntime(providerType, providerId, currentKey, previousKey);
+    });
+  }
   const ock = getOpenClawProviderKey(providerType, providerId);
   const selected = (await loadActiveRuntimeProviderAccounts()).get(ock);
   if (selected && selected.account.id !== providerId) return;
@@ -203,18 +210,47 @@ export async function syncProviderApiKeyToRuntime(
       await syncAgentModelsToRuntime();
     }
   }
-  await refreshOwnedGatewayProviderEnv(gatewayManager);
 }
 
-async function refreshOwnedGatewayProviderEnv(gatewayManager?: GatewayManager): Promise<void> {
-  if (!gatewayManager || gatewayManager.getStatus().state === 'stopped') return;
-  if (!await gatewayManager.restartOwnedForProviderSecretChange()) {
-    throw new Error('Provider key saved; Gateway restart with the updated environment is required');
-  }
+/** No account data or credentials leave Main. The digest is only a race guard
+ * tying a selected endpoint/model/default to the credential delivered at launch. */
+async function runtimeSelectionFingerprint(): Promise<string> {
+  const selected = await loadActiveRuntimeProviderAccounts();
+  const configs = await getAllProviders();
+  const defaultId = await getDefaultProvider();
+  return createHash('sha256').update(JSON.stringify({
+    defaultId,
+    configs: [...configs].sort((left, right) => left.id.localeCompare(right.id)),
+    selected: [...selected].sort(([left], [right]) => left.localeCompare(right))
+      .map(([runtimeKey, { account, key }]) => ({ runtimeKey, account, key })),
+  })).digest('hex');
+}
+
+async function deliverProviderRuntimeConfiguration(
+  gatewayManager: GatewayManager,
+  deliver: () => Promise<void>,
+): Promise<void> {
+  const delivered = await gatewayManager.deliverProviderConfiguration(async (staged) => {
+    // Metadata can change while this delivery waits behind another request.
+    // Resolve the current selection inside the serialized stage, then validate
+    // it after writes and immediately before spawning the fresh child.
+    const fingerprint = await runtimeSelectionFingerprint();
+    await deliver();
+    if (staged) await syncSelectedProviderConfigurationToRuntime();
+    return async () => fingerprint === await runtimeSelectionFingerprint();
+  });
+  if (!delivered) throw new Error('Provider key saved; Gateway restart with the updated environment is required');
 }
 
 /** Re-select surviving accounts and retire the deleted credential's child env. */
 export async function finishProviderSecretDeletionToRuntime(gatewayManager?: GatewayManager): Promise<void> {
+  if (gatewayManager) {
+    return deliverProviderRuntimeConfiguration(gatewayManager, syncSelectedProviderConfigurationToRuntime);
+  }
+  await syncSelectedProviderConfigurationToRuntime();
+}
+
+async function syncSelectedProviderConfigurationToRuntime(): Promise<void> {
   await syncAllProviderAuthToRuntime();
   const selected = await loadActiveRuntimeProviderAccounts();
   // A removed key can select a surviving sibling in the same runtime slot.
@@ -243,7 +279,6 @@ export async function finishProviderSecretDeletionToRuntime(gatewayManager?: Gat
   } else {
     await syncAgentModelsToRuntime();
   }
-  await refreshOwnedGatewayProviderEnv(gatewayManager);
 }
 
 async function hasEnabledRuntimeSibling(providerId: string, runtimeProviderKey: string): Promise<boolean> {
@@ -557,6 +592,12 @@ export async function syncSavedProviderToRuntime(
   gatewayManager?: GatewayManager,
   previousKey?: string,
 ): Promise<void> {
+  if (gatewayManager) {
+    return deliverProviderRuntimeConfiguration(gatewayManager, async () => {
+      const current = await getProvider(config.id);
+      if (current) await syncSavedProviderToRuntime(current, undefined, undefined, previousKey);
+    });
+  }
   const context = await syncProviderToRuntime(config, apiKey, previousKey);
   if (!context) {
     return;
@@ -567,7 +608,6 @@ export async function syncSavedProviderToRuntime(
   } else {
     await syncAgentModelsToRuntime();
   }
-  if (context.hasStaticKey) await refreshOwnedGatewayProviderEnv(gatewayManager);
 }
 
 async function hasUsableRuntimeSibling(providerId: string, runtimeProviderKey: string): Promise<boolean> {
@@ -641,6 +681,12 @@ export async function syncUpdatedProviderToRuntime(
   gatewayManager?: GatewayManager,
   previousKey?: string,
 ): Promise<void> {
+  if (gatewayManager) {
+    return deliverProviderRuntimeConfiguration(gatewayManager, async () => {
+      const current = await getProvider(config.id);
+      if (current) await syncUpdatedProviderToRuntime(current, undefined, undefined, previousKey);
+    });
+  }
   const context = await syncProviderToRuntime(config, apiKey, previousKey);
   if (!context) {
     return;
@@ -677,7 +723,6 @@ export async function syncUpdatedProviderToRuntime(
   }
 
   await syncAgentModelsToRuntime();
-  if (context.hasStaticKey) await refreshOwnedGatewayProviderEnv(gatewayManager);
 }
 
 export async function syncDeletedProviderToRuntime(
@@ -727,6 +772,12 @@ export async function syncDefaultProviderToRuntime(
   providerId: string,
   gatewayManager?: GatewayManager,
 ): Promise<void> {
+  if (gatewayManager) {
+    return deliverProviderRuntimeConfiguration(gatewayManager, async () => {
+      const currentId = await getDefaultProvider();
+      if (currentId) await syncDefaultProviderToRuntime(currentId);
+    });
+  }
   const provider = await getProvider(providerId);
   if (!provider) {
     return;
@@ -852,7 +903,6 @@ export async function syncDefaultProviderToRuntime(
       );
       logger.info(`Configured openclaw.json for browser OAuth provider "${provider.id}"`);
       await syncAgentModelsToRuntime();
-      await refreshOwnedGatewayProviderEnv(gatewayManager);
       return;
     }
 
@@ -901,5 +951,4 @@ export async function syncDefaultProviderToRuntime(
   }
 
   await syncAgentModelsToRuntime();
-  if (providerKey) await refreshOwnedGatewayProviderEnv(gatewayManager);
 }

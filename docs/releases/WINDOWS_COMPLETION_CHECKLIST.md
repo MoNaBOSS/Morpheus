@@ -23,6 +23,19 @@
   retained; same-vendor fixtures were not weakened to hide destructive listing.
 - [ ] Qualify the identified normal package and installer without owner credentials
   or profiles. Source/fixture success is not live-service or physical acceptance.
+- [ ] Correct the normal-package first-key activation failure reproduced twice at
+  `b7a63142`: account/key persist, but old Gateway `config.set` rejects the new
+  SecretRef env before restart. Preserve both failures and require normal runtime
+  success after the bounded owned configuration/environment correction.
+- [x] Bounded owned-service staging implemented and independently reviewed;
+  434 affected cases passed across 20 files, including actual coordinator/lifecycle
+  regressions. Node/web/managed types, scoped lint, comms replay/compare and 18
+  harness CI cases passed. Six affected Electron journeys passed across coordinated
+  final runs. The added recovery fixture initially targeted the frozen preload
+  bridge; corrected Main interception passed with real protected account storage,
+  Russian repair copy, one account/create and no displayed key. Failed evidence
+  remains. Normal package remains pending; no live generation or physical voice
+  is inferred.
 - [ ] Owner: revoke the exposed chat-posted credential and enter a replacement
   directly in Connections. Never copy it into diagnostics or release files.
 - [ ] Test a bounded real model reply with the securely saved replacement.

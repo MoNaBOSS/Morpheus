@@ -11,7 +11,10 @@ default, with no borrowed sibling credential status.
 Each user connects their own protected account; included local English voice
 needs no extra API key. The chat-posted credential is exposed and is not used.
 Owner must revoke it and enter a replacement directly in Connections before
-live-model qualification. Normal package/installer evidence for preview.14
+live-model qualification. Normal package testing of `b7a63142` reproduced a first
+protected-key activation failure: the old running child rejects its new SecretRef
+before refresh. Correct and requalify the owned configuration/environment join;
+the failed package/evidence remain preserved. Normal package/installer evidence for preview.14
 belongs in the existing specification/checklist; do not imply it is already
 accepted. The voice selected-device/wake mismatch and physical/echo gates below
 remain open. No broad redesign or hosted/billing/NerdGPT work in this correction.

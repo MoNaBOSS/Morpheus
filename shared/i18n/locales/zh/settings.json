@@ -127,6 +127,8 @@
       "failedDefault": "设置默认失败",
       "defaultDisabled": "请先启用此连接，再将其设为默认连接。",
       "defaultNeedsKey": "请先编辑此连接并保存 API 密钥，再将其设为默认连接。",
+      "deliveryChanged": "设置期间连接配置发生变化。请检查已保存的连接，然后重试。",
+      "deliveryInterrupted": "连接更改已保存，但任务服务未能刷新。请在“设置 → 高级”中启动或重启服务，然后检查连接。",
       "updated": "提供商已更新",
       "failedUpdate": "更新提供商失败",
       "invalidKey": "无效的 API 密钥",

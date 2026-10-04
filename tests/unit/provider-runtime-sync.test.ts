@@ -125,13 +125,19 @@ function createProvider(overrides: Partial<ProviderConfig> = {}): ProviderConfig
 }
 
 function createGateway(state: 'running' | 'stopped' = 'running') {
-  return {
+  const gateway = {
     debouncedReload: vi.fn(),
     debouncedRestart: vi.fn(),
     restart: vi.fn(),
     restartOwnedForProviderSecretChange: vi.fn().mockResolvedValue(true),
     getStatus: vi.fn(() => ({ state } as ReturnType<GatewayManager['getStatus']>)),
+    deliverProviderConfiguration: vi.fn(),
   };
+  gateway.deliverProviderConfiguration.mockImplementation(async (deliver) => {
+    await deliver(false);
+    return state === 'stopped' || await gateway.restartOwnedForProviderSecretChange();
+  });
+  return gateway;
 }
 
 function expectNoGatewayLifecycleCalls(gateway: ReturnType<typeof createGateway>): void {
@@ -214,9 +220,67 @@ describe('provider-runtime-sync config delivery', () => {
     expectNoGatewayLifecycleCalls(gateway);
   });
 
+  it('enters owned configuration delivery before writing a new static SecretRef config', async () => {
+    const gateway = createGateway();
+    await syncSavedProviderToRuntime(createProvider(), undefined, gateway as GatewayManager);
+    expect(gateway.deliverProviderConfiguration.mock.invocationCallOrder[0])
+      .toBeLessThan(mocks.syncProviderConfigToOpenClaw.mock.invocationCallOrder[0]);
+    expect(gateway.deliverProviderConfiguration.mock.invocationCallOrder[0])
+      .toBeLessThan(mocks.saveProviderKeyRefToOpenClaw.mock.invocationCallOrder[0]);
+  });
+
+  it('reconciles the current selected sibling after a queued inactive save before fresh launch', async () => {
+    const inactive = createProvider({ id: 'first', type: 'openrouter', model: 'openai/old', baseUrl: 'https://first.example/v1' });
+    const current = createProvider({ id: 'second', type: 'openrouter', model: 'openrouter/auto',
+      baseUrl: 'https://second.example/v1', apiProtocol: 'openai-completions' });
+    const account = { ...current, vendorId: 'openrouter', authMode: 'api_key' };
+    const gateway = createGateway();
+    let launchConfig: unknown;
+    gateway.deliverProviderConfiguration.mockImplementation(async (deliver) => {
+      // The default switched while this request waited for the previous stage.
+      mocks.getDefaultProvider.mockResolvedValue(current.id);
+      mocks.loadActiveRuntimeProviderAccounts.mockResolvedValue(new Map([
+        ['openrouter', { account, key: 'synthetic-current-key', verifiedKeys: new Set(['synthetic-current-key']) }],
+      ]));
+      const isCurrent = await deliver(true);
+      expect(await isCurrent()).toBe(true);
+      launchConfig = mocks.syncProviderConfigToOpenClaw.mock.calls.at(-1);
+      return true;
+    });
+    mocks.getProvider.mockImplementation(async (id) => id === current.id ? current : inactive);
+    mocks.getAllProviders.mockResolvedValue([inactive, current]);
+    mocks.getProviderSecret.mockImplementation(async (id) => ({ type: 'api_key', apiKey: id === current.id ? 'synthetic-current-key' : 'synthetic-inactive-key' }));
+    mocks.getApiKey.mockImplementation(async (id) => id === current.id ? 'synthetic-current-key' : 'synthetic-inactive-key');
+    await syncSavedProviderToRuntime(inactive, 'synthetic-inactive-key', gateway as GatewayManager);
+    expect(launchConfig).toEqual(['openrouter', 'openrouter/auto', expect.objectContaining({
+      baseUrl: current.baseUrl, api: current.apiProtocol, apiKeyRef: expect.objectContaining({ source: 'env' }),
+    })]);
+    expect(mocks.setOpenClawDefaultModelWithOverride).toHaveBeenLastCalledWith('openrouter', 'openrouter/openrouter/auto',
+      expect.objectContaining({ baseUrl: current.baseUrl }), []);
+    expect(JSON.stringify(mocks.saveProviderKeyRefToOpenClaw.mock.calls)).not.toContain('synthetic-inactive-key');
+  });
+
+  it('rejects a selection changed during delivery rather than launching stale config', async () => {
+    const gateway = createGateway();
+    gateway.deliverProviderConfiguration.mockImplementation(async (deliver) => {
+      const isCurrent = await deliver(true);
+      if (!await isCurrent()) throw new Error('Provider selection changed during configuration delivery; retry the operation');
+      await gateway.restartOwnedForProviderSecretChange();
+      return true;
+    });
+    mocks.syncProviderConfigToOpenClaw.mockImplementationOnce(async () => {
+      mocks.getDefaultProvider.mockResolvedValue('a-new-default');
+    });
+    await expect(syncSavedProviderToRuntime(createProvider(), undefined, gateway as GatewayManager))
+      .rejects.toThrow('Provider selection changed during configuration delivery');
+    expect(gateway.restartOwnedForProviderSecretChange).not.toHaveBeenCalled();
+  });
+
   it('writes a static-key SecretRef and restarts only an owned running Gateway', async () => {
     const gateway = createGateway('running');
     const rawKey = 'synthetic-app-key';
+    mocks.getApiKey.mockResolvedValue(rawKey);
+    mocks.getProviderSecret.mockResolvedValue({ type: 'api_key', apiKey: rawKey });
     await syncSavedProviderToRuntime(createProvider(), rawKey, gateway as GatewayManager);
 
     expect(mocks.saveProviderKeyRefToOpenClaw).toHaveBeenCalledWith(
@@ -250,6 +314,7 @@ describe('provider-runtime-sync config delivery', () => {
 
   it('replaces a legacy config key after a key-only Settings update', async () => {
     const gateway = createGateway('running');
+    mocks.getApiKey.mockResolvedValue('synthetic-new-key');
     await syncProviderApiKeyToRuntime(
       'moonshot', 'moonshot', 'synthetic-new-key', 'synthetic-old-key', gateway as GatewayManager,
     );
@@ -574,7 +639,9 @@ describe('provider-runtime-sync config delivery', () => {
     await syncProviderApiKeyToRuntime('moonshot', 'moonshot', 'inactive-key', undefined, gateway as GatewayManager);
     expect(mocks.saveProviderKeyRefToOpenClaw).not.toHaveBeenCalled();
     expect(mocks.syncProviderConfigToOpenClaw).not.toHaveBeenCalled();
-    expect(gateway.restartOwnedForProviderSecretChange).not.toHaveBeenCalled();
+    expect(gateway.deliverProviderConfiguration).toHaveBeenCalledTimes(2);
+    // The manager compares unchanged selected env; no inactive account writes.
+    expectNoGatewayLifecycleCalls(gateway);
   });
 
   it('reconciles old inactive sibling keys before vault rotation without activating them', async () => {
@@ -752,6 +819,7 @@ describe('provider-runtime-sync config delivery', () => {
 
     mocks.getProviderConfig.mockReturnValue(undefined);
     mocks.getProviderSecret.mockResolvedValue({ type: 'local', apiKey: 'ollama-local' });
+    mocks.getProvider.mockResolvedValue(ollamaProvider);
 
     const gateway = createGateway('running');
     await syncSavedProviderToRuntime(ollamaProvider, undefined, gateway as GatewayManager);
@@ -806,6 +874,7 @@ describe('provider-runtime-sync config delivery', () => {
     mocks.getProviderConfig.mockReturnValue(undefined);
     mocks.getProviderSecret.mockResolvedValue({ type: 'local', apiKey: 'ollama-local' });
     mocks.getDefaultProvider.mockResolvedValue('ollamafd');
+    mocks.getProvider.mockResolvedValue(ollamaProvider);
 
     const gateway = createGateway('running');
     await syncUpdatedProviderToRuntime(ollamaProvider, undefined, gateway as GatewayManager);

@@ -71,6 +71,11 @@ Connection listing must preserve every saved account, model and selected default
 One shared runtime slot per vendor does not authorize deleting its alternatives.
 Only a sole saved account can use an unambiguous legacy runtime-key fallback;
 multiple saved accounts must not borrow a sibling credential or its ready status.
+An app-owned provider SecretRef introduced after Gateway launch is not present in
+that child's immutable environment. Coordinate selected configuration and owned
+child refresh before activation; never ask the old child to validate a missing
+environment reference or bypass foreign Gateway ownership with generic file
+fallback. Normal packaged running-service evidence must exercise this join.
 
 Native presentation acknowledgement follows the applied editable state, not just
 queued DOM work. Escape cannot reopen from stationary-pointer resize events.

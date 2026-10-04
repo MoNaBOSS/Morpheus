@@ -55,6 +55,24 @@ recovery. The Add dialog initially clipped its action; its fixed footer and
 scrollable body now retain fully visible controls at 1280×800 and 800×720.
 Normal package/installer verification is the next step; no live-model or physical
 voice acceptance is inferred from this source/fixture evidence.
+Normal packaged qualification of source `b7a63142` then failed the first protected
+account save: the account/key persisted, but the running child's `config.set`
+rejected the newly introduced environment SecretRef before its refresh. Setup
+layout and authenticated-test boundaries passed separately. Preserve those failed
+bytes/evidence; correct and requalify the owned configuration/environment join.
+The bounded correction stops only a stale owned child before durable selected
+provider/default/agent delivery, then launches with the matching protected env.
+Ownership and selection races, manual Stop/Quit and failed pre-launch validation
+fail safely; unchanged environments retain ordinary coordinated RPC. Interrupted
+service delivery refreshes Connections and presents translated repair guidance,
+closing Add when Main has already persisted its account. No generic RPC-error
+fallback, credentials in Main's environment or broad Gateway rewrite is introduced.
+Final source checks pass 434 affected unit cases and six rendered journeys across
+coordinated runs, plus Node/web/managed types, scoped lint and comms/harness checks.
+The new recovery journey uses real protected account storage but simulates the
+later service failure at Main. Its initial frozen-preload fixture mistake and
+passing correction remain recorded. The normal running-service acceptance must
+still exercise the actual stage and installer; these fixtures cannot replace it.
 Included local English voice stays independent of the task-model key. Hosted plans,
 payments and NerdGPT/Unrestricted remain deferred. No broad redesign is authorized
 by this checkpoint. Exact next acceptance: save a replacement securely, select an

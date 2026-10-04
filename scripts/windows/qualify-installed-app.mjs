@@ -179,8 +179,11 @@ const runtime = async (returning) => {
   const voice = await invoke('morpheus', 'voiceStatus');
   assert(voice.neuralSpeechAvailable && voice.speechFormat === 'pcm24' && voice.settings.engine === 'local', 'Included speech readiness failed');
   assert.equal(voice.transcriptionAvailable, !returning, 'Transcription availability must honor persisted manual microphone mute');
-  assert.equal((await invoke('providers', 'accounts')).length, 0, 'No task/voice account may be needed for readiness');
+  const providerId = 'installed-qualification-openrouter';
+  const providerModel = 'fixture/installed-qualification';
+  let protectedProvider;
   if (!returning) {
+    assert.equal((await invoke('providers', 'accounts')).length, 0, 'No task/voice account may be needed for readiness');
     await expect(page.getByTestId('activation-intro-name')).toBeVisible({ timeout: 20_000 });
     await page.getByTestId('activation-intro-name').fill('CI Companion'); await page.getByTestId('activation-intro-name').press('Enter');
     await expect(page.getByTestId('activation-setup-connections')).toBeVisible(); await page.getByTestId('activation-setup-continue').click();
@@ -189,6 +192,21 @@ const runtime = async (returning) => {
     await page.getByTestId('activation-first-request').fill('Show system information'); await page.getByTestId('activation-first-request').press('Enter');
     await expect(page.getByTestId('morpheus-activation')).toHaveCount(0);
     await expect.poll(async () => Object.values((await invoke('morpheus', 'objectiveSnapshot')).runsById).find((entry) => entry.objective === 'Show system information')?.state, { timeout: 30_000 }).toBe('complete');
+    // Real installed Main and running owned Gateway, with an unmistakably fake
+    // credential confined to this disposable profile. No validation/inference
+    // request is sent. This exercises config/SecretRef/env delivery hidden by
+    // stopped-service fixtures, then preserves the account through reinstall.
+    const now = new Date().toISOString();
+    const saved = await invoke('providers', 'createAccount', {
+      account: { id: providerId, vendorId: 'openrouter', label: 'Synthetic installed qualification',
+        authMode: 'api_key', model: providerModel, enabled: true, isDefault: false,
+        createdAt: now, updatedAt: now }, apiKey: 'synthetic-installed-qualification-no-real-service-access',
+    });
+    assert.equal(saved.success, true, `Running installed provider save failed: ${String(saved.error || '')}`);
+    await expect.poll(async () => (await invoke('gateway', 'status')).state, { timeout: 120_000 }).toBe('running');
+    const selected = await invoke('providers', 'setDefaultAccount', { accountId: providerId });
+    assert.equal(selected.success, true, `Installed default selection failed: ${String(selected.error || '')}`);
+    protectedProvider = { accountId: providerId, model: providerModel, savedWhileRunning: true, noServiceRequest: true };
   } else {
     await active.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus')?.show());
     const onboarding = await invoke('morpheus', 'onboardingStatus');
@@ -197,7 +215,14 @@ const runtime = async (returning) => {
     assert.equal(voice.settings.enabled, false, 'Manual microphone mute did not persist');
     assert.equal(voice.settings.ambientEnabled, false, 'Ambient microphone state did not persist');
     await expect(page.getByTestId('morpheus-activation')).toHaveCount(0);
+    protectedProvider = { accountId: providerId, model: providerModel, retainedThroughReinstall: true, noServiceRequest: true };
   }
+  const accounts = await invoke('providers', 'accounts');
+  assert.equal(accounts.length, 1, 'Synthetic provider count changed');
+  assert.equal(accounts[0].id, providerId); assert.equal(accounts[0].model, providerModel);
+  assert.equal((await invoke('providers', 'getDefaultAccount')).accountId, providerId);
+  assert.equal(await invoke('providers', 'hasAccountApiKey', { accountId: providerId }), true);
+  protectedProvider.keyPresent = true;
   if (await page.getByTestId('quick-command-expand').isVisible()) await page.getByTestId('quick-command-expand').click();
   await expect(page.getByTestId('morpheus-command-input')).toBeVisible();
   await page.getByTestId('morpheus-command-input').fill('Keep this draft through settings');
@@ -212,7 +237,7 @@ const runtime = async (returning) => {
   await invoke('gateway', 'stop'); await expect.poll(async () => (await invoke('gateway', 'status')).state).toBe('stopped');
   await active.close(); active = undefined;
   await waitUntil(() => JSON.parse(powershell(`ConvertTo-Json -InputObject @(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith(${quote(`${install}\\`)}, [StringComparison]::OrdinalIgnoreCase) } | Select-Object ProcessId) -Compress`)).length === 0, 'Installed process shutdown');
-  return { identity, includedVoiceReadyWithoutAccount: true, microphoneTested: false, audiblePlaybackTested: false, navigationAndDraft: true, advancedAvailable: true, personality: onboarding.preferences.personality };
+  return { identity, includedVoiceReadyWithoutAccount: true, microphoneTested: false, audiblePlaybackTested: false, navigationAndDraft: true, advancedAvailable: true, personality: onboarding.preferences.personality, protectedProvider };
 };
 try {
   await run(installer, ['/S', '/currentuser', `/D=${install}`], 'install');

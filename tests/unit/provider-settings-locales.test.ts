@@ -9,7 +9,7 @@ describe.each(Object.entries({ en, zh, ja, ru }))('BYOK settings translations (%
   it('resolves the complete setup guidance in the selected language without fallback', async () => {
     const i18n = createInstance();
     await i18n.init({ lng: language, fallbackLng: false, ns: ['settings'], defaultNS: 'settings', resources: { [language]: { settings } } });
-    for (const key of ['byokDescription', 'dialog.openRouterModelTitle', 'dialog.openRouterModelHelp', 'dialog.openRouterModelCatalog', 'toast.defaultDisabled', 'toast.defaultNeedsKey']) {
+    for (const key of ['byokDescription', 'dialog.openRouterModelTitle', 'dialog.openRouterModelHelp', 'dialog.openRouterModelCatalog', 'toast.defaultDisabled', 'toast.defaultNeedsKey', 'toast.deliveryChanged', 'toast.deliveryInterrupted']) {
       const path = `aiProviders.${key}`;
       expect(i18n.exists(path)).toBe(true);
       expect(i18n.t(path)).not.toBe(path);

@@ -136,14 +136,21 @@ function shouldShowUserAgentFieldForNewProvider(providerType: ProviderType | nul
   return providerType === 'custom';
 }
 
-function getDefaultAccountRepairKey(error: unknown): string | null {
+function getProviderRepairKey(error: unknown): string | null {
   const message = (error instanceof Error ? error.message : typeof error === 'string' ? error : '')
-    .replace(/^Error:\s*/, '');
+    .replace(/^(?:Error:\s*)+/, '');
   if (message === 'A disabled provider account cannot be the default') {
     return 'aiProviders.toast.defaultDisabled';
   }
   if (message === 'Save an API key for this provider account before making it the default') {
     return 'aiProviders.toast.defaultNeedsKey';
+  }
+  if (message === 'Provider selection changed during configuration delivery; retry the operation'
+    || message === 'Provider selection changed before Gateway launch; retry the operation') {
+    return 'aiProviders.toast.deliveryChanged';
+  }
+  if (message === 'Provider key saved; Gateway restart with the updated environment is required') {
+    return 'aiProviders.toast.deliveryInterrupted';
   }
   return null;
 }
@@ -247,7 +254,14 @@ export function ProvidersSettings() {
       setShowAddDialog(false);
       toast.success(t('aiProviders.toast.added'));
     } catch (error) {
-      toast.error(`${t('aiProviders.toast.failedAdd')}: ${error}`);
+      const repairKey = getProviderRepairKey(error);
+      toast.error(repairKey ? t(repairKey) : `${t('aiProviders.toast.failedAdd')}: ${error}`);
+      if (repairKey) {
+        // Main may have saved the account before its service update was stopped.
+        // Reveal that account rather than leaving an Add form that creates another.
+        setShowAddDialog(false);
+        await refreshProviderSnapshot();
+      }
     }
   };
 
@@ -256,7 +270,9 @@ export function ProvidersSettings() {
       await removeAccount(providerId);
       toast.success(t('aiProviders.toast.deleted'));
     } catch (error) {
-      toast.error(`${t('aiProviders.toast.failedDelete')}: ${error}`);
+      const repairKey = getProviderRepairKey(error);
+      toast.error(repairKey ? t(repairKey) : `${t('aiProviders.toast.failedDelete')}: ${error}`);
+      if (repairKey) await refreshProviderSnapshot();
     }
   };
 
@@ -265,8 +281,9 @@ export function ProvidersSettings() {
       await setDefaultAccount(providerId);
       toast.success(t('aiProviders.toast.defaultUpdated'));
     } catch (error) {
-      const repairKey = getDefaultAccountRepairKey(error);
+      const repairKey = getProviderRepairKey(error);
       toast.error(repairKey ? t(repairKey) : `${t('aiProviders.toast.failedDefault')}: ${error}`);
+      if (repairKey) await refreshProviderSnapshot();
     }
   };
 
@@ -610,7 +627,9 @@ function ProviderCard({
       setNewKey('');
     } catch (error) {
       if (startedCommit || canCommit()) {
-        toast.error(`${t('aiProviders.toast.failedUpdate')}: ${error}`);
+        const repairKey = getProviderRepairKey(error);
+        toast.error(repairKey ? t(repairKey) : `${t('aiProviders.toast.failedUpdate')}: ${error}`);
+        if (repairKey) await useProviderStore.getState().refreshProviderSnapshot();
       }
     } finally {
       if (startedCommit) {

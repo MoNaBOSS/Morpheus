@@ -127,6 +127,8 @@
       "failedDefault": "Failed to set default",
       "defaultDisabled": "Enable this connection before making it the default.",
       "defaultNeedsKey": "Edit this connection to save an API key before making it the default.",
+      "deliveryChanged": "Connection settings changed during setup. Review the saved connection and try again.",
+      "deliveryInterrupted": "Connection changes were saved, but the task service could not refresh. Start or restart it in Settings → Advanced, then review your connections.",
       "updated": "Provider updated",
       "failedUpdate": "Failed to update provider",
       "invalidKey": "Invalid API key",

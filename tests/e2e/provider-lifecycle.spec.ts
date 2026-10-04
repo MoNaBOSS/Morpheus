@@ -404,6 +404,62 @@ test.describe('ClawX provider lifecycle', () => {
     await page.screenshot({ path: info.outputPath('localized-keyless-default-rejection.png') });
   });
 
+  test('reveals a saved account after interrupted service delivery without creating a duplicate', async ({ page, electronApp }, info) => {
+    await completeSetup(page);
+    await page.evaluate(async () => {
+      const result = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'settings', action: 'set',
+        payload: { key: 'language', value: 'ru' } });
+      if (!result.ok) throw new Error('Fixture language setup failed');
+    });
+    await page.reload();
+    await page.evaluate(() => { window.location.hash = '#/settings?section=connections'; });
+    await expect(page.getByTestId('providers-add-button')).toBeVisible();
+    await electronApp.evaluate(({ ipcMain }) => {
+      const original = (ipcMain as unknown as { _invokeHandlers: Map<string, (event: unknown, request: unknown) => Promise<{ ok?: boolean; data?: unknown }>> })._invokeHandlers.get('host:invoke');
+      if (!original) throw new Error('Host fixture handler unavailable');
+      (globalThis as unknown as { interruptedProviderCreates: number }).interruptedProviderCreates = 0;
+      ipcMain.removeHandler('host:invoke');
+      ipcMain.handle('host:invoke', async (event, request: { id?: string; module?: string; action?: string }) => {
+        if (request.module === 'providers' && request.action === 'validateKey') {
+          return { id: request.id, ok: true, data: { valid: true } };
+        }
+        const response = await original(event, request);
+        if (request.module === 'providers' && request.action === 'createAccount' && response.ok) {
+          if (!(response.data as { success?: boolean }).success) throw new Error('Actual synthetic account save failed');
+          (globalThis as unknown as { interruptedProviderCreates: number }).interruptedProviderCreates++;
+          // Actual protected persistence above; only its later service-delivery
+          // failure is simulated. No provider metadata/inference request is sent.
+          return { id: request.id, ok: true, data: { success: false,
+            error: 'Error: Provider key saved; Gateway restart with the updated environment is required' } };
+        }
+        return response;
+      });
+    });
+    await page.getByTestId('providers-add-button').click();
+    await page.getByTestId('add-provider-type-openrouter').click();
+    await page.getByTestId('add-provider-name-input').fill('Interrupted setup');
+    await page.getByTestId('add-provider-api-key-input').fill('synthetic-saved-interrupted-key');
+    await page.getByTestId('add-provider-model-id-input').fill('fixture/after-save');
+    await page.getByTestId('add-provider-submit-button').click();
+    await expect(page.getByTestId('add-provider-dialog')).toHaveCount(0);
+    await expect(page.locator('[data-sonner-toast][data-type="error"]')).toHaveText(ruSettings.aiProviders.toast.deliveryInterrupted);
+    const saved = await page.evaluate(async () => {
+      const accounts = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'providers', action: 'accounts' });
+      if (!accounts.ok) throw new Error('Synthetic saved state unavailable');
+      const entries = accounts.data as Array<{ id: string; label: string; model: string }>;
+      if (entries.length !== 1) throw new Error('Unexpected duplicate synthetic account');
+      const key = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'providers', action: 'hasAccountApiKey', payload: { accountId: entries[0].id } });
+      return { accounts: entries, keyPresent: key.ok && key.data === true };
+    });
+    expect(saved.accounts).toEqual([expect.objectContaining({ label: 'Interrupted setup', model: 'fixture/after-save' })]);
+    expect(saved.keyPresent).toBe(true);
+    expect(await electronApp.evaluate(() => (globalThis as unknown as { interruptedProviderCreates: number }).interruptedProviderCreates)).toBe(1);
+    await expect(page.getByTestId(`provider-card-${saved.accounts[0].id}`)).toContainText('Interrupted setup');
+    await expect(page.locator('body')).not.toContainText('synthetic-saved-interrupted-key');
+    await expect(page.locator('body')).not.toContainText('Gateway restart with the updated environment');
+    await page.screenshot({ path: info.outputPath('localized-saved-account-service-recovery.png') });
+  });
+
   test('shows Z.AI CN/Global options and Code Plan endpoint toggle', async ({ page }) => {
     await completeSetup(page);
 

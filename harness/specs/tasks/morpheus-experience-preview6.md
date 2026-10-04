@@ -65,11 +65,14 @@ expectedUserBehavior:
   - Core and original runtime/default/fallback routing preserve native OpenRouter router model IDs; cancelled validation cannot later save an account or replacement credential.
   - Listing saved connections preserves every account, selected default and original model; sharing a runtime vendor never authorizes deleting an account or attributing a sibling credential to it.
   - Modern saved account and default reads take precedence over stale legacy aliases, while legacy-only connections remain available without metadata rewrites.
+  - Saving a new protected provider key while the owned Gateway runs delivers selected configuration and its fresh child environment together; the old child must not reject a newly introduced SecretRef before refresh.
+  - Interrupted service delivery reveals the already saved connection with translated repair guidance; Add must not invite duplicate account creation.
 requiredTests:
   - pnpm run typecheck
   - pnpm run lint:check
   - pnpm exec vitest run tests/unit/provider-service-stale-cleanup.test.ts tests/unit/provider-migration.test.ts tests/unit/provider-runtime-sync.test.ts tests/unit/provider-secret-adapter.test.ts tests/unit/provider-settings-locales.test.ts
-  - pnpm exec playwright test tests/e2e/provider-lifecycle.spec.ts tests/e2e/provider-validation-cancel.spec.ts --grep 'explicit OpenRouter model|localizes a keyless default|cancelled provider validation' --workers=1
+  - pnpm exec vitest run tests/unit/gateway-provider-config-stage.test.ts tests/unit/gateway-config-delivery.test.ts tests/unit/gateway-ready-fallback.test.ts
+  - pnpm exec playwright test tests/e2e/provider-lifecycle.spec.ts tests/e2e/provider-validation-cancel.spec.ts --grep 'explicit OpenRouter model|localizes a keyless default|interrupted service delivery|cancelled provider validation' --workers=1
   - pnpm exec playwright test tests/e2e/morpheus-experience.spec.ts --workers=1
   - pnpm exec playwright test tests/e2e/morpheus-shell-recovery.spec.ts --workers=1
   - pnpm exec playwright test tests/e2e/morpheus-brand-motion.spec.ts tests/e2e/morpheus-shared-orb-motion.spec.ts --workers=1
@@ -100,6 +103,14 @@ preserve existing accounts/defaults and qualify add/edit/restart with protected
 synthetic accounts. Metadata access is not generation acceptance. Included local
 English voice has no separate key requirement; hosted billing and NerdGPT remain
 deferred. The existing single specification/checklist record exact evidence.
+
+Normal preview.14 qualification exposed a running-Gateway defect hidden by stopped
+or mocked runtime fixtures: saving the first protected OpenRouter account persists
+the account, then config.set rejects the new app-owned environment SecretRef in
+the old child before refresh. Correct this bounded delivery join, preserve foreign
+Gateway ownership and account/config provenance, and reproduce it in the actual
+normal package before accepting a new installer. Never fall back from an arbitrary
+RPC error to an uncoordinated file write or expose raw credentials to Main's env.
 
 October 3 amendment: the owner approved the connected motion study and authorized
 full integration/qualification with substantial voice improvement and connected

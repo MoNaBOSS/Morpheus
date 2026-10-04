@@ -188,6 +188,11 @@ export class GatewayManager extends EventEmitter {
   private deviceIdentity: DeviceIdentity | null = null;
   private restartInFlight: Promise<void> | null = null;
   private providerSecretRefreshInFlight: Promise<boolean> | null = null;
+  private providerConfigurationStageActive = false;
+  private providerConfigurationLaunchValidation: {
+    isCurrent: () => Promise<boolean>;
+    envFingerprints: Record<string, string>;
+  } | null = null;
   private launchEnvFingerprints: Record<string, string> = {};
   private readonly connectionMonitor = new GatewayConnectionMonitor();
   private readonly lifecycleController = new GatewayLifecycleController();
@@ -323,6 +328,9 @@ export class GatewayManager extends EventEmitter {
    * Start Gateway process
    */
   async start(): Promise<void> {
+    if (this.providerConfigurationStageActive) {
+      throw new Error('Provider configuration delivery is in progress; retry Gateway start');
+    }
     if (this.startLock) {
       logger.debug('Gateway start ignored because a start flow is already in progress');
       return;
@@ -415,7 +423,7 @@ export class GatewayManager extends EventEmitter {
           await waitForPortFree(port);
         },
         startProcess: async () => {
-          await this.startProcess();
+          await this.startProcess(startEpoch);
           tSpawned = Date.now();
         },
         waitForReady: async (port) => {
@@ -579,6 +587,9 @@ export class GatewayManager extends EventEmitter {
    * Restart Gateway process
    */
   async restart(): Promise<void> {
+    if (this.providerConfigurationStageActive) {
+      throw new Error('Provider configuration delivery is in progress; retry Gateway restart');
+    }
     return this.restartWithPolicy(false);
   }
 
@@ -702,6 +713,77 @@ export class GatewayManager extends EventEmitter {
       return await refresh;
     } finally {
       if (this.providerSecretRefreshInFlight === refresh) this.providerSecretRefreshInFlight = null;
+    }
+  }
+
+  /** A new SecretRef cannot be validated by a child whose launch env lacks it.
+   * Stop only the stale child we own, deliver through the coordinator's existing
+   * stopped-file path, then launch after all selected configuration is durable.
+   * The callback returns a selection guard for the final pre-spawn check. */
+  async deliverProviderConfiguration(
+    deliver: (staged: boolean) => Promise<(() => Promise<boolean>) | void>,
+  ): Promise<boolean> {
+    const preceding = this.providerSecretRefreshInFlight;
+    const delivery = (async () => {
+      if (preceding) await preceding.catch(() => undefined);
+      if (this.restartInFlight) await this.restartInFlight;
+      const initialEpoch = this.lifecycleController.getCurrentEpoch();
+      const previousPid = this.process?.pid;
+      const initiallyStopped = this.status.state === 'stopped';
+      if (!initiallyStopped && (!this.ownsProcess || !previousPid || this.status.state !== 'running')) return false;
+      const { providerEnv } = await loadProviderEnv();
+      if (this.lifecycleController.getCurrentEpoch() !== initialEpoch) return false;
+      if (!initiallyStopped && (!this.ownsProcess || this.process?.pid !== previousPid || this.status.state !== 'running')) return false;
+      if (initiallyStopped && this.status.state !== 'stopped') return false;
+      const keys = new Set([...Object.keys(providerEnv), ...Object.keys(this.launchEnvFingerprints)
+        .filter((key) => key.startsWith('MORPHEUS_PROVIDER_KEY_'))]);
+      const changed = [...keys].some((key) => this.launchEnvFingerprints[key] !== this.fingerprintEnvValue(providerEnv[key]));
+      this.providerConfigurationStageActive = true;
+      try {
+        let stoppedEpoch = initialEpoch;
+        if (!initiallyStopped && changed) {
+          // stop() bumps its epoch synchronously. A subsequent manual Stop/Quit
+          // must invalidate this launch even while termination is awaited.
+          if (!this.ownsProcess || this.process?.pid !== previousPid) return false;
+          const stopping = this.stop();
+          stoppedEpoch = this.lifecycleController.getCurrentEpoch();
+          await stopping;
+        }
+        const isCurrent = await deliver(initiallyStopped || changed);
+        if (isCurrent && !await isCurrent()) throw new Error('Provider selection changed during configuration delivery; retry the operation');
+        if (this.lifecycleController.getCurrentEpoch() !== stoppedEpoch) return false;
+        if (initiallyStopped || !changed) return true;
+        const freshEnv = await loadProviderEnv();
+        if (this.lifecycleController.getCurrentEpoch() !== stoppedEpoch || this.status.state !== 'stopped') return false;
+        this.providerConfigurationLaunchValidation = {
+          isCurrent: isCurrent ?? (async () => true),
+          envFingerprints: Object.fromEntries(Object.entries(freshEnv.providerEnv)
+            .map(([key, value]) => [key, this.fingerprintEnvValue(value)])),
+        };
+        // start() sets startLock synchronously before its first await. Release
+        // only the delivery guard; its lifecycle and pre-spawn checks still run.
+        this.providerConfigurationStageActive = false;
+        try {
+          await this.start();
+        } catch (error) {
+          // An automatic retry would outlive this stage's selection/env proof.
+          // Leave recovery to an explicit request after a failed staged launch.
+          this.shouldReconnect = false;
+          this.clearAllTimers();
+          throw error;
+        }
+        return this.ownsProcess && this.getStatus().state === 'running'
+          && this.process?.pid != null && this.process.pid !== previousPid;
+      } finally {
+        this.providerConfigurationStageActive = false;
+        this.providerConfigurationLaunchValidation = null;
+      }
+    })();
+    this.providerSecretRefreshInFlight = delivery;
+    try {
+      return await delivery;
+    } finally {
+      if (this.providerSecretRefreshInFlight === delivery) this.providerSecretRefreshInFlight = null;
     }
   }
 
@@ -972,9 +1054,22 @@ export class GatewayManager extends EventEmitter {
    * Start Gateway process
    * Uses OpenClaw npm package from node_modules (dev) or resources (production)
    */
-  private async startProcess(): Promise<void> {
+  private async startProcess(launchEpoch = this.lifecycleController.getCurrentEpoch()): Promise<void> {
     const launchContext = await prepareGatewayLaunchContext(this.status.port);
     await unloadLaunchctlGatewayService();
+    const validation = this.providerConfigurationLaunchValidation;
+    if (validation) {
+      const keys = Object.keys(validation.envFingerprints);
+      const matchingEnv = keys.every((key) => validation.envFingerprints[key]
+        === this.fingerprintEnvValue(launchContext.forkEnv[key]))
+        && Object.keys(launchContext.forkEnv).filter((key) => key.startsWith('MORPHEUS_PROVIDER_KEY_'))
+          .every((key) => Object.hasOwn(validation.envFingerprints, key));
+      if (!matchingEnv || !await validation.isCurrent()) {
+        this.shouldReconnect = false;
+        throw new Error('Provider selection changed before Gateway launch; retry the operation');
+      }
+    }
+    this.lifecycleController.assert(launchEpoch, 'provider configuration launch');
     this.processExitCode = null;
 
     // Per-process diagnostics reset on each new spawn so retries never mix
