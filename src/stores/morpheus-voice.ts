@@ -191,6 +191,21 @@ async function routeVoiceInput(text: string, generation: number): Promise<void> 
 }
 
 export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
+  const currentVoiceStatus = (received: MorpheusVoiceStatus): MorpheusVoiceStatus | null => {
+    const authority = received.presence?.authorityRevision ?? 0;
+    const revision = received.presence?.settingsRevision ?? 0;
+    for (const presence of [get().presence, get().status?.presence]) {
+      const currentAuthority = presence?.authorityRevision ?? 0;
+      if (authority < currentAuthority
+        || authority === currentAuthority && revision < (presence?.settingsRevision ?? 0)) return null;
+    }
+    const presence = get().presence;
+    // Configuration can arrive after a live audio event with the same revision.
+    // Keep that event's state rather than restoring an older armed/speaking snapshot.
+    return presence && authority === (presence.authorityRevision ?? 0)
+      && revision === (presence.settingsRevision ?? 0) ? { ...received, presence } : received;
+  };
+
   const endFollowUp = (): void => {
     stopMorpheusWakeCue();
     dialogue.reset();
@@ -302,6 +317,15 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
     ambientCapture = null;
     ambientStarting = null;
     set({ ambientReady: false });
+  };
+
+  const invalidateOlderAuthority = (status: MorpheusVoiceStatus): boolean => {
+    if ((status.presence?.authorityRevision ?? 0) <= (get().presence?.authorityRevision ?? 0)) return false;
+    // A status reply can expose service replacement before its presence event.
+    get().cancel();
+    stopAmbientLocal();
+    ambientAutoStartBlocked = true;
+    return true;
   };
 
   const startAmbientCapture = async (status: MorpheusVoiceStatus): Promise<void> => {
@@ -471,22 +495,27 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
 
     async loadStatus() {
       const generation = operationGeneration;
+      const settingsOperation = settingsOperationRevision;
+      const authority = get().presence?.authorityRevision ?? 0;
       const requestRevision = ++statusRequestRevision;
       try {
-        const previousStatus = get().status;
-        const status = effectiveVoiceStatus(await hostApi.morpheus.voiceStatus());
-        if (generation !== operationGeneration || requestRevision !== statusRequestRevision) return get().status;
-        if ((status.presence?.settingsRevision ?? 0) < (get().presence?.settingsRevision ?? 0)) return get().status;
-        if (status.transcriptionAvailable && previousStatus?.transcriptionAvailable !== true) {
-          ambientAutoStartBlocked = false;
-        }
+        const received = await hostApi.morpheus.voiceStatus();
+        // A cancelled recording does not invalidate committed configuration.
+        // Settings edits, service replacement and newer reads still do.
+        if (settingsOperation !== settingsOperationRevision || requestRevision !== statusRequestRevision
+          || authority !== (get().presence?.authorityRevision ?? 0)) return null;
+        const current = currentVoiceStatus(received);
+        if (!current) return null;
+        invalidateOlderAuthority(current);
+        const status = effectiveVoiceStatus(current);
         // Reading configuration does not retest a failed microphone. Preserve
         // its actionable recovery when Settings mounts or refreshes status.
         set((state) => ({ status, presence: status.presence,
           ...(state.phase === 'error' ? {} : { error: null, errorKind: null }) }));
         return status;
       } catch (error) {
-        if (generation !== operationGeneration || requestRevision !== statusRequestRevision) return get().status;
+        if (generation !== operationGeneration || settingsOperation !== settingsOperationRevision
+          || requestRevision !== statusRequestRevision || authority !== (get().presence?.authorityRevision ?? 0)) return null;
         set({
           status: null,
           error: error instanceof Error ? error.message : String(error),
@@ -499,7 +528,9 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
     subscribePresence() {
       return hostEvents.onMorpheusVoicePresence((presence) => {
         const previousAuthority = get().presence?.authorityRevision ?? 0;
-        if ((presence.authorityRevision ?? 0) !== previousAuthority) {
+        const incomingAuthority = presence.authorityRevision ?? 0;
+        if (incomingAuthority < previousAuthority) return;
+        if (incomingAuthority !== previousAuthority) {
           get().cancel();
           stopAmbientLocal();
           ambientAutoStartBlocked = true;
@@ -513,11 +544,13 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
         if (incomingSettingsRevision > previousSettingsRevision) {
           const operation = operationGeneration, settingsOperation = settingsOperationRevision;
           stopAmbientLocal();
+          const ambientOperation = ambientGeneration;
           set((state) => ({ presence, status: state.status ? { ...state.status, presence } : null }));
           // A native tray edit has no renderer response to update cached settings.
           // Read once per committed revision, never poll or infer microphone readiness.
           void get().loadStatus().then(async (status) => {
             if (operation !== operationGeneration || settingsOperation !== settingsOperationRevision
+              || ambientOperation !== ambientGeneration || incomingAuthority !== (get().presence?.authorityRevision ?? 0)
               || get().presence?.settingsRevision !== incomingSettingsRevision
               || status?.presence?.settingsRevision !== incomingSettingsRevision) return;
             if (!microphoneMuteRequested) {
@@ -578,6 +611,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
 
     async updateSettings(patch) {
       const revision = ++settingsOperationRevision;
+      const authority = get().presence?.authorityRevision ?? 0;
       if (patch.enabled === false) {
         microphoneMuteRequested = true;
         ambientAutoStartBlocked = true;
@@ -588,23 +622,30 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
       else if (patch.speakResponses === false) { stopMorpheusSpeech(); endFollowUp(); set({ replyTurn: null }); }
       try {
         const received = await hostApi.morpheus.updateVoiceSettings(patch);
-        if (revision !== settingsOperationRevision) return;
-        if (patch.enabled === true && received.settings.enabled) microphoneMuteRequested = false;
-        const status = effectiveVoiceStatus(received);
+        if (revision !== settingsOperationRevision || authority !== (get().presence?.authorityRevision ?? 0)) return;
+        const current = currentVoiceStatus(received);
+        if (!current) return;
+        const authorityChanged = invalidateOlderAuthority(current);
+        if (!authorityChanged && patch.enabled === true && received.settings.enabled) microphoneMuteRequested = false;
+        const status = effectiveVoiceStatus(current);
         stopAmbientLocal(); // closures must not retain an old wake phrase/provider
-        ambientAutoStartBlocked = microphoneMuteRequested;
+        if (!authorityChanged) ambientAutoStartBlocked = microphoneMuteRequested;
         set((state) => ({ status, presence: status.presence, error: null, errorKind: null,
           phase: state.phase === 'error' ? 'idle' : state.phase }));
-        if (get().ambientScope === 'companion' && status.settings.enabled && status.settings.ambientEnabled) await startAmbientCapture(status);
+        if (!authorityChanged && get().ambientScope === 'companion' && status.settings.enabled && status.settings.ambientEnabled) await startAmbientCapture(status);
         else stopAmbientLocal();
       } catch (error) {
-        if (revision !== settingsOperationRevision) return;
+        if (revision !== settingsOperationRevision || authority !== (get().presence?.authorityRevision ?? 0)) return;
         fail(error);
         // Native startup may fail after settings were atomically saved. Reflect
         // the real Main choice without clearing the actionable failure.
         try {
-          const status = effectiveVoiceStatus(await hostApi.morpheus.voiceStatus());
-          if (revision !== settingsOperationRevision) return;
+          const received = await hostApi.morpheus.voiceStatus();
+          if (revision !== settingsOperationRevision || authority !== (get().presence?.authorityRevision ?? 0)) return;
+          const current = currentVoiceStatus(received);
+          if (!current) return;
+          invalidateOlderAuthority(current);
+          const status = effectiveVoiceStatus(current);
           set({ status, presence: status.presence });
         } catch { /* Retain the original failure when Main itself is unavailable. */ }
       }
@@ -654,9 +695,14 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
       ambientCapture?.setSuppressed(true);
       set({ phase: 'requesting', source, transcript: null, error: null, errorKind: null, startedAt: null, replyTurn: null });
       try {
-        const status = effectiveVoiceStatus(await hostApi.morpheus.voiceStatus());
+        const received = await hostApi.morpheus.voiceStatus();
         if (generation !== operationGeneration) return;
-        set({ status });
+        const current = currentVoiceStatus(received);
+        if (!current) { get().cancel(); return; }
+        const authorityChanged = invalidateOlderAuthority(current);
+        const status = effectiveVoiceStatus(current);
+        set({ status, presence: status.presence });
+        if (authorityChanged) return;
         if (!status.settings.enabled || !status.transcriptionAvailable) {
           throw new Error(status.reason ?? 'Voice transcription is not configured.');
         }

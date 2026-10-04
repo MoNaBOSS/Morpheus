@@ -1,12 +1,27 @@
 # Morpheus experience specification
 
-## Current voice correction — October 4, preview.11 qualification
+## Current preview.12 correction — cancellation during tray status refresh
+
+Keep the connected Voice design. A final independent review reproduced stale
+renderer preferences when interaction cancellation discards a committed tray
+settings refresh. Main stop/mute authority remains intact. Configuration refresh
+validity now survives an unrelated interaction cancel, while stale capture
+callbacks remain invalid and cannot restart input. Permission/mute, authority
+and newer-setting guards remain enforced; 35 store cases and independent source
+review passed. Silence now invites a phrase retry with “I didn’t catch that”
+instead of implying unavailable microphone access. Qualify the exact small
+preview.12 amendment next. Preview.11 below records earlier scoped evidence.
+
+## Current voice correction — October 4, preview.11 bounded review
 
 Actual owner-PC preview.10 input check opened the microphone but decoded room
 noise as `[SOUND]` and wrongly declared the check passed. This is a verified
 defect, not successful spoken recognition. Preview.11 extends the existing
 Main-owned annotation-only gate for sound/background-sound markers, preserving
-ordinary text and mixed quoted commands. Recheck real input before handoff.
+ordinary text and mixed quoted commands. The packaged preview.11 owner-PC
+recheck opened the physical microphone and reported no words recognized, without
+a false pass. Nobody supplied a spoken phrase; this proves capture access and
+truthful failure, not spoken command, accent or acoustic acceptance.
 
 The owner enabled microphone access and requested a connected Voice settings
 experience, faster natural listening/execution and more fluid motion. Preserve the
@@ -39,10 +54,22 @@ pause/accent evidence supports tuning. A prepared worker can remain cached for
 up to 60 seconds after an ordinary Stop; mute/output-off, configuration change
 and shutdown release it. No perpetual idle warming or paid fallback.
 
-Next: qualify this implemented, bounded Voice/mode component, with compositor
-motion driven by real input/output levels, then deliver a separately identified
-Windows review app and short actual motion/audio evidence. Preserve preview.9
-and historical work. This does not close commercial release or hardware gates.
+This bounded Voice/mode component is now packaged as preview.11, application
+source `5a21fc3ba1f9b08b9a9e60ec80f7d643151e14d9`. Normal packaged first-run,
+real included output/Core result, navigation/draft continuity and mode/mute
+lifecycle checks passed. Chromium capture in automated lifecycle checks is
+silent/synthetic; the Windows default-microphone wake helper really starts and
+stops, but physical speech/wake and native tray UI clicking are not accepted.
+The owner app now runs this payload at connected Settings → Voice with existing
+history and unchanged saved voice preferences. Included sample playback completed
+there; audibility/echo is still a physical gate. Actual packaged motion/audio
+media and the concise report are in this task's `outputs\preview11`.
+
+Next: one real phrase in Check microphone (“Open YouTube”, then Finish), followed
+by companion wake/action acceptance after input is confirmed. Calibration never
+executes a command. Keep the identified package and approved design; the current
+checklist owns exact hashes and timings. This does not close commercial release,
+long-output synthesis gaps, resource-budget or acoustic-interruption gates.
 
 The connected Voice component is implemented. Native tray consent changes now
 publish a committed settings revision to the renderer, which reloads once and
@@ -50,8 +77,8 @@ uses the same capture owner as Settings. Pending mute, native visibility and
 failed-acquisition recovery still govern input. Do not restore automatic native
 startup to work around a stale renderer cache. Initial package exercises found
 two qualification-script navigation/ownership mistakes; their reports remain
-preserved. Final qualification must use actual controls plus the native tray's
-Main settings service, not silently seed renderer readiness.
+preserved. Final passing preview.11 qualification used actual Voice controls plus
+the native tray's Main settings service rather than seeding renderer readiness.
 
 ## Current correction — preview.9 review build
 

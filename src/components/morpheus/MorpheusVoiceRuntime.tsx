@@ -172,7 +172,7 @@ export function MorpheusVoiceIndicator({ inWelcome = false }: { inWelcome?: bool
     || presence?.state === 'transcribing' || presence?.state === 'understanding'
     || presence?.state === 'working';
   const ambientEngaged = ambientActive && presence?.state !== 'armed';
-  const label = error || phase === 'error' ? t('morpheus.voice.states.error') : followUpUntil ? t('morpheus.voice.dialogue.listening') : speaking
+  const label = error || phase === 'error' ? t(errorKind === 'repeat' ? 'morpheus.voice.repeatTitle' : 'morpheus.voice.states.error') : followUpUntil ? t('morpheus.voice.dialogue.listening') : speaking
     ? t('morpheus.voice.speaking')
     : preparingSpeech ? t('morpheus.voice.preparingSpeech') : ambientActive
       ? t(`morpheus.voice.presence.${presence?.state ?? 'armed'}`)
@@ -266,7 +266,7 @@ export function MorpheusVoiceIndicator({ inWelcome = false }: { inWelcome?: bool
             onClick={() => { dismiss(); useMorpheusQuickCommandStore.getState().hide(); void hostApi.morpheus.expandCompanionSurface().catch(() => undefined); }}
             className="shrink-0 border-b border-[hsl(var(--morpheus-accent-dim))] pb-1 text-2xs text-[hsl(var(--morpheus-accent))]"
           >
-            {t('morpheus.experience.voice.repair')}
+            {t(errorKind === 'repeat' ? 'morpheus.experience.settings.voice' : 'morpheus.experience.voice.repair')}
           </Link>
         ) : null}
         {listening ? (

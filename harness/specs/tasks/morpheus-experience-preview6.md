@@ -56,6 +56,8 @@ expectedUserBehavior:
   - Hidden or covered identity surfaces remove their decorative animations, since a reported paused state alone may leave Chromium clocks advancing.
   - Companion voice commands preserve explicit consent but suspend automatic capture and wake detection while full, compact or Settings is visible; chat microphone input remains explicit and master mute always wins.
   - Voice setup groups input/device/test and selected natural output/sample, separates installed-engine readiness from recognized-input evidence, and never labels an input error as active listening.
+  - Committed native tray preferences synchronize even if an interaction is cancelled during status loading; obsolete capture callbacks cannot restart input, clear permission failure, or defeat master mute.
+  - Silence or unrecognized room noise invites a spoken retry without claiming microphone access is unavailable or input readiness has passed.
 requiredTests:
   - pnpm run typecheck
   - pnpm run lint:check

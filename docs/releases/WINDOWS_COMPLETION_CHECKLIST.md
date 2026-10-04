@@ -1,11 +1,44 @@
 # Current Windows experience completion checklist
 
-## October 4 connected Voice correction — preview.11 qualification
+## Current preview.12 correction — final tray synchronization regression
+
+Independent final review reproduced a preview.11 cache race: cancel an interaction
+while a committed tray settings reload is pending, and the discarded response can
+leave visible settings stale with no same-revision retry. Main still stops the
+helper and enforces master mute, but synchronization is not fully accepted.
+- [x] Implement independent configuration freshness and capture-operation
+  validity; retain authority/settings ordering, pending mute and acquisition-error
+  recovery. Newer service status also releases old capture before its event arrives.
+- [x] Final 35 voice-store cases, Node/web typecheck and targeted lint passed;
+  independent source review found no remaining concrete issue. Comms comparison
+  and updated task validation passed.
+- [x] No-speech feedback says “I didn’t catch that”, with a Voice settings link
+  and phrase retry. All four locales updated. Generated-input conversation and
+  silent-input release/recovery Electron journeys passed.
+- [ ] Qualify exact final preview.12 package and replace the owner review app.
+
+Preserve source/profile/package history. Preview.11 evidence below remains scoped
+evidence; it is not the final accepted payload.
+
+## October 4 connected Voice correction — preview.11 ready for bounded review
 
 Preview.10 normal packaged lifecycle checks passed, but actual owner-PC capture
-then exposed `[SOUND]` falsely passing the microphone test. Do not call this
-recognized speech or accept preview.10. Preview.11 adds the observed annotation
-to the existing local transcript gate and must be packaged/rechecked below.
+then exposed `[SOUND]` falsely passing the microphone test. Preview.10 is
+superseded. Preview.11 rejects that annotation before input-test success or
+command routing. Actual owner-PC recheck opened capture and reported no words
+recognized, without a false pass. No person spoke during this check; physical
+spoken-command recognition and speaker audibility are still unaccepted.
+
+Application source: `5a21fc3ba1f9b08b9a9e60ec80f7d643151e14d9`, local branch
+`codex/morpheus-preview10-connected-voice`. Runtime **1.2.0-preview.11** is now
+open on the owner PC at connected Settings → Voice, using the existing profile.
+Review EXE (unpacked application, not an installer; keep its folder intact):
+`E:\Morpheus-builds\experience-preview11-review\win-unpacked\Morpheus.exe`.
+Unsigned. EXE SHA256:
+`452ce486924eb2383e7b8436de0e00ec27569db9672eb8a8939e198d67d38f3b`.
+`resources/app.asar` SHA256:
+`20beac6e4947e25d67c7ff4a0efde01fb85ca707033973b57916b83a3e173ab1`.
+Later documentation commits do not change this packaged application identity.
 
 - [x] Recheck source: clean `e1e2151207ac188980a4e1dfd78839f5115eb8f2`, branch
   `codex/morpheus-preview9-shell-recovery`, expected GitHub origin. Preserve owner
@@ -30,7 +63,7 @@ to the existing local transcript gate and must be packaged/rechecked below.
 - [x] Follow-up native tray fix: 140 focused cases now pass, including committed
   settings revision, hidden off/on synchronization, foreground/pending-mute veto
   and permission recovery. Node/web typecheck and targeted lint pass. The initial
-  preview.10 package is superseded; final package needs the updated code below.
+  preview.10 package is superseded; preview.11 includes these updated controls.
 - [x] Rendered source qualification: 12 distinct relevant Electron journeys
   passed across two runs (initial obsolete size/state assertions corrected).
   Voice controls fit 1280×800; 430px device repair has no horizontal overflow.
@@ -39,11 +72,57 @@ to the existing local transcript gate and must be packaged/rechecked below.
   Actual local neural generated input was recognized and routed once to an ACP
   answer fixture; all 129,452 actual PCM bytes played. Typed/manual Stop stopped
   playback in 28.1/33 ms in that synthetic-input journey, not physical barge-in.
-- [ ] Relevant source/Electron checks, normal package qualification, actual motion
-  recording and included voice sample, exact new executable identity.
+- [x] Observed `[SOUND]` regression: 46 local-input unit cases passed, including
+  sound-related ordinary text/quoted requests. Four optional local-voice cases
+  were skipped, not passed. Production build and the real generated-input
+  conversation/silence Electron journeys passed again for preview.11.
+- [x] Normal preview.11 package qualification passed with E2E mode unset, isolated
+  first-run profile, zero provider accounts and zero renderer errors. All 526
+  regular build files matched ASAR and 12 external resources matched inputs.
+  Actual welcome/Voice sample, real Core system report, compact/Settings/Advanced
+  navigation and retained draft passed. Test Gateway stopped; owner startup
+  registration was unchanged.
+- [x] Packaged mode/mute exercise used silent synthetic Chromium streams plus
+  the real Windows default-microphone wake-helper lifecycle. Actual Voice controls
+  enabled capture; native tray-equivalent Main settings service off/on synchronized
+  the renderer. Showing full chat released capture; compact/Settings remained
+  quiet. Master mute preserved consent and prevented hidden reacquisition. The
+  normal record does not separately exercise native minimize or muting during
+  active capture; those veto paths have source/unit coverage. This is not
+  physical spoken wake or native tray UI-click acceptance. Two Chromium
+  acquisitions were observed; no transcript was seeded.
+- [x] Owner PC now runs the identified preview.11. Existing history was visibly
+  retained, configured provider remained present without opening its key, and
+  saved voice preferences matched the pre-switch backup hash. No installer,
+  profile reset, migration or credential replacement ran.
+- [x] Actual selected default microphone opened after explicit Check microphone,
+  and Finish reported no words recognized. The false `[SOUND]` success is gone.
+  Actual selected included voice preview completed in the owner UI; physical
+  speaker audibility/quality is not established by that completion. Dismissing
+  the no-speech status returns the panel to not-tested, not a passed state.
+- [x] Actual packaged motion clip and generated PCM sample copied to this task's
+  `outputs\preview11`, with qualification JSON and concise `REVIEW.md`. Video
+  decoded successfully: 629 actual VP8 frames, 1280×800, about 25.2 seconds, no
+  audio track or generated/interpolated frames. WAV is actual playback-bound
+  mono 24 kHz PCM, 365,056 bytes / 7.605 seconds; generation waits are omitted.
 
-Next is this Voice/mode component, not a new backend or design campaign. Public
-sale, signing/update, hosted funding, payment setup and physical mixed-use
+Cold normal package observation: first PCM **4.297 s**, first speaking state
+**4.772 s**, complete sample pipeline **13.446 s**. Fresh Gateway readiness took
+**56.660 s**. The short prepared-output benchmark above/below is a separate
+engine measurement, not an end-to-end voice command latency promise. Longer
+output still has synthesis gaps; model replies wait for final completion before
+speaking. The Windows wake helper uses the default microphone, which may differ
+from the selected Chromium device. Acoustic echo-safe speech interruption,
+physical accent/noise/wake acceptance and current long-session resource budget
+remain open. The no-speech banner still has a generic unavailable heading, with
+a specific retry explanation; it does not mean microphone permission failed.
+
+Exact next PC test: in the open Voice panel, click **Check microphone**, say
+“Open YouTube”, then **Finish microphone check**. It should show those words;
+this calibration does not execute the command. Once input is accepted, validate
+the companion's real wake → spoken command → browser action separately.
+
+Public sale, signing/update, hosted funding, payment setup and physical mixed-use
 acceptance remain open. Preview.9 below is preserved historical package evidence.
 
 ## Preview.9 bounded correction — ready for owner review

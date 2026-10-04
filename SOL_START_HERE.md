@@ -1,10 +1,23 @@
-# Current continuation — preview.11 connected Voice, 2026-10-04
+# Current continuation — preview.12 tray refresh race, 2026-10-04
+
+Final independent review reproduced one preview.11 cache race: cancelling while
+a committed native tray settings reload is pending drops configuration and
+prevents same-revision retry. Main capture-stop/master-mute authority still holds.
+The bounded synchronization fix and seven new regression cases are implemented;
+35 store cases, Node/web typecheck and independent source review passed. Stale
+capture, permission and mute guards remain. No-speech feedback now invites a
+phrase retry instead of implying unavailable access. Qualify preview.12 before
+replacing the running owner app.
+The preview.11 observations below remain historical scoped evidence.
+
+## Previous preview.11 connected Voice review
 
 Actual preview.10 owner-PC capture exposed `[SOUND]` incorrectly passing the
 input check. Preview.11 adds that observed non-speech marker to the Main gate.
-Keep the connected design and native-scope fixes; qualify the new payload and
-real capture below. Preview.10 packaged lifecycle evidence remains valid for
-its scope but does not establish physical speech readiness.
+The identified normal preview.11 package and actual owner-PC recheck now pass
+their bounded scopes. Preserve the connected design and native-scope fixes.
+Preview.10 is superseded; its lifecycle evidence never established physical
+speech readiness.
 
 The owner enabled microphone permission and authorized a bounded Voice/mode
 correction: beautiful connected controls, companion-only automatic listening,
@@ -18,11 +31,20 @@ preview.8 EXE is now absent; statements below are preserved historical evidence.
 Current source implements grouped Voice input/output checks, separate saved
 companion consent and immediate master mute, native visibility ownership, stale
 callback guards, bounded local output preparation during explicit capture and
-compositor audio response. Actual owner microphone access succeeded but no speech
-was detected. Included preview.9 output completed; physical audibility is not
-qualified. Preview.10 qualification and executable identity belong in the single
-[current checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md); do not present
-source or synthetic tests as hardware or sale acceptance. Preserve all owner data.
+compositor audio response. Actual owner preview.11 microphone access succeeded;
+with no spoken phrase the check reported no words, without a false success.
+Included preview.11 output completed in the actual owner UI; physical audibility
+is not qualified. Saved voice preferences match the pre-switch backup and existing
+history/providers remain present. Owner app is open at Settings → Voice.
+Application source is `5a21fc3ba1f9b08b9a9e60ec80f7d643151e14d9`; review EXE is
+`E:\Morpheus-builds\experience-preview11-review\win-unpacked\Morpheus.exe`, runtime
+1.2.0-preview.11, unsigned/unpacked. Exact identity and normal packaged evidence
+belong in the single [current checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md).
+Actual motion/audio plus the concise handoff are in this task's `outputs\preview11`.
+Next PC check: Check microphone → say “Open YouTube” → Finish microphone check
+(calibration, no command execution). Source/synthetic tests do not close hardware,
+acoustic interruption, long-output latency, signing/payment/hosted or sale gates.
+Preserve all owner data. Later documentation commits do not change app identity.
 
 ## Previous preview.9 shell correction — historical evidence
 
