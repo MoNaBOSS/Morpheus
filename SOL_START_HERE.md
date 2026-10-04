@@ -1,5 +1,13 @@
 # Current continuation — preview.13 shareable Windows candidate, 2026-10-04
 
+Latest scope decision: **finish BYOK Windows first**. Hosted Premium/billing is
+later work; NerdGPT/Unrestricted are explicitly deferred, not release blockers.
+The current specification/checklist now separate owner-provided secure connection/
+physical acceptance/distribution inputs from unfinished engineering. Preview.13
+is unchanged. Next: repair the rejected saved account in Connections, select a
+usable model, qualify real inference and connected spoken/local/research/site
+flows. Included standard English voice needs no separate API key or hosted server.
+
 The owner authorizes a polished installable application to share with Larry.
 Continue the approved design and backend; preserve source, historical packages,
 profiles, conversations and credentials. Starting source was clean `2c8e625a`

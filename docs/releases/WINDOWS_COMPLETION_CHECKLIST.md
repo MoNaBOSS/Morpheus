@@ -1,5 +1,42 @@
 # Current Windows experience completion checklist
 
+## Final BYOK Windows release — confirmed October 4 scope
+
+The owner selected BYOK Windows first. Keep the approved experience and existing
+capabilities. Hosted Premium/billing is a later scope; NerdGPT/Unrestricted are
+explicitly deferred and do not gate this release. Preview.13 below remains the
+delivered evaluation candidate, not acceptance of every live product function.
+
+- [ ] Owner: repair task-model credentials in secure Connections, select a usable
+  model and pass metadata connection testing. No keys in chat. Then qualify a
+  small real inference; saved presence/GET access alone does not prove generation.
+- [ ] Engineering: qualify ordinary typed/spoken model replies, cited research and
+  supported website create/revise/preview with that live service; verify the
+  available task/result/agent/tool paths and recoveries with protected test data.
+- [ ] Engineering: improve/measure cold and warm voice response; implement and
+  qualify echo-safe spoken interruption. Current typed/manual Stop works, but
+  acoustic barge-in and partial-model speech streaming are not accepted.
+- [ ] Engineering plus physical owner test: correct/qualify selected input device
+  versus Windows default wake capture, real phrase/accent/noise, audible reply,
+  wake/Stop/mute and hidden-versus-chat capture. Synthetic audio is not acceptance.
+- [ ] Engineering plus owner preference: reliably open URLs in the selected normal
+  Chrome session/profile and qualify focus/tab behavior without isolated profiles.
+- [ ] If publication is part of final acceptance: owner connects an authorized
+  existing public GitHub Pages repository securely; qualify exact approved preview,
+  publication verification/rollback. No custom-domain/arbitrary full-stack promise.
+- [ ] Engineering: preserved-profile previous-version upgrade, actual scale/taskbar/
+  display and sleep/resume, long mixed-use CPU/memory/latency/error recovery.
+- [ ] Public distribution: owner supplies publisher/signing and release/update
+  ownership; qualify signed artifact/update path. Private Larry evaluation can
+  remain unsigned with that state disclosed. Hosting/payment services are not a
+  requirement for standalone BYOK functionality.
+- [ ] Build the final identified installer only after functional acceptance;
+  report supported/configuration-dependent/experimental functions honestly.
+
+Exact next action: secure task-connection repair, then one real inference and one
+connected spoken local command. Do not rename the existing preview to claim final
+acceptance. Previous package/hardware evidence stays preserved and scope-specific.
+
 ## Current shareable Windows candidate — preview.13
 
 Owner authorized polished final application for Larry on October 4. Preserve

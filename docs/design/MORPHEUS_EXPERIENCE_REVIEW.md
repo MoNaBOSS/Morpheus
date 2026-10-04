@@ -1,5 +1,40 @@
 # Morpheus experience specification
 
+## Confirmed release scope — October 4, BYOK Windows first
+
+After the preview.13 handoff, the owner selected **Complete BYOK Windows release
+first**. Finish Basic with the existing local tools, tasks, history, agents,
+browser/research and supported site workflow, plus included local English voice.
+Preserve the approved Floating companion design and existing configurations.
+Hosted Premium/account/payment operations are outside this delivery; retain their
+future structure. NerdGPT and the Unrestricted plan are explicitly deferred and
+are not blockers for this release. No separate standard voice key is required.
+
+The delivered preview.13 remains a qualified evaluation candidate. A final BYOK
+release is not achieved by changing its version label. Remaining engineering and
+acceptance belong to the current checklist: live usable model inference and
+research/site journeys, real voice/device/wake/interrupt handling, active normal
+Chrome context, upgrade/display/sleep and mixed-use performance. In particular,
+echo-safe acoustic interruption is not implemented/accepted; settled model replies
+are spoken, but partial model-token speech streaming is absent. Cold sample PCM
+and playback delays remain observed limitations, not completed responsiveness.
+
+Owner input: repair the saved task-model account securely in Connections and
+select a model actually accessible to that account. Metadata connection success
+must be followed by a real small inference. A human microphone phrase, audible
+sample and physical wake test are required; synthetic streams cannot replace
+them. Live publication needs an authorized destination/account: the current
+publisher supports an existing public GitHub Pages repository with a separate
+gh-pages root and no custom domain, not arbitrary hosting/full-stack deployment.
+Connect publication credentials securely and approve the exact preview to publish.
+
+Publisher signing and release/update ownership are distribution requirements for
+public customer release; an unsigned private Larry evaluation is already available.
+No hosted-plan funding, merchant account, prices or NerdGPT access is required
+to finish the standalone BYOK functions. Exact next action: owner repairs the
+task connection in-app; verify live inference, then the connected spoken/local
+and research/site flows without broad redesign or loss of capabilities.
+
 ## Current shareable Windows candidate — October 4, preview.13
 
 The owner now authorizes finishing a polished installable application to share
