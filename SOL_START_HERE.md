@@ -1,4 +1,23 @@
-# Current continuation — separate command/voice delivery, 2026-10-04
+# Current continuation — connected appearance/payment preview, 2026-10-05
+
+**Latest package under final qualification:** `1.2.0-preview.16`, application
+checkpoint `b3a0bff5`, clean qualification source
+`ce9bc7fb9e5b7efd3696bce301e754545a475f1d`. Saved red appearance, meaningful state
+motion and connected payment-option presentation are real local features; they
+do not activate NerdGPT, a paid plan or execution authority. Original green and
+Advanced capabilities remain. Canonical command parsing improved, but the actual
+generated-speech corpus exposes remaining recognition failures (24/40 strict cases
+with current routing). No alternative recognizer was adopted because each regressed.
+Actual normal packaged qualification passed, including real local PCM output,
+generated selected-stream/native wake/Whisper/Core, reply scope/mute, connected
+settings, draft continuity and red persistence through process restart. The installer
+passed byte/integrity inspection and is **NotSigned**. Exact-source disposable
+previous-version upgrade run `37225735543` failed at its old-version model expectation
+before any upgrade; the corrected qualifier must pass an actual rerun. See the single current
+specification/checklist for evidence and remaining live/physical/voice-quality gates.
+No certificate/service or Stripe account exists yet; the owner asks to prepare
+payment options now and connect later. Never relabel this as a signed stable release.
+Historical delivery evidence below remains tied to its own bytes.
 
 **Latest owner extension:** proceed toward a signed public release, test broader
 voice-command precision, prepare Unrestricted red evil-Morpheus state animations,

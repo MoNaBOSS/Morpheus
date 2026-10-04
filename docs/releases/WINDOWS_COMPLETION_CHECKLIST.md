@@ -10,6 +10,10 @@
   preview controls without fake entitlement, NerdGPT connection or broader authority.
 - [x] Prepare connected Stripe/USDT/USDC payment-option presentation with honest
   unavailable status and no checkout, wallet address or entitlement mutation.
+- [x] Package separate preview.16, qualify the normal runtime with isolated generated
+  input, inspect actual installer bytes, and record real motion/local speech output.
+- [ ] Complete actual pinned preview.13→preview.16 Windows upgrade, retained settings/
+  protected credential bytes/memory/history, reinstall and profile-preserving uninstall.
 - [ ] Later external integration: Stripe lifecycle and confirmed contract payments
   with authenticated server-owned entitlement and replay/cancellation/refund tests.
 - [ ] Receive and validate ABI, chain/network/address, Stripe deployment/prices,
@@ -29,7 +33,7 @@ them later. USDT/USDC contract payments should grant access only after verified
 chain confirmation; deployment, pricing and access duration are unspecified.
 Current specification is authoritative.
 
-October 5 local verification in progress (preview.16, not yet packaged): native,
+October 5 source/rendered verification (preview.16): native,
 compact and expanded red presentation, four locales, process restart persistence,
 unchanged account/permission/voice settings, hidden/reduced-motion behavior passed
 the new Electron journey. Real included PCM output drove the red speaking motion;
@@ -65,8 +69,44 @@ and managed wake cancellation needed the actual prepare/selected-PCM acquisition
 before asserting native helper stop. Those fixtures were corrected without changing
 production cancellation. Full lint passed with the same 12 inherited refresh
 warnings. Harness validation/dry-run and 18 baseline harness tests passed; comms
-replay/comparison passed. Final literal-URL guard refinements receive focused
-regressions before packaging. This evidence does not replace installed qualification.
+replay/comparison passed. Final literal-URL guard refinement passed 106 focused
+tests and scoped lint. The installed-upgrade policy passed eight cases, MJS syntax,
+scoped lint and six workflow PowerShell parser checks without executing an installer
+on the owner's PC. These checks do not replace installed qualification.
+
+Application checkpoint `b3a0bff50db7f27164acb24479ef2d7e7430ecc3`; clean qualification
+source (including the CI-only upgrade lane) `ce9bc7fb9e5b7efd3696bce301e754545a475f1d`.
+Final Vite build and separate unsigned Windows build passed. Actual normal runtime:
+`E:\Morpheus-builds\experience-preview16-qualification\normal-1791139916751\qualification.json`.
+Every recorded check passed with zero renderer errors: new-user setup, protected
+account save and real invalid-account rejection, local voice readiness/output,
+Core report execution, compact spoken versus expanded quiet replies, generated
+selected-stream/native wake/Whisper/Core execution, tray OFF→ON, foreground capture
+suspension, manual mute, contextual drafts, payment availability boundaries and
+red appearance across full/compact/native plus a complete process restart.
+The first external test assumed the orb existed before any normal hide; its failure
+is preserved at `normal-1791139663192`. Corrected qualification uses actual normal
+muted hide/show and restores the window, without fabricated states or source edits.
+Gateway readiness was 7.2 seconds; the included sample's first PCM arrived at 2.38
+seconds and speaking at 2.87 seconds in this run. These are machine/run observations,
+not a latency promise. The 32-second video is continuous app-window capture without
+audio; separate WAV is real included PCM supplied to playback, not speaker loopback.
+
+Actual installer: `E:\Morpheus-builds\experience-preview16-delivery\Morpheus-1.2.0-preview.16-win-x64.exe`
+(492,489,809 bytes), SHA256 `46eb353a49783ba6c54d7b53986d1c6f2c9cf1f6b7f3ff6b7d3ff81329acfdd3`.
+Embedded ASAR SHA256 `5a3306241f43989093fb7a5dd3b068e5ab2db9f9dedbe126fe486fde047890ce`.
+Signature inspected as **NotSigned**. All 40,926 payload paths/sizes, CRC integrity
+and 73 selected hashes match the normally tested output; preserved preview.15's
+installer hash remains unchanged. Static inspection is not local installer execution.
+First disposable installed run `37225735543` built both independent installers and
+installed the pinned preview.13 payload successfully, then failed before upgrade:
+the new qualifier expected an unprefixed model, while preview.13 actually persists
+the provider-prefixed runtime model. Failure evidence is retained under
+`experience-preview16-qualification/installed-ce9bc7fb-failed-37225735543`.
+The qualifier is being corrected to assert the known old saved representation and
+require that exact saved selection through upgrade; no production change is needed.
+Do not mark upgrade checks complete until the corrected actual run passes. Signing,
+live paid/model services, measured voice-quality and physical Windows gates remain open.
 
 ## Active correction — command intent, tray wake and spoken companion replies
 

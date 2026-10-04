@@ -45,11 +45,28 @@ misses; larger base/distil models and changed padding introduced regressions and
 were not adopted. Strict transcripts/slots and all failures remain in the checklist.
 Generated samples do not qualify human/acoustic behavior or a Siri-equivalence claim.
 
-Exact next work: freeze and qualify a separate preview.16 package, verify a real
-previous-version upgrade on a disposable Windows runner, and attach actual motion
-and local voice output evidence. Signing and service availability remain blocked
-by the confirmed external inputs above. Existing successful preview.15 evidence
-remains specific to that build; it never approves a changed package.
+October 5 package evidence: application checkpoint `b3a0bff5`, qualification source
+`ce9bc7fb9e5b7efd3696bce301e754545a475f1d`, version `1.2.0-preview.16`. The actual
+normal package passed connected settings, prepared payment choices, green/red
+authority separation, red persistence through process restart, real local PCM
+output, deterministic Core execution, generated selected-input wake/Whisper/Core,
+compact spoken replies, quiet expanded chat, scope/mute and draft continuity.
+The first external qualifier assumed an eagerly created native orb; it was corrected
+to use the normal muted hide/show lifecycle. Its failed evidence was retained;
+no production change was needed. The passing run recorded no renderer errors.
+The actual installer passed CRCs, every payload path/size and 73 selected byte
+identities against that tested package. Signature status is `NotSigned`.
+
+Exact next work: finish the real pinned preview.13→preview.16 upgrade on a disposable
+Windows runner and publish its bounded receipt with the separate delivery. Its
+first run failed a qualifier expectation for preview.13's persisted model prefix
+before upgrade; preserve that failure and retest the corrected historical expectation.
+Actual
+32-second application motion and included-engine PCM evidence are recorded. Then
+address the measured recognition failures with an explicit retry/correction flow
+and physical command acceptance; do not hide them behind larger-model claims.
+Signing and live service availability remain blocked by the confirmed external
+inputs above. Successful older-build evidence never approves a changed package.
 
 ## Current correction — October 4, command intent and companion voice
 
