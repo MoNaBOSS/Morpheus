@@ -20,6 +20,10 @@ Keep purposeful motion, actual audio feedback and available Advanced capabilitie
 Next: finish bounded source and rendered checks, qualify frozen normal package,
 then place its identified installer and concise evidence in a new delivery folder.
 No owner or chat-posted credential may enter source, diagnostics or delivery.
+The first preview.15 package `cff7b03e` exposed native tray OFF→ON reacquisition
+failure after otherwise passing setup, output and initial wake readiness. Its
+payload/evidence are preserved. The targeted owner-aware asleep/token-handoff
+correction passes source regression; qualify a fresh separate normal package next.
 
 ## Previous per-user OpenRouter correction
 

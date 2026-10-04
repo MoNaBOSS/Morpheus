@@ -55,6 +55,18 @@ legacy capability-list clarification is presented as a short retry, preserving
 the full backend capability inventory. Source and package qualification remain
 separate gates in the current checklist.
 
+The normal `cff7b03e` package exposed a further lifecycle defect: native tray
+OFF→ON emitted repeated asleep projections and retired a pending native token,
+invalidating the renderer's replacement acquisition. Preserve pending preparation
+during that token handoff; passive sleep without a capture owner must not cancel
+a committed settings reload. Errors, mute, foreground and explicit stop retain
+their cancellation authority. The regression failed before correction; the normal
+packaged journey must pass before this recovery is accepted for delivery.
+Main also publishes its effective input-enabled state before a native mute's
+audit/persistence completes. This distinguishes an immediate mute from a harmless
+token rollover and releases pending/active capture. Repeated muted output events
+must preserve new typed reply speech, whose input consent is independent.
+
 ## Current bounded checkpoint — October 4, per-user OpenRouter setup
 
 The owner requests OpenRouter testing and preparation for every user. Each Windows

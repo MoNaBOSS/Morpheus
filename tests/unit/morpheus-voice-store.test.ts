@@ -238,6 +238,51 @@ describe('Morpheus renderer voice controller', () => {
     unsubscribe();
   });
 
+  it('recovers hidden OFF to ON through repeated asleep events and Main prepare token rollover', async () => {
+    const base = await companionStatus();
+    const at = (revision: number, ambientEnabled: boolean) => ({ ...base,
+      settings: { ...base.settings, ambientEnabled },
+      presence: { v: 4, state: 'asleep', ambientEnabled, settingsRevision: revision } });
+    mocks.voiceStatus.mockResolvedValue(at(0, true));
+    await useMorpheusVoiceStore.getState().loadStatus();
+    await useMorpheusVoiceStore.getState().setAmbientScope('companion');
+    expect(getUserMedia).toHaveBeenCalledOnce();
+    const unsubscribe = useMorpheusVoiceStore.getState().subscribePresence();
+    let reloadOff!: (status: unknown) => void;
+    mocks.voiceStatus.mockReturnValueOnce(new Promise(resolve => { reloadOff = resolve; }));
+    const off = at(1, false);
+    mocks.voicePresenceHandler?.(off.presence); // committed revision from Main end
+    mocks.voicePresenceHandler?.(off.presence); // committed projection and final sleep
+    mocks.voicePresenceHandler?.(off.presence);
+    expect(track.stop).toHaveBeenCalledOnce();
+    reloadOff(off);
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().status?.settings.ambientEnabled).toBe(false));
+    let reloadOn!: (status: unknown) => void;
+    mocks.voiceStatus.mockReturnValueOnce(new Promise(resolve => { reloadOn = resolve; }));
+    const on = at(2, true), pending = { ...on.presence, sessionStartedAt: new Date().toISOString() };
+    mocks.voicePresenceHandler?.(on.presence); // commit before Main begins its token
+    mocks.voicePresenceHandler?.(pending); // Main's pending session arrives before reload
+    mocks.beginAmbientVoice.mockImplementationOnce(async () => {
+      // prepareAmbientInput retires Main's old token before creating the exact
+      // selected-stream token. Both are unarmed, at the same committed revision.
+      await Promise.resolve();
+      mocks.voicePresenceHandler?.(on.presence);
+      mocks.voicePresenceHandler?.(pending);
+      return pending;
+    });
+    mocks.feedAmbientWakeAudio.mockImplementationOnce(async () => {
+      mocks.voicePresenceHandler?.({ ...pending, state: 'armed' });
+      return { ready: true };
+    });
+    reloadOn(on);
+    await vi.waitFor(() => expect(getUserMedia).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().ambientReady).toBe(true));
+    expect(mocks.feedAmbientWakeAudio).toHaveBeenCalledTimes(2);
+    expect(useMorpheusVoiceStore.getState()).toMatchObject({ ambientScope: 'companion',
+      presence: { state: 'armed', settingsRevision: 2 }, status: { settings: { enabled: true, ambientEnabled: true } } });
+    unsubscribe();
+  });
+
   it('keeps immediate master mute while a native settings reload and persistence are pending', async () => {
     const base = await companionStatus();
     const status = { ...base, presence: { v: 4, state: 'armed', ambientEnabled: true, settingsRevision: 0 } };
@@ -265,6 +310,56 @@ describe('Morpheus renderer voice controller', () => {
     mocks.voicePresenceHandler?.(nativeEdit.presence);
     await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().status?.presence.settingsRevision).toBe(3));
     expect(getUserMedia).toHaveBeenCalledOnce(); expect(useMorpheusVoiceStore.getState().ambientReady).toBe(false);
+    unsubscribe();
+  });
+
+  it.each(['permission', 'first-frame'])('native input veto revokes pending %s before a settings commit and permits fresh consented unmute', async stage => {
+    const base = await companionStatus();
+    const initial = { ...base, presence: { v: 4, state: 'asleep', ambientEnabled: true, settingsRevision: 0, inputEnabled: true } };
+    mocks.voiceStatus.mockResolvedValue(initial);
+    let releaseStream!: (value: unknown) => void, acknowledge!: (value: { ready: boolean }) => void;
+    if (stage === 'permission') getUserMedia.mockReturnValueOnce(new Promise(resolve => { releaseStream = resolve; }));
+    else mocks.feedAmbientWakeAudio.mockReturnValueOnce(new Promise(resolve => { acknowledge = resolve; }));
+    await useMorpheusVoiceStore.getState().loadStatus();
+    const unsubscribe = useMorpheusVoiceStore.getState().subscribePresence();
+    const acquiring = useMorpheusVoiceStore.getState().setAmbientScope('companion');
+    await vi.waitFor(() => expect(getUserMedia).toHaveBeenCalledOnce());
+    if (stage === 'first-frame') await vi.waitFor(() => expect(mocks.feedAmbientWakeAudio).toHaveBeenCalledOnce());
+    // Main has applied inputVeto, but the native mute settings audit has not
+    // committed. The old revision is intentional and must still revoke input.
+    mocks.voicePresenceHandler?.({ ...initial.presence, inputEnabled: false });
+    expect(useMorpheusVoiceStore.getState().status?.settings.enabled).toBe(false);
+    expect(useMorpheusVoiceStore.getState().ambientReady).toBe(false);
+    if (stage === 'first-frame') { expect(track.stop).toHaveBeenCalledOnce(); acknowledge({ ready: true }); }
+    else releaseStream({ getTracks: () => [track], getAudioTracks: () => [] });
+    await acquiring;
+    expect(track.stop).toHaveBeenCalledOnce();
+    await useMorpheusVoiceStore.getState().ensureAmbient();
+    expect(getUserMedia).toHaveBeenCalledOnce();
+    expect(useMorpheusVoiceStore.getState().ambientReady).toBe(false);
+    const unmuted = { ...base, presence: { ...initial.presence, settingsRevision: 1 } };
+    mocks.voiceStatus.mockResolvedValue(unmuted); mocks.beginAmbientVoice.mockResolvedValue({ ...unmuted.presence, state: 'asleep', sessionStartedAt: new Date().toISOString() });
+    mocks.voicePresenceHandler?.(unmuted.presence);
+    await vi.waitFor(() => expect(getUserMedia).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().ambientReady).toBe(true));
+    unsubscribe();
+  });
+
+  it('preserves a fresh typed speech target through all output presence states while input is already muted', async () => {
+    const base = await companionStatus();
+    const muted = { ...base, settings: { ...base.settings, enabled: false },
+      presence: { v: 4, state: 'asleep', ambientEnabled: true, settingsRevision: 0, inputEnabled: false } };
+    mocks.voiceStatus.mockResolvedValue(muted); await useMorpheusVoiceStore.getState().loadStatus();
+    const unsubscribe = useMorpheusVoiceStore.getState().subscribePresence();
+    const generation = useMorpheusVoiceStore.getState().getReplyGeneration();
+    const turn = { turnId: 'typed-while-muted', conversationId: 'conversation-typed', generation: 1, source: 'compact' } as never;
+    useMorpheusVoiceStore.getState().registerReplyTurn(turn, 'compact', generation);
+    useMorpheusCommandStore.getState().bindObjectiveSpeech('typed-core', { surface: 'compact', input: 'typed' });
+    for (const state of ['preparing-speech', 'speaking', 'asleep']) mocks.voicePresenceHandler?.({ ...muted.presence, state });
+    expect(useMorpheusVoiceStore.getState().replyTurn?.turn).toEqual(turn);
+    expect(useMorpheusVoiceStore.getState().getReplyGeneration()).toBe(generation);
+    expect(useMorpheusCommandStore.getState().objectiveSpeech?.objectiveRunId).toBe('typed-core');
+    expect(getUserMedia).not.toHaveBeenCalled();
     unsubscribe();
   });
 

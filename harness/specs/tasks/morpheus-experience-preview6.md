@@ -60,6 +60,7 @@ expectedUserBehavior:
   - Companion voice commands preserve explicit consent but suspend automatic capture and wake detection while full, compact or Settings is visible; chat microphone input remains explicit and master mute always wins.
   - Voice setup groups input/device/test and selected natural output/sample, separates installed-engine readiness from recognized-input evidence, and never labels an input error as active listening.
   - Committed native tray preferences synchronize even if an interaction is cancelled during status loading; obsolete capture callbacks cannot restart input, clear permission failure, or defeat master mute.
+  - Native tray OFF to ON reacquires the selected microphone through the real worklet and native readiness path; repeated asleep projections and preparation token rollover cannot cancel its pending replacement.
   - Silence or unrecognized room noise invites a spoken retry without claiming microphone access is unavailable or input readiness has passed.
   - A successful single-step website or application action has a concise specific localized inline outcome and optional details; complex results and failures retain their controls.
   - First-success examples identify real local capabilities and the separate need for secure task-model connection, without claiming unavailable hosted plans are live.
@@ -78,6 +79,7 @@ requiredTests:
   - pnpm exec playwright test tests/e2e/provider-lifecycle.spec.ts tests/e2e/provider-validation-cancel.spec.ts --grep 'explicit OpenRouter model|localizes a keyless default|interrupted service delivery|cancelled provider validation' --workers=1
   - pnpm exec playwright test tests/e2e/morpheus-experience.spec.ts --workers=1
   - pnpm exec playwright test tests/e2e/morpheus-shell-recovery.spec.ts --workers=1
+  - pnpm exec playwright test tests/e2e/morpheus-selected-wake-handoff.spec.ts --workers=1
   - pnpm exec playwright test tests/e2e/morpheus-brand-motion.spec.ts tests/e2e/morpheus-shared-orb-motion.spec.ts --workers=1
   - pnpm run comms:replay
   - pnpm run comms:compare

@@ -73,6 +73,8 @@ export type MorpheusVoicePresenceState =
   | 'error';
 
 export type MorpheusVoicePresence = {
+  /** Effective Main input authority, including a mute veto before settings commit. */
+  inputEnabled?: boolean;
   /** Invalidates capture and buffered playback when service authority changes. */
   authorityRevision?: number;
   /** Advances only after a deliberate voice settings edit is saved atomically. */

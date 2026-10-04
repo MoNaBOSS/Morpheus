@@ -363,6 +363,7 @@ export function createMorpheusVoiceService(options: {
   };
   let currentPresence: MorpheusVoicePresence = {
     v: MORPHEUS_VOICE_VERSION,
+    inputEnabled: inputAllowed(),
     settingsRevision,
     state: 'asleep',
     ambientEnabled: settings.ambientEnabled,
@@ -375,6 +376,7 @@ export function createMorpheusVoiceService(options: {
     }
     currentPresence = {
       v: MORPHEUS_VOICE_VERSION,
+      inputEnabled: inputAllowed(),
       authorityRevision,
       settingsRevision,
       state,
@@ -948,7 +950,7 @@ export function createMorpheusVoiceService(options: {
       if (disableAmbient || restartAmbient || !next.enabled) await service.endAmbientSession();
       // Tray edits bypass the renderer's settings action. Publish the committed
       // revision even when an existing session does not change its audio state.
-      currentPresence = { ...currentPresence, settingsRevision, ambientEnabled: settings.ambientEnabled };
+      currentPresence = { ...currentPresence, settingsRevision, ambientEnabled: settings.ambientEnabled, inputEnabled: inputAllowed() };
       options.emitPresence?.(structuredClone(currentPresence));
       if (settings.enabled && settings.ambientEnabled && companionVoiceAllowed()) await service.beginAmbientSession();
       else publish('asleep');
@@ -1241,6 +1243,7 @@ export function createMorpheusVoiceService(options: {
       options.localVoice?.dispose?.();
       currentPresence = {
         v: MORPHEUS_VOICE_VERSION, state: 'asleep', ambientEnabled: settings.ambientEnabled,
+        inputEnabled: false,
       };
     },
   };

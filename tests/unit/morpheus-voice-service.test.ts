@@ -243,6 +243,7 @@ describe('Morpheus voice service', () => {
       ? new Promise<void>(resolve => { commit = resolve; }) : Promise.resolve());
     const mute = h.service.updateSettings({ enabled: false });
     expect(stop).toHaveBeenCalledOnce(); expect(h.service.presence().state).toBe('asleep');
+    expect(h.service.presence()).toMatchObject({ inputEnabled: false, settingsRevision: 1, ambientEnabled: true });
     expect((await h.service.status()).settings).toMatchObject({ enabled: false, ambientEnabled: true });
     wakeNative(wake, 'Open YouTube'); await h.service.reconcileAmbientScope();
     await expect(h.service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' })).rejects.toThrow('disabled');

@@ -138,7 +138,7 @@ let settingsOperationRevision = 0;
 let statusRequestRevision = 0;
 
 function effectiveVoiceStatus(status: MorpheusVoiceStatus): MorpheusVoiceStatus {
-  return microphoneMuteRequested ? { ...status, transcriptionAvailable: false,
+  return microphoneMuteRequested || status.presence?.inputEnabled === false ? { ...status, transcriptionAvailable: false,
     settings: { ...status.settings, enabled: false } } : status;
 }
 
@@ -569,6 +569,15 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
         const previousSettingsRevision = get().presence?.settingsRevision ?? 0;
         const incomingSettingsRevision = presence.settingsRevision ?? 0;
         if (incomingSettingsRevision < previousSettingsRevision) return;
+        if (presence.inputEnabled === false) {
+          const revokeInput = get().presence?.inputEnabled !== false && get().status?.settings.enabled !== false
+            || Boolean(ambientCapture || ambientStarting || stream || recorder)
+            || ['requesting', 'listening', 'transcribing'].includes(get().phase);
+          // Main's veto precedes its audit/disk commit. Retire input immediately,
+          // while repeated muted output events preserve fresh typed reply speech.
+          set((state) => ({ presence, status: state.status ? effectiveVoiceStatus({ ...state.status, presence }) : null }));
+          if (revokeInput) { get().cancel(); stopAmbientLocal(); }
+        }
         if (incomingSettingsRevision > previousSettingsRevision) {
           const operation = operationGeneration, settingsOperation = settingsOperationRevision;
           stopAmbientLocal();
@@ -632,9 +641,14 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
           && !ambientStarting) {
           void get().ensureAmbient().catch(() => undefined);
         } else if (!presence.ambientEnabled || presence.state === 'error'
-          || (presence.state === 'asleep' && !(ambientStarting && presence.sessionStartedAt
+          || (presence.state === 'asleep' && !(ambientStarting
             && get().ambientScope === 'companion' && !microphoneMuteRequested))) {
-          stopAmbientLocal();
+          // Main emits repeated sleep projections for one settings commit and
+          // retires its old token during prepareAmbientVoiceInput. A pending
+          // renderer acquisition owns that rollover; a passive no-owner sleep
+          // must not invalidate the committed settings reload that will start it.
+          if (ambientCapture || ambientStarting || presence.state === 'error') stopAmbientLocal();
+          else { endFollowUp(); set({ ambientReady: false }); }
         }
       });
     },

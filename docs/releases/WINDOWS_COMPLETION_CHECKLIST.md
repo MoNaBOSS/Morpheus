@@ -40,6 +40,25 @@ The fixed AudioWorklet must be an external same-origin asset, not Vite's default
 inline data URL blocked by the application's CSP. Verify that emitted asset and
 the complete generated-PCM/native-wake/Whisper/Core path in the normal package next.
 
+Normal package `cff7b03e` passed setup, protected account rejection, real included
+PCM output, Core system-report execution, compact typed speech with input muted,
+and initial selected-stream native readiness. It failed native tray OFF→ON
+recovery: repeated same-revision asleep events cancelled the renderer acquisition
+reload; retiring Main's previous pending token could also cancel its replacement.
+The failed payload and evidence `normal-1791131608919` remain preserved. A targeted
+full-sequence regression reproduced the failure before the owner-aware correction;
+37 store cases, web typecheck and scoped lint then passed. Rebuild into a separate
+directory and require the entire normal generated-audio journey before delivery.
+Independent review found native mute's pre-commit asleep event indistinguishable
+from a preparation rollover. The bounded explicit input-enabled presence bit must
+revoke pending capture immediately while retaining newly requested typed speech
+with input already muted. Qualify this alongside the rearm correction.
+Final source checks for these lifecycle corrections pass: 189 focused cases across
+seven suites, Node/web types, scoped lint, communication replay/comparison, and
+harness validation/dry-run. Both pending-input veto cases failed before the fix.
+The real Electron silent-stream OFF→ON test passed before the final explicit-veto
+addition; rerun it with output-scope and Voice-panel journeys on the final build.
+
 ## Current bounded checkpoint — per-user OpenRouter setup
 
 - [x] Reverify clean source `4ee81a2a`, branch, remotes, fetched application branch
