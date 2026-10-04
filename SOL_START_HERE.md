@@ -1,4 +1,4 @@
-# Current continuation — preview.12 tray refresh race, 2026-10-04
+# Current continuation — preview.12 connected Voice review, 2026-10-04
 
 Final independent review reproduced one preview.11 cache race: cancelling while
 a committed native tray settings reload is pending drops configuration and
@@ -6,9 +6,21 @@ prevents same-revision retry. Main capture-stop/master-mute authority still hold
 The bounded synchronization fix and seven new regression cases are implemented;
 35 store cases, Node/web typecheck and independent source review passed. Stale
 capture, permission and mute guards remain. No-speech feedback now invites a
-phrase retry instead of implying unavailable access. Qualify preview.12 before
-replacing the running owner app.
-The preview.11 observations below remain historical scoped evidence.
+phrase retry instead of implying unavailable access. Final frozen-source build,
+relevant speech/silence Electron journeys and normal packaged qualification passed.
+Owner preview.12 is running at Settings → Voice using preserved history, provider
+and unchanged saved voice preferences. Actual microphone access and output pipeline
+completed; no human phrase, physical audibility/wake/echo is accepted.
+
+Application source `05426874856222e3b5de946585e27087454b88dc`; review EXE:
+`E:\Morpheus-builds\experience-preview12-review\win-unpacked\Morpheus.exe`,
+version 1.2.0-preview.12, unsigned/unpacked. Outputs\preview12 holds actual motion,
+PCM and concise review. Use the single current checklist for hashes/timings/limits.
+Actual typed Open YouTube completed, opening another normal Chrome window; current
+window/profile reuse remains unverified. Next PC check: Check microphone → say
+“Open YouTube” → Finish (calibration only). Long speech delays, acoustic interruption,
+resource budget and hardware/commercial gates remain open. Later docs-only commits
+do not change app identity. Preview.10/.11 are superseded; evidence below is history.
 
 ## Previous preview.11 connected Voice review
 

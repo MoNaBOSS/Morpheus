@@ -1,6 +1,6 @@
 # Morpheus experience specification
 
-## Current preview.12 correction — cancellation during tray status refresh
+## Current preview.12 — connected Voice review
 
 Keep the connected Voice design. A final independent review reproduced stale
 renderer preferences when interaction cancellation discards a committed tray
@@ -9,8 +9,24 @@ validity now survives an unrelated interaction cancel, while stale capture
 callbacks remain invalid and cannot restart input. Permission/mute, authority
 and newer-setting guards remain enforced; 35 store cases and independent source
 review passed. Silence now invites a phrase retry with “I didn’t catch that”
-instead of implying unavailable microphone access. Qualify the exact small
-preview.12 amendment next. Preview.11 below records earlier scoped evidence.
+instead of implying unavailable microphone access. Final production build,
+generated-input conversation/silence journeys and normal packaged qualification
+passed for application source `05426874856222e3b5de946585e27087454b88dc`.
+The identified preview.12 now runs on the owner PC at Settings → Voice; original
+history/provider and saved voice settings remained intact. Actual microphone
+capture opened and gave an honest no-words retry, and the selected voice sample
+completed. Physical phrase recognition/wake/echo/audibility are still unaccepted.
+
+Actual typed Open YouTube completed without approval, opening a normal Chrome
+window while the prior window remained. Reuse of the current window/profile and
+removal of generic transient task copy remain improvements, not accepted behavior.
+Keep the scope of this Voice/mode correction explicit. Actual packaged motion,
+PCM and report are in outputs\preview12; exact identity/timings and open hardware,
+resource, latency and commercial gates belong to the current checklist.
+
+Next is one phrase in Check microphone, then companion wake/action acceptance.
+Do not restart the design/backend or redo already qualified source checks without
+new evidence. Preview.11 below records earlier scoped evidence.
 
 ## Current voice correction — October 4, preview.11 bounded review
 

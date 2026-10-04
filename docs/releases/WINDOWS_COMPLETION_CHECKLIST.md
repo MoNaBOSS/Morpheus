@@ -1,6 +1,6 @@
 # Current Windows experience completion checklist
 
-## Current preview.12 correction — final tray synchronization regression
+## Current preview.12 — connected Voice ready for bounded PC review
 
 Independent final review reproduced a preview.11 cache race: cancel an interaction
 while a committed tray settings reload is pending, and the discarded response can
@@ -15,12 +15,51 @@ helper and enforces master mute, but synchronization is not fully accepted.
 - [x] No-speech feedback says “I didn’t catch that”, with a Voice settings link
   and phrase retry. All four locales updated. Generated-input conversation and
   silent-input release/recovery Electron journeys passed.
-- [ ] Qualify exact final preview.12 package and replace the owner review app.
+- [x] Final frozen-source production build and two relevant Electron journeys
+  passed again. Normal preview.12 package qualification passed (E2E unset):
+  528 regular build files / 12 external resources matched, real included PCM
+  and Core result, compact/Settings/Advanced continuity, silent synthetic mode/
+  mute lifecycle, zero renderer errors and unchanged startup registration.
+- [x] Exact preview.12 now runs on the owner PC at Settings → Voice. Existing
+  history/provider were present and voice preference backup hashes still matched.
+  Physical explicit capture opened, then no words were recognized without a false
+  pass; the actual new retry headline/link were visible. Selected included sample
+  completed. No human phrase, spoken wake or physical audibility is accepted.
+- [x] Actual typed “Open YouTube” completed through Core without approval. Chrome
+  opened YouTube in another normal window; the previous browser window remained.
+  Current-window/profile selection is not verified, and a generic transient task
+  acknowledgement/result still appears. Do not advertise this as seamless spoken
+  command/browser continuity. No live paid-model connection was tested.
+- [x] Actual packaged clip, PCM WAV, qualification and physical observation report
+  are in this task's outputs\preview12. 629 frames decoded, about 25.2 seconds;
+  WAV mono 24 kHz / 16-bit, 364,498 data bytes / 7.594 seconds.
 
-Preserve source/profile/package history. Preview.11 evidence below remains scoped
-evidence; it is not the final accepted payload.
+Application source: `05426874856222e3b5de946585e27087454b88dc`. Local branch:
+`codex/morpheus-preview10-connected-voice`. Runtime **1.2.0-preview.12**.
+Review EXE: `E:\Morpheus-builds\experience-preview12-review\win-unpacked\Morpheus.exe`.
+Unsigned, unpacked review application; keep its folder intact. It is not an
+installer. EXE SHA256: `2c498c351a88455c6ffe346f7848a520db856deacf3cecac74286ec8bce6912b`.
+`resources/app.asar` SHA256:
+`082d24e2c2ac33b260facdbc368b1af83a16ff85418430df4010cfc02225560c`.
+Later documentation commits do not change this packaged application identity.
 
-## October 4 connected Voice correction — preview.11 ready for bounded review
+Cold packaged first PCM 4.647 s; first speaking 5.182 s; complete sample
+pipeline 13.450 s. Fresh Gateway 51.048 s. The WAV omits generation
+waits; the app-window recording has no audio track. Longer synthesis/model delays,
+echo-safe acoustic interruption, physical wake/accent/echo and long-session resource
+budget remain open. Native minimize and active-capture mute have source/unit
+coverage, not separate physical acceptance in this normal package run. Tray tests
+use its Main settings service rather than clicking the native menu.
+
+Exact next PC test: **Check microphone → say “Open YouTube” → Finish microphone
+check**. Expect those words; calibration does not execute a command. Then confirm
+companion wake/action and audibility. Public sale, signing/update, hosted funding,
+account/payment setup and planned NerdGPT integration remain open.
+
+Source/profile/package history is preserved. Preview.10 and preview.11 are
+superseded. Evidence below remains historical and scope-specific.
+
+## Previous October 4 preview.11 — preserved scoped review evidence
 
 Preview.10 normal packaged lifecycle checks passed, but actual owner-PC capture
 then exposed `[SOUND]` falsely passing the microphone test. Preview.10 is
