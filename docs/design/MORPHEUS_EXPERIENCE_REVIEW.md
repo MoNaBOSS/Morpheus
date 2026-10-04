@@ -10,7 +10,7 @@ services into accepted production behavior.
 
 Verified starting source: clean `2c8e625a1b8e941f8cdd96af84b62576f881686c`,
 `codex/morpheus-preview10-connected-voice`, expected origin fetched without
-overwriting. The owner is actually running preview.12 from its E: review folder.
+overwriting. The owner was running preview.12 from its E: review folder.
 Builds remain on E: (about 134.6 GiB free; C: about 8.7 GiB). Preserve all prior
 packages, divergent checkouts, profiles, history and provider secrets.
 
@@ -35,10 +35,22 @@ checks and 18 relevant rendered journeys passed. Generated-input speech retained
 all 661,356 PCM bytes with a maximum scheduled playback gap of 99.3 ms; this
 does not establish physical recognition, speaker quality or live-model latency.
 
-Exact next step: freeze the source, qualify and package preview.13. Final
-The Windows candidate is unsigned, with manual updates. Final handoff must
-distinguish tested package operation from physical speech/echo/wake,
-signing/update, resource/soak and hosted commercial gates. Earlier sections below
+Preview.13 is packaged from frozen application source
+`49b0feed7462ddefe6a9b5f50a740b4539c52389`. Normal E2E-off package qualification,
+actual motion/PCM and NSIS integrity/identity passed. Exact-source disposable
+Windows install/reinstall/retained-uninstall passed; its rebuilt installer bytes
+are distinct from the locally delivered installer. The owner now runs preview.13
+at Voice, with saved preferences unchanged and history/provider retained. The
+local sample completed; a real saved-service test rejected the existing credential.
+Repair it in secure Connections setup; never request credentials in chat.
+
+The application is delivered in outputs\Larry-Morpheus with its installer,
+short guide, checksums, evidence and actual media. The canonical checklist records
+exact hashes/scope. The Windows candidate is unsigned, with manual updates.
+Exact next step: Larry's bounded PC acceptance of installation, secure API setup,
+microphone phrase/audible sample and spoken local command. Public commercial
+release remains gated by physical speech/echo/wake, prior-version upgrade,
+signing/update, resource/soak and hosted operations. Earlier sections below
 are preserved evidence, not competing execution plans.
 
 ## Previous preview.12 — connected Voice review

@@ -4,9 +4,9 @@
 
 Owner authorized polished final application for Larry on October 4. Preserve
 the approved design/backend and qualify a real shareable installer. Starting
-source is clean `2c8e625a1b8e941f8cdd96af84b62576f881686c`, on
+source was clean `2c8e625a1b8e941f8cdd96af84b62576f881686c`, on
 `codex/morpheus-preview10-connected-voice`; expected origin fetched. Actual owner
-runtime is preview.12, not an assumed older installed build. E: has about
+runtime was preview.12 and is now the qualified preview.13. E: had about
 134.6 GiB free, C: about 8.7 GiB. All large builds/evidence stay on E:.
 
 - [x] Reverify actual source, remote, commit, clean worktree and running owner app.
@@ -24,19 +24,53 @@ runtime is preview.12, not an assumed older installed build. E: has about
   including four action locales, real included PCM, silence, arrival/motion,
   settings/draft continuity, saved connection and narrow first-success layout.
   Initial fixture/selector failures and their passing corrections are retained.
-- [ ] Frozen normal packaged qualification, real motion/PCM and protected clean profile.
-- [ ] Identified NSIS installer, exact payload/integrity and disposable install evidence.
-- [ ] Shareable EXE plus concise Larry setup/acceptance notes and remaining limits.
+- [x] Normal packaged qualification passed without E2E mode: fresh synthetic
+  onboarding, included PCM, real Core system report, saved-connection boundary,
+  compact/settings/Advanced/draft and native mode/mute lifecycle. All 530 build
+  files and 12 external resource identities matched; zero renderer errors.
+- [x] Actual 25.173-second chronological app-window clip and included PCM WAV
+  exported. No generated motion, loopback recording or physical audibility claim.
+- [x] Compiled unsigned NSIS verified: 40,926 paths/sizes, archive CRCs and 73
+  selected SHA256 identities matched the tested payload. A later runtime-only
+  debug.log was retained separately from the archive inventory; failure/correction
+  evidence remains. No installer was run on the owner's registration.
+- [x] Exact-source disposable Windows run 37188093903 passed install, normal
+  installed navigation/personality, same-version reinstall and default-uninstall
+  profile retention. The CI rebuilt installer has different bytes from delivery;
+  this is installation evidence for the same source, not execution of the local EXE.
+- [x] Owner preview.13 is open at Voice with settings/voice hashes unchanged,
+  original history and saved provider present, and selected local sample completed.
+  Live saved-service test returned credential rejection with actionable UI; no
+  paid-model inference was attempted. Repair the credential securely in Connections.
+- [x] Shareable EXE, guide, verification/identity JSON, checksums and real media
+  delivered in the current task's outputs\Larry-Morpheus. No owner profile/key included.
+
+Frozen application source: `49b0feed7462ddefe6a9b5f50a740b4539c52389`, pushed
+without force to `origin/codex/morpheus-phase6-managed-layer`. Later documentation
+commits do not change the application bytes. Runtime **1.2.0-preview.13**.
+Installer: `E:\Morpheus-builds\experience-preview13-share\Morpheus-1.2.0-preview.13-win-x64.exe`.
+489,372,338 bytes; unsigned/manual updates. Installer SHA256:
+`f794b1bf401417a4ea8badf92cc82f698192a2e14f5741ca352d232f0f000b7c`.
+Review EXE: `E:\Morpheus-builds\experience-preview13-share\win-unpacked\Morpheus.exe`.
+EXE SHA256: `e1c2585890e8369ab5093a163bf9aaaf440045e56c36dbfb7a11798933077dac`.
+ASAR SHA256: `7b0af26558edacbc59ee037e88c2f6071d1bfe2378b9ee0d19646951a96b96fd`.
+Normal cold first PCM 4.428 s / first speaking 4.933 s / sample pipeline 13.170 s;
+fresh Gateway 58.309 s. These are observations on this PC, not realtime guarantees.
 
 Hidden animation has existing state/reduced-motion coverage; a fresh long-session
 CPU/memory budget remains unaccepted. No public-sale readiness is inferred.
 Physical microphone phrase/wake/accent,
 speaker audibility/echo-safe acoustic interruption, multi-display/DPI/sleep and
 long mixed-use performance need their actual evidence. Signing, update feed,
-hosted funding/operations, account/payment setup and NerdGPT remain open. These
+hosted funding/operations, account/payment setup and NerdGPT remain open.
 The candidate is unsigned and updates are manual; no signed update service is
-accepted. External services do not block the local BYOK installer. Final identity and
-qualified scope will replace the pending rows here; preview.12 below is history.
+accepted. External services do not block the local BYOK installer. Previous-version
+upgrade and current Chrome window/profile reuse remain unverified.
+
+Exact next acceptance: Larry installs the supplied EXE, configures his own task
+API securely, checks a microphone phrase and audible sample, then runs one spoken
+local command. The short PC checklist is in START-HERE.md. A shareable evaluation
+candidate is complete; public sale remains gated. Preview.12 below is history.
 
 ## Previous preview.12 — connected Voice ready for bounded PC review
 

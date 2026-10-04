@@ -4,7 +4,7 @@ The owner authorizes a polished installable application to share with Larry.
 Continue the approved design and backend; preserve source, historical packages,
 profiles, conversations and credentials. Starting source was clean `2c8e625a`
 on `codex/morpheus-preview10-connected-voice`; verified origin fetched. Builds
-stay on E:. The actual owner app is preview.12 in its E: review folder.
+stay on E:. The actual owner app was preview.12 and now runs qualified preview.13.
 
 Preview.13 adds concise specific inline outcomes for safe website/app actions,
 optional detail results, useful local first-success examples and explicit saved
@@ -13,14 +13,21 @@ natural clauses after measurement exposed gaps from larger groups. Mute, capture
 cancel, scope and continuity remain with their existing owners. The single
 [specification](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) and
 [checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) govern exact current
-status and identity; qualification/package are pending until recorded there.
+status and identity. Qualification/package and the Larry delivery are complete
+for the installable evaluation candidate, with exact identities recorded there.
 
-Qualify the frozen normal app, actual motion/PCM, NSIS payload and disposable
-Windows installation, then provide the identified EXE and short Larry guide.
+Frozen application source is `49b0feed7462ddefe6a9b5f50a740b4539c52389`;
+the unsigned installer and guide are in this task's outputs\Larry-Morpheus.
+Normal packaged operation, actual motion/PCM, NSIS integrity and exact-source
+disposable install/reinstall/retained-uninstall passed. CI rebuilt installer
+bytes differ from the delivery. Owner history/provider and preference hashes
+were retained. A real saved connection was rejected; repair the credential
+in the application, not chat. The owner app is open at connected Voice settings.
 Basic/BYOK with included English voice is shareable. Hosted Premium, payment,
 NerdGPT, signing/update operations and physical speech/echo/resource/soak gates
 must not be called complete. No live keys in chat or owner profile in artifacts.
-Earlier next-step pauses and candidate identities below are historical.
+Next: Larry's short PC acceptance, including his own API and physical phrase/
+audible sample/command. Earlier pauses and candidate identities below are historical.
 
 ## Previous preview.12 connected Voice review
 
