@@ -12,7 +12,7 @@
   unavailable status and no checkout, wallet address or entitlement mutation.
 - [x] Package separate preview.16, qualify the normal runtime with isolated generated
   input, inspect actual installer bytes, and record real motion/local speech output.
-- [ ] Complete actual pinned preview.13→preview.16 Windows upgrade, retained settings/
+- [x] Complete actual pinned preview.13→preview.16 Windows upgrade, retained settings/
   protected credential bytes/memory/history, reinstall and profile-preserving uninstall.
 - [ ] Later external integration: Stripe lifecycle and confirmed contract payments
   with authenticated server-owned entitlement and replay/cancellation/refund tests.
@@ -70,14 +70,14 @@ before asserting native helper stop. Those fixtures were corrected without chang
 production cancellation. Full lint passed with the same 12 inherited refresh
 warnings. Harness validation/dry-run and 18 baseline harness tests passed; comms
 replay/comparison passed. Final literal-URL guard refinement passed 106 focused
-tests and scoped lint. The installed-upgrade policy passed eight cases, MJS syntax,
+tests and scoped lint. The final installed-upgrade policy passed nine cases, MJS syntax,
 scoped lint and six workflow PowerShell parser checks without executing an installer
 on the owner's PC. These checks do not replace installed qualification.
 
 Application checkpoint `b3a0bff50db7f27164acb24479ef2d7e7430ecc3`; clean qualification
-source (including the CI-only upgrade lane) `ce9bc7fb9e5b7efd3696bce301e754545a475f1d`.
+source (including the corrected CI-only upgrade lane) `f01ebe907b2b4e258a649ce9413a63fa257afe34`.
 Final Vite build and separate unsigned Windows build passed. Actual normal runtime:
-`E:\Morpheus-builds\experience-preview16-qualification\normal-1791139916751\qualification.json`.
+`E:\Morpheus-builds\experience-preview16-qualification\normal-1791141412735\qualification.json`.
 Every recorded check passed with zero renderer errors: new-user setup, protected
 account save and real invalid-account rejection, local voice readiness/output,
 Core report execution, compact spoken versus expanded quiet replies, generated
@@ -87,8 +87,8 @@ red appearance across full/compact/native plus a complete process restart.
 The first external test assumed the orb existed before any normal hide; its failure
 is preserved at `normal-1791139663192`. Corrected qualification uses actual normal
 muted hide/show and restores the window, without fabricated states or source edits.
-Gateway readiness was 7.2 seconds; the included sample's first PCM arrived at 2.38
-seconds and speaking at 2.87 seconds in this run. These are machine/run observations,
+Gateway readiness was 9.25 seconds; the included sample's first PCM arrived at 2.25
+seconds and speaking at 2.75 seconds in this run. These are machine/run observations,
 not a latency promise. The 32-second video is continuous app-window capture without
 audio; separate WAV is real included PCM supplied to playback, not speaker loopback.
 
@@ -103,10 +103,41 @@ installed the pinned preview.13 payload successfully, then failed before upgrade
 the new qualifier expected an unprefixed model, while preview.13 actually persists
 the provider-prefixed runtime model. Failure evidence is retained under
 `experience-preview16-qualification/installed-ce9bc7fb-failed-37225735543`.
-The qualifier is being corrected to assert the known old saved representation and
-require that exact saved selection through upgrade; no production change is needed.
-Do not mark upgrade checks complete until the corrected actual run passes. Signing,
-live paid/model services, measured voice-quality and physical Windows gates remain open.
+The qualifier now asserts the known old saved representation and requires that exact
+saved selection through upgrade; no production change was needed. Its corrected
+actual run [37227635782](https://github.com/MoNaBOSS/Morpheus/actions/runs/37227635782)
+passed, bound to `f01ebe907b2b4e258a649ce9413a63fa257afe34`. Both independently rebuilt
+installers were qualified: baseline preview.13 installer SHA256
+`58da8c15c609127e84130392d992ba2180b39a1c847bc97efbde161af35699d4`, current preview.16
+installer SHA256 `12549021caf1cc74f240f6b45ac0a82056b495882f0a43ea896a36129ebd3684`.
+Actual normal packaged baseline/first-current/returning-current identities were
+13/16/16, with E2E unset. Previous-version upgrade, exact opaque protected-store
+retention, memory/history/default/model preservation, same-version reinstall and
+profile-preserving uninstall all passed with no recorded errors. Evidence artifact
+`11312567759` and report SHA256
+`faa1339ec49ee155ef03c7cc1b1c9402f0736ba1689907b2563b865ca6596bc1` are retained at
+`experience-preview16-qualification/installed-f01ebe90`; bounded receipt:
+`experience-preview16-qualification/final-installed-summary.json`.
+A separate local normal packaged API/profile
+transition passed at `experience-preview16-qualification/api-migration-1791142293318`:
+the exact old model/default and metadata, local memory, completed Core history,
+preferences, mute and opaque protected-store bytes were retained by preview.16.
+Its first fixture stopped the old service while its initial startup was pending;
+failure `api-migration-1791142013921` remains preserved. Waiting for actual initial
+readiness corrected the test sequencing. No owner profile or real credential was
+used; this preflight does not execute an installer.
+The new delivery is
+`C:\Users\monir\Documents\Codex\2026-10-02\continue-morpheus-from-the-existing-project\outputs\Morpheus-Windows-BYOK-1.2.0-preview.16`.
+It contains the 492,489,809-byte local EXE identified above, actual motion/WAV,
+screenshots, BUILD-IDENTITY, VERIFICATION, portable voice diagnostics and START-HERE's
+five PC checks. All 14 artifact checksums independently passed; installer metadata
+is version `1.2.0-preview.16`, signature `NotSigned`. The delivered local installer
+was inspected, and separately rebuilt CI bytes were installed; these scopes are
+explicit in the handoff. Preview.15 and the owner's running preview.13 remain preserved.
+Signing, live paid/model services, measured voice-quality and physical Windows gates
+remain open. Next engineering step is explicit voice retry/correction, followed by
+physical command/echo/latency acceptance; do not substitute a larger model without
+checking the known regressions.
 
 ## Active correction — command intent, tray wake and spoken companion replies
 

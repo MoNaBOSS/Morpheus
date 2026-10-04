@@ -46,7 +46,7 @@ were not adopted. Strict transcripts/slots and all failures remain in the checkl
 Generated samples do not qualify human/acoustic behavior or a Siri-equivalence claim.
 
 October 5 package evidence: application checkpoint `b3a0bff5`, qualification source
-`ce9bc7fb9e5b7efd3696bce301e754545a475f1d`, version `1.2.0-preview.16`. The actual
+`f01ebe907b2b4e258a649ce9413a63fa257afe34`, version `1.2.0-preview.16`. The actual
 normal package passed connected settings, prepared payment choices, green/red
 authority separation, red persistence through process restart, real local PCM
 output, deterministic Core execution, generated selected-input wake/Whisper/Core,
@@ -57,13 +57,23 @@ no production change was needed. The passing run recorded no renderer errors.
 The actual installer passed CRCs, every payload path/size and 73 selected byte
 identities against that tested package. Signature status is `NotSigned`.
 
-Exact next work: finish the real pinned preview.13→preview.16 upgrade on a disposable
-Windows runner and publish its bounded receipt with the separate delivery. Its
-first run failed a qualifier expectation for preview.13's persisted model prefix
-before upgrade; preserve that failure and retest the corrected historical expectation.
-Actual
-32-second application motion and included-engine PCM evidence are recorded. Then
-address the measured recognition failures with an explicit retry/correction flow
+The real pinned preview.13→preview.16 upgrade on disposable Windows passed in
+run `37227635782`, including encrypted-store, settings, memory/history retention,
+same-version reinstall and profile-preserving uninstall. Its first run failed a
+qualifier expectation for preview.13's persisted model prefix before upgrade;
+that failure is preserved. The corrected qualifier's nine policy tests also passed.
+A separate exact-byte normal packaged preview.13→preview.16
+API/profile transition passed, retaining the actual old saved model/default, memory,
+task history, preferences, mute and opaque protected-key bytes. Its first fixture
+stopped the old service before initial startup completed; that failed evidence is
+retained, and the corrected fixture waits for actual readiness. No production change
+was needed. This local transition is not installation acceptance.
+Separate preview.16 delivery contains the identified local installer, checksums,
+real 32-second application motion, included-engine PCM and bounded qualification
+evidence in the task's `outputs/Morpheus-Windows-BYOK-1.2.0-preview.16`. The local
+EXE was inspected against the normally tested package; independent CI rebuild bytes
+were actually installed. This remains an unsigned evaluation candidate for Larry.
+Exact next work: address the measured recognition failures with an explicit retry/correction flow
 and physical command acceptance; do not hide them behind larger-model claims.
 Signing and live service availability remain blocked by the confirmed external
 inputs above. Successful older-build evidence never approves a changed package.

@@ -1,8 +1,8 @@
 # Current continuation — connected appearance/payment preview, 2026-10-05
 
-**Latest package under final qualification:** `1.2.0-preview.16`, application
+**Latest separate delivery:** `1.2.0-preview.16`, application
 checkpoint `b3a0bff5`, clean qualification source
-`ce9bc7fb9e5b7efd3696bce301e754545a475f1d`. Saved red appearance, meaningful state
+`f01ebe907b2b4e258a649ce9413a63fa257afe34`. Saved red appearance, meaningful state
 motion and connected payment-option presentation are real local features; they
 do not activate NerdGPT, a paid plan or execution authority. Original green and
 Advanced capabilities remain. Canonical command parsing improved, but the actual
@@ -13,8 +13,19 @@ generated selected-stream/native wake/Whisper/Core, reply scope/mute, connected
 settings, draft continuity and red persistence through process restart. The installer
 passed byte/integrity inspection and is **NotSigned**. Exact-source disposable
 previous-version upgrade run `37225735543` failed at its old-version model expectation
-before any upgrade; the corrected qualifier must pass an actual rerun. See the single current
-specification/checklist for evidence and remaining live/physical/voice-quality gates.
+before any upgrade. The corrected qualifier's nine policy tests and actual rerun
+`37227635782` passed upgrade/reinstall/profile-preserving uninstall using independently
+rebuilt CI installers. A separate normal packaged preview.13→preview.16 API/profile
+transition passed with the exact saved model/default, memory, task history, mute and
+opaque protected-store bytes retained; it does not replace installation acceptance.
+The new delivery is
+`C:\Users\monir\Documents\Codex\2026-10-02\continue-morpheus-from-the-existing-project\outputs\Morpheus-Windows-BYOK-1.2.0-preview.16`.
+Its local EXE SHA256 is `46eb353a49783ba6c54d7b53986d1c6f2c9cf1f6b7f3ff6b7d3ff81329acfdd3`;
+all 14 delivered evidence/media/installer checksums passed independent verification.
+The guide distinguishes normally tested local bytes from installed CI rebuild bytes.
+See the single current specification/checklist for evidence and remaining
+live/physical/voice-quality gates. Next: measured voice retry/correction and the
+five PC acceptance checks in the delivered START-HERE, using secure fresh BYOK setup.
 No certificate/service or Stripe account exists yet; the owner asks to prepare
 payment options now and connect later. Never relabel this as a signed stable release.
 Historical delivery evidence below remains tied to its own bytes.
