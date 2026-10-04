@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import YAML from 'yaml';
 // @ts-expect-error Native ESM qualification helper has no TS declaration.
-import { assertRetainedUpgradeState, assertUpgradeBaseline, QUALIFIED_BASELINE_SOURCE, QUALIFIED_BASELINE_VERSION, QUALIFIED_BASELINE_INSTALLER } from '../../scripts/windows/installed-upgrade-policy.mjs';
+import { assertInstalledProviderModel, assertRetainedUpgradeState, assertUpgradeBaseline, QUALIFIED_BASELINE_SOURCE, QUALIFIED_BASELINE_VERSION, QUALIFIED_BASELINE_INSTALLER } from '../../scripts/windows/installed-upgrade-policy.mjs';
 
 const installerHash = 'a'.repeat(64);
 const baseline = () => ({ source: QUALIFIED_BASELINE_SOURCE, version: QUALIFIED_BASELINE_VERSION,
@@ -41,6 +41,19 @@ describe('pinned installed previous-version qualification', () => {
       expect(() => assertRetainedUpgradeState(retained(), { ...retained(), ...change })).toThrow('were not retained');
     }
     expect(() => assertRetainedUpgradeState({}, retained())).toThrow('were not retained');
+  });
+  it('binds known preview.13 saved model semantics and requires that exact value after upgrade or reinstall', () => {
+    const model = 'fixture/installed-qualification';
+    const oldModel = `openrouter/${model}`;
+    expect(() => assertInstalledProviderModel(oldModel, model, { baseline: true })).not.toThrow();
+    expect(() => assertInstalledProviderModel(model, model)).not.toThrow();
+    expect(() => assertInstalledProviderModel(oldModel, model, { returning: true, previousModel: oldModel })).not.toThrow();
+    expect(() => assertInstalledProviderModel(model, model, { returning: true, previousModel: model })).not.toThrow();
+    expect(() => assertInstalledProviderModel(model, model, { baseline: true })).toThrow('saved qualification state');
+    expect(() => assertInstalledProviderModel(oldModel, model)).toThrow('saved qualification state');
+    expect(() => assertInstalledProviderModel(model, model, { returning: true, previousModel: oldModel })).toThrow('saved qualification state');
+    expect(() => assertInstalledProviderModel(oldModel, model, { returning: true })).toThrow('not the qualified fixture');
+    expect(() => assertInstalledProviderModel('other/model', model, { returning: true, previousModel: 'other/model' })).toThrow('not the qualified fixture');
   });
   it('builds the pinned baseline in a separate hosted job and requires its artifact before the guarded qualifier', () => {
     const workflow = YAML.parse(readFileSync(join(process.cwd(), '.github/workflows/morpheus-installed-windows.yml'), 'utf8'));

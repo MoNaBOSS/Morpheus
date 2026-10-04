@@ -37,3 +37,14 @@ export function assertRetainedUpgradeState(previous, current) {
     throw new Error('Previous-version protected account, preferences, memory or Core history were not retained.');
   }
 }
+
+export function assertInstalledProviderModel(actualModel, fixtureModel, { baseline = false, returning = false, previousModel } = {}) {
+  // Preview.13 persisted its full runtime reference when listing the selected
+  // account. Later versions retain that saved value instead of rewriting it.
+  const baselineModel = `openrouter/${fixtureModel}`;
+  if (returning && previousModel !== fixtureModel && previousModel !== baselineModel) {
+    throw new Error('Prior installed provider model is not the qualified fixture.');
+  }
+  const expected = returning ? previousModel : baseline ? baselineModel : fixtureModel;
+  if (actualModel !== expected) throw new Error('Installed provider model does not match its saved qualification state.');
+}

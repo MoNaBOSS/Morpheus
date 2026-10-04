@@ -12,7 +12,7 @@ import { createServer } from 'node:net';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assertRetainedUpgradeState, assertUpgradeBaseline, QUALIFIED_BASELINE_INSTALLER, QUALIFIED_BASELINE_VERSION } from './installed-upgrade-policy.mjs';
+import { assertInstalledProviderModel, assertRetainedUpgradeState, assertUpgradeBaseline, QUALIFIED_BASELINE_INSTALLER, QUALIFIED_BASELINE_VERSION } from './installed-upgrade-policy.mjs';
 
 const source = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const guid = '158f2966-6054-565d-9971-03340e4f42d9'; // NSIS UUID v5 of app.morpheus.desktop.
@@ -263,7 +263,14 @@ const runtime = async (returning, expectedVersion = pkg.version, screenshotName 
   }
   const accounts = await invoke('providers', 'accounts');
   assert.equal(accounts.length, 1, 'Synthetic provider count changed');
-  assert.equal(accounts[0].id, providerId); assert.equal(accounts[0].model, providerModel);
+  assert.equal(accounts[0].id, providerId);
+  const storedAccount = await invoke('providers', 'getAccount', { accountId: providerId });
+  assert.equal(storedAccount?.model, accounts[0].model, 'Listed provider model must match saved account metadata');
+  assertInstalledProviderModel(accounts[0].model, providerModel, {
+    baseline: expectedVersion === QUALIFIED_BASELINE_VERSION, returning,
+    previousModel: (record.checks.firstInstalledRuntime ?? record.checks.baselineInstalledRuntime)?.retention.account.model,
+  });
+  protectedProvider.model = accounts[0].model;
   assert.equal((await invoke('providers', 'getDefaultAccount')).accountId, providerId);
   assert.equal(await invoke('providers', 'hasAccountApiKey', { accountId: providerId }), true);
   protectedProvider.keyPresent = true;
