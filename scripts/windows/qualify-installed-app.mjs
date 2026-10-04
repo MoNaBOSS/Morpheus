@@ -12,6 +12,7 @@ import { createServer } from 'node:net';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertRetainedUpgradeState, assertUpgradeBaseline, QUALIFIED_BASELINE_INSTALLER, QUALIFIED_BASELINE_VERSION } from './installed-upgrade-policy.mjs';
 
 const source = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const guid = '158f2966-6054-565d-9971-03340e4f42d9'; // NSIS UUID v5 of app.morpheus.desktop.
@@ -97,14 +98,28 @@ const digest = async (path) => {
   for await (const chunk of createReadStream(path)) hash.update(chunk);
   return hash.digest('hex');
 };
+// The optional artifact is rebuilt from one pinned qualified source in its own
+// hosted job. A supplied baseline must validate before any installer is launched.
+const baselineDirectory = join(runnerTemp, 'morpheus-upgrade-baseline');
+if (process.argv.includes('--require-baseline')) assert(existsSync(baselineDirectory), 'Required pinned baseline artifact is missing; refuse partial qualification');
+let baseline;
+let baselineInstaller;
+if (existsSync(baselineDirectory)) {
+  assertInside(runnerTemp, await realpath(baselineDirectory));
+  assert(!(await lstat(baselineDirectory)).isSymbolicLink(), 'Baseline artifact directory is redirected');
+  baselineInstaller = join(baselineDirectory, QUALIFIED_BASELINE_INSTALLER);
+  baseline = assertUpgradeBaseline(JSON.parse(await readFile(join(baselineDirectory, 'baseline-provenance.json'), 'utf8')),
+    pkg.version, await digest(baselineInstaller));
+}
 const record = {
   source: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: source, encoding: 'utf8' }).trim(),
   version: pkg.version, machine, installer: { path: installer, sha256: await digest(installer) },
-  scope: 'Actual unsigned x64 NSIS install, installed normal runtime with an isolated synthetic profile, same-version reinstall and default uninstall on a clean disposable hosted Windows VM.',
+  scope: `Actual unsigned x64 NSIS install, installed normal runtime with an isolated synthetic profile, ${baseline ? 'pinned preview.13 upgrade, ' : ''}same-version reinstall and default uninstall on a clean disposable hosted Windows VM.`,
+  baseline: baseline ? { ...baseline, bytes: 'Independent CI rebuild; not the preserved local preview.13 installer' } : null,
   runtimeProfile: { mode: 'Normal application; E2E unset; fresh HOME and AppData beneath guarded RUNNER_TEMP', home: userHome, userData, state },
   installerEnvironment: 'Normal disposable runner; real per-user registration and shortcuts',
   defaultState: { path: defaultState, existedBefore: existsSync(defaultState), handling: 'Preserved; no reads, writes or deletion' },
-  exclusions: ['Previous-version upgrade', 'Owner installation/profile', 'Physical microphone/audio/wake', 'SmartScreen or interactive UAC', 'Signing, hosted accounts, live provider or payment'],
+  exclusions: [...(baseline ? [] : ['Previous-version upgrade']), 'Owner installation/profile', 'Physical microphone/audio/wake', 'SmartScreen or interactive UAC', 'Signing, hosted accounts, live provider or payment'],
   checks: {}, runs: [], errors: [],
 };
 const persist = () => writeFile(join(evidence, 'installed-app-qualification.json'), `${JSON.stringify(record, null, 2)}\n`);
@@ -154,7 +169,7 @@ Object.assign(env, { HOME: userHome, USERPROFILE: userHome, APPDATA: roaming, LO
   OPENCLAW_CONFIG_PATH: join(state, 'openclaw.json'),
   CLAWX_PORT_CLAWX_HOST_API: String(await port()), CLAWX_PORT_OPENCLAW_GATEWAY: String(await port()) });
 let active;
-const runtime = async (returning) => {
+const runtime = async (returning, expectedVersion = pkg.version, screenshotName = returning ? 'reinstalled' : 'installed') => {
   const { _electron, expect } = await import('@playwright/test');
   active = await _electron.launch({ executablePath: join(install, 'Morpheus.exe'), args: ['--lang=en-US'], env, timeout: 90_000 });
   let page = await active.firstWindow(); await page.waitForLoadState('domcontentloaded');
@@ -165,7 +180,7 @@ const runtime = async (returning) => {
   const identity = await active.evaluate(({ app }) => ({ packaged: app.isPackaged, version: app.getVersion(), executable: process.execPath,
     userData: app.getPath('userData'), home: process.mainModule.require('node:os').homedir(), state: process.env.OPENCLAW_STATE_DIR,
     e2e: process.env.CLAWX_E2E || null }));
-  assert(identity.packaged && !identity.e2e, 'Installed normal application required'); assert.equal(identity.version, pkg.version);
+  assert(identity.packaged && !identity.e2e, 'Installed normal application required'); assert.equal(identity.version, expectedVersion);
   assert.equal(identity.executable.toLowerCase(), join(install, 'Morpheus.exe').toLowerCase());
   assert.equal(identity.userData.toLowerCase(), userData.toLowerCase());
   assert.equal(identity.home.toLowerCase(), userHome.toLowerCase());
@@ -182,6 +197,8 @@ const runtime = async (returning) => {
   const providerId = 'installed-qualification-openrouter';
   const providerModel = 'fixture/installed-qualification';
   let protectedProvider;
+  let retainedMemory;
+  let coreRunId;
   if (!returning) {
     assert.equal((await invoke('providers', 'accounts')).length, 0, 'No task/voice account may be needed for readiness');
     await expect(page.getByTestId('activation-intro-name')).toBeVisible({ timeout: 20_000 });
@@ -192,30 +209,57 @@ const runtime = async (returning) => {
     await page.getByTestId('activation-first-request').fill('Show system information'); await page.getByTestId('activation-first-request').press('Enter');
     await expect(page.getByTestId('morpheus-activation')).toHaveCount(0);
     await expect.poll(async () => Object.values((await invoke('morpheus', 'objectiveSnapshot')).runsById).find((entry) => entry.objective === 'Show system information')?.state, { timeout: 30_000 }).toBe('complete');
+    coreRunId = Object.values((await invoke('morpheus', 'objectiveSnapshot')).runsById).find((entry) => entry.objective === 'Show system information' && entry.state === 'complete')?.objectiveRunId;
+    assert(coreRunId, 'Real local Core report identity missing');
+    const memory = await invoke('morpheus', 'saveMemory', { title: 'Synthetic installer preference',
+      text: 'Keep this synthetic local preference through the qualified upgrade.', kind: 'preference',
+      sensitivity: 'normal', providerUse: 'local-only', enabled: true });
+    assert(memory.memory?.memoryId, 'Synthetic Main-owned memory save failed');
+    retainedMemory = { memoryId: memory.memory.memoryId, title: memory.memory.title, text: memory.memory.text,
+      kind: memory.memory.kind, sensitivity: memory.memory.sensitivity, providerUse: memory.memory.providerUse, enabled: memory.memory.enabled };
     // Real installed Main and running owned Gateway, with an unmistakably fake
     // credential confined to this disposable profile. No validation/inference
     // request is sent. This exercises config/SecretRef/env delivery hidden by
     // stopped-service fixtures, then preserves the account through reinstall.
     const now = new Date().toISOString();
+    const isBaseline = expectedVersion === QUALIFIED_BASELINE_VERSION;
+    // Preview.13 predates the running-Gateway SecretRef delivery repair. Seed
+    // its synthetic account while stopped; current fresh installs still exercise
+    // the actual running-save path and the upgrade only tests preservation.
+    if (isBaseline) {
+      await invoke('gateway', 'stop');
+      await expect.poll(async () => (await invoke('gateway', 'status')).state).toBe('stopped');
+    }
     const saved = await invoke('providers', 'createAccount', {
       account: { id: providerId, vendorId: 'openrouter', label: 'Synthetic installed qualification',
         authMode: 'api_key', model: providerModel, enabled: true, isDefault: false,
         createdAt: now, updatedAt: now }, apiKey: 'synthetic-installed-qualification-no-real-service-access',
     });
     assert.equal(saved.success, true, `Running installed provider save failed: ${String(saved.error || '')}`);
-    await expect.poll(async () => (await invoke('gateway', 'status')).state, { timeout: 120_000 }).toBe('running');
+    if (!isBaseline) await expect.poll(async () => (await invoke('gateway', 'status')).state, { timeout: 120_000 }).toBe('running');
     const selected = await invoke('providers', 'setDefaultAccount', { accountId: providerId });
     assert.equal(selected.success, true, `Installed default selection failed: ${String(selected.error || '')}`);
-    protectedProvider = { accountId: providerId, model: providerModel, savedWhileRunning: true, noServiceRequest: true };
+    if (isBaseline) await invoke('gateway', 'start');
+    await expect.poll(async () => (await invoke('gateway', 'status')).state, { timeout: 120_000 }).toBe('running');
+    protectedProvider = { accountId: providerId, model: providerModel, savedWhileRunning: !isBaseline, noServiceRequest: true };
   } else {
     await active.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus')?.show());
     const onboarding = await invoke('morpheus', 'onboardingStatus');
     assert(onboarding.completed && onboarding.preferences.preferredName === 'CI Companion', 'Onboarding persistence failed');
-    assert.equal(onboarding.preferences.personality, record.checks.firstInstalledRuntime.personality, 'Personality persistence failed');
+    const priorRuntime = record.checks.firstInstalledRuntime ?? record.checks.baselineInstalledRuntime;
+    assert.equal(onboarding.preferences.personality, priorRuntime.personality, 'Personality persistence failed');
     assert.equal(voice.settings.enabled, false, 'Manual microphone mute did not persist');
     assert.equal(voice.settings.ambientEnabled, false, 'Ambient microphone state did not persist');
     await expect(page.getByTestId('morpheus-activation')).toHaveCount(0);
-    protectedProvider = { accountId: providerId, model: providerModel, retainedThroughReinstall: true, noServiceRequest: true };
+    protectedProvider = { accountId: providerId, model: providerModel,
+      ...(screenshotName === 'upgraded' ? { retainedThroughUpgrade: true } : { retainedThroughReinstall: true }), noServiceRequest: true };
+    retainedMemory = (await invoke('morpheus', 'memories')).memories.find((memory) => memory.memoryId === priorRuntime.retention.memory.memoryId);
+    assert(retainedMemory, 'Stored memory missing after application replacement');
+    retainedMemory = { memoryId: retainedMemory.memoryId, title: retainedMemory.title, text: retainedMemory.text,
+      kind: retainedMemory.kind, sensitivity: retainedMemory.sensitivity, providerUse: retainedMemory.providerUse, enabled: retainedMemory.enabled };
+    const priorRun = (await invoke('morpheus', 'objectiveSnapshot')).runsById[priorRuntime.retention.coreRunId];
+    assert(priorRun?.state === 'complete' && priorRun.objective === 'Show system information', 'Core report history missing after application replacement');
+    coreRunId = priorRun.objectiveRunId;
   }
   const accounts = await invoke('providers', 'accounts');
   assert.equal(accounts.length, 1, 'Synthetic provider count changed');
@@ -231,37 +275,88 @@ const runtime = async (returning) => {
   await page.getByTestId('morpheus-settings-return').click(); await expect(page.getByTestId('morpheus-command-input')).toHaveValue('Keep this draft through settings');
   await page.getByTestId('sidebar-nav-settings').click(); await page.getByTestId('morpheus-settings-advanced').click();
   await page.getByTestId('morpheus-advanced-chat').click(); await expect(page.getByTestId('chat-composer-input')).toBeVisible();
-  await page.screenshot({ path: join(evidence, returning ? 'reinstalled-advanced.png' : 'installed-advanced.png') });
+  await page.screenshot({ path: join(evidence, `${screenshotName}-advanced.png`) });
   await invoke('morpheus', 'updateVoiceSettings', { enabled: false, speakResponses: false, ambientEnabled: false });
   const onboarding = await invoke('morpheus', 'onboardingStatus');
+  const mutedVoice = await invoke('morpheus', 'voiceStatus');
+  const retention = { preferredName: onboarding.preferences.preferredName, personality: onboarding.preferences.personality,
+    microphoneEnabled: mutedVoice.settings.enabled, ambientEnabled: mutedVoice.settings.ambientEnabled,
+    account: { id: accounts[0].id, model: accounts[0].model, vendorId: accounts[0].vendorId, label: accounts[0].label,
+      authMode: accounts[0].authMode, enabled: accounts[0].enabled, baseUrl: accounts[0].baseUrl, apiProtocol: accounts[0].apiProtocol },
+    defaultAccountId: (await invoke('providers', 'getDefaultAccount')).accountId,
+    keyPresent: await invoke('providers', 'hasAccountApiKey', { accountId: providerId }), memory: retainedMemory, coreRunId };
+  if (returning) assertRetainedUpgradeState((record.checks.firstInstalledRuntime ?? record.checks.baselineInstalledRuntime).retention, retention);
   await invoke('gateway', 'stop'); await expect.poll(async () => (await invoke('gateway', 'status')).state).toBe('stopped');
   await active.close(); active = undefined;
   await waitUntil(() => JSON.parse(powershell(`ConvertTo-Json -InputObject @(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith(${quote(`${install}\\`)}, [StringComparison]::OrdinalIgnoreCase) } | Select-Object ProcessId) -Compress`)).length === 0, 'Installed process shutdown');
-  return { identity, includedVoiceReadyWithoutAccount: true, microphoneTested: false, audiblePlaybackTested: false, navigationAndDraft: true, advancedAvailable: true, personality: onboarding.preferences.personality, protectedProvider };
+  return { identity, includedVoiceReady: true, includedVoiceReadyWithoutAccount: !returning, profileOrigin: returning ? 'retained' : 'fresh',
+    microphoneTested: false, audiblePlaybackTested: false, navigationAndDraft: true, advancedAvailable: true,
+    personality: onboarding.preferences.personality, protectedProvider, retention };
+};
+const markers = [join(userData, 'morpheus/qualification-marker.json'), join(state, 'qualification-marker.json'),
+  join(defaultUserData, 'qualification-marker.json')];
+record.profileMarkers = markers;
+const seedProfileMarkers = async () => {
+  for (const path of markers) {
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, '{"synthetic":true,"keep":"previous-version upgrade, same-version reinstall and default uninstall"}\n');
+  }
+  return Promise.all(markers.map(digest));
+};
+const seedRuntimeSettings = async () => {
+  for (const path of [userData, local, env.XDG_CONFIG_HOME]) await mkdir(path, { recursive: true });
+  await writeFile(join(userData, 'settings.json'), JSON.stringify({ language: 'en', telemetryEnabled: false, launchAtStartup: false,
+    gatewayAutoStart: true, autoCheckUpdate: false, startMinimized: false, gatewayPort: Number(env.CLAWX_PORT_OPENCLAW_GATEWAY) }));
 };
 try {
-  await run(installer, ['/S', '/currentuser', `/D=${install}`], 'install');
+  let markerHashes;
+  const protectedStorePath = join(userData, 'clawx-provider-secrets.v1.json');
+  let protectedStoreHash;
+  const verifyProtectedStoreBytes = async () => assert.equal(await digest(protectedStorePath), protectedStoreHash,
+    'Opaque protected credential-store bytes changed during upgrade/reinstall/uninstall');
+  if (baseline) {
+    await run(baselineInstaller, ['/S', '/currentuser', `/D=${install}`], 'install-preview13-baseline');
+    const oldHashes = { application: await digest(join(install, 'Morpheus.exe')), archive: await digest(join(install, 'resources/app.asar')) };
+    assert.equal(oldHashes.application, baseline.applicationSha256, 'Baseline installed executable differs from built baseline');
+    assert.equal(oldHashes.archive, baseline.applicationArchiveSha256, 'Baseline installed archive differs from built baseline');
+    assert(registrations().some((entry) => entry.kind === 'uninstall' && entry.version === baseline.version), 'Baseline uninstall identity missing');
+    record.checks.baselineInstalledHashes = oldHashes;
+    await seedRuntimeSettings();
+    record.checks.baselineInstalledRuntime = await runtime(false, baseline.version, 'baseline');
+    protectedStoreHash = await digest(protectedStorePath);
+    record.checks.protectedStoreSha256BeforeUpgrade = protectedStoreHash;
+    markerHashes = await seedProfileMarkers();
+    await persist();
+  }
+  await run(installer, ['/S', '/currentuser', `/D=${install}`], baseline ? 'previous-version-upgrade' : 'install');
   record.checks.installedHashes = await verifyPayload(); record.checks.installRegistration = registrations();
   assert(record.checks.installRegistration.some((entry) => entry.kind === 'uninstall' && entry.version === pkg.version), 'Uninstall registration missing');
   assert(shortcuts.every(existsSync), 'Installed shortcuts missing');
-  for (const path of [userData, local, env.XDG_CONFIG_HOME]) await mkdir(path, { recursive: true });
-  await writeFile(join(userData, 'settings.json'), JSON.stringify({ language: 'en', telemetryEnabled: false, launchAtStartup: false, gatewayAutoStart: true, autoCheckUpdate: false, startMinimized: false, gatewayPort: Number(env.CLAWX_PORT_OPENCLAW_GATEWAY) }));
-  record.checks.firstInstalledRuntime = await runtime(false); await persist();
-  // The default-AppData sentinel additionally verifies real NSIS profile retention.
-  // It is newly created synthetic data, not a copy of any existing guest profile.
-  const markers = [join(userData, 'morpheus/qualification-marker.json'), join(state, 'qualification-marker.json'),
-    join(defaultUserData, 'qualification-marker.json')];
-  record.profileMarkers = markers;
-  for (const path of markers) { await mkdir(dirname(path), { recursive: true }); await writeFile(path, '{"synthetic":true,"keep":"same-version reinstall and default uninstall"}\n'); }
-  const markerHashes = await Promise.all(markers.map(digest));
+  if (baseline) {
+    await verifyProtectedStoreBytes();
+    assert.deepEqual(await Promise.all(markers.map(digest)), markerHashes, 'Profile marker bytes changed during previous-version upgrade');
+    assert.equal(await digest(join(root, 'install._rollback_0/resources/app.asar')), baseline.applicationArchiveSha256, 'Pinned old installation was not retained for rollback');
+    record.checks.firstInstalledRuntime = await runtime(true, pkg.version, 'upgraded');
+    await verifyProtectedStoreBytes();
+    record.checks.previousVersionUpgradePreservedMarkersAccountsMemoryHistoryAndRollback = true;
+  } else {
+    await seedRuntimeSettings();
+    record.checks.firstInstalledRuntime = await runtime(false);
+    protectedStoreHash = await digest(protectedStorePath);
+    markerHashes = await seedProfileMarkers();
+  }
+  await persist();
   await run(installer, ['/S', '/currentuser', `/D=${install}`], 'same-version-reinstall');
+  await verifyProtectedStoreBytes();
   assert.deepEqual(await Promise.all(markers.map(digest)), markerHashes, 'Profile bytes changed during reinstall');
   record.checks.reinstalledHashes = await verifyPayload();
   const backups = (await readdir(root)).filter((name) => /^install\._rollback_\d+$/.test(name));
-  assert.equal(backups.length, 1, 'Recoverable previous installation missing');
-  assert.equal(await digest(join(root, backups[0], 'resources/app.asar')), record.checks.installedHashes['resources/app.asar']);
+  assert.equal(backups.length, baseline ? 2 : 1, 'Recoverable previous installation missing');
+  const reinstalledBackup = baseline ? 'install._rollback_1' : 'install._rollback_0';
+  assert.equal(await digest(join(root, reinstalledBackup, 'resources/app.asar')), record.checks.installedHashes['resources/app.asar']);
   record.checks.sameVersionReinstallPreservedMarkersAndRollback = true;
   record.checks.returningInstalledRuntime = await runtime(true); await persist();
+  await verifyProtectedStoreBytes();
   const uninstaller = (await readdir(install)).find((name) => /^Uninstall Morpheus\.exe$/i.test(name));
   assert(uninstaller, 'Actual installed uninstaller missing');
   const copiedUninstaller = join(root, 'qualification-uninstaller.exe'); await copyFile(join(install, uninstaller), copiedUninstaller);
@@ -270,7 +365,9 @@ try {
   assert.deepEqual(registrations(), [], 'Uninstall registration remains');
   assert(shortcuts.every((path) => !existsSync(path)), 'Uninstall left product shortcuts');
   assert.deepEqual(await Promise.all(markers.map(digest)), markerHashes, 'Default uninstall erased profile bytes');
-  assert(existsSync(join(root, backups[0], 'resources/app.asar')), 'Default uninstall erased rollback');
+  for (const backup of backups) assert(existsSync(join(root, backup, 'resources/app.asar')), 'Default uninstall erased rollback');
+  await verifyProtectedStoreBytes();
+  record.checks.protectedCredentialStoreBytesPreservedThroughUpgradeReinstallUninstall = true;
   record.checks.defaultUninstallPreservedProfilesAndRollback = true;
 } catch (error) {
   record.errors.push(String(error)); process.exitCode = 1;

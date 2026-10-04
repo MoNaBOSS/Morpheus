@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/morpheus-installed-windows.yml
       - scripts/windows/qualify-installed-app.mjs
+      - scripts/windows/installed-upgrade-policy.mjs
       - src/lib/morpheus-speech-player.ts
       - src/components/morpheus/MorpheusConversationThread.tsx
       - shared/morpheus/voice-types.ts
@@ -25,10 +26,95 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  baseline-windows:
+    if: github.repository == 'MoNaBOSS/Morpheus' && github.ref == 'refs/heads/codex/morpheus-phase6-managed-layer'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout qualified preview.13 application source
+        uses: actions/checkout@v4
+        with:
+          ref: 49b0feed7462ddefe6a9b5f50a740b4539c52389
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+      - name: Guard disposable baseline build and pinned identity
+        shell: pwsh
+        run: |
+          if ($env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:USERNAME -ne 'runneradmin') { throw 'Disposable hosted Windows runner required' }
+          $drive = Get-PSDrive -Name ([IO.Path]::GetPathRoot($env:GITHUB_WORKSPACE).TrimEnd(':\'))
+          if ($drive.Free -lt 15GB) { throw 'Insufficient storage for isolated baseline build' }
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          if ((git rev-parse HEAD).Trim() -cne '49b0feed7462ddefe6a9b5f50a740b4539c52389' -or $pkg.version -cne '1.2.0-preview.13' -or $pkg.name -cne 'morpheus') { throw 'Pinned baseline source/version mismatch' }
+          git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
+          git config --global --add 'url.https://github.com/.insteadOf' 'ssh://git@github.com/'
+      - name: Install locked baseline dependencies
+        run: pnpm install --frozen-lockfile --config.side-effects-cache=false
+      - name: Complete baseline Electron build runtime
+        shell: pwsh
+        env:
+          force_no_cache: 'true'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Remove-Item Env:ELECTRON_SKIP_BINARY_DOWNLOAD -ErrorAction SilentlyContinue
+          $electronDir = node -p "require('path').dirname(require.resolve('electron/package.json'))"
+          if ($LASTEXITCODE -ne 0) { throw 'Baseline Electron resolution failed' }
+          $electronDir = [IO.Path]::GetFullPath($electronDir)
+          $dependencyRoot = [IO.Path]::GetFullPath((Join-Path $env:GITHUB_WORKSPACE 'node_modules')).TrimEnd('\') + '\'
+          if (-not $electronDir.StartsWith($dependencyRoot, [StringComparison]::OrdinalIgnoreCase)) { throw 'Baseline Electron outside checkout dependencies' }
+          $electronDist = Join-Path $electronDir 'dist'
+          foreach ($target in @($electronDist, (Join-Path $electronDir 'path.txt'))) {
+            $absolute = [IO.Path]::GetFullPath($target)
+            if (-not $absolute.StartsWith($electronDir.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Unsafe baseline Electron repair path' }
+            if (Test-Path -LiteralPath $absolute) {
+              if ((Get-Item -LiteralPath $absolute -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Baseline Electron repair target is redirected' }
+              Remove-Item -LiteralPath $absolute -Recurse -Force
+            }
+          }
+          New-Item -ItemType Directory -Path $electronDist | Out-Null
+          Push-Location $electronDir
+          try {
+            $zip = node -e "const {downloadArtifact}=require('@electron/get');const {version}=require('./package.json');downloadArtifact({version,artifactName:'electron',platform:'win32',arch:'x64',force:true}).then(p=>process.stdout.write(p)).catch(e=>{console.error(e);process.exit(1)});"
+            if ($LASTEXITCODE -ne 0) { throw 'Baseline Electron download failed' }
+          } finally { Pop-Location }
+          Expand-Archive -LiteralPath $zip -DestinationPath $electronDist -Force
+          if (-not (Test-Path -LiteralPath (Join-Path $electronDist 'electron.exe'))) { throw 'Baseline Electron binary missing' }
+          Set-Content -LiteralPath (Join-Path $electronDir 'path.txt') -Value 'electron.exe' -NoNewline
+      - name: Rebuild unsigned preview.13 baseline without owner data
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: pnpm run package:win
+      - name: Bind independent baseline bytes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $source = (git rev-parse HEAD).Trim()
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          $changes = @(git status --porcelain --untracked-files=no)
+          if ($source -cne '49b0feed7462ddefe6a9b5f50a740b4539c52389' -or $pkg.version -cne '1.2.0-preview.13' -or $changes.Count -ne 0) { throw 'Baseline source changed during build' }
+          if ((Get-Content electron-builder.yml -Raw) -notmatch '(?m)^appId: app\.morpheus\.desktop\s*$') { throw 'Baseline product identity mismatch' }
+          $installer = 'Morpheus-1.2.0-preview.13-win-x64.exe'
+          @{source=$source;version=$pkg.version;name=$pkg.name;appId='app.morpheus.desktop';trackedClean=$true;installerName=$installer;
+            installerSha256=(Get-FileHash -LiteralPath "release/$installer" -Algorithm SHA256).Hash.ToLowerInvariant();
+            applicationSha256=(Get-FileHash -LiteralPath 'release/win-unpacked/Morpheus.exe' -Algorithm SHA256).Hash.ToLowerInvariant();
+            applicationArchiveSha256=(Get-FileHash -LiteralPath 'release/win-unpacked/resources/app.asar' -Algorithm SHA256).Hash.ToLowerInvariant()
+          } | ConvertTo-Json | Set-Content -LiteralPath 'release/baseline-provenance.json' -Encoding utf8NoBOM
+      - name: Transfer only baseline installer and public byte provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: morpheus-preview13-baseline-${{ github.run_id }}
+          path: |
+            release/Morpheus-1.2.0-preview.13-win-x64.exe
+            release/baseline-provenance.json
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
   installed-windows:
     if: github.repository == 'MoNaBOSS/Morpheus' && github.ref == 'refs/heads/codex/morpheus-phase6-managed-layer'
     runs-on: windows-latest
-    timeout-minutes: 30
+    needs: baseline-windows
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v6
@@ -96,8 +182,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'NSIS safety patch failed' }
           node scripts/run-electron-builder.mjs --win --x64 --publish never
           if ($LASTEXITCODE -ne 0) { throw 'Unsigned x64 installer build failed' }
-      - name: Qualify real installation and same-version reinstall
-        run: node scripts/windows/qualify-installed-app.mjs
+      - name: Receive pinned baseline from isolated build job
+        uses: actions/download-artifact@v4
+        with:
+          name: morpheus-preview13-baseline-${{ github.run_id }}
+          path: ${{ runner.temp }}/morpheus-upgrade-baseline
+      - name: Qualify real previous-version upgrade and same-version reinstall
+        run: node scripts/windows/qualify-installed-app.mjs --require-baseline
       - name: Upload bounded qualification evidence
         if: always()
         uses: actions/upload-artifact@v4
