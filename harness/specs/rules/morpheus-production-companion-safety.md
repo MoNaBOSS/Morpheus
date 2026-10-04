@@ -53,6 +53,13 @@ turn, but Renderer follow-up state is not a grant and cannot widen execution
 authority. Local detector failure must never enable
 cloud monitoring implicitly. Configuration changes invalidate pending transcripts.
 
+Saved companion listening consent is separate from foreground presentation.
+Visible full/compact conversation and Settings suspend automatic microphone and
+wake activity through Main-owned scope; only explicit microphone input may run
+there. Returning to a hidden/minimized companion may resume saved consent, never
+enable it. Master mute stops all capture. Capture errors take precedence over
+armed/listening labels; installed voice assets do not establish an input test.
+
 Streaming speech must be correlated, sequenced, byte-bounded and transient.
 Record speech-start before the first audio chunk. Playback failure must cancel
 pending generation; a preview must report the engine that actually completed.

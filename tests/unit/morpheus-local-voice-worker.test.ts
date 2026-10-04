@@ -29,6 +29,18 @@ async function start(worker: ReturnType<typeof create>, onPcm = vi.fn(), signal 
 }
 
 describe('bounded included synthesis worker', () => {
+  it('releases an unfinished preparation while preserving a newer admitted utterance', async () => {
+    const worker = create();
+    const pending = worker.warm();
+    const cancelled = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    worker.releaseWarm(); await cancelled;
+    expect(children[0].kill).toHaveBeenCalledOnce();
+    const next = await start(worker);
+    worker.releaseWarm();
+    expect(next.child.kill).not.toHaveBeenCalled();
+    next.child.pcm(next.id); next.child.done(next.id); await next.pending;
+    worker.releaseWarm(); expect(next.child.kill).toHaveBeenCalledOnce(); worker.dispose();
+  });
   it('reuses one warmed process across replies, streams PCM, and unloads on idle', async () => {
     const worker = create(), warming = worker.warm();
     children[0].ready(); await warming;

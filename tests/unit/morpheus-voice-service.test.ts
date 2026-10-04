@@ -65,6 +65,7 @@ function createHarness(options?: {
   getPersonaContext?: Parameters<typeof createMorpheusVoiceService>[0]['getPersonaContext'];
   startLocalWake?: Parameters<typeof createMorpheusVoiceService>[0]['startLocalWake'];
   emitSpeechChunk?: Parameters<typeof createMorpheusVoiceService>[0]['emitSpeechChunk'];
+  isCompanionVoiceScope?: () => boolean;
 }) {
   const userDataDir = mkdtempSync(join(tmpdir(), 'morpheus-voice-'));
   temporaryDirectories.push(userDataDir);
@@ -97,6 +98,7 @@ function createHarness(options?: {
     getPersonaContext: options?.getPersonaContext,
     startLocalWake: options?.startLocalWake,
     emitSpeechChunk: options?.emitSpeechChunk,
+    isCompanionVoiceScope: options?.isCompanionVoiceScope,
     emitPresence: (presence) => {
       presenceEvents.push(presence.state);
       auditOrder.push(`emit:${presence.state}`);
@@ -106,6 +108,141 @@ function createHarness(options?: {
 }
 
 describe('Morpheus voice service', () => {
+  it('keeps companion voice consent while native foreground scope prevents automatic wake and capture', async () => {
+    let companion = false;
+    const stop = vi.fn(), startLocalWake = vi.fn(() => ({ ready: Promise.resolve(), stop }));
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Open YouTube'), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, startLocalWake, isCompanionVoiceScope: () => companion });
+    await h.service.updateSettings({ ambientEnabled: true });
+    expect(startLocalWake).not.toHaveBeenCalled();
+    expect(await h.service.status()).toMatchObject({ settings: { ambientEnabled: true }, presence: { state: 'asleep' } });
+    await expect(h.service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' })).resolves.toMatchObject({ transcript: 'Open YouTube' });
+    companion = true; await h.service.reconcileAmbientScope();
+    expect(startLocalWake).not.toHaveBeenCalled();
+    await h.service.beginAmbientSession();
+    expect(startLocalWake).toHaveBeenCalledOnce(); expect(h.service.presence().state).toBe('armed');
+    companion = false; await h.service.reconcileAmbientScope();
+    expect(stop).toHaveBeenCalledOnce(); expect(h.service.presence().state).toBe('asleep');
+    await expect(h.service.setAmbientListening(true)).rejects.toMatchObject({ name: 'AbortError' });
+    expect(h.service.setSpeaking(false).state).toBe('asleep');
+    await h.service.updateSettings({ enabled: false });
+    expect((await h.service.status()).settings).toMatchObject({ enabled: false, ambientEnabled: true });
+    companion = true; await h.service.reconcileAmbientScope(); expect(startLocalWake).toHaveBeenCalledOnce(); h.service.dispose();
+  });
+
+  it('rapid foreground and companion transitions invalidate a starting wake helper without publishing a failure', async () => {
+    let companion = true, rejectReady!: (error: Error) => void;
+    const stops: ReturnType<typeof vi.fn>[] = [];
+    const startLocalWake = vi.fn(() => {
+      const first = stops.length === 0;
+      const ready = first ? new Promise<void>((_resolve, reject) => { rejectReady = reject; }) : Promise.resolve();
+      const stop = vi.fn(() => { if (first) rejectReady(new DOMException('Cancelled', 'AbortError')); });
+      stops.push(stop); return { ready, stop };
+    });
+    const h = createHarness({ localVoice: { ready: () => true, transcribe: vi.fn(), synthesize: vi.fn() },
+      startLocalWake, isCompanionVoiceScope: () => companion });
+    const starting = h.service.updateSettings({ ambientEnabled: true });
+    const interrupted = expect(starting).rejects.toMatchObject({ name: 'AbortError' });
+    await vi.waitFor(() => expect(startLocalWake).toHaveBeenCalledOnce());
+    companion = false; const ending = h.service.reconcileAmbientScope();
+    expect(stops[0]).toHaveBeenCalledOnce(); expect(h.service.presence().state).toBe('asleep');
+    companion = true; const restored = h.service.beginAmbientSession();
+    await ending; await interrupted; await restored;
+    expect(startLocalWake).toHaveBeenCalledTimes(2); expect(h.service.presence().state).toBe('armed');
+    expect(h.presenceEvents).not.toContain('error'); h.service.dispose();
+  });
+
+  it('cannot publish a completed ambient capture audit after native scope changes', async () => {
+    let companion = true, wake!: () => void;
+    const h = createHarness({ localVoice: { ready: () => true, transcribe: vi.fn(), synthesize: vi.fn() },
+      isCompanionVoiceScope: () => companion, startLocalWake: ({ onWake }) => { wake = onWake; return { ready: Promise.resolve(), stop: vi.fn() }; } });
+    await h.service.updateSettings({ ambientEnabled: true });
+    wake(); await new Promise(resolve => setTimeout(resolve, 0));
+    let audit!: () => void;
+    h.recordControl.mockImplementationOnce(() => new Promise<void>(resolve => { audit = resolve; }));
+    const capture = h.service.setAmbientListening(true);
+    const invalidated = expect(capture).rejects.toMatchObject({ name: 'AbortError' });
+    companion = false; await h.service.reconcileAmbientScope(); audit(); await invalidated;
+    expect(h.service.presence().state).toBe('asleep');
+    expect(h.presenceEvents).not.toContain('listening'); h.service.dispose();
+  });
+
+  it('explicit preparation loads only enabled included output and is invalidated and released by mute', async () => {
+    let finish!: () => void;
+    const localVoice = { ready: () => true, transcribe: vi.fn(), synthesize: vi.fn(),
+      warm: vi.fn(() => new Promise<void>(resolve => { finish = resolve; })), releaseWarm: vi.fn() };
+    const h = createHarness({ localVoice });
+    const preparing = h.service.prepareOutput();
+    const invalidated = expect(preparing).rejects.toMatchObject({ name: 'AbortError' });
+    await h.service.updateSettings({ enabled: false }); finish(); await invalidated;
+    expect(localVoice.releaseWarm).toHaveBeenCalledOnce();
+    expect(await h.service.prepareOutput()).toEqual({ prepared: false });
+    expect(localVoice.warm).toHaveBeenCalledOnce(); expect(h.fetchImpl).not.toHaveBeenCalled();
+    h.service.dispose();
+    const provider = createHarness(); expect(await provider.service.prepareOutput()).toEqual({ prepared: false });
+    expect(provider.fetchImpl).not.toHaveBeenCalled(); provider.service.dispose();
+  });
+
+  it('manual mute vetoes input and stops native wake before its settings audit or disk commit finishes', async () => {
+    let wake!: (command?: string) => void, completeTranscript!: (value: string) => void;
+    const stop = vi.fn();
+    const h = createHarness({ localVoice: { ready: () => true, synthesize: vi.fn(),
+      transcribe: vi.fn(() => new Promise<string>(resolve => { completeTranscript = resolve; })) },
+    startLocalWake: ({ onWake }) => { wake = onWake; return { ready: Promise.resolve(), stop }; } });
+    await h.service.updateSettings({ ambientEnabled: true });
+    const transcript = h.service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' });
+    const rejected = expect(transcript).rejects.toMatchObject({ name: 'AbortError' });
+    let commit!: () => void;
+    h.recordControl.mockImplementation((entry) => entry.event === 'settings-updated'
+      ? new Promise<void>(resolve => { commit = resolve; }) : Promise.resolve());
+    const mute = h.service.updateSettings({ enabled: false });
+    expect(stop).toHaveBeenCalledOnce(); expect(h.service.presence().state).toBe('asleep');
+    expect((await h.service.status()).settings).toMatchObject({ enabled: false, ambientEnabled: true });
+    wake('Open YouTube'); await h.service.reconcileAmbientScope();
+    await expect(h.service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' })).rejects.toThrow('disabled');
+    completeTranscript('Open YouTube'); await rejected;
+    expect(h.service.presence().wakeCommand).toBeUndefined();
+    commit(); await mute; h.service.dispose();
+  });
+
+  it('late follow-up audit cannot re-arm a foreground conversation or stop a newer companion session', async () => {
+    let companion = true, wake!: () => void, releaseAudit!: (error?: Error) => void;
+    const stops: ReturnType<typeof vi.fn>[] = [];
+    const h = createHarness({ localVoice: { ready: () => true, synthesize: vi.fn(), transcribe: vi.fn() },
+      isCompanionVoiceScope: () => companion, startLocalWake: ({ onWake }) => {
+        wake = onWake; const stop = vi.fn(); stops.push(stop); return { ready: Promise.resolve(), stop };
+      } });
+    await h.service.updateSettings({ ambientEnabled: true });
+    h.recordControl.mockImplementation((entry) => entry.event === 'conversation-started'
+      ? new Promise<void>((resolve, reject) => { releaseAudit = (error) => error ? reject(error) : resolve(); }) : Promise.resolve());
+    wake(); await vi.waitFor(() => expect(releaseAudit).toBeTypeOf('function'));
+    companion = false; await h.service.reconcileAmbientScope();
+    h.presenceEvents.length = 0; releaseAudit(); await new Promise(resolve => setTimeout(resolve, 0));
+    expect(h.service.presence()).toMatchObject({ state: 'asleep' });
+    expect(h.service.presence().followUpUntil).toBeUndefined(); expect(h.presenceEvents).toEqual([]);
+    companion = true; await h.service.beginAmbientSession();
+    expect(stops[1]).not.toHaveBeenCalled(); h.service.dispose();
+  });
+
+  it('a failed old follow-up audit cannot stop or overwrite a newer companion session', async () => {
+    let companion = true, wake!: () => void, rejectAudit!: (error: Error) => void;
+    const stops: ReturnType<typeof vi.fn>[] = [];
+    const h = createHarness({ localVoice: { ready: () => true, synthesize: vi.fn(), transcribe: vi.fn() },
+      isCompanionVoiceScope: () => companion, startLocalWake: ({ onWake }) => {
+        wake = onWake; const stop = vi.fn(); stops.push(stop); return { ready: Promise.resolve(), stop };
+      } });
+    await h.service.updateSettings({ ambientEnabled: true });
+    h.recordControl.mockImplementation((entry) => entry.event === 'conversation-started'
+      ? new Promise<void>((_resolve, reject) => { rejectAudit = reject; }) : Promise.resolve());
+    wake(); await vi.waitFor(() => expect(rejectAudit).toBeTypeOf('function'));
+    companion = false; await h.service.reconcileAmbientScope();
+    companion = true; await h.service.beginAmbientSession();
+    h.presenceEvents.length = 0; rejectAudit(new Error('Audit unavailable'));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(stops[1]).not.toHaveBeenCalled(); expect(h.service.presence().state).toBe('armed');
+    expect(h.presenceEvents).toEqual([]); h.service.dispose();
+  });
+
   it.each(['[BLANK_AUDIO', '(wind blowing)', '[Music] [silence]', ''])('rejects local non-speech %j before a transcript can reach a draft or routing', async text => {
     const localVoice = { ready: () => true, transcribe: vi.fn(async () => text), synthesize: vi.fn() };
     const h = createHarness({ localVoice });

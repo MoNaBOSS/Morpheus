@@ -77,6 +77,8 @@ export function createMorpheusSpeechWorker(options: WorkerOptions) {
   };
   return {
     async warm() { const current = get(); await current.ready; armIdle(current); },
+    /** Release preparation without interrupting a newer admitted utterance. */
+    releaseWarm() { if (worker && !worker.requested) stop(worker); },
     async synthesize(text: string, voice: MorpheusSpeechVoice, signal: AbortSignal, onPcm: (audio: Buffer) => void) {
       if (signal.aborted || disposed) throw cancelled();
       if (!text.trim() || text.length > MORPHEUS_SPEECH_MAX_TEXT_CHARS) throw new Error('Speech text is empty or exceeds the permitted length.');

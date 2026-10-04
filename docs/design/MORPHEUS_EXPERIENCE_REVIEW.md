@@ -1,5 +1,43 @@
 # Morpheus experience specification
 
+## Current voice correction — October 4, implementation authorized
+
+The owner enabled microphone access and requested a connected Voice settings
+experience, faster natural listening/execution and more fluid motion. Preserve the
+approved identity, conversation, settings, backend and profiles. Companion voice
+commands are an explicit saved preference. Automatic capture and wake detection
+run only in companion scope (main conversation hidden/minimized); opening full,
+compact or Settings suspends them. Chat accepts typed input by default and uses
+the microphone only after an explicit press. Returning to companion restores
+saved consent; master microphone mute always wins. Hiding never enables consent.
+
+Group companion command consent and master mute, microphone/device/input test,
+and selected natural sound/output sample together. Keep secondary captions and
+provider options available without overwhelming the essential controls. An engine
+being installed is not a successful microphone test. Errors override armed-state
+labels and lead to the relevant repair controls without losing the conversation.
+
+Live preview.9 inspection after the owner's permission change opened actual
+microphone capture successfully. The finished test detected no speech; recognition
+and physical speaker/echo quality are not verified. The same UI incorrectly said
+"Morpheus is listening for you" beside its no-speech error. Prior measured cold
+output and chunk gaps remain latency evidence; cosmetic motion is not a latency
+fix. Automatic echo-safe acoustic interruption remains unimplemented.
+
+A short real bundled-engine observation emitted "Opening YouTube" PCM after
+2.209 s cold, versus 1.052 s after 1.109 s preparation. Preparation is useful
+only when overlapped with recording; it does not remove recognition or playback
+latency. The standard engine remains local CPU Whisper/Kokoro. Keep the measured
+900 ms explicit / 1000 ms companion end-of-speech thresholds until real speech
+pause/accent evidence supports tuning. A prepared worker can remain cached for
+up to 60 seconds after an ordinary Stop; mute/output-off, configuration change
+and shutdown release it. No perpetual idle warming or paid fallback.
+
+Next: implement and qualify this bounded Voice/mode component, with compositor
+motion driven by real input/output levels, then deliver a separately identified
+Windows review app and short actual motion/audio evidence. Preserve preview.9
+and historical work. This does not close commercial release or hardware gates.
+
 ## Current correction — preview.9 review build
 
 The owner authorized the bounded correction after the preview.8 rejection below.

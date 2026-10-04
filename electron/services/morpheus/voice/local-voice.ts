@@ -15,6 +15,7 @@ export interface MorpheusLocalVoice {
   synthesize(text: string, voice: MorpheusSpeechVoice, signal: AbortSignal): Promise<Buffer>;
   synthesizeStream?(text: string, voice: MorpheusSpeechVoice, signal: AbortSignal, onPcm: (audio: Buffer) => void): Promise<void>;
   warm?(): Promise<void>;
+  releaseWarm?(): void;
   dispose?(): void;
 }
 
@@ -110,6 +111,7 @@ export function createMorpheusLocalVoice(root: string, temporaryRoot: string): M
     synthesize,
     synthesizeStream,
     async warm() { assertReady(); await worker.warm(); },
+    releaseWarm() { worker.releaseWarm(); },
     dispose() { worker.dispose(); for (const stop of subprocessStops) stop(); },
   };
 }

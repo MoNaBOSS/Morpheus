@@ -33,7 +33,8 @@ export function MorpheusLiveVoiceCaption({ surface, onEdit, onRepair }: {
   const active = phase === 'listening' || phase === 'requesting' || phase === 'transcribing';
   const failed = phase === 'error';
   const caption = mode === 'always' ? transcript : recent;
-  const errorKey = errorKind === 'permission' ? 'morpheus.experience.voice.permission'
+  const errorKey = errorKind === 'muted' ? 'morpheus.experience.voice.panel.microphoneMuted'
+    : errorKind === 'permission' ? 'morpheus.experience.voice.permission'
     : errorKind === 'speech' ? 'morpheus.voice.dialogue.speechFailed'
       : `morpheus.voice.${errorKind === 'device' ? 'deviceBody' : errorKind === 'repeat' ? 'repeatBody'
         : errorKind === 'network' ? 'networkBody' : errorKind === 'configuration' ? 'configurationBody' : 'errorBody'}`;

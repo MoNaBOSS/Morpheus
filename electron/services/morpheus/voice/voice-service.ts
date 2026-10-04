@@ -88,6 +88,8 @@ export interface MorpheusVoiceService {
   transcribe(payload: MorpheusTranscribeAudioPayload): Promise<MorpheusTranscriptionResult>;
   synthesize(payload: MorpheusSynthesizeSpeechPayload): Promise<MorpheusSynthesizeSpeechResult>;
   cancelSpeech(): void;
+  prepareOutput(): Promise<{ prepared: boolean }>;
+  reconcileAmbientScope(): Promise<void>;
   invalidateService?(): void;
   beginAmbientSession(): Promise<MorpheusVoicePresence>;
   endAmbientSession(): Promise<MorpheusVoicePresence>;
@@ -279,6 +281,8 @@ export function createMorpheusVoiceService(options: {
   startLocalWake?: typeof startWindowsWake;
   getManagedRuntime?: () => ManagedRuntimeBridge | null;
   localVoice?: MorpheusLocalVoice;
+  /** Main-owned native visibility; foreground conversations require an explicit microphone press. */
+  isCompanionVoiceScope?: () => boolean;
 }): MorpheusVoiceService {
   const now = options.now ?? (() => new Date());
   const transcriptionTimeoutMs = options.transcriptionTimeoutMs ?? MORPHEUS_VOICE_PROVIDER_TIMEOUT_MS;
@@ -290,7 +294,15 @@ export function createMorpheusVoiceService(options: {
   let speechGeneration = 0;
   let authorityRevision = 0;
   let ambientStarting: Promise<MorpheusVoicePresence> | null = null;
+  let ambientStartingRevision = 0;
   let ambientStartRevision = 0;
+  let preparationRevision = 0;
+  let settingsUpdateRevision = 0;
+  let inputVeto = false;
+  let disposed = false;
+  const inputAllowed = () => !disposed && settings.enabled && !inputVeto;
+  const companionVoiceAllowed = () => inputAllowed() && (options.isCompanionVoiceScope?.() ?? true);
+  const effectiveSettings = () => ({ ...structuredClone(settings), enabled: inputAllowed() });
   let managedAvailability: { runtime: ManagedRuntimeBridge; generation: number; voice: string; until: number;
     result: ReturnType<typeof managedVoiceAvailability> } | null = null;
   const managedStatus = (runtime: ManagedRuntimeBridge, voice = settings.speechVoice) => {
@@ -317,8 +329,10 @@ export function createMorpheusVoiceService(options: {
   let followUpUntil = 0;
   let followUpTimer: ReturnType<typeof setTimeout> | null = null;
   let followUpPending = false;
+  let followUpRevision = 0;
   const transcriptions = new Map<AbortController, boolean>();
   const clearFollowUp = (): void => {
+    followUpRevision += 1;
     if (followUpTimer) clearTimeout(followUpTimer);
     followUpTimer = null;
     followUpUntil = 0;
@@ -340,7 +354,7 @@ export function createMorpheusVoiceService(options: {
   const publish = (state: MorpheusVoicePresenceState, reason?: string, wakeCommand?: string): MorpheusVoicePresence => {
     // Warm only during an actual addressed interaction, never on idle wake monitoring.
     // Input/audio authority is unchanged; this only loads the offline output model.
-    if (settings.speakResponses && settings.engine !== 'provider' && ['listening', 'transcribing', 'understanding'].includes(state)) {
+    if (inputAllowed() && settings.speakResponses && settings.engine !== 'provider' && ['listening', 'transcribing', 'understanding'].includes(state)) {
       void options.localVoice?.warm?.().catch(() => undefined);
     }
     currentPresence = {
@@ -366,24 +380,30 @@ export function createMorpheusVoiceService(options: {
     && Date.now() - conversationStartedAt <= MORPHEUS_VOICE_CONVERSATION_MAX_MS
     && conversationTurn < MORPHEUS_VOICE_CONVERSATION_MAX_TURNS;
   const openFollowUp = async (reason: 'wake' | 'result'): Promise<void> => {
-    if (!ambientSession || !settings.handsFreeFollowUp && reason === 'result') return;
+    if (!companionVoiceAllowed() || !ambientSession || !settings.handsFreeFollowUp && reason === 'result') return;
+    const session = ambientSession, scopeRevision = ambientStartRevision;
     if (reason === 'wake' || !conversationActive()) {
       conversationStartedAt = Date.now();
       conversationTurn = 0;
     }
     if (!conversationActive()) return;
     clearFollowUp();
+    const windowRevision = followUpRevision;
     conversationTurn += 1;
     followUpUntil = Date.now() + MORPHEUS_VOICE_FOLLOW_UP_MS;
     if (settings.localWakeEnabled) localAddressUntil = followUpUntil;
     await options.audit.recordControl({
       category: 'voice', event: reason === 'wake' ? 'conversation-started' : 'follow-up-opened',
-      subjectId: ambientSession.sessionId,
+      subjectId: session.sessionId,
       details: { turn: conversationTurn, expiresInMs: MORPHEUS_VOICE_FOLLOW_UP_MS },
       appVersion: options.appVersion,
     });
+    if (!companionVoiceAllowed() || ambientSession !== session || scopeRevision !== ambientStartRevision
+      || windowRevision !== followUpRevision) return;
     publish('armed');
     followUpTimer = setTimeout(() => {
+      if (!companionVoiceAllowed() || ambientSession !== session || scopeRevision !== ambientStartRevision
+        || windowRevision !== followUpRevision) return;
       clearFollowUp();
       followUpPending = false;
       publish('armed');
@@ -408,17 +428,17 @@ export function createMorpheusVoiceService(options: {
   const status = async (): Promise<MorpheusVoiceStatus> => {
     if (options.localVoice && settings.engine !== 'provider') {
       const ready = options.localVoice.ready();
-      return { settings: { ...structuredClone(settings), engine: 'local' }, presence: structuredClone(currentPresence), providers: [],
-        transcriptionAvailable: settings.enabled && ready, neuralSpeechAvailable: ready, captureFormat: 'pcm16-wav', speechFormat: options.localVoice.synthesizeStream ? 'pcm24' : 'wav',
+      return { settings: { ...effectiveSettings(), engine: 'local' }, presence: structuredClone(currentPresence), providers: [],
+        transcriptionAvailable: inputAllowed() && ready, neuralSpeechAvailable: ready, captureFormat: 'pcm16-wav', speechFormat: options.localVoice.synthesizeStream ? 'pcm24' : 'wav',
         availableSpeechVoices: ['cedar', 'coral'], providerLabel: 'Included local English voice', speechProviderLabel: 'Included local neural voice',
-        ...(!ready || !settings.enabled ? { reason: !settings.enabled ? 'Microphone is muted. Enable it in Voice settings.' : 'Included voice files are missing. Repair the Morpheus installation.' } : {}) };
+        ...(!ready || !inputAllowed() ? { reason: !inputAllowed() ? 'Microphone is muted. Enable it in Voice settings.' : 'Included voice files are missing. Repair the Morpheus installation.' } : {}) };
     }
     const managed = options.getManagedRuntime?.();
     if (managed) {
-      const available = settings.enabled ? await managedStatus(managed)
+      const available = inputAllowed() ? await managedStatus(managed)
         : { transcriptionAvailable: false, neuralSpeechAvailable: false };
       return { ...available, captureFormat: 'pcm16-wav', speechFormat: 'pcm24',
-        settings: { ...structuredClone(settings), ...(available.modelId ? { modelId: available.modelId } : {}),
+        settings: { ...effectiveSettings(), ...(available.modelId ? { modelId: available.modelId } : {}),
           ...(available.speechModelId ? { speechModelId: available.speechModelId } : {}) },
         presence: structuredClone(currentPresence), providers: [], providerLabel: 'Morpheus managed', speechProviderLabel: 'Morpheus managed',
         ...(!available.transcriptionAvailable ? { reason: 'Managed voice is unavailable. Check your managed account and allowance.' } : {}) };
@@ -431,9 +451,9 @@ export function createMorpheusVoiceService(options: {
       isDefault: Boolean(account.isDefault),
       configured: Boolean(await options.providerService.getAccountRuntimeApiKey(account.id)),
     })));
-    if (!settings.enabled) {
+    if (!inputAllowed()) {
       return {
-        settings: structuredClone(settings), presence: structuredClone(currentPresence),
+        settings: effectiveSettings(), presence: structuredClone(currentPresence),
         transcriptionAvailable: false, neuralSpeechAvailable: false, providers,
         reason: 'Voice input is disabled.',
       };
@@ -441,7 +461,7 @@ export function createMorpheusVoiceService(options: {
     const resolved = await resolveAccount(accounts);
     const speech = await resolveAccount(accounts, settings.speechProviderAccountId ?? settings.providerAccountId);
     return {
-      settings: structuredClone(settings), presence: structuredClone(currentPresence), providers,
+      settings: effectiveSettings(), presence: structuredClone(currentPresence), providers,
       transcriptionAvailable: Boolean(resolved), neuralSpeechAvailable: Boolean(speech),
       ...(resolved ? { providerLabel: resolved.account.label } : {
         reason: 'Configure an API-key OpenAI, OpenRouter or compatible transcription provider.',
@@ -454,14 +474,15 @@ export function createMorpheusVoiceService(options: {
     payload: MorpheusTranscribeAudioPayload,
     ambient: boolean,
   ): Promise<MorpheusTranscriptionResult> => {
-    if (!settings.enabled) throw new Error('Voice input is disabled.');
+    if (!inputAllowed()) throw new Error('Voice input is disabled.');
     if (!options.audit.isHealthy()) throw new Error('Voice transcription is blocked while Audit is unavailable.');
     if (ambient && !ambientSession) throw new Error('Ambient voice is not armed.');
     const inputSettings = settings;
     const inputAuthority = authorityRevision;
     const inputSession = ambientSession?.sessionId;
     const checkInput = () => {
-      if (inputAuthority !== authorityRevision || !settings.enabled || settings !== inputSettings || (ambient && ambientSession?.sessionId !== inputSession)) {
+      if (inputAuthority !== authorityRevision || !inputAllowed() || settings !== inputSettings
+        || (ambient && (!companionVoiceAllowed() || ambientSession?.sessionId !== inputSession))) {
         throw new DOMException('Voice input cancelled', 'AbortError');
       }
     };
@@ -817,19 +838,52 @@ export function createMorpheusVoiceService(options: {
     status,
     presence: () => structuredClone(currentPresence),
 
+    async prepareOutput() {
+      // This explicit preparation never selects a provider or sends text/audio.
+      if (!inputAllowed() || !settings.speakResponses || settings.engine === 'provider'
+        || !options.localVoice?.ready() || !options.localVoice.warm) return { prepared: false };
+      const revision = preparationRevision, authority = authorityRevision, configuration = settings;
+      await options.localVoice.warm();
+      if (revision !== preparationRevision || authority !== authorityRevision || settings !== configuration) {
+        throw new DOMException('Voice preparation cancelled', 'AbortError');
+      }
+      return { prepared: true };
+    },
+
+    async reconcileAmbientScope() {
+      if (!companionVoiceAllowed()) {
+        // endAmbientSession invalidates startup and stops native wake before its audit await.
+        await service.endAmbientSession();
+        return;
+      }
+      // Only the renderer's single acquisition owner may start a session on
+      // return. Native hide must not silently bypass its permission-error latch.
+    },
+
     async updateSettings(patch) {
       const updatingAuthority = authorityRevision;
+      const updateRevision = ++settingsUpdateRevision;
       const candidate = {
         ...settings,
+        enabled: inputAllowed(),
         ...patch,
         ...(options.localVoice && (patch.engine ?? settings.engine) !== 'provider' ? { localWakeEnabled: true } : {}),
-        ...(patch.enabled === false ? { ambientEnabled: false } : {}),
         v: MORPHEUS_VOICE_VERSION,
       };
       const next = validateSettings(candidate);
       if (!next) throw new Error('Invalid Morpheus voice settings.');
+      if (!next.enabled) {
+        // Manual mute is an immediate runtime veto. Audit or disk latency cannot
+        // keep recording or allow a late wake to execute. Failure stays muted.
+        inputVeto = true;
+        preparationRevision += 1;
+        for (const controller of transcriptions.keys()) controller.abort(new DOMException('Microphone muted', 'AbortError'));
+        cancelSpeech();
+        options.localVoice?.releaseWarm?.();
+        void service.endAmbientSession().catch(() => undefined);
+      }
       const enableAmbient = !settings.ambientEnabled && next.ambientEnabled;
-      if (enableAmbient) {
+      if (enableAmbient && next.enabled) {
         if (!options.audit.isHealthy()) throw new Error('Ambient voice is blocked while Audit is unavailable.');
         const managed = options.getManagedRuntime?.();
         if (options.localVoice && next.engine !== 'provider' ? !options.localVoice.ready() : managed ? !(await managedStatus(managed, next.speechVoice)).transcriptionAvailable : !await resolveAccount()) {
@@ -853,8 +907,9 @@ export function createMorpheusVoiceService(options: {
       const restartAmbient = Boolean(ambientSession && (
         settings.engine !== next.engine || settings.inputDeviceId !== next.inputDeviceId || settings.localWakeEnabled !== next.localWakeEnabled || settings.wakePhrase !== next.wakePhrase
         || settings.providerAccountId !== next.providerAccountId || settings.modelId !== next.modelId));
-      // Persist first: a failed atomic write must not change in-memory policy.
-      if (updatingAuthority !== authorityRevision) throw new Error('Voice service changed. Retry the setting.');
+      // Commit preferences atomically; the earlier manual-mute veto remains
+      // authoritative even if persistence fails.
+      if (updatingAuthority !== authorityRevision || updateRevision !== settingsUpdateRevision) throw new Error('Voice service changed. Retry the setting.');
       writeJsonAtomically(settingsPath, next);
       for (const controller of transcriptions.keys()) controller.abort(new DOMException('Voice settings changed', 'AbortError'));
       if (settings.engine !== next.engine || !next.enabled || settings.speechProviderAccountId !== next.speechProviderAccountId
@@ -863,9 +918,14 @@ export function createMorpheusVoiceService(options: {
         cancelSpeech();
         speechFailure = undefined;
       }
+      if (next.enabled && (!next.speakResponses || settings.engine !== next.engine || settings.speechVoice !== next.speechVoice)) {
+        preparationRevision += 1;
+        options.localVoice?.releaseWarm?.();
+      }
       settings = structuredClone(next);
-      if (disableAmbient || restartAmbient) await service.endAmbientSession();
-      if (settings.ambientEnabled) await service.beginAmbientSession();
+      if (patch.enabled === true) inputVeto = false;
+      if (disableAmbient || restartAmbient || !next.enabled) await service.endAmbientSession();
+      if (settings.enabled && settings.ambientEnabled && companionVoiceAllowed()) await service.beginAmbientSession();
       else publish('asleep');
       return status();
     },
@@ -875,6 +935,8 @@ export function createMorpheusVoiceService(options: {
     cancelSpeech,
     invalidateService() {
       authorityRevision += 1;
+      preparationRevision += 1;
+      options.localVoice?.releaseWarm?.();
       managedAvailability = null;
       for (const controller of transcriptions.keys()) controller.abort();
       cancelSpeech();
@@ -884,12 +946,17 @@ export function createMorpheusVoiceService(options: {
     },
 
     async beginAmbientSession() {
+      if (!companionVoiceAllowed()) return service.endAmbientSession();
+      if (ambientStarting && ambientStartingRevision !== ambientStartRevision) {
+        await ambientStarting.catch(() => undefined);
+        if (!companionVoiceAllowed()) return service.endAmbientSession();
+      }
       if (ambientStarting) return ambientStarting;
       const start = async () => {
       if (ambientSession) return structuredClone(currentPresence);
       const startingAuthority = authorityRevision, startingSettings = settings, startingRevision = ambientStartRevision;
       const checkStart = () => {
-        if (startingAuthority !== authorityRevision || settings !== startingSettings || startingRevision !== ambientStartRevision) throw new DOMException('Voice session changed', 'AbortError');
+        if (!companionVoiceAllowed() || startingAuthority !== authorityRevision || settings !== startingSettings || startingRevision !== ambientStartRevision) throw new DOMException('Voice session changed', 'AbortError');
       };
       if (!settings.enabled || !settings.ambientEnabled) throw new Error('Ambient voice is disabled.');
       if (!options.audit.isHealthy()) throw new Error('Ambient voice is blocked while Audit is unavailable.');
@@ -922,7 +989,7 @@ export function createMorpheusVoiceService(options: {
               if (command !== undefined && (typeof command !== 'string' || !command.trim() || command.length > 2000)) return;
               const interruptingSpeech = currentPresence.state === 'speaking'
                 || currentPresence.state === 'preparing-speech';
-              if (!ambientSession || ambientSession.sessionId !== sessionId
+              if (!companionVoiceAllowed() || !ambientSession || ambientSession.sessionId !== sessionId
                 || ['listening', 'transcribing'].includes(currentPresence.state)
                 || (interruptingSpeech && !settings.bargeIn)
                 || Date.now() - lastWakeAt < 1500) return;
@@ -930,7 +997,7 @@ export function createMorpheusVoiceService(options: {
               void options.audit.recordControl({ category: 'voice', event: 'local-wake-detected',
                 subjectId: sessionId, details: {}, appVersion: options.appVersion,
               }).then(() => {
-                if (ambientSession?.sessionId !== sessionId) return;
+                if (!companionVoiceAllowed() || ambientSession?.sessionId !== sessionId || startingRevision !== ambientStartRevision) return;
                 if (interruptingSpeech) {
                   // The renderer receives the new wake sequence and stops its
                   // playback as well; Main aborts in-flight synthesis here.
@@ -945,17 +1012,28 @@ export function createMorpheusVoiceService(options: {
                   return;
                 }
                 void openFollowUp('wake').catch(() => {
+                  if (!companionVoiceAllowed() || ambientSession?.sessionId !== sessionId || startingRevision !== ambientStartRevision) return;
                   localWake?.stop();
                   publish('error', 'Local wake stopped because Audit is unavailable.');
                 });
-              }).catch(() => { localWake?.stop(); publish('error', 'Local wake stopped because Audit is unavailable.'); });
+              }).catch(() => {
+                if (!companionVoiceAllowed() || ambientSession?.sessionId !== sessionId || startingRevision !== ambientStartRevision) return;
+                localWake?.stop(); publish('error', 'Local wake stopped because Audit is unavailable.');
+              });
             },
-            onError() { publish('error', 'Local wake stopped. Check your microphone and restart ambient voice.'); },
+            onError() {
+              if (companionVoiceAllowed() && ambientSession?.sessionId === sessionId && startingRevision === ambientStartRevision)
+                publish('error', 'Local wake stopped. Check your microphone and restart ambient voice.');
+            },
           });
           localWake = controller;
           await controller.ready;
           if (ambientSession?.sessionId !== sessionId) { controller.stop(); return structuredClone(currentPresence); }
+          checkStart();
         } catch (error) {
+          if (!companionVoiceAllowed() || startingRevision !== ambientStartRevision || startingAuthority !== authorityRevision) {
+            throw new DOMException('Voice session changed', 'AbortError');
+          }
           await service.endAmbientSession();
           publish('error', 'Windows local wake is unavailable. Check your microphone and installed English speech recognition.');
           throw error;
@@ -963,8 +1041,10 @@ export function createMorpheusVoiceService(options: {
       }
       return publish('armed');
       };
-      ambientStarting = start();
-      try { return await ambientStarting; } finally { ambientStarting = null; }
+      ambientStartingRevision = ambientStartRevision;
+      const attempt = start();
+      ambientStarting = attempt;
+      try { return await attempt; } finally { if (ambientStarting === attempt) ambientStarting = null; }
     },
 
     async endAmbientSession() {
@@ -980,21 +1060,24 @@ export function createMorpheusVoiceService(options: {
       localWake = null;
       const session = ambientSession;
       ambientSession = null;
-      if (session) {
-        try {
-          await options.audit.recordControl({
-            category: 'voice', event: 'ambient-session-ended', subjectId: session.sessionId,
-            details: {}, appVersion: options.appVersion,
-          });
-        } finally {
-          publish('asleep');
-        }
-      } else publish('asleep');
+      // Publish the actual stop immediately; late audit completion must not
+      // overwrite a newer companion session or an explicit speaking state.
+      let stopAudit: Promise<unknown> | undefined;
+      try {
+        if (session) stopAudit = options.audit.recordControl({
+          category: 'voice', event: 'ambient-session-ended', subjectId: session.sessionId,
+          details: {}, appVersion: options.appVersion,
+        });
+      } finally {
+        if (!['preparing-speech', 'speaking'].includes(currentPresence.state)) publish('asleep');
+      }
+      await stopAudit;
       return structuredClone(currentPresence);
     },
 
     async setAmbientListening(listening) {
-      if (!ambientSession) throw new Error('Ambient voice is not armed.');
+      if (!companionVoiceAllowed() || !ambientSession) throw new DOMException('Ambient voice is suspended in conversation', 'AbortError');
+      const session = ambientSession, revision = ambientStartRevision;
       if (listening && settings.localWakeEnabled) {
         if (!localAddressUntil || Date.now() > localAddressUntil) throw new Error('Say the wake phrase before recording a command.');
         localAddressUntil = 0;
@@ -1011,6 +1094,9 @@ export function createMorpheusVoiceService(options: {
         subjectId: ambientSession.sessionId,
         details: {}, appVersion: options.appVersion,
       });
+      if (!companionVoiceAllowed() || ambientSession !== session || revision !== ambientStartRevision) {
+        throw new DOMException('Ambient voice changed', 'AbortError');
+      }
       return publish(listening ? 'listening' : 'armed');
     },
 
@@ -1023,10 +1109,14 @@ export function createMorpheusVoiceService(options: {
       }
       // A real output gap is still synthesis, not an invitation to record speaker echo.
       if (speechController && !speechController.signal.aborted) return publish('preparing-speech');
-      const next = publish(settings.ambientEnabled ? 'armed' : 'asleep');
+      const next = publish(ambientSession && companionVoiceAllowed() ? 'armed' : 'asleep');
       if (followUpPending && ambientSession) {
+        const session = ambientSession, revision = ambientStartRevision;
         followUpPending = false;
-        void openFollowUp('result').catch(() => publish('error', 'Voice follow-up stopped because Audit is unavailable.'));
+        void openFollowUp('result').catch(() => {
+          if (companionVoiceAllowed() && ambientSession === session && revision === ambientStartRevision)
+            publish('error', 'Voice follow-up stopped because Audit is unavailable.');
+        });
       }
       return next;
     },
@@ -1050,8 +1140,12 @@ export function createMorpheusVoiceService(options: {
       if (['complete', 'needs-clarification', 'error', 'degraded'].includes(event.state)) {
         followUpPending = settings.handsFreeFollowUp;
         if (followUpPending && !settings.speakResponses) {
+          const session = ambientSession, revision = ambientStartRevision;
           followUpPending = false;
-          void openFollowUp('result').catch(() => publish('error', 'Voice follow-up stopped because Audit is unavailable.'));
+          void openFollowUp('result').catch(() => {
+            if (companionVoiceAllowed() && ambientSession === session && revision === ambientStartRevision)
+              publish('error', 'Voice follow-up stopped because Audit is unavailable.');
+          });
         }
       } else if (event.state === 'cancelled') {
         followUpPending = false;
@@ -1060,7 +1154,9 @@ export function createMorpheusVoiceService(options: {
     },
 
     dispose() {
+      disposed = true;
       authorityRevision += 1;
+      preparationRevision += 1;
       ambientStartRevision += 1;
       for (const controller of transcriptions.keys()) controller.abort(new DOMException('Voice disposed', 'AbortError'));
       transcriptions.clear();

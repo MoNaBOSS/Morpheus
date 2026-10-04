@@ -15,7 +15,9 @@ test('approved arrival animates the original logo and keeps real conversation us
     const full = page.getByTestId('command-center-page');
     await expect(full).toBeVisible();
     await expect(full.locator('canvas')).toHaveCount(0);
-    expect((await full.getByTestId('morpheus-fluid-orb').boundingBox())?.width).toBe(56);
+    // The approved full conversation uses 64 CSS px; the desktop companion
+    // remains 56 DIP and is verified in the native shared-motion journey.
+    expect((await full.getByTestId('morpheus-fluid-orb').boundingBox())?.width).toBe(64);
     await page.getByTestId('morpheus-open-welcome').click();
     const welcome = page.getByTestId('morpheus-welcome');
     const logo = welcome.locator('.morpheus-motion__mark');
@@ -66,12 +68,14 @@ test('compact draft survives idle and contextual settings, with the same convers
     await page.screenshot({ path: info.outputPath('approved-compact-preserved-draft.png') });
     await page.getByTestId('quick-command-settings').click();
     await expect(page.getByTestId('morpheus-settings-page')).toBeVisible();
+    await page.getByTestId('morpheus-voice-more-options').locator('summary').first().click();
     await page.getByTestId('morpheus-voice-caption-mode').selectOption('hidden');
     await page.getByTestId('morpheus-settings-return').click();
     await expect(compact).toBeVisible();
     await expect(page.getByTestId('quick-command-input')).toHaveValue('A follow-up I am still editing');
     await expect(compact).toHaveCSS('pointer-events', 'auto');
     await page.getByTestId('quick-command-settings').click();
+    await page.getByTestId('morpheus-voice-more-options').locator('summary').first().click();
     await expect(page.getByTestId('morpheus-voice-caption-mode')).toHaveValue('hidden');
     await page.getByTestId('morpheus-voice-caption-mode').selectOption('automatic');
     await page.getByTestId('morpheus-settings-return').click();

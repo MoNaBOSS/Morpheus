@@ -1,5 +1,42 @@
 # Current Windows experience completion checklist
 
+## October 4 connected Voice correction — in progress
+
+- [x] Recheck source: clean `e1e2151207ac188980a4e1dfd78839f5115eb8f2`, branch
+  `codex/morpheus-preview9-shell-recovery`, expected GitHub origin. Preserve owner
+  profiles and historical checkouts. E: has about 140.6 GiB free; builds stay there.
+- [x] Recheck running owner app: preview.9 review EXE below. The previous per-user
+  preview.8 executable is now absent; earlier "still installed" statements below
+  are historical observations, not the current installation state.
+- [x] Actual microphone test opens after owner enabled permission. Finished
+  capture reported no speech, without a permission error. This proves access,
+  not recognized speech/accent/echo or audible-output acceptance.
+- [x] Reproduce misleading status: armed/listening label remains beside actual
+  no-speech error. Long Voice form keeps controls below the fold.
+- [x] Implement connected input/output cards and clear companion consent/mute.
+- [x] Main-owned automatic-listening scope: companion only; full/compact/Settings
+  suspend capture/wake without deleting consent; explicit chat mic remains usable.
+- [x] Improve bounded latency and real audio-driven compositor motion; measure
+  actual changes and keep acoustic barge-in limitations explicit.
+- [x] 136 focused unit cases, full Node/web/managed typecheck, production Vite
+  build, comms replay/compare and diff-aware task/harness checks passed. Narrow
+  independent source review confirmed pending-mute, failed-acquisition restart,
+  native-visible occlusion and delayed-follow-up races resolved.
+- [x] Rendered source qualification: 12 distinct relevant Electron journeys
+  passed across two runs (initial obsolete size/state assertions corrected).
+  Voice controls fit 1280×800; 430px device repair has no horizontal overflow.
+  Consent edits while muted cause zero capture. Navigation, compact draft,
+  error recovery, reduced motion and hidden animation removal passed.
+  Actual local neural generated input was recognized and routed once to an ACP
+  answer fixture; all 129,452 actual PCM bytes played. Typed/manual Stop stopped
+  playback in 28.1/33 ms in that synthetic-input journey, not physical barge-in.
+- [ ] Relevant source/Electron checks, normal package qualification, actual motion
+  recording and included voice sample, exact new executable identity.
+
+Next is this Voice/mode component, not a new backend or design campaign. Public
+sale, signing/update, hosted funding, payment setup and physical mixed-use
+acceptance remain open. Preview.9 below is preserved historical package evidence.
+
 ## Preview.9 bounded correction — ready for owner review
 
 Application source: `4b9e251931447fabdf8f2638a343104a75c27000`, local branch

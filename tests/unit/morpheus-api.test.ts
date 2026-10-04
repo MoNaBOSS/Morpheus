@@ -151,6 +151,7 @@ function stubOptions(runtime = stubRuntime()) {
       transcribe: vi.fn(),
       synthesize: vi.fn(),
       cancelSpeech: vi.fn(),
+      prepareOutput: vi.fn(async () => ({ prepared: true })),
     } as never,
     proactive: {
       snapshot: vi.fn(() => ({ settings: { enabled: false }, attentions: [] })),
@@ -620,6 +621,12 @@ describe('runtime control validation', () => {
 });
 
 describe('createMorpheusApi', () => {
+  it('exposes explicit local output preparation without forwarding audio, text or a provider request', async () => {
+    const options = stubOptions(), api = createMorpheusApi(options);
+    await expect(api.prepareVoiceOutput()).resolves.toEqual({ prepared: true });
+    expect(options.voice.prepareOutput).toHaveBeenCalledWith();
+    expect(options.voice.transcribe).not.toHaveBeenCalled(); expect(options.voice.synthesize).not.toHaveBeenCalled();
+  });
   it('exposes exactly the contract surface', () => {
     expect(Object.keys(createMorpheusApi(stubOptions())).sort()).toEqual([
       'ackAssistantTurn',
@@ -666,6 +673,7 @@ describe('createMorpheusApi', () => {
       'openWorkspace',
       'pauseSystem',
       'permissionCenter',
+      'prepareVoiceOutput',
       'previewInteractiveSite',
       'proactiveSnapshot',
       'project',

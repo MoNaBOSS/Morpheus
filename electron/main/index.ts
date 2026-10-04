@@ -373,11 +373,13 @@ function createMainWindow(): BrowserWindow {
     if (win.isDestroyed() || win.webContents.isDestroyed() || win.webContents.isLoading()) return;
     // Electron can keep document.hidden false after BrowserWindow.hide().
     void win.webContents.executeJavaScript(
-      `document.documentElement.dataset.morpheusWindowVisible = '${String(win.isVisible())}'`,
+      `document.documentElement.dataset.morpheusWindowVisible = '${String(win.isVisible() && !win.isMinimized())}'`,
       true,
     ).catch(() => undefined);
   };
   win.webContents.on('did-stop-loading', syncPresentationVisibility);
+  win.on('minimize', syncPresentationVisibility);
+  win.on('restore', syncPresentationVisibility);
 
   win.once('ready-to-show', async () => {
     if (mainWindow !== win) {
@@ -567,6 +569,20 @@ async function initialize(): Promise<void> {
       },
     },
   );
+
+  // Native visibility is the authority for automatic companion audio. The
+  // renderer independently releases its Chromium tracks when this changes.
+  const reconcileVoiceScope = () => {
+    if (isQuitting()) return;
+    void morpheusControls.reconcileVoiceScope().catch((error) => {
+      if (!isQuitting()) logger.warn('Companion voice scope unavailable:', error);
+    });
+  };
+  window.on('show', reconcileVoiceScope);
+  window.on('hide', reconcileVoiceScope);
+  window.on('minimize', reconcileVoiceScope);
+  window.on('restore', reconcileVoiceScope);
+  reconcileVoiceScope();
 
   // The sandboxed orb can call only these fixed Main-owned assistant actions.
   // No generic host invoke, provider secret, or Gateway capability crosses this window.

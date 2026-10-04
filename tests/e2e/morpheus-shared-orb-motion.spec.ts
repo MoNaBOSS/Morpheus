@@ -15,6 +15,11 @@ test('native and React orb share motion, pause while hidden, and retain a visibl
     const orb = native!.locator('.orb');
     await expect(orb).toBeVisible();
     await expect(orb).toHaveClass(/morpheus-motion/);
+    // Saved microphone-off state is now truthfully quiet after Main scopes
+    // automatic input away from visible chat. Seed presentation only to inspect
+    // the idle motion below; this does not grant actual audio authority.
+    await expect(orb).toHaveAttribute('data-motion-state', 'quiet');
+    await native!.evaluate(() => { document.documentElement.dataset.state = 'armed'; });
     await expect(orb).toHaveAttribute('data-motion-state', 'idle');
     await expect(orb.locator('.morpheus-motion__halo')).toHaveCSS('animation-name', 'morpheus-motion-breathe');
     await expect(orb.locator('.morpheus-motion__halo')).toHaveCSS('animation-timing-function', 'steps(84)');
@@ -86,7 +91,16 @@ test('native and React orb share motion, pause while hidden, and retain a visibl
     }));
     await expect(orb).toHaveAttribute('data-motion-state', 'speaking');
     await expect(artwork).toHaveCSS('animation-name', 'none');
+    await expect.poll(() => artwork.evaluate((node) => node.getAnimations().length)).toBe(0);
     const silentSpeakingTransform = await artwork.evaluate((node) => getComputedStyle(node).transform);
+    const halo = orb.locator('.morpheus-motion__halo');
+    const silentHaloGeometry = await halo.evaluate((node) => ({ radius: getComputedStyle(node).borderRadius, inset: getComputedStyle(node).inset }));
+    const silentObservation = await artwork.evaluate(async (node) => {
+      const before = getComputedStyle(node).transform;
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      return { before, after: getComputedStyle(node).transform };
+    });
+    expect(silentObservation.after).toBe(silentObservation.before);
     await expect(orb.locator('.morpheus-motion__aurora')).toHaveCSS('animation-name', 'none');
     await main!.evaluate(() => window.clawx.hostInvoke({
       id: crypto.randomUUID(), module: 'morpheus', action: 'updatePresentationLevel', payload: { level: 0.6 },
@@ -97,7 +111,16 @@ test('native and React orb share motion, pause while hidden, and retain a visibl
       new DOMMatrix(getComputedStyle(element).transform).a
     ))).toBeGreaterThan(1.05);
     await expect.poll(() => artwork.evaluate((node) => getComputedStyle(node).transform)).not.toBe(silentSpeakingTransform);
+    // Real scalar presentation changes only composited pose/opacity, never
+    // per-frame border-radius or element insets that force fresh artwork paint.
+    expect(await halo.evaluate((node) => ({ radius: getComputedStyle(node).borderRadius, inset: getComputedStyle(node).inset }))).toEqual(silentHaloGeometry);
+    await expect(halo).toHaveCSS('transition-property', 'transform, opacity');
     if (evidenceDir) await native!.screenshot({ path: join(evidenceDir, 'shared-motion-native-level-fixture.png') });
+    await main!.evaluate(() => window.clawx.hostInvoke({
+      id: crypto.randomUUID(), module: 'morpheus', action: 'updatePresentationLevel', payload: { level: 0 },
+    }));
+    await expect.poll(() => artwork.evaluate((node) => getComputedStyle(node).transform)).toBe(silentSpeakingTransform);
+    await expect.poll(() => artwork.evaluate((node) => node.getAnimations().length)).toBe(0);
     await main!.evaluate(() => window.clawx.hostInvoke({
       id: crypto.randomUUID(), module: 'morpheus', action: 'setVoiceSpeaking', payload: { speaking: false },
     }));

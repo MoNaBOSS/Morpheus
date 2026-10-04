@@ -5,6 +5,10 @@
   isolation: isolate;
   border-radius: 50%;
   --morpheus-audio-level: 0;
+  /* Visual gain only: a quiet real voice remains legible at 56 DIP. Zero input
+     is exactly zero; the audio service remains the sole owner of the meter. */
+  --morpheus-motion-amplitude: clamp(0, calc(var(--morpheus-audio-level) * 1.5), 1);
+  --morpheus-motion-ease: cubic-bezier(.2, .7, .25, 1);
 }
 
 .morpheus-motion__aurora,
@@ -23,16 +27,19 @@
   opacity: 0.65;
   transform: translateZ(0);
   mask-image: radial-gradient(circle, transparent 57%, #000 69%);
+  transition: transform 160ms var(--morpheus-motion-ease), opacity 180ms ease-out;
 }
 
 .morpheus-motion__halo {
   z-index: 3;
-  inset: 1%;
+  /* A fixed footprint avoids a layout-sized jump between idle and capture.
+     Audio expansion stays inside the native 56-DIP interaction target. */
+  inset: 8%;
   border: 1px solid rgb(120 245 179 / 0.46);
   border-radius: 50%;
   box-shadow: 0 0 15px rgb(83 237 180 / 0.18);
   opacity: 0.52;
-  transition: transform 90ms linear, opacity 90ms linear, border-radius 90ms linear;
+  transition: transform 160ms var(--morpheus-motion-ease), opacity 180ms ease-out;
 }
 
 .morpheus-motion__cue {
@@ -67,7 +74,7 @@
   clip-path: circle(34.48% at center);
   user-select: none;
   transform-origin: center;
-  transition: transform 90ms linear;
+  transition: transform 140ms var(--morpheus-motion-ease);
 }
 
 /* The original orb artwork moves as one identity. At 56 DIP the old thin
@@ -92,22 +99,20 @@
 /* Silent capture and playback have no invented pulse. These transforms change
    only when the existing microphone/PCM meter supplies a real amplitude. */
 .morpheus-motion[data-motion-state='listening'] .morpheus-motion__artwork {
-  transform: scale(calc(.91 + var(--morpheus-audio-level, 0) * .09)) rotate(calc(var(--morpheus-audio-level, 0) * 4deg));
+  transform: scale(calc(.9 + var(--morpheus-motion-amplitude) * .1)) rotate(calc(var(--morpheus-motion-amplitude) * 3deg));
 }
 .morpheus-motion[data-motion-state='speaking'] .morpheus-motion__artwork {
-  transform: scale(calc(.94 + var(--morpheus-audio-level, 0) * .06), calc(.94 - var(--morpheus-audio-level, 0) * .06)) rotate(calc(var(--morpheus-audio-level, 0) * -5deg));
+  transform: scale(calc(.97 - var(--morpheus-motion-amplitude) * .05), calc(.91 + var(--morpheus-motion-amplitude) * .09)) rotate(calc(var(--morpheus-motion-amplitude) * -3deg));
 }
 
 .morpheus-motion[data-motion-state='idle'] .morpheus-motion__halo {
-  inset: 6%;
   animation: morpheus-motion-breathe 5.6s steps(84, end) infinite;
 }
 
 .morpheus-motion[data-motion-state='listening'] .morpheus-motion__aurora,
 .morpheus-motion[data-motion-state='speaking'] .morpheus-motion__aurora {
-  opacity: calc(.5 + var(--morpheus-audio-level, 0) * .4);
-  transform: rotate(calc(-15deg + var(--morpheus-audio-level, 0) * 40deg)) scale(calc(.97 + var(--morpheus-audio-level, 0) * .08));
-  transition: transform 90ms linear, opacity 90ms linear;
+  opacity: calc(.5 + var(--morpheus-motion-amplitude) * .4);
+  transform: rotate(calc(-12deg + var(--morpheus-motion-amplitude) * 32deg)) scale(calc(.96 + var(--morpheus-motion-amplitude) * .03));
 }
 
 .morpheus-motion[data-motion-state='working'] .morpheus-motion__halo {
@@ -147,9 +152,8 @@
 
 .morpheus-motion[data-motion-state='listening'] .morpheus-motion__halo,
 .morpheus-motion[data-motion-state='speaking'] .morpheus-motion__halo {
-  inset: 1%;
-  transform: scale(calc(1 + var(--morpheus-audio-level, 0) * 0.24));
-  opacity: calc(0.6 + var(--morpheus-audio-level, 0) * 0.35);
+  transform: scale(calc(1 + var(--morpheus-motion-amplitude) * .17));
+  opacity: calc(.6 + var(--morpheus-motion-amplitude) * .35);
   box-shadow: 0 0 24px rgb(110 255 190 / 0.38);
 }
 
@@ -180,7 +184,7 @@
 
 @keyframes morpheus-motion-breathe {
   0%, 100% { transform: scale(1); opacity: 0.40; }
-  50% { transform: scale(1.075); opacity: 0.85; }
+  50% { transform: scale(1.1); opacity: 0.85; }
 }
 @keyframes morpheus-motion-core-presence {
   0%, 100% { transform: translateY(1px) rotate(-4deg) scale(.92); }
@@ -207,13 +211,10 @@
   100% { transform: rotate(-4deg) scale(.96); }
 }
 
-/* Presence travel is independent of sound. Only the real RMS meter changes
-   listening/speaking deformation: silent capture never fabricates activity. */
-.morpheus-motion[data-motion-state='listening'] .morpheus-motion__halo {
-  border-radius: calc(50% - var(--morpheus-audio-level) * 9%) calc(50% + var(--morpheus-audio-level) * 9%) 48% 52%;
-}
+/* Shape is painted once. Real RMS changes only compositor transforms/opacity,
+   avoiding the previous per-sample border-radius repaint on high-Hz displays. */
 .morpheus-motion[data-motion-state='speaking'] .morpheus-motion__halo {
-  transform: scale(calc(1 + var(--morpheus-audio-level) * .11), calc(1 + var(--morpheus-audio-level) * .3));
+  transform: scale(calc(1 + var(--morpheus-motion-amplitude) * .10), calc(1 + var(--morpheus-motion-amplitude) * .18));
   border-radius: 43% 57% 51% 49% / 47% 42% 58% 53%;
 }
 .morpheus-motion[data-motion-state='understanding'] .morpheus-motion__halo {

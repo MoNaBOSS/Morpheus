@@ -53,6 +53,8 @@ expectedUserBehavior:
   - Local silence and standalone recognition annotations are rejected before draft or command admission; short valid commands remain usable.
   - Opening Voice settings preserves actionable capture errors; a configuration refresh is not represented as a successful input test.
   - Hidden or covered identity surfaces remove their decorative animations, since a reported paused state alone may leave Chromium clocks advancing.
+  - Companion voice commands preserve explicit consent but suspend automatic capture and wake detection while full, compact or Settings is visible; chat microphone input remains explicit and master mute always wins.
+  - Voice setup groups input/device/test and selected natural output/sample, separates installed-engine readiness from recognized-input evidence, and never labels an input error as active listening.
 requiredTests:
   - pnpm run typecheck
   - pnpm run lint:check
@@ -91,3 +93,10 @@ bounded review candidate. Runtime effects remain globally owned; visual status
 belongs to the in-flow shell. No owner profile or installed payload is replaced by
 test runs. The next acceptance artifact is recorded actual Windows rendering;
 any seeded wake/microphone states must be explicitly described as simulated.
+
+October 4 amendment: owner enabled microphone permission and authorized the
+connected Voice/mode correction. Actual preview.9 capture opened but no speech
+was detected; recognition and speaker/echo remain unqualified. Implement saved
+companion consent with Main-owned foreground suspension, explicit chat input,
+truthful error priority, focused Voice controls and bounded fluid audio motion.
+Keep original profiles/owners and existing Advanced capabilities.

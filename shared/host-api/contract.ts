@@ -1272,6 +1272,7 @@ export type HostApiContract = {
     expandCompanionSurface: () => MorpheusCompanionSurfaceStatus;
     showCompanionSurface: () => MorpheusCompanionSurfaceStatus;
     voiceStatus: () => MorpheusVoiceStatus;
+    prepareVoiceOutput: () => { prepared: boolean };
     updateVoiceSettings: (payload: MorpheusVoiceSettingsPatch) => MorpheusVoiceStatus;
     transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => MorpheusTranscriptionResult;
     synthesizeSpeech: (payload: MorpheusSynthesizeSpeechPayload) => MorpheusSynthesizeSpeechResult;

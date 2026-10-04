@@ -1,4 +1,24 @@
-# Current continuation — preview.9 shell correction, 2026-10-03
+# Current continuation — preview.10 connected Voice, 2026-10-04
+
+The owner enabled microphone permission and authorized a bounded Voice/mode
+correction: beautiful connected controls, companion-only automatic listening,
+explicit chat microphone, natural included output and fluid real-audio motion.
+Continue the approved design and existing backend. Current source is
+`E:\Morpheus-builds\experience-preview6\source`, branch
+`codex/morpheus-preview10-connected-voice`, starting from verified `e1e2151207`.
+The preview.9 review executable was actually running. The former per-user
+preview.8 EXE is now absent; statements below are preserved historical evidence.
+
+Current source implements grouped Voice input/output checks, separate saved
+companion consent and immediate master mute, native visibility ownership, stale
+callback guards, bounded local output preparation during explicit capture and
+compositor audio response. Actual owner microphone access succeeded but no speech
+was detected. Included preview.9 output completed; physical audibility is not
+qualified. Preview.10 qualification and executable identity belong in the single
+[current checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md); do not present
+source or synthetic tests as hardware or sale acceptance. Preserve all owner data.
+
+## Previous preview.9 shell correction — historical evidence
 
 **The owner rejected the installed preview.8 experience.** Live inspection and
 their recording confirm hidden navigation, weakly perceptible contour motion,

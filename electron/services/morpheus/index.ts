@@ -89,6 +89,7 @@ export type CreateMorpheusServiceOptions = {
   emitObjective?: (event: MorpheusObjectiveEvent) => void;
   emitVoicePresence?: (presence: MorpheusVoicePresence) => void;
   emitSpeechChunk?: (chunk: MorpheusSpeechChunk) => void;
+  isCompanionVoiceScope?: () => boolean;
   providerService?: ProviderService;
 };
 
@@ -243,6 +244,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     getPersonaContext: () => composeSavedMorpheusPersona(onboarding.status().preferences, memory.list().memories),
     emitPresence: options.emitVoicePresence,
     emitSpeechChunk: options.emitSpeechChunk,
+    isCompanionVoiceScope: options.isCompanionVoiceScope,
   });
   objectives = createMorpheusObjectiveOrchestrator({
     store: objectiveStore,

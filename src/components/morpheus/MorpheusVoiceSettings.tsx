@@ -358,9 +358,9 @@ function SettingToggle({
     <div className="flex items-center justify-between gap-5">
       <div>
         <p className="text-sm font-medium text-foreground">{label}</p>
-        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p>
+        <p id={`${testId}-description`} className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p>
       </div>
-      <Switch checked={checked} onCheckedChange={onChange} data-testid={testId} />
+      <Switch checked={checked} onCheckedChange={onChange} data-testid={testId} aria-label={label} aria-describedby={`${testId}-description`} />
     </div>
   );
 }

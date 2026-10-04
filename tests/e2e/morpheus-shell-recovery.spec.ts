@@ -7,7 +7,7 @@ import {
   installAttachmentHostFixture, installIpcMocks, test,
 } from './fixtures/electron';
 
-// The flow under test is: wake-enabled conversation -> visible Settings ->
+// The flow under test is: saved companion consent, quiet conversation -> visible Settings ->
 // previous Advanced settings -> conversation, then compact -> Voice -> compact.
 // These are real Electron layouts and interactions with simulated Main voice
 // presence. No physical microphone, wake recognition, provider or audibility
@@ -69,12 +69,14 @@ async function emitVoicePresence(app: ElectronApplication, state: MorpheusVoiceP
 async function expectUncovered(control: Locator, indicator: Locator): Promise<void> {
   await expect(control).toBeVisible();
   await expect(control).toBeInViewport();
+  if (await indicator.count()) {
   await expect.poll(async () => {
     const [button, badge] = await Promise.all([control.boundingBox(), indicator.boundingBox()]);
     if (!button || !badge) return false;
     return button.x + button.width <= badge.x || badge.x + badge.width <= button.x
       || button.y + button.height <= badge.y || badge.y + badge.height <= button.y;
   }, { message: 'Voice status must not intersect the control' }).toBe(true);
+  }
   await expect.poll(() => control.evaluate((node) => {
     const rect = node.getBoundingClientRect();
     const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
@@ -83,7 +85,8 @@ async function expectUncovered(control: Locator, indicator: Locator): Promise<vo
 }
 
 async function expectShellNavigation(page: Page, indicator: Locator): Promise<void> {
-  await expect(indicator).toBeVisible();
+  if (await indicator.count()) await expect(indicator).toBeVisible();
+  await expect(page.getByTestId('morpheus-ambient-voice-indicator')).toHaveCount(0);
   await expect(page.getByTestId('sidebar-nav-settings')).toHaveText(/Settings/);
   for (const id of ['sidebar-nav-settings', 'signal-nav-chat', 'signal-nav-presence', 'signal-nav-advanced']) {
     await expectUncovered(page.getByTestId(id), indicator);
@@ -119,7 +122,7 @@ function saveVideoOnClose(page: Page, name: string): (() => Promise<void>) | und
   return directory && video ? () => video.saveAs(join(directory, name)) : undefined;
 }
 
-test('wake-enabled full shell keeps navigation aligned and previous settings reachable', async ({ launchElectronApp }, info) => {
+test('saved companion consent keeps full chat quiet and previous settings reachable', async ({ launchElectronApp }, info) => {
   const app = await launchElectronApp({ skipSetup: true });
   let saveVideo: (() => Promise<void>) | undefined;
   try {
@@ -158,6 +161,7 @@ test('wake-enabled full shell keeps navigation aligned and previous settings rea
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.getByTestId('sidebar-nav-settings').click();
     await expect(page.getByTestId('morpheus-settings-page')).toBeVisible();
+    await expect(page.getByTestId('morpheus-ambient-voice-indicator')).toHaveCount(0);
     await expectUncovered(page.getByTestId('morpheus-settings-return'), indicator);
     await page.getByTestId('morpheus-settings-advanced').click();
     await page.getByTestId('morpheus-advanced-settings').click();
@@ -213,7 +217,7 @@ test('wake-enabled full shell keeps navigation aligned and previous settings rea
   } finally { await closeElectronApp(app); await saveVideo?.(); }
 });
 
-test('wake-enabled compact settings returns to the same editable draft and conversation', async ({ launchElectronApp }, info) => {
+test('saved companion consent keeps compact settings quiet and retains the editable conversation', async ({ launchElectronApp }, info) => {
   test.skip(process.platform !== 'win32', 'Native Windows compact surface');
   const app = await launchElectronApp({ skipSetup: true });
   let saveVideo: (() => Promise<void>) | undefined;
@@ -225,7 +229,7 @@ test('wake-enabled compact settings returns to the same editable draft and conve
     saveVideo = saveVideoOnClose(page, 'shell-recovery-compact-settings.webm');
     await installVoicePresentation(app, page, true);
     await page.reload();
-    await expect(page.getByTestId('morpheus-ambient-voice-indicator')).toBeVisible();
+    await expect(page.getByTestId('morpheus-ambient-voice-indicator')).toHaveCount(0);
     await page.getByTestId('signal-nav-presence').click();
     await expect(page.getByTestId('morpheus-quick-command')).toHaveAttribute('data-presentation', 'compact-window');
     await expect(page.getByTestId('morpheus-ambient-voice-indicator')).toHaveCount(0);
@@ -236,10 +240,10 @@ test('wake-enabled compact settings returns to the same editable draft and conve
     await page.getByTestId('quick-command-input').fill('Keep my compact follow-up');
     await page.getByTestId('quick-command-settings').click();
     await expect(page.getByTestId('morpheus-settings-voice')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByTestId('morpheus-ambient-voice-indicator')).toBeVisible();
+    await expect(page.getByTestId('morpheus-ambient-voice-indicator')).toHaveCount(0);
     await page.getByTestId('morpheus-settings-personality').click();
     await expect(page.getByTestId('morpheus-settings-personality')).toHaveAttribute('aria-pressed', 'true');
-    await page.getByTestId('morpheus-ambient-voice-indicator').getByRole('link', { name: 'Voice', exact: true }).click();
+    await page.getByTestId('morpheus-settings-voice').click();
     await expect(page.getByTestId('morpheus-settings-voice')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('morpheus-settings-page').locator('..')).toHaveCSS('opacity', '1');
     await expect(page.getByTestId('morpheus-quick-command')).toHaveCount(0);
@@ -283,7 +287,7 @@ test('wake-enabled compact settings returns to the same editable draft and conve
   } finally { await closeElectronApp(app); await saveVideo?.(); }
 });
 
-test('active voice and missing-device repair occupy layout space without hiding navigation', async ({ launchElectronApp }, info) => {
+test('explicit speech status and missing-device repair occupy layout space without hiding navigation', async ({ launchElectronApp }, info) => {
   const app = await launchElectronApp({ skipSetup: true });
   let saveVideo: (() => Promise<void>) | undefined;
   try {
@@ -294,8 +298,14 @@ test('active voice and missing-device repair occupy layout space without hiding 
     await installVoicePresentation(app, page, true);
     await page.reload();
     await page.setViewportSize({ width: 640, height: 720 });
-    await expect(page.getByTestId('morpheus-ambient-voice-indicator')).toBeVisible();
-    for (const phase of ['listening', 'working', 'speaking'] as const) {
+    await expect(page.getByTestId('morpheus-ambient-voice-indicator')).toHaveCount(0);
+    // Output is legal in foreground. These are explicitly seeded presentation
+    // states; automatic listening/working from a stale ambient state stays quiet.
+    for (const phase of ['listening', 'working'] as const) {
+      await emitVoicePresence(app, phase);
+      await expect(page.getByTestId('morpheus-voice-indicator')).toHaveCount(0);
+    }
+    for (const phase of ['speaking', 'preparing-speech'] as const) {
       await emitVoicePresence(app, phase);
       const indicator = page.getByTestId('morpheus-voice-indicator');
       await expect(indicator).toHaveAttribute('data-phase', phase);

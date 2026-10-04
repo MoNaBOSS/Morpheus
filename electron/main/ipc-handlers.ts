@@ -108,6 +108,7 @@ export type MorpheusDesktopControls = {
   setRuntimePaused(paused: boolean): Promise<MorpheusRuntimeControlSnapshot>;
   voicePresence(): MorpheusVoicePresence;
   setAmbientVoiceEnabled(enabled: boolean): Promise<void>;
+  reconcileVoiceScope(): Promise<void>;
 };
 
 /**
@@ -210,6 +211,7 @@ function registerTypedHostHandlers(
     onInvalidated: () => morpheusService.voice.invalidateService?.(),
   });
   const morpheusService = createMorpheusService({
+    isCompanionVoiceScope: () => !mainWindow.isDestroyed() && (!mainWindow.isVisible() || mainWindow.isMinimized()),
     getManagedRuntime: managedAccount.getRuntime,
     userDataDir: app.getPath('userData'),
     appVersion: app.getVersion(),
@@ -390,6 +392,7 @@ function registerTypedHostHandlers(
     async setAmbientVoiceEnabled(enabled) {
       await morpheusService.voice.updateSettings({ ambientEnabled: enabled });
     },
+    reconcileVoiceScope: () => morpheusService.voice.reconcileAmbientScope(),
   };
 }
 

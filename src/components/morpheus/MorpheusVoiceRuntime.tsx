@@ -18,6 +18,7 @@ import { useMorpheusConversationStore } from '@/stores/morpheus-conversation';
 import { useAcpChatSessionStore } from '@/stores/acp-chat-session';
 import { createMorpheusConversationSpeechOwner } from '@/lib/morpheus-conversation-speech';
 import { morpheusSettingsPath, readMorpheusSettingsContext } from '@/lib/morpheus-settings-route';
+import { observeMorpheusPresentationVisibility } from '@/lib/morpheus-presentation-visibility';
 import './morpheus-experience.css';
 
 export function MorpheusVoiceRuntime() {
@@ -30,11 +31,25 @@ export function MorpheusVoiceRuntime() {
   const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
   const spokenStateKey = useRef<string | null>(null);
   const message = morpheusVoiceSpeechFor(objectiveRun);
+  const setAmbientScope = useMorpheusVoiceStore((state) => state.setAmbientScope);
   // Metadata updates are not new utterances. Stable semantic dependencies also
   // keep the playback callback alive until audio actually ends.
   const stateKey = objectiveRun && message
     ? JSON.stringify([objectiveRun.objectiveRunId, objectiveRun.state, message]) : null;
   const voiceOrigin = objectiveRun?.origin.type === 'voice';
+
+  useEffect(() => {
+    const syncScope = () => {
+      // Electron's native main-window visibility drives this projection. Route
+      // and modal changes never grant microphone authority in a visible chat.
+      // document.hidden can mean occlusion; only Main's native projection grants
+      // companion audio scope. Missing startup projection defaults to typed chat.
+      void setAmbientScope(document.documentElement.dataset.morpheusWindowVisible === 'false'
+        ? 'companion' : 'conversation').catch(() => undefined);
+    };
+    syncScope();
+    return observeMorpheusPresentationVisibility(syncScope);
+  }, [setAmbientScope]);
 
   useEffect(() => {
     void loadStatus();
@@ -130,8 +145,11 @@ export function MorpheusVoiceIndicator({ inWelcome = false }: { inWelcome?: bool
   const dismiss = useMorpheusVoiceStore((state) => state.dismiss);
   const speaking = presence?.state === 'speaking';
   const preparingSpeech = presence?.state === 'preparing-speech';
+  const ambientReady = useMorpheusVoiceStore((state) => state.ambientReady);
+  const ambientScope = useMorpheusVoiceStore((state) => state.ambientScope);
 
-  const ambientActive = Boolean(presence?.ambientEnabled && presence.state !== 'asleep');
+  const ambientActive = Boolean(ambientScope === 'companion' && ambientReady && !error
+    && presence?.ambientEnabled && presence.state !== 'asleep' && presence.state !== 'error');
   // The welcome dialog owns its status row so active controls remain accessible
   // inside its modal focus boundary. There is still one global runtime owner.
   if (welcomeOpen !== inWelcome) return null;
@@ -154,7 +172,7 @@ export function MorpheusVoiceIndicator({ inWelcome = false }: { inWelcome?: bool
     || presence?.state === 'transcribing' || presence?.state === 'understanding'
     || presence?.state === 'working';
   const ambientEngaged = ambientActive && presence?.state !== 'armed';
-  const label = followUpUntil ? t('morpheus.voice.dialogue.listening') : speaking
+  const label = error || phase === 'error' ? t('morpheus.voice.states.error') : followUpUntil ? t('morpheus.voice.dialogue.listening') : speaking
     ? t('morpheus.voice.speaking')
     : preparingSpeech ? t('morpheus.voice.preparingSpeech') : ambientActive
       ? t(`morpheus.voice.presence.${presence?.state ?? 'armed'}`)
@@ -216,7 +234,9 @@ export function MorpheusVoiceIndicator({ inWelcome = false }: { inWelcome?: bool
           ) : null}
           {error ? (
             <p data-testid="morpheus-voice-error" className="mt-1 text-xs leading-relaxed text-[hsl(var(--morpheus-danger))]">
-              {errorKind === 'device'
+              {errorKind === 'muted'
+                ? t('morpheus.experience.voice.panel.microphoneMuted')
+                : errorKind === 'device'
                 ? t('morpheus.voice.deviceBody')
                 : errorKind === 'repeat'
                 ? t('morpheus.voice.repeatBody')
