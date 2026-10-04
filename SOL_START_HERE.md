@@ -1,4 +1,28 @@
-# Current continuation — preview.12 connected Voice review, 2026-10-04
+# Current continuation — preview.13 shareable Windows candidate, 2026-10-04
+
+The owner authorizes a polished installable application to share with Larry.
+Continue the approved design and backend; preserve source, historical packages,
+profiles, conversations and credentials. Starting source was clean `2c8e625a`
+on `codex/morpheus-preview10-connected-voice`; verified origin fetched. Builds
+stay on E:. The actual owner app is preview.12 in its E: review folder.
+
+Preview.13 adds concise specific inline outcomes for safe website/app actions,
+optional detail results, useful local first-success examples and explicit saved
+connection testing with Main-owned credentials. Included local speech uses shorter
+natural clauses after measurement exposed gaps from larger groups. Mute, capture,
+cancel, scope and continuity remain with their existing owners. The single
+[specification](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) and
+[checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) govern exact current
+status and identity; qualification/package are pending until recorded there.
+
+Qualify the frozen normal app, actual motion/PCM, NSIS payload and disposable
+Windows installation, then provide the identified EXE and short Larry guide.
+Basic/BYOK with included English voice is shareable. Hosted Premium, payment,
+NerdGPT, signing/update operations and physical speech/echo/resource/soak gates
+must not be called complete. No live keys in chat or owner profile in artifacts.
+Earlier next-step pauses and candidate identities below are historical.
+
+## Previous preview.12 connected Voice review
 
 Final independent review reproduced one preview.11 cache race: cancelling while
 a committed native tray settings reload is pending drops configuration and

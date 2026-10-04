@@ -21,11 +21,13 @@ export function MorpheusConversationThread({
   compact,
   objectiveRuns = EMPTY_OBJECTIVES,
   renderObjective,
+  onOpenSettings,
 }: {
   sessionKey: string | null;
   compact: boolean;
   objectiveRuns?: readonly MorpheusObjectiveRun[];
   renderObjective?: (run: MorpheusObjectiveRun) => ReactNode;
+  onOpenSettings?: (section: 'connections' | 'voice') => void | Promise<void>;
 }) {
   const { t } = useTranslation('dashboard');
   const timeline = useAcpChatSessionStore((state) => state.timeline);
@@ -121,8 +123,26 @@ export function MorpheusConversationThread({
     <div ref={threadRef} data-testid={compact ? 'quick-command-conversation' : 'workspace-conversation'}
       className={compact ? 'space-y-3' : 'space-y-4'}>
       {!entries.length && !loading && !sending && !error ? <div data-testid="morpheus-first-success" className="rounded-xl border border-border/60 bg-surface-input p-4">
-        <p className="text-sm leading-relaxed text-muted-foreground">{t(configured ? 'morpheus.experience.setup.configured' : 'morpheus.experience.setup.unconfigured')}</p>
-        <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => setDraft(t('morpheus.activationV2.suggestions.openYouTube'))} className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-white/5">{t('morpheus.activationV2.suggestions.openYouTube')}</button><Link to="/settings?section=connections" className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-white/5">{t('morpheus.experience.settings.connections')}</Link></div>
+        <h2 className="font-serif text-lg font-normal tracking-tight">{t('morpheus.experience.setup.tryTitle')}</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t('morpheus.experience.setup.tryHint')}</p>
+        <div className={`mt-4 grid gap-2 ${compact ? '' : 'sm:grid-cols-3'}`}>
+          {([
+            ['youtube', 'Open YouTube'],
+            ['calculator', 'Open Calculator'],
+            ['system', 'Show system information'],
+          ] as const).map(([key, command]) => <button type="button" key={key}
+            data-testid={`morpheus-first-${key}`} onClick={() => setDraft(command)}
+            className="rounded-lg border border-border bg-surface-modal px-3 py-3 text-left text-sm transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-white/5">
+            <span className="block">{t(`morpheus.experience.setup.examples.${key}`)}</span>
+            <span className="mt-1 block text-xs text-muted-foreground">{t('morpheus.experience.setup.local')}</span>
+          </button>)}
+        </div>
+        <p className="mt-4 text-xs leading-relaxed text-muted-foreground">{t(configured ? 'morpheus.experience.setup.configured' : 'morpheus.experience.setup.unconfigured')}</p>
+        <div className="mt-3 flex flex-wrap gap-4 text-xs">
+          {(['connections', 'voice'] as const).map((section) => onOpenSettings
+            ? <button type="button" key={section} data-testid={`morpheus-first-${section}`} onClick={() => void onOpenSettings(section)} className="morpheus-fluid-link">{t(`morpheus.experience.settings.${section}`)}</button>
+            : <Link key={section} data-testid={`morpheus-first-${section}`} to={`/settings?section=${section}`} className="morpheus-fluid-link">{t(`morpheus.experience.settings.${section}`)}</Link>)}
+        </div>
       </div> : null}
       {entries.map((entry) => {
         if (entry.kind === 'objective') return <div key={`objective:${entry.run.objectiveRunId}`} data-morpheus-entry="objective" data-objective-id={entry.run.objectiveRunId}>{renderObjective?.(entry.run)}</div>;
@@ -157,7 +177,7 @@ export function MorpheusConversationThread({
             {t('morpheus.conversation.retry')}
           </button> : null}
       </p> : null}
-      {current && (loading || sending) ? <p role="status" className="text-xs text-[#a0b6aa]">
+      {current && (loading || sending) ? <p role="status" className="sr-only">
         {t('morpheus.conversation.waiting')}
       </p> : null}
     </div>

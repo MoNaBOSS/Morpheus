@@ -14,6 +14,25 @@
     "launchAtStartupDesc": "登录系统后自动启动 Morpheus"
   },
   "aiProviders": {
+    "connectionTest": {
+      "button": "测试连接",
+      "testing": "正在测试连接…",
+      "scope": "仅测试已保存的服务访问权限，不发送模型提示词。",
+      "results": {
+        "connected": "服务访问已确认。尚未测试所选模型。",
+        "authentication": "服务拒绝了此凭据。请编辑或替换已保存的 API 密钥，然后重试。",
+        "rate-limited": "服务正在限制此账户的请求。请检查配额或账单，稍后重试。",
+        "network": "无法连接服务。请检查网络、VPN 或已保存的地址，然后重试。",
+        "service": "服务返回了错误或意外响应。请检查服务状态和已保存的 API 地址，然后重试。",
+        "unsupported": "此连接不支持无提示词访问测试。这不表示它未连接；请通过正常登录或模型交互进行验证。",
+        "missing-key": "未找到已保存的 API 密钥。请编辑此连接，安全地添加密钥。",
+        "not-found": "此连接已不存在。请刷新连接页面，选择现有账户。",
+        "disabled": "此账户已禁用。请启用后再测试。",
+        "invalid-request": "无法开始连接测试。请刷新连接页面并重试。",
+        "invalid-config": "请检查已保存的 API 基础地址和 User-Agent。请使用 HTTPS（仅本地服务器可用 HTTP），且不含凭据或查询参数。",
+        "storage": "无法安全读取已保存的凭据。请重启 Morpheus 或重新连接此账户；现有数据已保留。"
+      }
+    },
     "title": "AI 模型提供商",
     "description": "配置 AI 模型提供商和 API 密钥",
     "overview": {

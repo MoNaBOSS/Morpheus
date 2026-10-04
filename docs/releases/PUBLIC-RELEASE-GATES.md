@@ -1,7 +1,9 @@
 # Public release gates
 
-Status: NOT APPROVED FOR PUBLIC RELEASE. This checklist is evidence, not a
-marketing roadmap. No hosted billing or pricing screens are part of this work.
+Status: NOT APPROVED FOR PUBLIC SALE. The single current execution checklist is
+[WINDOWS_COMPLETION_CHECKLIST.md](WINDOWS_COMPLETION_CHECKLIST.md); this document
+records independent commercial gates. Larry's local BYOK candidate and included
+voice can be shared without inventing live Premium, prices, payment or NerdGPT.
 
 ## Locally verifiable gates
 
@@ -15,8 +17,12 @@ marketing roadmap. No hosted billing or pricing screens are part of this work.
 
 ## Independent release gates (must not be replaced with test fixtures)
 
-1. Valid planning/STT/TTS provider credentials configured locally. The last real
-   speech probe returned HTTP 401. A configured key is not verified access.
+1. A real task-model connection tested through secure application setup. Standard
+   English input/output uses included local Whisper/Kokoro, without a separate
+   voice API key. Its actual microphone/speaker acceptance is still required.
+   Optional Advanced cloud voice must disclose audio destination and cost, and
+   have its own live access/quality evidence. Historical provider HTTP 401 probes
+   do not describe the current included architecture.
 2. Real microphone/accent tests: transcription, interruption, background capture,
    quiet/noisy rooms, repeated commands, mute and shutdown. Capture stays opt-in.
 3. A real website objective with provider-side usage reconciliation. Current Core
@@ -27,7 +33,8 @@ marketing roadmap. No hosted billing or pricing screens are part of this work.
    both installed executable and installer trust; outer-installer signing alone
    does not establish inner-binary trust. Never use inherited ValueCell identity.
 5. Clean Windows 10/11 x64 installation, upgrade with existing profile, uninstall
-   keep-data/remove-data choices, and reinstall. Do not erase a developer profile
+   with retained profiles, and reinstall. Default uninstall preserves data;
+   explicit profile erasure is not an installer option. Do not erase a developer profile
    to simulate a clean machine. Use a disposable VM or independent device.
 6. Owned release/support destination, privacy/data-handling policy and review of
    the cloud audio disclosure. Legal review belongs to the product owner.

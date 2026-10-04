@@ -154,7 +154,7 @@
       "checkIns": "How often should I check in?",
       "voice": "Choose a voice (tap to hear)",
       "voiceSample": "Hello, I'm Morpheus. My superpower? Remembering the task while you forget why you opened the fridge. Here's an example task update: your report is ready, with the sources attached.",
-      "voiceUnavailable": "Natural voice previews need a connected speech provider. Typing works now; connect one later in Settings.",
+      "voiceUnavailable": "Voice is off or not ready. You can type now and check Voice in Settings. Included local English speech needs no voice API key.",
       "speakResponses": "Speak replies when natural voice is available.",
       "wakeConsent": "Listen for “Morpheus” in the background (off until voice is configured).",
       "telemetry": "Share optional diagnostic usage events with a random installation ID. Off by default.",
@@ -197,12 +197,21 @@
       "placeholder": "Speak or type your request..."
     },
     "conversation": {
-      "waiting": "Thinking…",
+      "waiting": "Waiting for a response",
       "queued": "Request received",
       "retry": "Retry",
       "mediaCount": "Attachments: {{count}}",
       "workspaceUnavailable": "Conversation workspace is unavailable.",
       "deliveryFailed": "Conversation delivery failed."
+    },
+    "actionOutcome": {
+      "openedWebsite": "Opened {{target}}.",
+      "openedApplication": "Opened {{target}}.",
+      "applicationOpened": "Application opened.",
+      "resultReady": "Your result is ready.",
+      "completed": "Done.",
+      "showDetails": "Show details",
+      "hideDetails": "Hide details"
     },
     "tasks": {
       "active": "{{count}} active",
@@ -1601,7 +1610,11 @@
       },
       "setup": {
         "skip": "Skip for now",
-        "configured": "Existing task-model configuration detected. A connection test confirms service access.",
+        "tryTitle": "Try something useful",
+        "tryHint": "Choose an example, then send it. These work without a model connection.",
+        "local": "On this PC",
+        "examples": { "youtube": "Open YouTube", "calculator": "Open Calculator", "system": "Show system information" },
+        "configured": "Task-model settings found. Test your connection in Settings before using conversation, research or website generation.",
         "unconfigured": "You can open apps and websites locally. Model conversation, research and website generation need a task-model connection. Setup can be revisited in Settings."
       },
       "plans": {

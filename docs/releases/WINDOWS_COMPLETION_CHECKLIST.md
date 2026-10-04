@@ -1,6 +1,44 @@
 # Current Windows experience completion checklist
 
-## Current preview.12 — connected Voice ready for bounded PC review
+## Current shareable Windows candidate — preview.13
+
+Owner authorized polished final application for Larry on October 4. Preserve
+the approved design/backend and qualify a real shareable installer. Starting
+source is clean `2c8e625a1b8e941f8cdd96af84b62576f881686c`, on
+`codex/morpheus-preview10-connected-voice`; expected origin fetched. Actual owner
+runtime is preview.12, not an assumed older installed build. E: has about
+134.6 GiB free, C: about 8.7 GiB. All large builds/evidence stay on E:.
+
+- [x] Reverify actual source, remote, commit, clean worktree and running owner app.
+- [x] Concise inline safe-action results; details and complex capabilities retained.
+- [x] Clear first-success choices and connected readiness/setup, all four locales.
+- [x] Saved-account connection test reads credentials only in Main, makes one bounded
+  metadata request without inference, and reports actionable safe results.
+- [x] Measure included speech and shorten following natural clauses from 160 to
+  80 characters. A real 231-character PCM playback run has a maximum scheduled
+  gap of 99.3 ms; typed/manual Stop were 9/17.6 ms. Input and model answers in
+  that journey are synthetic, not physical microphone/live-model acceptance.
+- [x] Relevant final 181 unit cases, all three type checks, lint (zero errors,
+  12 inherited warnings), comms replay/compare and harness checks passed.
+- [x] Eighteen relevant Electron journeys accepted across coordinated runs,
+  including four action locales, real included PCM, silence, arrival/motion,
+  settings/draft continuity, saved connection and narrow first-success layout.
+  Initial fixture/selector failures and their passing corrections are retained.
+- [ ] Frozen normal packaged qualification, real motion/PCM and protected clean profile.
+- [ ] Identified NSIS installer, exact payload/integrity and disposable install evidence.
+- [ ] Shareable EXE plus concise Larry setup/acceptance notes and remaining limits.
+
+Hidden animation has existing state/reduced-motion coverage; a fresh long-session
+CPU/memory budget remains unaccepted. No public-sale readiness is inferred.
+Physical microphone phrase/wake/accent,
+speaker audibility/echo-safe acoustic interruption, multi-display/DPI/sleep and
+long mixed-use performance need their actual evidence. Signing, update feed,
+hosted funding/operations, account/payment setup and NerdGPT remain open. These
+The candidate is unsigned and updates are manual; no signed update service is
+accepted. External services do not block the local BYOK installer. Final identity and
+qualified scope will replace the pending rows here; preview.12 below is history.
+
+## Previous preview.12 — connected Voice ready for bounded PC review
 
 Independent final review reproduced a preview.11 cache race: cancel an interaction
 while a committed tray settings reload is pending, and the discarded response can

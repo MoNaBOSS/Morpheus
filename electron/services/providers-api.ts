@@ -23,6 +23,7 @@ import {
   syncUpdatedProviderToRuntime,
 } from './providers/provider-runtime-sync';
 import { validateApiKeyWithProvider } from './providers/provider-validation';
+import { createSavedProviderConnectionTest } from './providers/saved-provider-connection';
 import type { ProviderAccount } from '../shared/providers/types';
 import { isRecord } from './payload-utils';
 
@@ -529,6 +530,7 @@ export function createProvidersApi(ctx: ProvidersApiContext): CompleteHostServic
     getDefault: async () => providerService._getDefaultProviderInternal(),
     hasApiKey: async (payload) => providerService._hasProviderApiKeyInternal(getProviderId(payload, 'hasApiKey')),
     validateKey,
+    testAccountConnection: createSavedProviderConnectionTest(providerService),
     save: async (payload) => saveProvider(payload, ctx.gatewayManager),
     delete: async (payload) => deleteProvider(payload, ctx.gatewayManager),
     setApiKey: async (payload) => setProviderApiKey(payload, ctx.gatewayManager),

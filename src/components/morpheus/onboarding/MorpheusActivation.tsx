@@ -102,7 +102,7 @@ export function MorpheusActivation({ enabled }: { enabled: boolean }) {
       silenceTimer.current = window.setTimeout(() => setSuggestions(true), SILENCE_MS);
     };
     // Never mislabel the Windows fallback as a natural voice. The text-only
-    // first run remains usable until a real speech provider is configured.
+    // first run remains usable while included speech is off or needs repair.
     if (voice?.neuralSpeechAvailable && speakResponses) {
       const question = `${t('morpheus.activationV2.welcome', { name: name.trim() || t('morpheus.activationV2.friend') })} ${t('morpheus.activationV2.firstQuestion')}`;
       void playMorpheusSpeech(question, { neuralAvailable: true, format: voice.speechFormat, allowWindowsFallback: false, onSpeakingChange: setSpeaking })

@@ -1,15 +1,20 @@
-/** Short first phrase, then bounded natural sentence groups. No words are omitted. */
+/** Short first phrase, then bounded natural clauses. No words are omitted.
+ * Long sentence groups can outlast the audio already queued by the CPU engine;
+ * Shorter groups let the next PCM arrive sooner without adding a playback delay. */
 export function localSpeechSegments(text: string): string[] {
   let remaining = text.trim().replace(/\s+/g, ' ');
   const segments: string[] = [];
   while (remaining) {
-    const limit = segments.length ? 160 : 64;
+    const limit = segments.length ? 80 : 64;
     if (remaining.length <= limit) { segments.push(remaining); break; }
     const prefix = remaining.slice(0, limit + 1);
     const boundaries = [...prefix.matchAll(/[.!?](?=\s)/g)];
     const sentence = segments.length ? boundaries.at(-1) : boundaries[0];
+    // Prefer a real clause pause over inventing a sentence break at a word.
+    // A very early comma would create a tiny fragment and another avoidable gap.
+    const clause = [...prefix.matchAll(/[,;:](?=\s)/g)].filter(match => match.index! >= limit / 2).at(-1);
     const space = remaining.lastIndexOf(' ', limit);
-    const end = sentence ? sentence.index! + 1 : space > 0 ? space : limit;
+    const end = sentence ? sentence.index! + 1 : clause ? clause.index! + 1 : space > 0 ? space : limit;
     segments.push(remaining.slice(0, end));
     remaining = remaining.slice(end).trimStart();
   }

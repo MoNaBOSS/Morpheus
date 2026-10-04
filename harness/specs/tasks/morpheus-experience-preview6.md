@@ -58,6 +58,9 @@ expectedUserBehavior:
   - Voice setup groups input/device/test and selected natural output/sample, separates installed-engine readiness from recognized-input evidence, and never labels an input error as active listening.
   - Committed native tray preferences synchronize even if an interaction is cancelled during status loading; obsolete capture callbacks cannot restart input, clear permission failure, or defeat master mute.
   - Silence or unrecognized room noise invites a spoken retry without claiming microphone access is unavailable or input readiness has passed.
+  - A successful single-step website or application action has a concise specific localized inline outcome and optional details; complex results and failures retain their controls.
+  - First-success examples identify real local capabilities and the separate need for secure task-model connection, without claiming unavailable hosted plans are live.
+  - Existing task-model connections can be explicitly tested without returning saved credentials to the renderer or overriding their saved destination.
 requiredTests:
   - pnpm run typecheck
   - pnpm run lint:check
@@ -103,3 +106,11 @@ was detected; recognition and speaker/echo remain unqualified. Implement saved
 companion consent with Main-owned foreground suspension, explicit chat input,
 truthful error priority, focused Voice controls and bounded fluid audio motion.
 Keep original profiles/owners and existing Advanced capabilities.
+
+October 4 share amendment: the owner requests a polished installable application
+for Larry, including recommendations from actual preview.12 inspection. Continue
+the approved design with bounded action/first-success polish and measured voice
+improvements where justified. Qualify the actual normal package and NSIS payload;
+use disposable hosted Windows for installation tests. No owner data enters the
+shareable artifact, and no unaccepted hardware or absent commercial service is
+represented as complete. The canonical specification/checklist own current scope.

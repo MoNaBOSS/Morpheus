@@ -80,7 +80,8 @@ jobs:
         shell: pwsh
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          $stable = $version -notmatch '-(alpha|beta|rc)'
+          # Every SemVer prerelease, including preview, stays a prerelease.
+          $stable = $version -match '^\d+\.\d+\.\d+(?:\+[0-9A-Za-z.-]+)?$'
           "stable=$($stable.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 

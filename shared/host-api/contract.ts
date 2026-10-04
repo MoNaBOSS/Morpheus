@@ -534,6 +534,12 @@ export type ProviderValidationPayload = {
   options?: ProviderValidationOptions;
 };
 export type ProviderValidationResult = { valid: boolean; error?: string };
+/** Saved credentials and endpoint stay in Main; this probe never sends model input. */
+export type ProviderConnectionTestCode =
+  | 'connected' | 'authentication' | 'rate-limited' | 'network' | 'service'
+  | 'unsupported' | 'missing-key' | 'not-found' | 'disabled' | 'invalid-request'
+  | 'invalid-config' | 'storage';
+export type ProviderConnectionTestResult = { success: boolean; code: ProviderConnectionTestCode };
 export type ProviderIdPayload = { providerId: string };
 export type ProviderApiKeyPayload = ProviderIdPayload & { apiKey: string };
 export type ProviderSavePayload = { config: ProviderConfig; apiKey?: string };
@@ -1076,6 +1082,7 @@ export type HostApiContract = {
     getDefault: () => string | undefined;
     hasApiKey: (payload: ProviderIdPayload) => boolean;
     validateKey: (payload: ProviderValidationPayload) => ProviderValidationResult;
+    testAccountConnection: (payload: ProviderAccountIdPayload) => ProviderConnectionTestResult;
     save: (payload: ProviderSavePayload) => HostSuccess;
     delete: (payload: ProviderIdPayload) => HostSuccess;
     setApiKey: (payload: ProviderApiKeyPayload) => HostSuccess;

@@ -1,8 +1,8 @@
 import type { MorpheusObjectiveRun } from '@shared/morpheus/core/objective-types';
 
-export function morpheusVoiceSpeechFor(run: MorpheusObjectiveRun | null): string | null {
+export function morpheusVoiceSpeechFor(run: MorpheusObjectiveRun | null, messageFor?: (run: MorpheusObjectiveRun) => string | null): string | null {
   if (run?.state === 'complete') {
-    const summary = run.summary?.trim();
+    const summary = (messageFor ? messageFor(run) : run.summary)?.trim();
     if (!summary) return null;
     // Speak an outcome, not an entire report. Full results remain in the Mission.
     if (summary.length <= 420) return summary;

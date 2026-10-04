@@ -19,9 +19,11 @@ import { useAcpChatSessionStore } from '@/stores/acp-chat-session';
 import { createMorpheusConversationSpeechOwner } from '@/lib/morpheus-conversation-speech';
 import { morpheusSettingsPath, readMorpheusSettingsContext } from '@/lib/morpheus-settings-route';
 import { observeMorpheusPresentationVisibility } from '@/lib/morpheus-presentation-visibility';
+import { morpheusObjectiveMessage, morpheusSimpleActionOutcome } from '@/lib/morpheus-objective-presentation';
 import './morpheus-experience.css';
 
 export function MorpheusVoiceRuntime() {
+  const { t } = useTranslation('dashboard');
   const showQuickCommand = useMorpheusQuickCommandStore((state) => state.show);
   const continueAfterResponse = useMorpheusVoiceStore((state) => state.continueAfterResponse);
   const source = useMorpheusVoiceStore((state) => state.source);
@@ -30,12 +32,15 @@ export function MorpheusVoiceRuntime() {
   const startListening = useMorpheusVoiceStore((state) => state.startListening);
   const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
   const spokenStateKey = useRef<string | null>(null);
-  const message = morpheusVoiceSpeechFor(objectiveRun);
+  const message = morpheusVoiceSpeechFor(objectiveRun, (run) => morpheusObjectiveMessage(run, t));
+  const latestMessage = useRef(message);
+  useEffect(() => { latestMessage.current = message; }, [message]);
   const setAmbientScope = useMorpheusVoiceStore((state) => state.setAmbientScope);
-  // Metadata updates are not new utterances. Stable semantic dependencies also
-  // keep the playback callback alive until audio actually ends.
+  // Metadata and display-language updates are not new utterances. Snapshot the
+  // latest text only when semantic work changes, keeping active playback alive.
   const stateKey = objectiveRun && message
-    ? JSON.stringify([objectiveRun.objectiveRunId, objectiveRun.state, message]) : null;
+    ? JSON.stringify([objectiveRun.objectiveRunId, objectiveRun.state,
+      objectiveRun.summary, objectiveRun.clarification, morpheusSimpleActionOutcome(objectiveRun)]) : null;
   const voiceOrigin = objectiveRun?.origin.type === 'voice';
 
   useEffect(() => {
@@ -93,7 +98,8 @@ export function MorpheusVoiceRuntime() {
   }, []);
 
   useEffect(() => {
-    if (!voiceOrigin || !message || spokenStateKey.current === stateKey) return;
+    const speech = latestMessage.current;
+    if (!voiceOrigin || !speech || spokenStateKey.current === stateKey) return;
 
     spokenStateKey.current = stateKey;
     if (!source || source === 'onboarding' || status?.settings.enabled === false) return;
@@ -101,7 +107,7 @@ export function MorpheusVoiceRuntime() {
       void continueAfterResponse();
       return;
     }
-    void playMorpheusSpeech(message, {
+    void playMorpheusSpeech(speech, {
       format: status?.speechFormat,
       neuralAvailable: status.neuralSpeechAvailable,
     }).then((result) => {
@@ -112,7 +118,7 @@ export function MorpheusVoiceRuntime() {
     return () => {
       stopMorpheusSpeech();
     };
-  }, [continueAfterResponse, voiceOrigin, message, stateKey, source, status?.neuralSpeechAvailable, status?.speechFormat, status?.settings.speakResponses, status?.settings.enabled]);
+  }, [continueAfterResponse, voiceOrigin, stateKey, source, status?.neuralSpeechAvailable, status?.speechFormat, status?.settings.speakResponses, status?.settings.enabled]);
 
   return null;
 }

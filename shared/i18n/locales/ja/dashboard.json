@@ -154,7 +154,7 @@
       "checkIns": "声をかける頻度",
       "voice": "声を選ぶ（タップで試聴）",
       "voiceSample": "こんにちは、モーフィアスです。私の特技？あなたが冷蔵庫を開けた理由を忘れても、タスクは覚えています。タスク報告の例です。レポートができました。出典も添付しています。",
-      "voiceUnavailable": "自然な声の試聴には音声プロバイダーの接続が必要です。入力は今すぐ使えます。",
+      "voiceUnavailable": "音声はオフか未準備です。今は入力し、設定の音声で確認できます。内蔵のローカル英語音声に音声APIキーは不要です。",
       "speakResponses": "自然な音声が使えるときは返答を読み上げる",
       "wakeConsent": "バックグラウンドで「Morpheus」を聞き取る（音声設定までオフ）",
       "telemetry": "任意の診断イベントをランダムなインストールIDと共有する。初期設定はオフ。",
@@ -197,12 +197,21 @@
       "placeholder": "話すか入力してください..."
     },
     "conversation": {
-      "waiting": "考えています…",
+      "waiting": "応答を待っています",
       "queued": "リクエストを受け取りました",
       "retry": "再試行",
       "mediaCount": "添付：{{count}}",
       "workspaceUnavailable": "会話のワークスペースを利用できません。",
       "deliveryFailed": "会話を送信できませんでした。"
+    },
+    "actionOutcome": {
+      "openedWebsite": "{{target}}を開きました。",
+      "openedApplication": "{{target}}を起動しました。",
+      "applicationOpened": "アプリを起動しました。",
+      "resultReady": "結果を確認できます。",
+      "completed": "完了しました。",
+      "showDetails": "詳細を表示",
+      "hideDetails": "詳細を閉じる"
     },
     "tasks": {
       "active": "{{count}} 件実行中",
@@ -1601,7 +1610,11 @@
       },
       "setup": {
         "skip": "今はスキップ",
-        "configured": "既存のタスクモデル設定を検出しました。接続テストでサービスへのアクセスを確認できます。",
+        "tryTitle": "便利な機能を試す",
+        "tryHint": "例を選んで送信してください。これらはモデル接続なしで使えます。",
+        "local": "このPCで実行",
+        "examples": { "youtube": "YouTubeを開く", "calculator": "電卓を開く", "system": "システム情報を表示" },
+        "configured": "タスクモデルの設定が見つかりました。会話、調査、サイト生成を使う前に設定から接続をテストしてください。",
         "unconfigured": "アプリとサイトはローカルで開けます。モデルとの会話、調査、サイト生成にはタスクモデルの接続が必要です。設定からいつでも続けられます。"
       },
       "plans": {

@@ -52,6 +52,13 @@ Use source-only, fixture, native-automated, manual-hardware and live-service lab
 A browser design, source build or documentation checkpoint cannot pass Phase 7.
 NerdGPT is deferred; preserve extension contracts without a fake activation flow.
 
+Saved connection testing accepts only an existing account identity. Main resolves
+the saved endpoint and protected credential; neither key nor arbitrary overrides
+are returned to Renderer. The explicit access probe sends a bounded GET without
+inference fallback, prompt, or raw provider/network error text in UI or diagnostics.
+An access success is not model-generation acceptance. Rate limits, auth failures,
+unavailable no-prompt tests and secure-storage failures stay distinct and actionable.
+
 Native presentation acknowledgement follows the applied editable state, not just
 queued DOM work. Escape cannot reopen from stationary-pointer resize events.
 Orb placement is a fixed sender-checked presentation action. Main reads the actual

@@ -2,7 +2,8 @@
  * Providers Settings Component
  * Manage AI provider configurations and API keys
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type { ProviderConnectionTestResult } from '@shared/host-api/contract';
 import { useSearchParams } from 'react-router-dom';
 import {
   Plus,
@@ -387,6 +388,36 @@ function ProviderCard({
   const [saving, setSaving] = useState(false);
   const [codePlanMode, setCodePlanMode] = useState<CodePlanMode>('apikey');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionResult, setConnectionResult] = useState<ProviderConnectionTestResult | null>(null);
+  const connectionRequest = useRef(0);
+  // A result belongs to these saved settings, never to an unsaved edit or replaced key.
+  const connectionIdentity = JSON.stringify([
+    account.id, account.updatedAt, account.vendorId, account.baseUrl, account.apiProtocol,
+    account.headers, account.model,
+    account.enabled, account.authMode, status?.hasKey,
+  ]);
+  useEffect(() => {
+    connectionRequest.current += 1;
+    setConnectionResult(null);
+    setTestingConnection(false);
+    return () => { connectionRequest.current += 1; };
+  }, [connectionIdentity]);
+
+  const testSavedConnection = async () => {
+    const request = ++connectionRequest.current;
+    setTestingConnection(true);
+    setConnectionResult(null);
+    let result: ProviderConnectionTestResult;
+    try {
+      result = await hostApi.providers.testAccountConnection(account.id);
+    } catch {
+      result = { success: false, code: 'network' };
+    }
+    if (request !== connectionRequest.current) return;
+    setConnectionResult(result);
+    setTestingConnection(false);
+  };
 
   const typeInfo = PROVIDER_TYPE_INFO.find((t) => t.id === account.vendorId);
   const providerDocsUrl = getProviderDocsUrl(typeInfo, i18n.language);
@@ -618,6 +649,35 @@ function ProviderCard({
           </div>
         )}
       </div>
+
+      {!isEditing && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            data-testid={`provider-test-connection-${account.id}`}
+            disabled={testingConnection}
+            onClick={() => void testSavedConnection()}
+            className="shrink-0 rounded-full"
+          >
+            {testingConnection ? <Loader2 aria-hidden="true" className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+            {t(testingConnection ? 'aiProviders.connectionTest.testing' : 'aiProviders.connectionTest.button')}
+          </Button>
+          <p
+            role="status"
+            aria-live="polite"
+            data-testid={`provider-connection-result-${account.id}`}
+            className={cn('text-xs', connectionResult?.success
+              ? 'text-green-700 dark:text-green-400'
+              : connectionResult ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground')}
+          >
+            {t(connectionResult
+              ? `aiProviders.connectionTest.results.${connectionResult.code}`
+              : 'aiProviders.connectionTest.scope')}
+          </p>
+        </div>
+      )}
 
       {isEditing && (
         <div className="space-y-6 mt-4 pt-4 border-t border-black/5 dark:border-white/5">

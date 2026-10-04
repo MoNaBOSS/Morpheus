@@ -23,6 +23,7 @@ import { useMorpheusConversationStore } from '@/stores/morpheus-conversation';
 import { resolveMorpheusSignalState } from '@/components/morpheus/signal/signal-state';
 import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types';
 import { useAcpChatSessionStore } from '@/stores/acp-chat-session';
+import { morpheusObjectiveMessage, morpheusSimpleActionOutcome } from '@/lib/morpheus-objective-presentation';
 
 /** The full workspace projects real tasks as conversation and useful results. */
 export function CommandCenter() {
@@ -31,6 +32,7 @@ export function CommandCenter() {
   const [showTasks, setShowTasks] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [trayError, setTrayError] = useState(false);
+  const [detailsRunId, setDetailsRunId] = useState<string | null>(null);
   const onboarding = useMorpheusCompanionStore((state) => state.onboarding);
   const openWelcome = useMorpheusArrivalStore((state) => state.openWelcome);
   const welcomeOpen = useMorpheusArrivalStore((state) => state.welcomeOpen);
@@ -54,7 +56,10 @@ export function CommandCenter() {
     return run && !isObjectiveTerminalState(run.state);
   }).length;
   const resultArtifacts = objectiveRun?.artifacts ?? recentArtifacts;
-  const hasResult = resultArtifacts.length > 0 || Boolean(objectiveRun && (objectiveRun.summary || objectiveRun.error || objectiveRun.clarification));
+  const inlineOutcome = morpheusSimpleActionOutcome(objectiveRun);
+  const showDetails = detailsRunId === objectiveRun?.objectiveRunId;
+  const hasResult = (!inlineOutcome || showDetails)
+    && (resultArtifacts.length > 0 || Boolean(objectiveRun && (objectiveRun.summary || objectiveRun.error || objectiveRun.clarification)));
   const keepInTray = async (): Promise<void> => {
     setTrayError(false);
     stopMorpheusSpeech();
@@ -108,17 +113,24 @@ export function CommandCenter() {
           <section className="morpheus-workspace-thread flex min-h-0 min-w-0 flex-col" aria-label={t('morpheus.workspace.conversation')}>
             <div className="morpheus-workspace-messages min-h-0 flex-1 overflow-y-auto pr-3" role="log" aria-label={t('morpheus.workspace.conversation')}>
               <MorpheusConversationThread sessionKey={selectedConversationId} compact={false} objectiveRuns={recentRuns}
-                renderObjective={(run) => <div className="morpheus-workspace-exchange">
+                renderObjective={(run) => {
+                  const message = morpheusObjectiveMessage(run, t, history?.plansByObjectiveRunId[run.objectiveRunId]);
+                  const selected = objectiveRun?.objectiveRunId === run.objectiveRunId;
+                  const active = !isObjectiveTerminalState(run.state);
+                  const simple = morpheusSimpleActionOutcome(run);
+                  return <div className="morpheus-workspace-exchange">
                 <button type="button" data-testid={objectiveRun?.objectiveRunId === run.objectiveRunId ? 'workspace-selected-task' : undefined} onClick={() => selectObjective(run.objectiveRunId)} className={`morpheus-workspace-message morpheus-workspace-user-message morpheus-conversation-user-bubble text-left ${objectiveRun?.objectiveRunId === run.objectiveRunId ? 'is-selected' : ''}`}>
                   <span className="morpheus-workspace-speaker">{t('morpheus.workspace.you')}</span>
                   <span className="block text-sm leading-relaxed text-[#edf5ef]">{run.objective}</span>
                 </button>
-                <div className="morpheus-workspace-message morpheus-workspace-reply morpheus-conversation-reply">
+                {message ? <div className="morpheus-workspace-message morpheus-workspace-reply morpheus-conversation-reply">
                   <span className="morpheus-workspace-speaker">{t('morpheus.title')}</span>
-                  <p data-testid={objectiveRun?.objectiveRunId === run.objectiveRunId ? 'command-center-objective-summary' : undefined} className="text-sm leading-relaxed text-[#edf5ef]">{run.clarification ?? run.error?.message ?? run.summary ?? t('morpheus.workspace.working')}</p>
-                  {objectiveRun?.objectiveRunId === run.objectiveRunId && !isObjectiveTerminalState(run.state) ? <button type="button" data-testid="plan-cancel-objective" onClick={() => void cancelObjective()} className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#b8c9be] hover:text-white"><Square className="h-3 w-3 fill-current" />{t('morpheus.signalOs.stop')}</button> : null}
-                </div>
-              </div>} />
+                  <p data-testid={selected ? 'command-center-objective-summary' : undefined} className="text-sm leading-relaxed text-[#edf5ef]">{message}</p>
+                  {selected && simple ? <button type="button" data-testid="workspace-action-details" aria-expanded={showDetails} onClick={() => setDetailsRunId(showDetails ? null : run.objectiveRunId)} className="mt-2 text-xs text-[#a0b6aa] underline underline-offset-4 hover:text-white">{t(showDetails ? 'morpheus.actionOutcome.hideDetails' : 'morpheus.actionOutcome.showDetails')}</button> : null}
+                </div> : <span className="sr-only" role="status">{t(`morpheus.objective.states.${run.state}`)}</span>}
+                {selected && active ? <button type="button" data-testid="plan-cancel-objective" onClick={() => void cancelObjective()} className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#b8c9be] hover:text-white"><Square className="h-3 w-3 fill-current" />{t('morpheus.signalOs.stop')}</button> : null}
+              </div>;
+                }} />
             </div>
             <CommandBar />
           </section>
@@ -127,7 +139,7 @@ export function CommandCenter() {
             <FileText className="mb-5 h-5 w-5 text-[#53edb4]" strokeWidth={1.6} />
             <h3 className="text-xl font-semibold tracking-tight text-[#edf5ef]">{t('morpheus.workspace.result')}</h3>
             {objectiveRun ? <><p data-testid="command-center-objective-state" className="mt-2 text-xs text-[#a0b6aa]">{t(`morpheus.objective.states.${objectiveRun.state}`)}</p>
-            <p className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-[#d8e7dd]">{objectiveRun.clarification ?? objectiveRun.error?.message ?? objectiveRun.summary ?? t('morpheus.workspace.working')}</p></> : null}
+            <p className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-[#d8e7dd]">{morpheusObjectiveMessage(objectiveRun, t, history?.plansByObjectiveRunId[objectiveRun.objectiveRunId])}</p></> : null}
             {resultArtifacts.length ? <ul className="mt-6 space-y-3 border-t border-white/10 pt-4">{resultArtifacts.filter((artifact) => artifact.kind === 'report').map((artifact) => <li key={artifact.artifactId} data-testid="morpheus-artifact" data-kind={artifact.kind} className="break-all text-xs leading-relaxed text-[#a0b6aa]">
               {artifact.data.controlKind ? <DesktopControlResult data={artifact.data} /> : artifact.data.sourceType === 'public-https' ? <ResearchSource data={artifact.data} /> : typeof artifact.data.browserSnapshot === 'string' ? <article data-testid="browser-observation-result" className="space-y-3 break-words">
                 <h4 className="text-base font-semibold text-[#edf5ef]">{artifact.data.title}</h4>
@@ -136,7 +148,7 @@ export function CommandCenter() {
               </article> : <dl className="grid grid-cols-2 gap-x-4 gap-y-3">{Object.entries(artifact.data).map(([key, value]) => <div key={key} className="min-w-0"><dt className="mb-1 text-[10px] uppercase tracking-[0.08em] text-[#7d9b88]">{key.replace(/([a-z])([A-Z])/g, '$1 $2')}</dt><dd className="text-sm text-[#d8e7dd]">{value}</dd></div>)}</dl>}
             </li>)}</ul> : null}
             {resultArtifacts.some((artifact) => artifact.kind !== 'report') ? <ArtifactsPanel items={resultArtifacts.filter((artifact) => artifact.kind !== 'report')} showRoot={false} /> : null}
-          </aside> : null}
+          </aside> : objectiveRun && inlineOutcome ? <p data-testid="command-center-objective-state" className="sr-only">{t(`morpheus.objective.states.${objectiveRun.state}`)}</p> : null}
         </div>
       </div>
       <footer className="morpheus-workspace-footer relative z-10 flex h-10 shrink-0 items-center justify-between border-t border-white/10 px-5 text-[11px] text-[#a0b6aa]">

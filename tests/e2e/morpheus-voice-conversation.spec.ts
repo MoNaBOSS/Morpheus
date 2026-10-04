@@ -6,7 +6,7 @@ import { closeElectronApp, expect, getStableWindow, installAttachmentHostFixture
 type PlaybackEvidence = {
   captureRequests: number;
   chunks: Array<{ streamId: string; sequence: number; bytes: number }>;
-  sources: Array<{ startedAt: number; endedAt: number | null; stoppedAt: number | null; stoppedEarly: boolean; bytes: number }>;
+  sources: Array<{ startedAt: number; scheduledStartMs: number; scheduledEndMs: number; endedAt: number | null; stoppedAt: number | null; stoppedEarly: boolean; bytes: number }>;
 };
 type Completion = { text: string; pcmStream: { streamId: string; chunkCount: number; byteLength: number } };
 
@@ -65,7 +65,9 @@ test('generated local speech receives one live ACP answer with actual PCM playba
       if (!/how are you/i.test(recognized.transcript)) throw new Error('The real generated phrase was not recognized');
       return { audioBase64, transcript: recognized.transcript, pcmBytes: pcm.length };
     });
-    const firstAnswer = 'I am ready to help, with a little Matrix humor.';
+    // Exercise a complete multi-clause answer through the actual local worker
+    // and original playback queue, rather than only a short opening sentence.
+    const firstAnswer = 'Your report is ready. I checked the latest source, compared the details, and collected the most useful findings so you can decide what to do next. The browser remains available whenever you want to check a source or continue your task.';
     await fixture.setPromptUpdates(generated.transcript, [{ sessionUpdate: 'agent_message_chunk', messageId: 'first-voice-answer', content: { type: 'text', text: firstAnswer } }]);
     await page.reload();
     await expect(page.getByTestId('morpheus-command-input')).toBeVisible();
@@ -109,8 +111,14 @@ test('generated local speech receives one live ACP answer with actual PCM playba
         const source: AudioBufferSourceNode = Reflect.apply(originalCreate, this, args);
         if (this.sampleRate !== 24_000) return source;
         const start = source.start; const stop = source.stop;
-        const record: PlaybackEvidence['sources'][number] = { startedAt: 0, endedAt: null, stoppedAt: null, stoppedEarly: false, bytes: 0 };
-        source.start = function (...values) { const result = Reflect.apply(start, this, values); record.startedAt = performance.now(); record.bytes = (this.buffer?.length ?? 0) * 2; evidence.sources.push(record); return result; };
+        const record: PlaybackEvidence['sources'][number] = { startedAt: 0, scheduledStartMs: 0, scheduledEndMs: 0, endedAt: null, stoppedAt: null, stoppedEarly: false, bytes: 0 };
+        source.start = function (...values) {
+          const result = Reflect.apply(start, this, values);
+          record.startedAt = performance.now(); record.bytes = (this.buffer?.length ?? 0) * 2;
+          record.scheduledStartMs = (values[0] ?? this.context.currentTime) * 1000;
+          record.scheduledEndMs = record.scheduledStartMs + (this.buffer?.duration ?? 0) * 1000;
+          evidence.sources.push(record); return result;
+        };
         source.stop = function (...values) { const result = Reflect.apply(stop, this, values); record.stoppedAt = performance.now(); record.stoppedEarly = record.endedAt === null; return result; };
         source.addEventListener('ended', () => { record.endedAt = performance.now(); }); return source;
       };
@@ -131,6 +139,7 @@ test('generated local speech receives one live ACP answer with actual PCM playba
     expect(received).toBe(completions[0].pcmStream.byteLength);
     expect(first.sources.reduce((sum, source) => sum + source.bytes, 0)).toBe(received);
     expect(first.sources.every((source) => !source.stoppedEarly)).toBe(true);
+    expect(first.chunks.length).toBeGreaterThan(3);
     expect(first.captureRequests).toBe(1);
     const stops: Array<{ type: string; latencyMs: number }> = [];
     for (const type of ['typed', 'manual']) {
@@ -153,6 +162,7 @@ test('generated local speech receives one live ACP answer with actual PCM playba
     const report = { scope: 'Real included neural sample → synthetic WebAudio MediaStream → original recorder/Main recognition/router → original Main admission and ACP renderer → real included PCM playback. ACP model answers are deterministic fixture content.',
       exclusions: ['Physical microphone permission/capture, wake/echo/acoustic barge-in, speaker audibility and live paid-model inference are not qualified.', 'Hands-free continuation is disabled here; its completion/cancellation policy has separate focused unit evidence.'],
       generated: { transcript: generated.transcript, pcmBytes: generated.pcmBytes }, first, completions, stops,
+      maximumScheduledGapMs: Math.max(0, ...first.sources.slice(1).map((source, index) => source.scheduledStartMs - first.sources[index].scheduledEndMs)),
       admittedPromptIds: calls.map((call) => call.payload?.messageId), final: await observed() };
     const path = info.outputPath('generated-voice-conversation-evidence.json'); await writeFile(path, JSON.stringify(report, null, 2));
     await info.attach('generated-voice-conversation-evidence', { path, contentType: 'application/json' });

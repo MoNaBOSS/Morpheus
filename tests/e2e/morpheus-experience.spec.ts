@@ -1,5 +1,38 @@
 import { closeElectronApp, expect, getStableWindow, installAttachmentHostFixture, test } from './fixtures/electron';
 
+test('first-success examples keep real local commands usable and setup reachable without a model', async ({ launchElectronApp }, info) => {
+  const app = await launchElectronApp({ skipSetup: true });
+  try {
+    const page = await getStableWindow(app);
+    await expect(page.getByTestId('morpheus-first-success')).toBeVisible();
+    for (const [key, command] of [['youtube', 'Open YouTube'], ['calculator', 'Open Calculator'], ['system', 'Show system information']]) {
+      await page.getByTestId(`morpheus-first-${key}`).click();
+      await expect(page.getByTestId('morpheus-command-input')).toHaveValue(command);
+    }
+    await page.getByTestId('morpheus-first-voice').click();
+    await expect(page.getByTestId('morpheus-settings-voice')).toHaveAttribute('aria-pressed', 'true');
+    await page.getByTestId('morpheus-settings-return').click();
+    await expect(page.getByTestId('morpheus-command-input')).toHaveValue('Show system information');
+    await page.getByTestId('morpheus-first-connections').click();
+    await expect(page.getByTestId('morpheus-settings-connections')).toHaveAttribute('aria-pressed', 'true');
+    await page.getByTestId('morpheus-settings-return').click();
+    await page.getByTestId('signal-nav-presence').click();
+    await expect(page.getByTestId('morpheus-quick-command')).toBeVisible();
+    await page.getByTestId('quick-command-conversation').getByTestId('morpheus-first-voice').click();
+    await expect(page.getByTestId('morpheus-quick-command')).toHaveCount(0);
+    await expect(page.getByTestId('morpheus-settings-voice')).toHaveAttribute('aria-pressed', 'true');
+    await page.getByTestId('morpheus-settings-return').click();
+    await expect(page.getByTestId('quick-command-input')).toHaveValue('Show system information');
+    await page.getByTestId('quick-command-expand').click();
+    await expect(page.getByTestId('morpheus-quick-command')).toHaveCount(0);
+    await expect(page.getByTestId('morpheus-command-input')).toBeVisible();
+    await page.setViewportSize({ width: 430, height: 800 });
+    await expect(page.getByTestId('workspace-conversation').getByTestId('morpheus-first-calculator')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: info.outputPath('first-success-narrow.png') });
+  } finally { await closeElectronApp(app); }
+});
+
 test('simple navigation preserves a draft and retains the full workspace under Advanced', async ({ launchElectronApp }, info) => {
   const app = await launchElectronApp({ skipSetup: true });
   try {

@@ -14,13 +14,34 @@ describe('included speech segments and PCM validation', () => {
     const parts = localSpeechSegments(text);
     expect(parts[0]).toBe('I am Morpheus.');
     expect(parts.join(' ')).toBe(text);
-    expect(parts.slice(1).every(part => part.length <= 160)).toBe(true);
+    expect(parts.slice(1).every(part => part.length <= 80)).toBe(true);
   });
   it('bounds an unpunctuated reply at word boundaries and keeps Unicode', () => {
     const text = Array.from({ length: 120 }, () => '世界 together').join(' ');
     const parts = localSpeechSegments(text);
-    expect(parts[0].length).toBeLessThanOrEqual(64); expect(parts.every(part => part.length <= 160)).toBe(true);
+    expect(parts[0].length).toBeLessThanOrEqual(64); expect(parts.every(part => part.length <= 80)).toBe(true);
     expect(parts.join(' ')).toBe(text); expect(localSpeechSegments('  \n ')).toEqual([]);
+  });
+  it('keeps a long response intact while preferring natural clause pauses', () => {
+    const text = 'Your report is ready. I checked the latest source, compared the details, and collected the most useful findings so you can decide what to do next. The browser remains available whenever you want to check a source or continue your task.';
+    const parts = localSpeechSegments(text);
+    expect(parts).toEqual([
+      'Your report is ready.',
+      'I checked the latest source, compared the details,',
+      'and collected the most useful findings so you can decide what to do next.',
+      'The browser remains available whenever you want to check a source or continue',
+      'your task.',
+    ]);
+    expect(parts.join(' ')).toBe(text);
+    expect(parts.every(part => part.length <= 80)).toBe(true);
+  });
+  it('bounds a long opening and avoids turning an early comma into a tiny first fragment', () => {
+    const text = 'Well, I can open your browser and bring up the page you requested; then keep the complete result ready for your follow-up.';
+    const parts = localSpeechSegments(text);
+    expect(parts[0]).not.toBe('Well,');
+    expect(parts[0].length).toBeLessThanOrEqual(64);
+    expect(parts.join(' ')).toBe(text);
+    expect(parts.every(part => part.length <= 80)).toBe(true);
   });
   it('returns only actual mono 24 kHz PCM samples', () => {
     expect(localSpeechPcm(wav())).toEqual(Buffer.from([0, 32, 0, 64]));

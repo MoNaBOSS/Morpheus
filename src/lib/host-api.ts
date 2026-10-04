@@ -290,6 +290,9 @@ export const hostApi = {
       invokeHost('providers', 'hasApiKey', { providerId })
     ),
     validateKey: (input: ProviderValidationPayload) => invokeHost('providers', 'validateKey', input),
+    testAccountConnection: (accountId: string) => (
+      invokeHost('providers', 'testAccountConnection', { accountId })
+    ),
     save: (input: { config: ProviderConfig; apiKey?: string }) => invokeHost('providers', 'save', input),
     delete: (providerId: string) => invokeHost('providers', 'delete', { providerId }),
     setApiKey: (providerId: string, apiKey: string) => (

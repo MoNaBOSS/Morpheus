@@ -14,6 +14,25 @@
     "launchAtStartupDesc": "Automatically launch Morpheus when you log in"
   },
   "aiProviders": {
+    "connectionTest": {
+      "button": "Test connection",
+      "testing": "Testing connection…",
+      "scope": "Tests saved service access without sending a model prompt.",
+      "results": {
+        "connected": "Service access confirmed. The selected model has not been tested.",
+        "authentication": "The service rejected this credential. Edit or replace the saved API key, then test again.",
+        "rate-limited": "The service is rate limiting this account. Check its quota or billing and try again shortly.",
+        "network": "Could not reach the service. Check your network, VPN or saved endpoint and try again.",
+        "service": "The service returned an error or unexpected response. Check its status and saved API endpoint, then try again.",
+        "unsupported": "A no-prompt access test is unavailable for this connection. This does not mean it is disconnected; verify it through its normal sign-in or model interaction.",
+        "missing-key": "No saved API key was found. Edit this connection to add one securely.",
+        "not-found": "This connection no longer exists. Refresh Connections and select an existing account.",
+        "disabled": "This account is disabled. Enable it before testing.",
+        "invalid-request": "The connection test could not start. Refresh Connections and try again.",
+        "invalid-config": "Check the saved API base URL and User-Agent. Use HTTPS (HTTP only for local servers), without credentials or query parameters.",
+        "storage": "The saved credential could not be read securely. Restart Morpheus or reconnect this account; existing data was retained."
+      }
+    },
     "title": "AI Providers",
     "description": "Configure your AI model providers and API keys",
     "overview": {

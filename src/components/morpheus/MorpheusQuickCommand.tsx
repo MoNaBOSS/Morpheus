@@ -21,6 +21,7 @@ import { isObjectiveTerminalState } from '@shared/morpheus/core/objective-types'
 import { resolveMorpheusSignalState } from './signal/signal-state';
 import { MorpheusQuestionAnswers } from './MorpheusQuestionAnswers';
 import { useAcpChatSessionStore } from '@/stores/acp-chat-session';
+import { morpheusObjectiveMessage } from '@/lib/morpheus-objective-presentation';
 
 /** A compact conversation attached to the orb; expanding keeps the same task and draft. */
 export function MorpheusQuickCommand() {
@@ -153,8 +154,11 @@ export function MorpheusQuickCommand() {
       <div className="relative z-10 flex min-h-0 flex-1 flex-col px-4 py-3">
         <div className="morpheus-compact-presence flex items-center gap-3"><MorpheusFluidOrb state={signalState} className="h-14 w-14" label={t(`morpheus.signalOs.signal.${signalState}`)} /><div><p className="text-lg font-semibold text-[#edf5ef]">{t('morpheus.workspace.greeting')}</p><p data-testid="quick-command-live-state" className="text-xs text-[#a0b6aa]">{voiceBusy ? t(`morpheus.voice.states.${voicePhase}`) : t('morpheus.workspace.subtitle')}</p></div></div>
         <div ref={logRef} onWheel={(event) => { if (event.deltaY < 0 && event.currentTarget.scrollHeight > event.currentTarget.clientHeight) readingHistory.current = true; }} onScroll={(event) => { const node = event.currentTarget; if (node.scrollHeight - node.scrollTop - node.clientHeight < 40) readingHistory.current = false; }} onKeyDown={(event) => { if (['ArrowUp', 'PageUp', 'Home'].includes(event.key)) readingHistory.current = true; }} tabIndex={0} className="morpheus-compact-log min-h-0 flex-1 space-y-4 overflow-y-auto" role="log" aria-label={t('morpheus.workspace.conversation')}>
-          <MorpheusConversationThread sessionKey={selectedConversationId} compact objectiveRuns={recentRuns}
-            renderObjective={(run) => <div className="space-y-3"><div className="morpheus-conversation-user-bubble text-sm text-[#edf5ef]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.workspace.you')}</span>{run.objective}</div><div className="morpheus-conversation-reply text-sm leading-relaxed text-[#d8e7dd]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.title')}</span>{run.clarification ?? run.error?.message ?? run.summary ?? t('morpheus.workspace.working')}</div></div>} />
+          <MorpheusConversationThread sessionKey={selectedConversationId} compact objectiveRuns={recentRuns} onOpenSettings={openSettings}
+            renderObjective={(run) => {
+              const message = morpheusObjectiveMessage(run, t, history?.plansByObjectiveRunId[run.objectiveRunId]);
+              return <div className="space-y-3"><div className="morpheus-conversation-user-bubble text-sm text-[#edf5ef]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.workspace.you')}</span>{run.objective}</div>{message ? <div className="morpheus-conversation-reply text-sm leading-relaxed text-[#d8e7dd]"><span className="mb-2 block text-[11px] text-[#a0b6aa]">{t('morpheus.title')}</span>{message}</div> : <span className="sr-only" role="status">{t(`morpheus.objective.states.${run.state}`)}</span>}</div>;
+            }} />
           {conversationError ? <div role="alert" className="rounded-xl border border-red-500/30 bg-red-950/30 p-3 text-sm text-red-200">{conversationError}{blockedTurnId ? <button type="button" onClick={retryConversation} className="ml-2 underline">{t('morpheus.conversation.retry')}</button> : null}</div> : null}
           {clarification ? <p className="rounded-xl border border-[#345341] bg-[#0e1b15] p-3 text-sm text-[#edf5ef]">{clarification}</p> : null}
           {open && objectiveRun?.state === 'needs-clarification' ? <MorpheusQuestionAnswers

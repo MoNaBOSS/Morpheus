@@ -19,7 +19,7 @@ describe('package identity', () => {
 
   it('is named and versioned as the Morpheus 1.2.0 preview candidate', () => {
     expect(pkg.name).toBe('morpheus');
-    expect(pkg.version).toBe('1.2.0-preview.8');
+    expect(pkg.version).toBe('1.2.0-preview.13');
     expect(pkg.description).toContain('Morpheus');
     expect(pkg.description).not.toContain('ClawX');
   });
@@ -118,6 +118,8 @@ describe('update feed', () => {
     expect(workflow).not.toContain('draft: false');
     expect(workflow).toContain('vars.MORPHEUS_SIGNPATH_PROJECT_SLUG');
     expect(workflow).not.toContain("project-slug: 'ValueCell'");
+    expect(workflow).not.toContain("-notmatch '-(alpha|beta|rc)'");
+    expect(workflow).toContain("$stable = $version -match '^\\d+\\.\\d+\\.\\d+(?:\\+[0-9A-Za-z.-]+)?$'");
   });
 });
 

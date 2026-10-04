@@ -1,5 +1,6 @@
 import { proxyAwareFetch } from '../../utils/proxy-fetch';
 import { getProviderConfig } from '../../utils/provider-registry';
+import type { ProviderConnectionTestResult } from '@shared/host-api/contract';
 
 type ValidationProfile =
   | 'openai-completions'
@@ -103,6 +104,9 @@ function getValidationProfile(
   if (providerApi === 'openai-completions') {
     return 'openai-completions';
   }
+  if (providerApi === 'google-generative-ai') {
+    return 'google-query-key';
+  }
 
   switch (providerType) {
     case 'anthropic':
@@ -115,6 +119,112 @@ function getValidationProfile(
       return 'none';
     default:
       return 'openai-completions';
+  }
+}
+
+async function readAccessProbeJson(response: Response): Promise<unknown> {
+  if (!response.body) return undefined;
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let length = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      length += value.byteLength;
+      if (length > 64 * 1024) {
+        await reader.cancel();
+        return undefined;
+      }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(length);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    try { return JSON.parse(new TextDecoder().decode(bytes)); } catch { return undefined; }
+  } finally { reader.releaseLock(); }
+}
+
+/** Explicit saved-account access test: one GET, no inference fallback or raw diagnostics. */
+export async function validateProviderAccess(
+  providerType: string,
+  apiKey: string,
+  options?: { baseUrl?: string; apiProtocol?: string; headers?: Record<string, string> },
+): Promise<ProviderConnectionTestResult> {
+  const profile = getValidationProfile(providerType, options);
+  if (profile === 'none') return { success: false, code: 'unsupported' };
+  if (!apiKey.trim()) return { success: false, code: 'missing-key' };
+  if (options?.apiProtocol && ![
+    'openai-completions', 'openai-responses', 'anthropic-messages', 'google-generative-ai',
+  ].includes(options.apiProtocol)) return { success: false, code: 'unsupported' };
+
+  const baseUrl = options?.baseUrl || getProviderConfig(providerType)?.baseUrl
+    || (profile === 'google-query-key' ? 'https://generativelanguage.googleapis.com/v1beta'
+      : profile === 'anthropic-header' ? 'https://api.anthropic.com/v1' : undefined);
+  let url: URL;
+  const headers: Record<string, string> = {};
+  try {
+    if (providerType === 'openrouter') {
+      url = new URL('https://openrouter.ai/api/v1/auth/key');
+      headers.Authorization = `Bearer ${apiKey.trim()}`;
+    } else {
+      if (!baseUrl?.trim()) return { success: false, code: 'invalid-config' };
+      const base = new URL(baseUrl.trim());
+      if (!['https:', 'http:'].includes(base.protocol) || base.username || base.password
+        || base.search || base.hash) return { success: false, code: 'invalid-config' };
+      // Permit local compatible servers without TLS, never send a saved key to remote HTTP.
+      if (base.protocol === 'http:' && !['127.0.0.1', 'localhost', '[::1]'].includes(base.hostname)) {
+        return { success: false, code: 'invalid-config' };
+      }
+      if (profile === 'google-query-key') {
+        url = new URL(`${normalizeBaseUrl(base.toString())}/models?pageSize=1`);
+        url.searchParams.set('key', apiKey.trim());
+      } else if (profile === 'anthropic-header') {
+        const raw = normalizeBaseUrl(base.toString());
+        url = new URL(`${raw.endsWith('/v1') ? raw : `${raw}/v1`}/models?limit=1`);
+        headers['x-api-key'] = apiKey.trim();
+        headers['anthropic-version'] = '2023-06-01';
+      } else {
+        url = new URL(resolveOpenAiProbeUrls(base.toString(),
+          profile === 'openai-responses' ? 'openai-responses' : 'openai-completions').modelsUrl);
+        headers.Authorization = `Bearer ${apiKey.trim()}`;
+      }
+    }
+  } catch {
+    return { success: false, code: 'invalid-config' };
+  }
+  // The inherited custom form supports User-Agent. Preserve that saved value,
+  // while authentication headers remain derived solely from the protected key.
+  const userAgent = Object.entries(options?.headers ?? {}).find(([name]) => name.toLowerCase() === 'user-agent')?.[1];
+  if (userAgent) {
+    if (userAgent.length > 1024 || /[\r\n]/.test(userAgent)) return { success: false, code: 'invalid-config' };
+    headers['User-Agent'] = userAgent;
+  }
+  try {
+    const response = await proxyAwareFetch(url.toString(), {
+      method: 'GET', headers, redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(15_000),
+    });
+    // Endpoint content is untrusted, bounded and used only for response classification.
+    const data = await readAccessProbeJson(response);
+    const classified = classifyAuthResponse(response.status, data);
+    if (response.status === 429) return { success: false, code: 'rate-limited' };
+    if (classified.authFailure || classifyAuthResponse(400, data).authFailure) {
+      return { success: false, code: 'authentication' };
+    }
+    if (response.status >= 200 && response.status < 300) {
+      const body = data && typeof data === 'object' && !Array.isArray(data)
+        ? data as Record<string, unknown> : undefined;
+      if (!body || (body.error !== undefined && body.error !== null)) return { success: false, code: 'service' };
+      const plausible = providerType === 'openrouter'
+        ? body.data && typeof body.data === 'object' && !Array.isArray(body.data)
+        : Array.isArray(profile === 'google-query-key' ? body.models : body.data);
+      return plausible ? { success: true, code: 'connected' } : { success: false, code: 'service' };
+    }
+    if ([404, 405, 501].includes(response.status)) return { success: false, code: 'unsupported' };
+    return { success: false, code: 'service' };
+  } catch {
+    // URLs (Google query keys), headers and arbitrary network errors remain private.
+    return { success: false, code: 'network' };
   }
 }
 

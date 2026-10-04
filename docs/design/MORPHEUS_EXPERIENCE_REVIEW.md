@@ -1,6 +1,47 @@
 # Morpheus experience specification
 
-## Current preview.12 — connected Voice review
+## Current shareable Windows candidate — October 4, preview.13
+
+The owner now authorizes finishing a polished installable application to share
+with Larry, including the recommendations from actual preview.12 inspection.
+Continue the approved design and existing backend. This supersedes the previous
+one-phrase next-step pause; it does not turn untested hardware or absent hosted
+services into accepted production behavior.
+
+Verified starting source: clean `2c8e625a1b8e941f8cdd96af84b62576f881686c`,
+`codex/morpheus-preview10-connected-voice`, expected origin fetched without
+overwriting. The owner is actually running preview.12 from its E: review folder.
+Builds remain on E: (about 134.6 GiB free; C: about 8.7 GiB). Preserve all prior
+packages, divergent checkouts, profiles, history and provider secrets.
+
+Smallest coherent product polish: safe single-step website/application actions
+use a concise, specific inline outcome and meaningful motion, without generic
+planning chatter or a large result panel. Details stay available; complex tasks,
+questions, permissions and errors retain their richer controls. Make genuinely
+available starter actions discoverable, while connections and voice readiness
+remain explicit. Audit actual included voice timing before any bounded change;
+preserve mute, capture, cancellation and no-speech safeguards. No paid fallback.
+
+Qualify the frozen normal package, export actual motion and included PCM, compile
+an identified NSIS installer and check its contents. A clean install/reinstall
+test belongs on a disposable Windows runner, never the owner's registration.
+Larry's first-run profile must contain no owner data or credentials. Basic/BYOK
+and included local voice are the shareable offering. Premium, payments and
+NerdGPT remain unavailable, with no invented prices or working checkout.
+
+The bounded action/first-success/connection polish and shorter natural speech
+clauses are implemented. Final 181 focused unit cases, type/lint/comms/harness
+checks and 18 relevant rendered journeys passed. Generated-input speech retained
+all 661,356 PCM bytes with a maximum scheduled playback gap of 99.3 ms; this
+does not establish physical recognition, speaker quality or live-model latency.
+
+Exact next step: freeze the source, qualify and package preview.13. Final
+The Windows candidate is unsigned, with manual updates. Final handoff must
+distinguish tested package operation from physical speech/echo/wake,
+signing/update, resource/soak and hosted commercial gates. Earlier sections below
+are preserved evidence, not competing execution plans.
+
+## Previous preview.12 — connected Voice review
 
 Keep the connected Voice design. A final independent review reproduced stale
 renderer preferences when interaction cancellation discards a committed tray

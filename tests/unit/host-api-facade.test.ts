@@ -276,6 +276,16 @@ describe('hostApi facade', () => {
     }));
   });
 
+  it('tests a saved account through hostInvoke with identity only', async () => {
+    const result = { success: true, code: 'connected' };
+    hostInvoke.mockResolvedValueOnce({ id: 'req', ok: true, data: result });
+    const { hostApi } = await import('@/lib/host-api');
+    await expect(hostApi.providers.testAccountConnection('saved')).resolves.toEqual(result);
+    expect(hostInvoke).toHaveBeenCalledWith(expect.objectContaining({
+      module: 'providers', action: 'testAccountConnection', payload: { accountId: 'saved' },
+    }));
+  });
+
   it('passes provider OAuth requests through hostInvoke', async () => {
     hostInvoke
       .mockResolvedValueOnce({ id: 'req-1', ok: true, data: { success: true } })
