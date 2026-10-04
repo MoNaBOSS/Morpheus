@@ -150,7 +150,7 @@ describe('provider metadata', () => {
     );
   });
 
-  it('exposes editable model id with default for built-in providers, mirroring OpenRouter', () => {
+  it('exposes editable built-in model ids and requires an explicit OpenRouter choice', () => {
     const anthropic = PROVIDER_TYPE_INFO.find((provider) => provider.id === 'anthropic');
     const openrouter = PROVIDER_TYPE_INFO.find((provider) => provider.id === 'openrouter');
     const siliconflow = PROVIDER_TYPE_INFO.find((provider) => provider.id === 'siliconflow');
@@ -165,8 +165,9 @@ describe('provider metadata', () => {
     });
     expect(openrouter).toMatchObject({
       showModelId: true,
-      defaultModelId: 'openai/gpt-5.6-luna',
+      modelIdPlaceholder: 'provider/model-id',
     });
+    expect(openrouter?.defaultModelId).toBeUndefined();
     expect(siliconflow).toMatchObject({
       showModelId: true,
       defaultModelId: 'deepseek-ai/DeepSeek-V3',
@@ -246,7 +247,7 @@ describe('provider metadata', () => {
       .toBe('Qwen/Qwen3-Coder-480B-A35B-Instruct');
     expect(resolveProviderModelForSave(anthropic, 'claude-sonnet-4-5', false)).toBe('claude-sonnet-4-5');
 
-    expect(resolveProviderModelForSave(openrouter, '   ', false)).toBe('openai/gpt-5.6-luna');
+    expect(resolveProviderModelForSave(openrouter, '   ', false)).toBeUndefined();
     expect(resolveProviderModelForSave(siliconflow, '   ', false)).toBe('deepseek-ai/DeepSeek-V3');
     expect(resolveProviderModelForSave(anthropic, '   ', false)).toBe('claude-opus-4-8');
     expect(resolveProviderModelForSave(ark, '  ep-custom-model  ', false)).toBe('ep-custom-model');

@@ -1,4 +1,4 @@
-Current shareable Windows candidate (preview.13): preserves the approved animated arrival, movable companion, one conversation and connected settings. Safe website/app actions have specific inline outcomes with optional details, without generic planning chatter; richer results and Advanced capabilities remain available. First-success examples work locally without a model. Connections can test saved task-model access without exposing credentials to the renderer. Included local speech uses shorter natural clauses to reduce synthesis gaps, preserving cancellation and mute. The current checklist records exact source/package/installer evidence and limitations. Basic/BYOK and local English voice are the shareable offering; hosted Premium, payments and NerdGPT are unavailable. Physical voice/echo, performance/soak, signing and updates still require acceptance.
+Current BYOK Windows work: each user connects their own protected task-model account in Connections. No owner key is bundled. OpenRouter model selection is explicit; API access and model generation are separate checks. Included local English voice requires no separate voice key. The approved animated arrival, movable companion, continuous conversation, connected settings and Advanced capabilities are preserved. Preview.13 remains the delivered evaluation candidate; the current checklist records the next setup correction, exact evidence and remaining live-service, physical voice/echo, performance, signing and update gates. Hosted Premium/payments and NerdGPT/Unrestricted are deferred.
 
 Current connected Voice correction (preview.12, bounded review qualified): Voice groups companion commands/mute, microphone/device/input check and natural sound/output sample. Saved companion listening consent is suspended while chat or Settings is visible; explicit microphone input still works there. Errors override stale listening labels. Included local output can prepare during explicit capture to overlap model startup, with bounded idle release and cancellation. Fluid audio motion uses real levels and compositor transforms, respecting hidden/reduced-motion guards. Prior packaged lifecycle checks and actual microphone access passed; room noise no longer falsely passes as `[SOUND]`. Preview.12 corrects cancellation during a committed tray-settings refresh. Physical spoken input/voice quality and public-sale gates remain open; see the [current Windows checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md).
 
@@ -98,15 +98,15 @@ Phase 7B.1 provider-secret source work is in progress. The app-owned API-key pat
 
 Phase 7C.1 source automation now covers local wake-plus-command dispatch once without a second STT call, cancelled microphone acquisition, and localized device-loss recovery. Six fresh-build Electron voice journeys passed with synthetic events/audio or missing configuration; actual microphone recognition and packaged/live voice acceptance remain open.
 
-> **1.1.2 unified presence candidate:** cinematic first-run and returning greetings,
+> **Historical 1.1.2 unified presence candidate:** cinematic first-run and returning greetings,
 > a state-driven luminous Signal, compact background Presence, speech auto-end,
 > bounded hands-free follow-up, selected voice preview, streamed neural playback,
 > natural installed-voice fallback and opt-in Windows local name detection. Command recognition
 > still requires a transcription provider. Live microphone/voice acceptance is not
 > complete; this is not a public-release certification. See the
-> New OpenAI/OpenRouter accounts now default to the cost-aware Luna tier, and one
-> configured OpenRouter account can power planning, transcription and neural
-> speech through explicit efficient or expressive presets. See the
+> That historical candidate offered provider-based voice presets. Current BYOK
+> setup uses explicit OpenRouter model choice and included local English voice;
+> it does not require an OpenRouter voice service. See the
 > Chat now shares the live Morpheus Signal and Objective Core state instead of hiding execution behind
 > a conversational shell. See the [1.1.2 acceptance boundary](docs/releases/1.1.2-UNIFIED-PRESENCE.md).
 

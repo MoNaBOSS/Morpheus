@@ -51,19 +51,26 @@ function hasObjectChanges<T extends Record<string, unknown>>(
   return keys.some((key) => JSON.stringify(existing[key]) !== JSON.stringify(patch[key]));
 }
 
-function selectReplacementDefaultAccount(
+async function selectReplacementDefaultAccount(
   accounts: ProviderAccount[],
   deletedAccountId: string,
-): ProviderAccount | undefined {
-  return accounts
-    .filter((account) => account.id !== deletedAccountId)
+): Promise<ProviderAccount | undefined> {
+  const candidates = accounts
+    .filter((account) => account.id !== deletedAccountId && account.enabled !== false)
     .sort((left, right) => {
       if (left.enabled !== right.enabled) {
         return left.enabled ? -1 : 1;
       }
       const updatedAtOrder = right.updatedAt.localeCompare(left.updatedAt);
       return updatedAtOrder !== 0 ? updatedAtOrder : left.id.localeCompare(right.id);
-    })[0];
+    });
+  const service = getProviderService();
+  for (const account of candidates) {
+    if ((account.authMode === 'api_key' || account.authMode === undefined)
+      && !await service.hasAccountApiKey(account.id)) continue;
+    return account;
+  }
+  return undefined;
 }
 
 function payloadString(payload: unknown, key: string): string | undefined {
@@ -431,7 +438,7 @@ async function deleteAccount(
     }
     const currentDefaultAccountId = await providerService.getDefaultAccountId();
     const replacementDefault = currentDefaultAccountId === accountId
-      ? selectReplacementDefaultAccount(await providerService.listAccounts(), accountId)
+      ? await selectReplacementDefaultAccount(await providerService.listAccounts(), accountId)
       : undefined;
 
     if (replacementDefault) {

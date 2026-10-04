@@ -10,6 +10,11 @@ on:
       - src/components/morpheus/MorpheusConversationThread.tsx
       - shared/morpheus/voice-types.ts
       - electron/services/morpheus/voice/voice-service.ts
+      - package.json
+      - src/components/settings/ProvidersSettings.tsx
+      - src/lib/providers.ts
+      - electron/services/providers/provider-validation.ts
+      - electron/services/morpheus/planning/provider-planner.ts
   workflow_dispatch:
 
 permissions:

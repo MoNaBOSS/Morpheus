@@ -1,5 +1,73 @@
 # Morpheus experience specification
 
+## Current bounded checkpoint — October 4, per-user OpenRouter setup
+
+The owner requests OpenRouter testing and preparation for every user. Each Windows
+profile must connect its own task-model account through secure Connections; a
+developer or owner credential is never shipped as the application's shared API.
+The chat-posted test credential is exposed and is not used or copied into source,
+tools, diagnostics or release files. The owner must revoke it and enter a fresh
+replacement directly in the application before live-service qualification.
+
+Verified baseline: clean `4ee81a2a91845ff4f2f95d0ba6a6434c581bc6b4` on
+`codex/morpheus-preview10-connected-voice`; fetched origin application branch
+matches that commit. Preview.13 and its delivery remain preserved. E: has about
+131.8 GiB free; C: about 8.1 GiB. Builds and isolated test profiles stay on E:.
+
+The smallest coherent correction is explicit OpenRouter model choice and truthful
+per-user setup guidance. Inspection found three concrete defects: model-only edits
+could not enable Save; draft validation selected the public catalog before the
+OpenRouter-specific authenticated probe; Core could forward a canonical runtime
+prefix as part of the native model ID. The form also silently supplied a model,
+although the access test does not establish model availability or generation.
+The correction uses the documented authenticated `/api/v1/key` metadata endpoint
+for draft and saved tests, sends no inference fallback and exposes only safe
+classified failures. Core strips exactly one known runtime/account prefix and
+preserves native OpenRouter publisher IDs, including `openrouter/auto`.
+The original runtime's model-entry/default/fallback paths use the same native-ID
+normalizer, so `openrouter/auto` remains the native request model and its canonical
+runtime reference is `openrouter/openrouter/auto`. A separate confirmed form race
+allowed cancelled validation to reach an account save; setup cancellation now
+invalidates the pending operation before mutation. Commit controls distinguish
+validation cancellation from a save already entering Main persistence.
+Preserve every existing account, model, default, conversation and voice preference.
+Real-Main persistence tests then uncovered an inherited destructive list operation:
+two saved accounts resolving to the same runtime vendor could cause one account
+and its default selection to be removed. Listing must retain saved accounts and
+their metadata exactly, including inactive or temporarily unconfigured accounts.
+Only missing runtime providers may be imported; a shared runtime credential must
+not make another saved account appear configured. The original runtime can keep
+one explicitly selected connection per vendor without deleting its alternatives.
+That selection must bind model, endpoint and credential to the same account:
+reject an unavailable default before changing it, synchronize a selected sibling
+after key removal, and bind an unambiguous imported legacy credential securely
+before its first sibling is saved. Legacy migration must retain existing IDs.
+Modern account/default reads take precedence over stale legacy OAuth records;
+legacy-only accounts remain available. No legacy metadata is rewritten to achieve
+that precedence. Selected configuration and agent routing precede credential-env
+restart, including restored keys, so an older account cannot replace the selected
+account's endpoint or model during delivery.
+Validate add/edit/default selection and restart retention with synthetic accounts
+and a controlled service; record that fixtures do not prove live model access.
+Final source verification passed 385 affected unit cases and five Electron
+journeys, including same-vendor retention/restart and localized unavailable-default
+recovery. The Add dialog initially clipped its action; its fixed footer and
+scrollable body now retain fully visible controls at 1280×800 and 800×720.
+Normal package/installer verification is the next step; no live-model or physical
+voice acceptance is inferred from this source/fixture evidence.
+Included local English voice stays independent of the task-model key. Hosted plans,
+payments and NerdGPT/Unrestricted remain deferred. No broad redesign is authorized
+by this checkpoint. Exact next acceptance: save a replacement securely, select an
+accessible model, test access, then verify one bounded real reply.
+
+Read-only voice review also confirms a separate outstanding defect: Windows wake
+uses the default microphone while Chromium honors the selected input device, and
+native wake can start before selected-device acquisition completes. This is not
+fixed by a provider key. A future bounded voice patch must correlate readiness to
+successful acquisition and share the selected audio source; Chromium device IDs
+cannot simply be passed to the Windows recognizer. No physical reproduction or
+voice-readiness acceptance is claimed by that source review.
+
 ## Confirmed release scope — October 4, BYOK Windows first
 
 After the preview.13 handoff, the owner selected **Complete BYOK Windows release

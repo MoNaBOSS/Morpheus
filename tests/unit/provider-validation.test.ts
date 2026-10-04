@@ -17,6 +17,49 @@ describe('validateApiKeyWithProvider', () => {
     );
   });
 
+  it('requires authenticated OpenRouter key metadata even when the public model catalog accepts an invalid key', async () => {
+    proxyAwareFetch.mockImplementation(async (url: string) => url.includes('/models')
+      ? new Response(JSON.stringify({ data: [{ id: 'openai/gpt-test' }] }), { status: 200 })
+      : new Response(JSON.stringify({ error: { message: 'Invalid API key' } }), { status: 401 }));
+    const { validateApiKeyWithProvider } = await import('@electron/services/providers/provider-validation');
+    expect(await validateApiKeyWithProvider('openrouter', 'synthetic-invalid-key', {
+      baseUrl: 'https://override.example/v1', apiProtocol: 'openai-completions',
+    })).toEqual({ valid: false, error: 'Invalid API key' });
+    expect(proxyAwareFetch).toHaveBeenCalledExactlyOnceWith('https://openrouter.ai/api/v1/key',
+      expect.objectContaining({ method: 'GET', redirect: 'error', credentials: 'omit', headers: { Authorization: 'Bearer synthetic-invalid-key' }, signal: expect.any(AbortSignal) }));
+  });
+
+  it('accepts OpenRouter authenticated metadata with one GET and no model inference', async () => {
+    proxyAwareFetch.mockResolvedValueOnce(new Response(JSON.stringify({ data: { is_free_tier: true, limit_remaining: 0 } }), { status: 200 }));
+    const { validateApiKeyWithProvider } = await import('@electron/services/providers/provider-validation');
+    expect(await validateApiKeyWithProvider('openrouter', 'synthetic-key', { modelId: 'nonexistent-model' })).toEqual({ valid: true });
+    expect(proxyAwareFetch).toHaveBeenCalledExactlyOnceWith('https://openrouter.ai/api/v1/key',
+      expect.objectContaining({ method: 'GET' }));
+    expect(proxyAwareFetch.mock.calls[0][1].body).toBeUndefined();
+  });
+
+  it.each([429, 503])('does not invent valid OpenRouter access after HTTP %s', async (status) => {
+    proxyAwareFetch.mockResolvedValueOnce(new Response(JSON.stringify({ error: { message: 'synthetic-key private provider body' } }), { status }));
+    const { validateApiKeyWithProvider } = await import('@electron/services/providers/provider-validation');
+    const result = await validateApiKeyWithProvider('openrouter', 'synthetic-key');
+    expect(result.valid).toBe(false);
+    expect(JSON.stringify(result)).not.toContain('synthetic-key');
+    expect(JSON.stringify(result)).not.toContain('private provider body');
+    expect(proxyAwareFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps OpenRouter key validation network errors and logs free of credentials', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    try {
+      proxyAwareFetch.mockRejectedValueOnce(new Error('private synthetic-key transport'));
+      const { validateApiKeyWithProvider } = await import('@electron/services/providers/provider-validation');
+      const result = await validateApiKeyWithProvider('openrouter', 'synthetic-key');
+      expect(result.valid).toBe(false);
+      expect(JSON.stringify(result)).not.toContain('synthetic-key');
+      expect(log).not.toHaveBeenCalled();
+    } finally { log.mockRestore(); }
+  });
+
   it('validates MiniMax CN keys with Anthropic headers', async () => {
     const { validateApiKeyWithProvider } = await import('@electron/services/providers/provider-validation');
 

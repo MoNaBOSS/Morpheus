@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { createMorpheusProviderPlanner } from '@electron/services/morpheus/planning/provider-planner';
+import { createMorpheusProviderPlanner, resolveMorpheusPlannerModelId } from '@electron/services/morpheus/planning/provider-planner';
 import type { ProviderAccount } from '@electron/shared/providers/types';
 import type { MorpheusPlanningRequest } from '@shared/morpheus/planner';
 
@@ -33,6 +33,46 @@ const REQUEST: MorpheusPlanningRequest = {
 };
 
 describe('real provider planner adapter', () => {
+  it.each([
+    ['openrouter-work', 'openrouter/openai/gpt-test', 'openai/gpt-test'],
+    ['openrouter-work', 'openrouter-work/openai/gpt-test', 'openai/gpt-test'],
+    ['openrouter-work', 'openai/gpt-test', 'openai/gpt-test'],
+    ['openai', 'openai/gpt-test', 'openai/gpt-test'],
+    ['openrouter', 'openrouter/auto', 'openrouter/auto'],
+    ['openrouter-work', 'openrouter/openrouter/auto', 'openrouter/auto'],
+    ['openrouter', 'openrouter/free', 'openrouter/free'],
+    ['openrouter-work', 'openrouter/openrouter/free', 'openrouter/free'],
+  ])('normalizes OpenRouter saved reference %s / %s without corrupting its model namespace', (id, model, expected) => {
+    expect(resolveMorpheusPlannerModelId({ ...ACCOUNT, id, vendorId: 'openrouter', model })).toBe(expected);
+  });
+
+  it.each(['openrouter/auto', 'openrouter/free'])(
+    'preserves %s in a Core request after the runtime reference is read back', async (nativeModel) => {
+      const fetchImpl = vi.fn(async (_url: string | URL | Request, _init?: RequestInit) => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
+        steps: [{ stepId: 'report', capabilityId: 'system.report', params: {}, dependsOn: [], summary: 'Report' }],
+      }) } }] })));
+      const planner = createMorpheusProviderPlanner({
+        account: { ...ACCOUNT, id: 'openrouter-work', vendorId: 'openrouter', model: `openrouter/${nativeModel}` },
+        apiKey: 'synthetic-key', modelId: nativeModel, fetchImpl,
+      });
+      await planner.plan(REQUEST);
+      expect(JSON.parse(String(fetchImpl.mock.calls[0][1]?.body)).model).toBe(nativeModel);
+    });
+
+  it('sends the normalized OpenRouter model through the real planner request and usage receipt', async () => {
+    const fetchImpl = vi.fn(async (_url: string | URL | Request, _init?: RequestInit) => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
+      steps: [{ stepId: 'report', capabilityId: 'system.report', params: {}, dependsOn: [], summary: 'Report' }],
+    }) } }] })));
+    const recordUsage = vi.fn(async () => undefined);
+    const planner = createMorpheusProviderPlanner({
+      account: { ...ACCOUNT, id: 'openrouter-work', vendorId: 'openrouter', model: 'openrouter/openai/gpt-test' },
+      apiKey: 'synthetic-key', modelId: 'openrouter/deepseek/synthetic-model', fetchImpl, recordUsage,
+    });
+    await planner.plan(REQUEST);
+    expect(JSON.parse(String(fetchImpl.mock.calls[0][1]?.body)).model).toBe('deepseek/synthetic-model');
+    expect(recordUsage).toHaveBeenCalledWith(expect.objectContaining({ phase: 'started', modelId: 'deepseek/synthetic-model' }));
+  });
+
   it('reviews bounded browser observations as untrusted evidence rather than discarding the controls', async () => {
     let prompt = '';
     const planner = createMorpheusProviderPlanner({ account: ACCOUNT, apiKey: 'key', fetchImpl: vi.fn(async (_url, init) => {

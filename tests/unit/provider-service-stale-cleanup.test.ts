@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   ensureProviderStoreMigrated: vi.fn(),
   listProviderAccounts: vi.fn(),
+  getProviderAccount: vi.fn(),
   deleteProviderAccount: vi.fn(),
   saveProviderAccount: vi.fn(),
   getActiveOpenClawProviders: vi.fn(),
@@ -12,6 +13,10 @@ const mocks = vi.hoisted(() => ({
   getAliasSourceTypes: vi.fn(),
   getProviderDefinition: vi.fn(),
   getApiKey: vi.fn(),
+  getProviderSecret: vi.fn(),
+  storeApiKey: vi.fn(),
+  setDefaultProviderAccount: vi.fn(),
+  setDefaultProvider: vi.fn(),
   hasApiKey: vi.fn(),
   loggerWarn: vi.fn(),
   loggerInfo: vi.fn(),
@@ -24,12 +29,12 @@ vi.mock('@electron/services/providers/provider-migration', () => ({
 vi.mock('@electron/services/providers/provider-store', () => ({
   listProviderAccounts: mocks.listProviderAccounts,
   deleteProviderAccount: mocks.deleteProviderAccount,
-  getProviderAccount: vi.fn(),
+  getProviderAccount: mocks.getProviderAccount,
   getDefaultProviderAccountId: vi.fn(),
   providerAccountToConfig: vi.fn(),
   providerConfigToAccount: vi.fn(),
   saveProviderAccount: mocks.saveProviderAccount,
-  setDefaultProviderAccount: vi.fn(),
+  setDefaultProviderAccount: mocks.setDefaultProviderAccount,
 }));
 
 vi.mock('@electron/utils/openclaw-auth', () => ({
@@ -59,9 +64,11 @@ vi.mock('@electron/utils/secure-storage', () => ({
   getApiKey: mocks.getApiKey,
   hasApiKey: mocks.hasApiKey,
   saveProvider: vi.fn(),
-  setDefaultProvider: vi.fn(),
-  storeApiKey: vi.fn(),
+  setDefaultProvider: mocks.setDefaultProvider,
+  storeApiKey: mocks.storeApiKey,
 }));
+
+vi.mock('@electron/services/secrets/secret-store', () => ({ getProviderSecret: mocks.getProviderSecret }));
 
 vi.mock('@electron/utils/logger', () => ({
   logger: {
@@ -104,7 +111,108 @@ function setupDefaultKeyMapping() {
   );
 }
 
-describe('ProviderService.listAccounts (openclaw.json as sole source of truth)', () => {
+describe('ProviderService preserves account identity across sibling creation and default changes', () => {
+  let service: ProviderService;
+  let accounts: ProviderAccount[];
+  let keys: Map<string, string>;
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    setupDefaultKeyMapping();
+    accounts = [makeAccount({ id: 'imported', vendorId: 'openrouter', model: 'openrouter/auto',
+      baseUrl: 'https://original.example/v1', isDefault: true })];
+    keys = new Map();
+    mocks.listProviderAccounts.mockImplementation(async () => accounts);
+    mocks.getProviderAccount.mockImplementation(async (id: string) => accounts.find((account) => account.id === id) ?? null);
+    mocks.getApiKey.mockImplementation(async (id: string) => keys.get(id) ?? null);
+    mocks.getProviderSecret.mockResolvedValue(null);
+    mocks.getProviderApiKeyFromOpenClaw.mockResolvedValue('synthetic-imported-key');
+    mocks.storeApiKey.mockImplementation(async (id: string, key: string) => { keys.set(id, key); return true; });
+    mocks.saveProviderAccount.mockImplementation(async (account: ProviderAccount) => { accounts.push(account); });
+    service = new ProviderService();
+  });
+
+  it.each(['api_key', undefined] as const)('protects the sole imported API key before adding its first sibling with legacy mode %s', async (authMode) => {
+    accounts[0] = { ...accounts[0], authMode: authMode as ProviderAccount['authMode'] };
+    const original = structuredClone(accounts[0]);
+    const sibling = makeAccount({ id: 'second', vendorId: 'openrouter', model: 'openai/other-model',
+      baseUrl: 'https://second.example/v1' });
+    await service.createAccount(sibling, 'synthetic-second-key');
+    expect(mocks.storeApiKey.mock.calls).toEqual([
+      ['imported', 'synthetic-imported-key'], ['second', 'synthetic-second-key'],
+    ]);
+    expect(mocks.storeApiKey.mock.invocationCallOrder[0]).toBeLessThan(mocks.saveProviderAccount.mock.invocationCallOrder[0]);
+    expect(accounts).toEqual([original, sibling]);
+    expect(mocks.setDefaultProviderAccount).not.toHaveBeenCalled();
+    mocks.getProviderApiKeyFromOpenClaw.mockClear();
+    expect(await service.getAccountRuntimeApiKey('imported')).toBe('synthetic-imported-key');
+    expect(await service.getAccountRuntimeApiKey('second')).toBe('synthetic-second-key');
+    await service.setDefaultAccount('imported');
+    expect(mocks.setDefaultProviderAccount).toHaveBeenCalledExactlyOnceWith('imported');
+    expect(mocks.getProviderApiKeyFromOpenClaw).not.toHaveBeenCalled();
+  });
+
+  it('does not write a new account or default when protecting the imported credential fails', async () => {
+    const original = structuredClone(accounts);
+    mocks.storeApiKey.mockRejectedValueOnce(new Error('Protected storage unavailable'));
+    await expect(service.createAccount(makeAccount({ id: 'second', vendorId: 'openrouter' }), 'synthetic-second-key'))
+      .rejects.toThrow('Protected storage unavailable');
+    expect(accounts).toEqual(original);
+    expect(keys.size).toBe(0);
+    expect(mocks.storeApiKey).toHaveBeenCalledExactlyOnceWith('imported', 'synthetic-imported-key');
+    expect(mocks.saveProviderAccount).not.toHaveBeenCalled();
+    expect(mocks.setDefaultProviderAccount).not.toHaveBeenCalled();
+    expect(mocks.setDefaultProvider).not.toHaveBeenCalled();
+  });
+
+  it.each(['oauth_browser', 'oauth_device', 'local'] as const)('does not bind static legacy auth to an existing %s account', async (authMode) => {
+    accounts[0] = { ...accounts[0], authMode };
+    await service.createAccount(makeAccount({ id: 'second', vendorId: 'openrouter' }));
+    expect(mocks.storeApiKey).not.toHaveBeenCalled();
+    expect(mocks.getProviderApiKeyFromOpenClaw).not.toHaveBeenCalled();
+  });
+
+  it('does not bind static legacy auth over an existing OAuth secret', async () => {
+    mocks.getProviderSecret.mockResolvedValue({ type: 'oauth', accountId: 'imported', accessToken: 'synthetic-token' });
+    await service.createAccount(makeAccount({ id: 'second', vendorId: 'openrouter' }));
+    expect(mocks.storeApiKey).not.toHaveBeenCalled();
+    expect(mocks.getProviderApiKeyFromOpenClaw).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { enabled: true, key: undefined, error: 'API key' },
+    { enabled: false, key: 'synthetic-disabled-key', error: 'disabled' },
+  ])('refuses an unready sibling default without changing saved metadata ($error)', async ({ enabled, key, error }) => {
+    keys.set('imported', 'synthetic-original-key');
+    accounts.push(makeAccount({ id: 'second', vendorId: 'openrouter', enabled, model: 'openai/other-model', baseUrl: 'https://second.example/v1' }));
+    if (key) keys.set('second', key);
+    const original = structuredClone(accounts);
+    await expect(service.setDefaultAccount('second')).rejects.toThrow(error);
+    expect(accounts).toEqual(original);
+    expect(mocks.setDefaultProviderAccount).not.toHaveBeenCalled();
+    expect(mocks.setDefaultProvider).not.toHaveBeenCalled();
+    expect(mocks.saveProviderAccount).not.toHaveBeenCalled();
+    expect(mocks.getProviderApiKeyFromOpenClaw).not.toHaveBeenCalled();
+  });
+
+  it.each(['local', 'oauth_browser', 'oauth_device'] as const)('keeps no-static-key default compatibility for %s accounts', async (authMode) => {
+    accounts.push(makeAccount({ id: 'second', vendorId: 'openrouter', authMode }));
+    await service.setDefaultAccount('second');
+    expect(mocks.setDefaultProviderAccount).toHaveBeenCalledExactlyOnceWith('second');
+    expect(mocks.setDefaultProvider).toHaveBeenCalledExactlyOnceWith('second');
+  });
+
+  it('retains sole legacy API-key fallback when authMode was absent without rewriting the record', async () => {
+    accounts[0] = { ...accounts[0], authMode: undefined as unknown as ProviderAccount['authMode'] };
+    const original = structuredClone(accounts[0]);
+    expect(await service.getAccountRuntimeApiKey('imported')).toBe('synthetic-imported-key');
+    await service.setDefaultAccount('imported');
+    expect(accounts[0]).toEqual(original);
+    expect(mocks.setDefaultProviderAccount).toHaveBeenCalledWith('imported');
+  });
+});
+
+describe('ProviderService.listAccounts preserves saved accounts while importing runtime-only providers', () => {
   let service: ProviderService;
 
   beforeEach(() => {
@@ -118,10 +226,24 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
     mocks.getApiKey.mockResolvedValue(null);
     mocks.hasApiKey.mockResolvedValue(false);
     mocks.listProviderAccounts.mockResolvedValue([]);
+    mocks.getProviderAccount.mockImplementation(async (id: string) => (await mocks.listProviderAccounts()).find((account: ProviderAccount) => account.id === id) ?? null);
     service = new ProviderService();
   });
 
-  it('returns empty when activeProviders is empty', async () => {
+  it('retains both OpenRouter models, all settings and the selected default across repeated list snapshots', async () => {
+    const saved = [makeAccount({ id: 'retained', vendorId: 'openrouter', model: 'fixture/retained', isDefault: true,
+      headers: { 'X-Route': 'retained' }, metadata: { customModels: ['fixture/retained'] } }),
+    makeAccount({ id: 'edited', vendorId: 'openrouter', model: 'fixture/edited', baseUrl: 'https://other.example/v1' })];
+    mocks.listProviderAccounts.mockResolvedValue(saved);
+    mocks.getActiveOpenClawProviders.mockResolvedValue(new Set(['openrouter']));
+    mocks.getOpenClawProvidersConfig.mockResolvedValue({ providers: { openrouter: { models: [{ id: 'runtime/model' }] } }, defaultModel: 'openrouter/runtime/model' });
+    expect(await service.listAccounts()).toEqual(saved);
+    expect(await service.listAccounts()).toEqual(saved);
+    expect(mocks.saveProviderAccount).not.toHaveBeenCalled();
+    expect(mocks.deleteProviderAccount).not.toHaveBeenCalled();
+  });
+
+  it('retains saved accounts when activeProviders is empty', async () => {
     mocks.listProviderAccounts.mockResolvedValue([
       makeAccount({ id: 'moonshot-1', vendorId: 'moonshot' as ProviderAccount['vendorId'] }),
     ]);
@@ -129,10 +251,11 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
 
     const result = await service.listAccounts();
 
-    expect(result).toEqual([]);
+    expect(result).toEqual(await mocks.listProviderAccounts());
+    expect(mocks.deleteProviderAccount).not.toHaveBeenCalled();
   });
 
-  it('returns only providers present in openclaw.json, ignoring extra store accounts', async () => {
+  it('retains saved accounts absent from openclaw.json', async () => {
     mocks.listProviderAccounts.mockResolvedValue([
       makeAccount({ id: 'moonshot-1', vendorId: 'moonshot' as ProviderAccount['vendorId'] }),
       makeAccount({ id: 'custom-orphan', vendorId: 'custom' as ProviderAccount['vendorId'] }),
@@ -146,7 +269,7 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
 
     const result = await service.listAccounts();
 
-    expect(result).toHaveLength(1);
+    expect(result).toHaveLength(2);
     expect(result[0].id).toBe('moonshot-1');
   });
 
@@ -215,7 +338,7 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
     expect(result[0].label).toBe('My Moonshot');
   });
 
-  it('syncs custom model metadata and default model from openclaw.json for existing accounts', async () => {
+  it('retains custom model metadata and explicit model despite different runtime settings', async () => {
     mocks.listProviderAccounts.mockResolvedValue([
       makeAccount({
         id: 'custom-model-hub',
@@ -242,16 +365,9 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
 
     const result = await service.listAccounts();
 
-    expect(mocks.saveProviderAccount).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'custom-model-hub',
-      model: 'custom-model-hub/claude-sonnet-4',
-      metadata: { customModels: ['claude-sonnet-4', 'gpt-5.4'] },
-    }));
-    expect(result[0]).toEqual(expect.objectContaining({
-      id: 'custom-model-hub',
-      model: 'custom-model-hub/claude-sonnet-4',
-      metadata: { customModels: ['claude-sonnet-4', 'gpt-5.4'] },
-    }));
+    expect(result).toEqual(await mocks.listProviderAccounts());
+    expect(mocks.deleteProviderAccount).not.toHaveBeenCalled();
+    expect(mocks.saveProviderAccount).not.toHaveBeenCalled();
   });
 
   it('preserves existing non-default provider model while syncing metadata', async () => {
@@ -283,7 +399,7 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
     }));
   });
 
-  it('hides stale OpenAI API key accounts when canonical openai OAuth is configured', async () => {
+  it('retains saved OpenAI API-key and OAuth accounts sharing a runtime key', async () => {
     mocks.listProviderAccounts.mockResolvedValue([
       makeAccount({
         id: 'openai-oauth-1',
@@ -313,16 +429,13 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
 
     const result = await service.listAccounts();
 
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('openai-oauth-1');
-    expect(mocks.deleteProviderAccount).toHaveBeenCalledWith('openai');
+    expect(result).toEqual(await mocks.listProviderAccounts());
+    expect(mocks.deleteProviderAccount).not.toHaveBeenCalled();
+    expect(mocks.saveProviderAccount).not.toHaveBeenCalled();
   });
 
-  it('hides stale OpenAI API key accounts when OAuth is active only via auth profile', async () => {
-    // Regression: newer OpenClaw versions drop the explicit models.providers
-    // "openai-codex" entry and the "openai-codex-auth" plugin entry, leaving
-    // the OAuth auth profile as the only active signal. The bare "openai"
-    // slot must still be hidden and the stale seeded api_key account removed.
+  it('retains keyless OpenAI settings when OAuth is active only via auth profile', async () => {
+    // Runtime OAuth authority does not prove that another saved account is stale.
     mocks.listProviderAccounts.mockResolvedValue([
       makeAccount({
         id: 'openai-oauth-1',
@@ -349,10 +462,8 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
 
     const result = await service.listAccounts();
 
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('openai-oauth-1');
-    expect(result[0].authMode).toBe('oauth_browser');
-    expect(mocks.deleteProviderAccount).toHaveBeenCalledWith('openai');
+    expect(result).toEqual(await mocks.listProviderAccounts());
+    expect(mocks.deleteProviderAccount).not.toHaveBeenCalled();
     expect(mocks.saveProviderAccount).not.toHaveBeenCalled();
   });
 
@@ -379,7 +490,7 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
     expect(result[0].authMode).toBe('oauth_browser');
   });
 
-  it('hides bare openai after Codex OAuth is removed and no API key is configured', async () => {
+  it('retains saved keyless OpenAI settings after OAuth is removed', async () => {
     mocks.listProviderAccounts.mockResolvedValue([
       makeAccount({
         id: 'openai',
@@ -398,8 +509,8 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
 
     const result = await service.listAccounts();
 
-    expect(result).toHaveLength(0);
-    expect(mocks.deleteProviderAccount).toHaveBeenCalledWith('openai');
+    expect(result).toEqual(await mocks.listProviderAccounts());
+    expect(mocks.deleteProviderAccount).not.toHaveBeenCalled();
     expect(mocks.saveProviderAccount).not.toHaveBeenCalled();
   });
 
@@ -461,7 +572,7 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
     expect(result[0].id).toBe('openrouter-uuid-1234');
   });
 
-  it('prefers CN alias account over Global phantom for minimax-portal key', async () => {
+  it('retains both saved MiniMax aliases sharing a runtime key', async () => {
     mocks.listProviderAccounts.mockResolvedValue([
       makeAccount({
         id: 'minimax-portal',
@@ -484,11 +595,9 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
 
     const result = await service.listAccounts();
 
-    // Only CN should remain, phantom Global deleted from store
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('minimax-portal-cn-uuid');
-    expect(result[0].label).toBe('MiniMax (CN)');
-    expect(mocks.deleteProviderAccount).toHaveBeenCalledWith('minimax-portal');
+    expect(result).toEqual(await mocks.listProviderAccounts());
+    expect(mocks.deleteProviderAccount).not.toHaveBeenCalled();
+    expect(mocks.saveProviderAccount).not.toHaveBeenCalled();
   });
 
   it('shows only one CN when only CN account exists (no phantom)', async () => {
@@ -513,7 +622,7 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
     expect(mocks.deleteProviderAccount).not.toHaveBeenCalled();
   });
 
-  it('deduplicates multiple CN accounts from delete+re-add, keeps newest', async () => {
+  it('retains every saved MiniMax account regardless of update ordering', async () => {
     mocks.listProviderAccounts.mockResolvedValue([
       makeAccount({
         id: 'minimax-portal-cn-uuid1',
@@ -539,11 +648,9 @@ describe('ProviderService.listAccounts (openclaw.json as sole source of truth)',
 
     const result = await service.listAccounts();
 
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('minimax-portal-cn-uuid3');
-    expect(mocks.deleteProviderAccount).toHaveBeenCalledTimes(2);
-    expect(mocks.deleteProviderAccount).toHaveBeenCalledWith('minimax-portal-cn-uuid1');
-    expect(mocks.deleteProviderAccount).toHaveBeenCalledWith('minimax-portal-cn-uuid2');
+    expect(result).toEqual(await mocks.listProviderAccounts());
+    expect(mocks.deleteProviderAccount).not.toHaveBeenCalled();
+    expect(mocks.saveProviderAccount).not.toHaveBeenCalled();
   });
 
   it('handles multiple active providers from openclaw.json correctly', async () => {
@@ -672,7 +779,36 @@ describe('ProviderService.listAccountsKeyInfo', () => {
     mocks.getProviderApiKeyFromOpenClaw.mockResolvedValue(null);
     mocks.getApiKey.mockResolvedValue(null);
     mocks.hasApiKey.mockResolvedValue(false);
+    mocks.getProviderAccount.mockImplementation(async (id: string) => (await mocks.listProviderAccounts()).find((account: ProviderAccount) => account.id === id) ?? null);
     service = new ProviderService();
+  });
+
+  it('never attributes shared runtime auth to a keyless sibling, including disabled accounts', async () => {
+    const accounts = [makeAccount({ id: 'configured', vendorId: 'openrouter', isDefault: true }),
+      makeAccount({ id: 'keyless', vendorId: 'openrouter', enabled: false })];
+    mocks.listProviderAccounts.mockResolvedValue(accounts);
+    mocks.getActiveOpenClawProviders.mockResolvedValue(new Set(['openrouter']));
+    mocks.getApiKey.mockImplementation(async (id: string) => id === 'configured' ? 'synthetic-own-key' : id === 'openrouter' ? 'synthetic-legacy-key' : null);
+    mocks.getProviderApiKeyFromOpenClaw.mockResolvedValue('synthetic-runtime-key');
+    expect(await service.listAccountsKeyInfo()).toEqual([
+      { accountId: 'configured', hasKey: true, keyMasked: 'synt*********-key' },
+      { accountId: 'keyless', hasKey: false, keyMasked: null },
+    ]);
+    expect(await service.getAccountRuntimeApiKey('configured')).toBe('synthetic-own-key');
+    expect(await service.getAccountRuntimeApiKey('keyless')).toBeNull();
+    expect(await service.hasAccountApiKey('keyless')).toBe(false);
+    expect(await service.hasAccountApiKey('missing')).toBe(false);
+    expect(mocks.getProviderApiKeyFromOpenClaw).not.toHaveBeenCalled();
+    expect(mocks.getApiKey).not.toHaveBeenCalledWith('openrouter');
+  });
+
+  it('does not attribute a sole OpenAI static runtime key to an OAuth account', async () => {
+    mocks.listProviderAccounts.mockResolvedValue([makeAccount({ id: 'oauth', vendorId: 'openai', authMode: 'oauth_browser' })]);
+    mocks.getApiKey.mockResolvedValue(null);
+    mocks.getProviderApiKeyFromOpenClaw.mockResolvedValue('synthetic-unrelated-static');
+    expect(await service.getAccountRuntimeApiKey('oauth')).toBeNull();
+    expect(await service.hasAccountApiKey('oauth')).toBe(false);
+    expect(mocks.getProviderApiKeyFromOpenClaw).not.toHaveBeenCalled();
   });
 
   it('uses imported OpenClaw runtime auth when no app-owned key exists', async () => {

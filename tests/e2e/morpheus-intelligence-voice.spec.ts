@@ -2,23 +2,59 @@ import { closeElectronApp, expect, getStableWindow, installIpcMocks, test } from
 import { join } from 'node:path';
 
 test.describe('Morpheus production companion intelligence', () => {
-  test('offers a cost-aware OpenRouter default and an explicit economy alternative', async ({ launchElectronApp }) => {
+  test('requires each user to choose an explicit OpenRouter model without claiming model readiness', async ({ launchElectronApp }, info) => {
     const app = await launchElectronApp({ skipSetup: true });
     try {
       const page = await getStableWindow(app);
-      await page.evaluate(() => { window.location.hash = '#/models'; });
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.evaluate(() => { window.location.hash = '#/settings?section=connections'; });
       await expect(page.getByTestId('providers-settings')).toBeVisible({ timeout: 60_000 });
+      await expect(page.getByTestId('providers-byok-description')).toContainText('Connect your own provider account');
+      await expect(page.getByTestId('providers-byok-description')).toContainText('local English voice needs no separate API key');
       await page.getByTestId('providers-add-button').click();
       await page.getByTestId('add-provider-type-openrouter').click();
 
       const model = page.getByTestId('add-provider-model-id-input');
-      await expect(model).toHaveValue('openai/gpt-5.6-luna');
-      await expect(page.getByTestId('openrouter-model-guidance')).toContainText('DeepSeek Flash');
-      await page.getByTestId('openrouter-model-guidance').getByRole('button', { name: 'Use economy' }).click();
-      await expect(model).toHaveValue('deepseek/deepseek-v4-flash-0731');
-
+      const submit = page.getByTestId('add-provider-submit-button');
+      const assertEntirelyVisible = async (target: typeof model, regionTestId: string) => {
+        await expect.poll(() => target.evaluate((element, regionTestId) => {
+          const rect = element.getBoundingClientRect();
+          const region = element.closest(`[data-testid="${regionTestId}"]`)!.getBoundingClientRect();
+          const dialog = element.closest('[data-testid="add-provider-dialog"]')!.getBoundingClientRect();
+          const within = (outer: { left: number; right: number; top: number; bottom: number }) =>
+            rect.width > 0 && rect.height > 0 && rect.left >= outer.left && rect.right <= outer.right
+            && rect.top >= outer.top && rect.bottom <= outer.bottom;
+          return {
+            inRegion: within(region),
+            inDialog: within(dialog),
+            inViewport: within({ left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight }),
+          };
+        }, regionTestId)).toEqual({ inRegion: true, inDialog: true, inViewport: true });
+      };
+      await expect(model).toHaveValue('');
+      await expect(submit).toBeDisabled();
+      await expect(page.getByTestId('add-provider-close-button')).toHaveAccessibleName('Close');
+      const guidance = page.getByTestId('openrouter-model-guidance');
+      await expect(guidance).toContainText('exact model ID');
+      await expect(guidance).toContainText('service access only');
+      await expect(guidance.getByRole('link')).toHaveAttribute('href', 'https://openrouter.ai/models');
       const folder = process.env.MORPHEUS_VISUAL_EVIDENCE_DIR?.trim();
-      if (folder) await page.screenshot({ path: join(folder, 'provider-cost-guidance.png') });
+      for (const size of [{ width: 1280, height: 800 }, { width: 800, height: 720 }]) {
+        await page.setViewportSize(size);
+        await model.scrollIntoViewIfNeeded();
+        await assertEntirelyVisible(model, 'add-provider-form-body');
+        await model.fill('fixture/selected-model');
+        await expect(submit).toBeEnabled();
+        await model.fill('   ');
+        await expect(submit).toBeDisabled();
+        await assertEntirelyVisible(submit, 'add-provider-action-footer');
+        if (size.width === 800) {
+          expect(await page.getByTestId('add-provider-form-body').evaluate((body) => body.scrollHeight > body.clientHeight)).toBe(true);
+        }
+        await page.screenshot({ path: info.outputPath(size.width === 1280 ? 'openrouter-explicit-model.png' : 'openrouter-explicit-model-800x720.png') });
+        if (folder && size.width === 1280) await page.screenshot({ path: join(folder, 'provider-model-guidance.png') });
+      }
     } finally { await closeElectronApp(app); }
   });
 

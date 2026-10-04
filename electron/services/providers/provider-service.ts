@@ -10,8 +10,8 @@ import type {
 } from '../../shared/providers/types';
 import { BUILTIN_PROVIDER_TYPES } from '../../shared/providers/types';
 import { ensureProviderStoreMigrated } from './provider-migration';
+import { getProviderSecret } from '../secrets/secret-store';
 import {
-  deleteProviderAccount,
   getDefaultProviderAccountId,
   getProviderAccount,
   listProviderAccounts,
@@ -36,7 +36,6 @@ import {
 import {
   filterActiveProviderKeysForUi,
   getAliasSourceTypes,
-  OPENAI_CODEX_RUNTIME_PROVIDER_KEY,
   resolveOpenClawProviderKey,
 } from '../../utils/provider-keys';
 import type { ProviderWithKeyInfo } from '../../shared/providers/types';
@@ -85,24 +84,17 @@ function inferProviderVendorIdFromOpenClawEntry(
   return ((BUILTIN_PROVIDER_TYPES as readonly string[]).includes(key) ? key : 'custom') as ProviderType | 'custom';
 }
 
-function providerMetadataEquals(
-  left: ProviderAccount['metadata'] | undefined,
-  right: ProviderAccount['metadata'] | undefined,
-): boolean {
-  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
-}
-
-function mergeSyncedProviderMetadata(
-  existing: ProviderAccount['metadata'] | undefined,
-  synced: ProviderAccount['metadata'] | undefined,
-): ProviderAccount['metadata'] | undefined {
-  const next = { ...(existing ?? {}) };
-  if (synced?.customModels && synced.customModels.length > 0) {
-    next.customModels = synced.customModels;
-  } else {
-    delete next.customModels;
-  }
-  return Object.keys(next).length > 0 ? next : undefined;
+async function accountRuntimeApiKey(account: ProviderAccount, accounts: readonly ProviderAccount[]): Promise<string | null> {
+  const ownKey = await getApiKey(account.id);
+  if (ownKey) return ownKey;
+  if (account.authMode !== undefined && account.authMode !== 'api_key' && account.authMode !== 'local') return null;
+  if ((await getProviderSecret(account.id))?.type === 'oauth') return null;
+  const runtimeProviderKey = resolveOpenClawProviderKey(account);
+  // Imported legacy auth has no account identity. Never attribute it to a
+  // keyless sibling or send it to that sibling's independently saved endpoint.
+  if (accounts.some((entry) => entry.id !== account.id && resolveOpenClawProviderKey(entry) === runtimeProviderKey)) return null;
+  return (runtimeProviderKey !== account.id ? await getApiKey(runtimeProviderKey) : null)
+    ?? await getProviderApiKeyFromOpenClaw(runtimeProviderKey);
 }
 
 export class ProviderService {
@@ -112,156 +104,28 @@ export class ProviderService {
 
   async listAccounts(): Promise<ProviderAccount[]> {
     await ensureProviderStoreMigrated();
-
-    // ── openclaw.json is the ONLY source of truth ──
-    // The provider list is derived entirely from openclaw.json.
-    // The electron-store is only used as a metadata cache (label, authMode, etc.).
-
+    // Saved identities, models, credentials and defaults belong to accounts.
+    // A shared runtime slot cannot prove that another saved account is stale.
+    const result = [...await listProviderAccounts()];
+    const representedKeys = new Set(result.map(resolveOpenClawProviderKey));
     const { providers: openClawProviders, defaultModel } = await getOpenClawProvidersConfig();
     const activeProviders = await getActiveOpenClawProviders();
-
-    if (activeProviders.size === 0) {
-      return [];
-    }
-
-    // Read store accounts as a lookup cache (NOT as the source of what to display).
-    const allStoreAccounts = await listProviderAccounts();
-
-    // Index store accounts by their openclaw runtime key for fast lookup.
-    const storeByKey = new Map<string, ProviderAccount[]>();
-    for (const account of allStoreAccounts) {
-      const ock = resolveOpenClawProviderKey(account);
-      const group = storeByKey.get(ock) ?? [];
-      group.push(account);
-      storeByKey.set(ock, group);
-    }
-
-    const result: ProviderAccount[] = [];
-    const processedKeys = new Set<string>();
-
-    let hasConfiguredOpenAiApiKey = false;
-    if (activeProviders.has('openai')) {
-      const openClawKey = await getProviderApiKeyFromOpenClaw('openai');
-      if (openClawKey) {
-        hasConfiguredOpenAiApiKey = true;
-      } else {
-        for (const account of storeByKey.get('openai') ?? []) {
-          if (account.authMode === 'oauth_browser') {
-            continue;
-          }
-          const apiKey = await getApiKey(account.id);
-          if (apiKey) {
-            hasConfiguredOpenAiApiKey = true;
-            break;
-          }
-        }
+    for (const key of filterActiveProviderKeysForUi(activeProviders)) {
+      if (representedKeys.has(key)) continue;
+      const entry = openClawProviders[key];
+      if (!entry) continue;
+      const seeded = ProviderService.buildAccountsFromOpenClawEntries(
+        { [key]: entry }, new Set(result.map((account) => account.id)), new Set(), defaultModel,
+      );
+      for (const account of seeded) {
+        await saveProviderAccount(account);
+        result.push(account);
+        representedKeys.add(resolveOpenClawProviderKey(account));
+        logger.info(`[provider-sync] Seeded provider account "${account.id}" from openclaw.json`);
       }
     }
-
-    const activeKeysForUi = filterActiveProviderKeysForUi(activeProviders, {
-      hasConfiguredOpenAiApiKey,
-    });
-
-    // For each active provider in openclaw.json, produce exactly ONE account.
-    for (const key of activeKeysForUi) {
-      if (processedKeys.has(key)) continue;
-      processedKeys.add(key);
-
-      const storeGroup = storeByKey.get(key) ?? [];
-
-      if (storeGroup.length > 0) {
-        // Pick the best store account for this key:
-        // 1. Prefer alias variants (e.g. minimax-portal-cn over minimax-portal)
-        // 2. Among equal variants, prefer the most recently updated
-        const aliasAccounts = storeGroup.filter((a) => a.vendorId !== key);
-        const candidates = aliasAccounts.length > 0 ? aliasAccounts : storeGroup;
-        candidates.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-
-        // Clean up orphaned duplicates from the store.
-        let kept = candidates[0];
-        for (const account of storeGroup) {
-          if (account.id !== kept.id) {
-            logger.info(
-              `[provider-sync] Removing orphaned account "${account.id}" for key "${key}" (keeping "${kept.id}")`,
-            );
-            await deleteProviderAccount(account.id);
-          }
-        }
-
-        const entry = openClawProviders[key];
-        if (entry) {
-          const [syncedAccount] = ProviderService.buildAccountsFromOpenClawEntries(
-            { [key]: entry },
-            new Set(),
-            new Set(),
-            defaultModel,
-          );
-          if (syncedAccount) {
-            const nextMetadata = mergeSyncedProviderMetadata(kept.metadata, syncedAccount.metadata);
-            const shouldSyncSelectedModel = defaultModel?.startsWith(`${key}/`) ?? false;
-            const nextModel = shouldSyncSelectedModel ? syncedAccount.model : kept.model;
-            const shouldSyncModelState = kept.model !== nextModel
-              || !providerMetadataEquals(kept.metadata, nextMetadata);
-            if (shouldSyncModelState) {
-              kept = {
-                ...kept,
-                model: nextModel,
-                metadata: nextMetadata,
-                updatedAt: new Date().toISOString(),
-              };
-              await saveProviderAccount(kept);
-            }
-          }
-        }
-
-        result.push(kept);
-      } else {
-        // No store account for this key — create a seed from openclaw.json.
-        const entry = openClawProviders[key];
-        if (entry) {
-          const seeded = ProviderService.buildAccountsFromOpenClawEntries(
-            { [key]: entry },
-            new Set(),
-            new Set(),
-            defaultModel,
-          );
-          for (const account of seeded) {
-            await saveProviderAccount(account);
-            result.push(account);
-            logger.info(`[provider-sync] Seeded provider account "${account.id}" from openclaw.json`);
-          }
-        }
-      }
-    }
-
-    if (activeProviders.has(OPENAI_CODEX_RUNTIME_PROVIDER_KEY) || !hasConfiguredOpenAiApiKey) {
-      const openaiStoreAccounts = storeByKey.get('openai') ?? [];
-      for (const account of openaiStoreAccounts) {
-        if (account.authMode !== 'api_key' && account.authMode !== undefined) {
-          continue;
-        }
-        const apiKey = await getApiKey(account.id);
-        const openClawKey = await getProviderApiKeyFromOpenClaw('openai');
-        if (!apiKey && !openClawKey) {
-          logger.info(
-            `[provider-sync] Removing unconfigured OpenAI API key account "${account.id}"`
-              + (activeProviders.has(OPENAI_CODEX_RUNTIME_PROVIDER_KEY)
-                ? ` (OAuth uses ${OPENAI_CODEX_RUNTIME_PROVIDER_KEY})`
-                : ' (Codex OAuth removed)'),
-          );
-          await deleteProviderAccount(account.id);
-          const resultIndex = result.findIndex((entry) => entry.id === account.id);
-          if (resultIndex >= 0) {
-            result.splice(resultIndex, 1);
-          }
-        }
-      }
-    }
-
     return result;
   }
-
-
 
   /**
    * Build ProviderAccount objects from OpenClaw config entries, skipping any
@@ -354,6 +218,21 @@ export class ProviderService {
 
   async createAccount(account: ProviderAccount, apiKey?: string): Promise<ProviderAccount> {
     await ensureProviderStoreMigrated();
+    const accounts = await listProviderAccounts();
+    const runtimeKey = resolveOpenClawProviderKey(account);
+    const siblings = accounts.filter((existing) => existing.id !== account.id
+      && resolveOpenClawProviderKey(existing) === runtimeKey);
+    // A sole imported API-key connection has an unambiguous legacy credential.
+    // Bind it to its protected account identity before adding a second identity
+    // makes that runtime credential ambiguous. Never copy OAuth/local auth.
+    const imported = siblings.length === 1 ? siblings[0] : undefined;
+    if (imported && (imported.authMode === 'api_key' || imported.authMode === undefined)
+      && !await getApiKey(imported.id)) {
+      const importedKey = await accountRuntimeApiKey(imported, accounts);
+      if (importedKey && await storeApiKey(imported.id, importedKey) === false) {
+        throw new Error('Imported provider credential could not be protected; existing accounts were retained');
+      }
+    }
     if (apiKey !== undefined && apiKey.trim()) {
       await storeApiKey(account.id, apiKey.trim());
     }
@@ -493,10 +372,7 @@ export class ProviderService {
     const accounts = await this.listAccounts();
     const results: Array<{ accountId: string; hasKey: boolean; keyMasked: string | null }> = [];
     for (const account of accounts) {
-      const runtimeProviderKey = resolveOpenClawProviderKey(account);
-      const apiKey = (await getApiKey(account.id))
-        ?? (runtimeProviderKey !== account.id ? await getApiKey(runtimeProviderKey) : null)
-        ?? (await getProviderApiKeyFromOpenClaw(runtimeProviderKey));
+      const apiKey = await accountRuntimeApiKey(account, accounts);
       results.push({
         accountId: account.id,
         hasKey: !!apiKey,
@@ -521,25 +397,12 @@ export class ProviderService {
   async getAccountRuntimeApiKey(accountId: string): Promise<string | null> {
     const account = await this.getAccount(accountId);
     if (!account) return null;
-    const runtimeProviderKey = resolveOpenClawProviderKey(account);
-    return (await getApiKey(account.id))
-      ?? (runtimeProviderKey !== account.id ? await getApiKey(runtimeProviderKey) : null)
-      ?? (await getProviderApiKeyFromOpenClaw(runtimeProviderKey));
+    return accountRuntimeApiKey(account, await listProviderAccounts());
   }
 
   /** Check whether an account has an API key stored. */
   async hasAccountApiKey(accountId: string): Promise<boolean> {
-    const account = await this.getAccount(accountId);
-    const runtimeProviderKey = account
-      ? resolveOpenClawProviderKey(account)
-      : accountId;
-    if (await hasApiKey(accountId)) {
-      return true;
-    }
-    if (runtimeProviderKey !== accountId && (await hasApiKey(runtimeProviderKey))) {
-      return true;
-    }
-    return !!(await getProviderApiKeyFromOpenClaw(runtimeProviderKey));
+    return Boolean(await this.getAccountRuntimeApiKey(accountId));
   }
 
   // ── Legacy public API (logs deprecation warning once per method) ─
@@ -637,6 +500,13 @@ export class ProviderService {
 
   async setDefaultAccount(accountId: string): Promise<void> {
     await ensureProviderStoreMigrated();
+    const account = await getProviderAccount(accountId);
+    if (!account) throw new Error('Provider account not found');
+    if (account.enabled === false) throw new Error('A disabled provider account cannot be the default');
+    if ((account.authMode === 'api_key' || account.authMode === undefined)
+      && !await this.getAccountRuntimeApiKey(accountId)) {
+      throw new Error('Save an API key for this provider account before making it the default');
+    }
     await setDefaultProviderAccount(accountId);
     await setDefaultProvider(accountId);
   }

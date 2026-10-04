@@ -38,7 +38,8 @@ vi.mock('@electron/services/providers/provider-store', () => ({
 vi.mock('@electron/services/secrets/secret-store', () => ({
   getProviderSecret: mocks.getProviderSecret,
 }));
-vi.mock('@electron/services/providers/active-runtime-provider-selection', () => ({
+vi.mock('@electron/services/providers/active-runtime-provider-selection', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@electron/services/providers/active-runtime-provider-selection')>(),
   loadActiveRuntimeProviderAccounts: mocks.loadActiveRuntimeProviderAccounts,
 }));
 vi.mock('@electron/gateway/provider-model-key-reconciliation', () => ({
@@ -95,6 +96,8 @@ vi.mock('@electron/utils/logger', () => ({
 }));
 
 import {
+  getProviderModelRef,
+  getProviderFallbackModelRefs,
   reconcileProviderBeforeStaticKeyReplacement,
   reconcileProviderBeforeRuntimeKeyChange,
   syncAgentModelOverrideToRuntime,
@@ -167,6 +170,43 @@ describe('provider-runtime-sync config delivery', () => {
     mocks.listAgentsSnapshot.mockResolvedValue({ agents: [] });
   });
 
+  it.each([
+    ['openrouter/auto', 'openrouter/auto', 'openrouter/openrouter/auto'],
+    ['openrouter/free', 'openrouter/free', 'openrouter/openrouter/free'],
+    ['openrouter/openrouter/auto', 'openrouter/auto', 'openrouter/openrouter/auto'],
+    ['openrouter/openrouter/free', 'openrouter/free', 'openrouter/openrouter/free'],
+    ['openai/gpt-test', 'openai/gpt-test', 'openrouter/openai/gpt-test'],
+    ['openrouter/openai/gpt-test', 'openai/gpt-test', 'openrouter/openai/gpt-test'],
+    ['openrouter-work/openai/gpt-test', 'openai/gpt-test', 'openrouter/openai/gpt-test'],
+  ])('retains OpenRouter native model %s through saved config and explicit default selection', async (model, nativeModel, runtimeRef) => {
+    const provider = createProvider({ id: 'openrouter-work', type: 'openrouter', model,
+      baseUrl: 'https://openrouter.ai/api/v1', apiProtocol: 'openai-completions' });
+    mocks.getProvider.mockResolvedValue(provider);
+    mocks.getDefaultProvider.mockResolvedValue(provider.id);
+    mocks.getProviderConfig.mockReturnValue({ api: 'openai-completions', baseUrl: provider.baseUrl, apiKeyEnv: 'OPENROUTER_API_KEY' });
+    await syncUpdatedProviderToRuntime(provider, undefined);
+    expect(mocks.syncProviderConfigToOpenClaw).toHaveBeenCalledExactlyOnceWith('openrouter', nativeModel,
+      expect.objectContaining({ api: 'openai-completions', baseUrl: provider.baseUrl }));
+    expect(mocks.setOpenClawDefaultModelWithOverride).toHaveBeenCalledExactlyOnceWith('openrouter', runtimeRef,
+      expect.objectContaining({ api: 'openai-completions', baseUrl: provider.baseUrl }), []);
+    expect(provider.model).toBe(model);
+    expect(getProviderModelRef(provider)).toBe(runtimeRef);
+    mocks.setOpenClawDefaultModelWithOverride.mockClear();
+    await syncDefaultProviderToRuntime(provider.id);
+    expect(mocks.setOpenClawDefaultModelWithOverride).toHaveBeenCalledExactlyOnceWith('openrouter', runtimeRef,
+      expect.objectContaining({ api: 'openai-completions', baseUrl: provider.baseUrl }), []);
+  });
+
+  it('preserves and deduplicates native OpenRouter fallback ids and fallback account models', async () => {
+    const provider = createProvider({ id: 'openrouter-work', type: 'openrouter', model: 'openrouter/auto',
+      fallbackModels: ['openrouter/free', 'openrouter/openrouter/free', 'openrouter-work/openai/gpt-test'],
+      fallbackProviderIds: ['openrouter-personal'] });
+    mocks.getAllProviders.mockResolvedValue([provider, createProvider({ id: 'openrouter-personal', type: 'openrouter', model: 'openrouter/auto' })]);
+    expect(await getProviderFallbackModelRefs(provider)).toEqual([
+      'openrouter/openrouter/free', 'openrouter/openai/gpt-test', 'openrouter/openrouter/auto',
+    ]);
+  });
+
   it('does not schedule an independent reload or restart after saving provider config', async () => {
     const gateway = createGateway('running');
     await syncSavedProviderToRuntime(createProvider(), undefined, gateway as GatewayManager);
@@ -196,6 +236,8 @@ describe('provider-runtime-sync config delivery', () => {
     );
     expect(gateway.restartOwnedForProviderSecretChange).toHaveBeenCalledOnce();
     expect(mocks.saveProviderKeyToOpenClaw).not.toHaveBeenCalled();
+    expect(mocks.syncProviderConfigToOpenClaw.mock.invocationCallOrder[0])
+      .toBeLessThan(gateway.restartOwnedForProviderSecretChange.mock.invocationCallOrder[0]);
     expect(JSON.stringify(mocks.syncProviderConfigToOpenClaw.mock.calls)).not.toContain(rawKey);
   });
 
@@ -220,8 +262,8 @@ describe('provider-runtime-sync config delivery', () => {
         apiKeyRef: expect.objectContaining({ source: 'env' }),
       }),
     );
-    expect(gateway.restartOwnedForProviderSecretChange.mock.invocationCallOrder[0])
-      .toBeLessThan(mocks.syncProviderConfigToOpenClaw.mock.invocationCallOrder[0]);
+    expect(mocks.syncProviderConfigToOpenClaw.mock.invocationCallOrder[0])
+      .toBeLessThan(gateway.restartOwnedForProviderSecretChange.mock.invocationCallOrder[0]);
   });
 
   it('reconciles the verified old key before a protected rotation', async () => {
@@ -346,6 +388,7 @@ describe('provider-runtime-sync config delivery', () => {
 
   it('keeps the shared runtime slot when another account survives deletion', async () => {
     mocks.listProviderAccounts.mockResolvedValue([{ id: 'surviving', vendorId: 'moonshot', enabled: true }]);
+    mocks.getProviderSecret.mockResolvedValue({ type: 'api_key', accountId: 'surviving', apiKey: 'synthetic-surviving-key' });
     await syncDeletedProviderToRuntime(createProvider(), 'moonshot');
     await syncDeletedProviderApiKeyToRuntime(createProvider(), 'moonshot', undefined, 'deleted-key');
     expect(mocks.removeProviderFromOpenClaw).not.toHaveBeenCalled();
@@ -356,6 +399,132 @@ describe('provider-runtime-sync config delivery', () => {
   it('refreshes the owned child environment after protected key deletion', async () => {
     const gateway = createGateway();
     await finishProviderSecretDeletionToRuntime(gateway as GatewayManager);
+    expect(gateway.restartOwnedForProviderSecretChange).toHaveBeenCalledOnce();
+  });
+
+  it.each(['clear-key', 'delete-account'] as const)('retires owned refs before %s when a retained sibling has no usable credential', async (action) => {
+    const original = createProvider({ id: 'original', type: 'openrouter', model: 'openrouter/auto' });
+    const sibling = { id: 'keyless', vendorId: 'openrouter', authMode: 'api_key', enabled: true,
+      model: 'openai/retained-model', baseUrl: 'https://retained.example/v1' };
+    const savedSibling = structuredClone(sibling);
+    const ownKey = 'synthetic-deleted-key';
+    mocks.listProviderAccounts.mockResolvedValue([sibling]);
+    mocks.getProviderSecret.mockResolvedValue(null);
+    mocks.getApiKey.mockResolvedValue(ownKey);
+    let ownedModelRef = true;
+    let ownedAuthRef = true;
+    mocks.removeAppOwnedProviderRuntimeKeyRefs.mockImplementation(async () => { ownedModelRef = false; });
+    mocks.removeProviderKeyFromOpenClaw.mockImplementation(async () => { ownedAuthRef = false; });
+    if (action === 'clear-key') await syncDeletedProviderApiKeyToRuntime(original, original.id, undefined, ownKey);
+    else await syncDeletedProviderToRuntime(original, original.id);
+    expect(mocks.removeAppOwnedProviderRuntimeKeyRefs).toHaveBeenCalledExactlyOnceWith('openrouter',
+      expect.stringMatching(/^MORPHEUS_PROVIDER_KEY_[A-F0-9]{24}$/), ownKey);
+    expect(mocks.removeProviderKeyFromOpenClaw).toHaveBeenCalledExactlyOnceWith('openrouter', undefined, ownKey);
+    expect(mocks.removeProviderFromOpenClaw).not.toHaveBeenCalled();
+    expect(mocks.reconcileAppOwnedProviderModelKeysBeforeLaunch).not.toHaveBeenCalled();
+    const protectedDelete = vi.fn(async () => { expect(ownedModelRef || ownedAuthRef).toBe(false); });
+    await protectedDelete();
+    mocks.loadActiveRuntimeProviderAccounts.mockResolvedValue(new Map());
+    const gateway = createGateway();
+    gateway.restartOwnedForProviderSecretChange.mockImplementation(async () => {
+      expect(ownedModelRef || ownedAuthRef).toBe(false);
+      return true;
+    });
+    await finishProviderSecretDeletionToRuntime(gateway as GatewayManager);
+    expect(mocks.removeProviderKeyFromOpenClaw.mock.invocationCallOrder[0]).toBeLessThan(protectedDelete.mock.invocationCallOrder[0]);
+    expect(protectedDelete.mock.invocationCallOrder[0]).toBeLessThan(gateway.restartOwnedForProviderSecretChange.mock.invocationCallOrder[0]);
+    expect(sibling).toEqual(savedSibling);
+  });
+
+  it('delivers the selected surviving endpoint, model and agent mapping before restarting after default key removal', async () => {
+    const gateway = createGateway();
+    const original = createProvider({ id: 'original', type: 'openrouter', model: 'openrouter/auto',
+      baseUrl: 'https://original.example/v1', apiProtocol: 'openai-completions' });
+    const survivor = createProvider({ id: 'survivor', type: 'openrouter', model: 'openai/survivor-model',
+      baseUrl: 'https://survivor.example/v1', apiProtocol: 'openai-completions' });
+    const account = { ...survivor, vendorId: 'openrouter', authMode: 'api_key', label: 'Survivor' };
+    const ownKey = 'synthetic-surviving-key';
+    mocks.loadActiveRuntimeProviderAccounts.mockResolvedValue(new Map([
+      ['openrouter', { account, key: ownKey, verifiedKeys: new Set([ownKey]) }],
+    ]));
+    mocks.getProvider.mockImplementation(async (id: string) => id === 'original' ? original : id === 'survivor' ? survivor : null);
+    mocks.getDefaultProvider.mockResolvedValue('original');
+    mocks.getAllProviders.mockResolvedValue([survivor, original]); // inactive config must not win by iteration order
+    mocks.getApiKey.mockImplementation(async (id: string) => id === 'survivor' ? ownKey : null);
+    mocks.getProviderSecret.mockResolvedValue({ type: 'api_key', accountId: 'survivor', apiKey: ownKey });
+    mocks.listAgentsSnapshot.mockResolvedValue({ agents: [{ id: 'agent-one', modelRef: 'openrouter/openai/agent-model' }] });
+    const savedSnapshot = structuredClone([original, survivor]);
+    await finishProviderSecretDeletionToRuntime(gateway as GatewayManager);
+    expect(mocks.syncProviderConfigToOpenClaw).toHaveBeenCalledWith('openrouter', 'openai/survivor-model',
+      expect.objectContaining({ baseUrl: survivor.baseUrl, api: 'openai-completions', apiKeyRef: expect.objectContaining({ source: 'env' }) }));
+    expect(mocks.setOpenClawDefaultModelWithOverride).toHaveBeenCalledWith('openrouter', 'openrouter/openai/survivor-model',
+      expect.objectContaining({ baseUrl: survivor.baseUrl, apiKeyRef: expect.objectContaining({ source: 'env' }) }), []);
+    expect(mocks.updateSingleAgentModelProvider).toHaveBeenCalledWith('agent-one', 'openrouter',
+      expect.objectContaining({ baseUrl: survivor.baseUrl, models: [expect.objectContaining({ id: 'openai/agent-model' })] }));
+    expect(mocks.syncProviderConfigToOpenClaw.mock.invocationCallOrder[0])
+      .toBeLessThan(gateway.restartOwnedForProviderSecretChange.mock.invocationCallOrder[0]);
+    expect(mocks.setOpenClawDefaultModelWithOverride.mock.invocationCallOrder[0])
+      .toBeLessThan(gateway.restartOwnedForProviderSecretChange.mock.invocationCallOrder[0]);
+    expect(mocks.updateSingleAgentModelProvider.mock.invocationCallOrder[0])
+      .toBeLessThan(gateway.restartOwnedForProviderSecretChange.mock.invocationCallOrder[0]);
+    expect(gateway.restartOwnedForProviderSecretChange).toHaveBeenCalledOnce();
+    expect([original, survivor]).toEqual(savedSnapshot);
+    expect(JSON.stringify(mocks.syncProviderConfigToOpenClaw.mock.calls)).not.toContain(ownKey);
+    expect(JSON.stringify(mocks.setOpenClawDefaultModelWithOverride.mock.calls)).not.toContain(ownKey);
+  });
+
+  it('cleans a now-proven imported credential into a SecretRef while keeping the imported account model', async () => {
+    const provider = createProvider({ id: 'imported', type: 'openrouter', model: 'openrouter/auto',
+      baseUrl: 'https://original.example/v1', apiProtocol: 'openai-completions' });
+    const key = 'synthetic-imported-key';
+    mocks.loadActiveRuntimeProviderAccounts.mockResolvedValue(new Map([
+      ['openrouter', { account: { id: provider.id, vendorId: provider.type }, key, verifiedKeys: new Set([key, 'synthetic-sibling-key']) }],
+    ]));
+    mocks.getProvider.mockResolvedValue(provider);
+    mocks.getDefaultProvider.mockResolvedValue(provider.id);
+    mocks.getApiKey.mockResolvedValue(key);
+    mocks.getProviderSecret.mockResolvedValue({ type: 'api_key', accountId: provider.id, apiKey: key });
+    await syncAllProviderAuthToRuntime();
+    await syncUpdatedProviderToRuntime(provider, undefined);
+    expect(mocks.saveProviderKeyRefToOpenClaw).toHaveBeenCalledWith('openrouter', expect.stringMatching(/^MORPHEUS_PROVIDER_KEY_/),
+      [key, 'synthetic-sibling-key'], undefined, { activate: true });
+    expect(mocks.syncProviderConfigToOpenClaw).toHaveBeenCalledWith('openrouter', 'openrouter/auto',
+      expect.objectContaining({ apiKeyRef: expect.objectContaining({ source: 'env' }), baseUrl: provider.baseUrl }));
+    expect(JSON.stringify(mocks.syncProviderConfigToOpenClaw.mock.calls)).not.toContain(key);
+    expect(provider.model).toBe('openrouter/auto');
+  });
+
+  it.each(['key-only', 'account-update', 'saved'] as const)('restores the chosen default primary after its own key returns through %s before refreshing env', async (path) => {
+    const gateway = createGateway();
+    const original = createProvider({ id: 'original', type: 'openrouter', model: 'openrouter/auto',
+      baseUrl: 'https://original.example/v1', apiProtocol: 'openai-completions' });
+    const survivor = createProvider({ id: 'survivor', type: 'openrouter', model: 'openai/survivor-model',
+      baseUrl: 'https://survivor.example/v1', apiProtocol: 'openai-completions' });
+    const ownKey = 'synthetic-restored-original-key';
+    mocks.getProvider.mockImplementation(async (id: string) => id === 'original' ? original : id === 'survivor' ? survivor : null);
+    mocks.getDefaultProvider.mockResolvedValue('original');
+    mocks.getAllProviders.mockResolvedValue([original, survivor]);
+    mocks.getApiKey.mockImplementation(async (id: string) => id === 'survivor' ? 'synthetic-survivor-key' : null);
+    mocks.loadActiveRuntimeProviderAccounts.mockResolvedValue(new Map([
+      ['openrouter', { account: { ...survivor, vendorId: survivor.type }, key: 'synthetic-survivor-key', verifiedKeys: new Set(['synthetic-survivor-key']) }],
+    ]));
+    await finishProviderSecretDeletionToRuntime();
+    expect(mocks.setOpenClawDefaultModelWithOverride).toHaveBeenLastCalledWith('openrouter', 'openrouter/openai/survivor-model',
+      expect.objectContaining({ baseUrl: survivor.baseUrl }), []);
+    mocks.loadActiveRuntimeProviderAccounts.mockResolvedValue(new Map([
+      ['openrouter', { account: { ...original, vendorId: original.type }, key: ownKey, verifiedKeys: new Set([ownKey, 'synthetic-survivor-key']) }],
+    ]));
+    mocks.getApiKey.mockImplementation(async (id: string) => id === 'original' ? ownKey : 'synthetic-survivor-key');
+    mocks.getProviderSecret.mockResolvedValue({ type: 'api_key', accountId: original.id, apiKey: ownKey });
+    if (path === 'key-only') await syncProviderApiKeyToRuntime(original.type, original.id, ownKey, undefined, gateway as GatewayManager);
+    else if (path === 'account-update') await syncUpdatedProviderToRuntime(original, ownKey, gateway as GatewayManager);
+    else await syncSavedProviderToRuntime(original, ownKey, gateway as GatewayManager);
+    expect(mocks.setOpenClawDefaultModelWithOverride).toHaveBeenLastCalledWith('openrouter', 'openrouter/openrouter/auto',
+      expect.objectContaining({ baseUrl: original.baseUrl, apiKeyRef: expect.objectContaining({ source: 'env' }) }), []);
+    expect(mocks.syncProviderConfigToOpenClaw.mock.invocationCallOrder.at(-1))
+      .toBeLessThan(gateway.restartOwnedForProviderSecretChange.mock.invocationCallOrder[0]);
+    expect(mocks.setOpenClawDefaultModelWithOverride.mock.invocationCallOrder.at(-1))
+      .toBeLessThan(gateway.restartOwnedForProviderSecretChange.mock.invocationCallOrder[0]);
     expect(gateway.restartOwnedForProviderSecretChange).toHaveBeenCalledOnce();
   });
 
@@ -502,6 +671,9 @@ describe('provider-runtime-sync config delivery', () => {
   });
 
   it('syncs a targeted agent model override to runtime provider registry', async () => {
+    mocks.loadActiveRuntimeProviderAccounts.mockResolvedValue(new Map([
+      ['ark', { account: { id: 'ark', vendorId: 'ark', authMode: 'api_key' }, key: 'synthetic-ark-key' }],
+    ]));
     mocks.getAllProviders.mockResolvedValue([
       createProvider({
         id: 'ark',
@@ -543,6 +715,30 @@ describe('provider-runtime-sync config delivery', () => {
         models: [{ id: 'ark-code-latest', name: 'ark-code-latest', cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 } }],
       }),
     );
+  });
+
+  it('does not map an unavailable saved sibling endpoint to an agent when no account is selected', async () => {
+    mocks.getAllProviders.mockResolvedValue([
+      createProvider({ id: 'keyless', type: 'openrouter', baseUrl: 'https://keyless.example/v1' }),
+      createProvider({ id: 'disabled', type: 'openrouter', baseUrl: 'https://disabled.example/v1', enabled: false }),
+    ]);
+    mocks.loadActiveRuntimeProviderAccounts.mockResolvedValue(new Map());
+    mocks.listAgentsSnapshot.mockResolvedValue({ agents: [{ id: 'coder', modelRef: 'openrouter/openai/test' }] });
+    await syncAgentModelOverrideToRuntime('coder');
+    expect(mocks.updateSingleAgentModelProvider).not.toHaveBeenCalled();
+  });
+
+  it('writes the explicit default endpoint and model before the owned child receives the selected key', async () => {
+    const gateway = createGateway();
+    const provider = createProvider({ id: 'second', type: 'openrouter', model: 'openrouter/free',
+      baseUrl: 'https://second.example/v1', apiProtocol: 'openai-completions' });
+    mocks.getProvider.mockResolvedValue(provider);
+    await syncDefaultProviderToRuntime(provider.id, gateway as GatewayManager);
+    expect(mocks.setOpenClawDefaultModelWithOverride).toHaveBeenCalledWith('openrouter', 'openrouter/openrouter/free',
+      expect.objectContaining({ baseUrl: provider.baseUrl, apiKeyRef: expect.objectContaining({ source: 'env' }) }), []);
+    expect(mocks.setOpenClawDefaultModelWithOverride.mock.invocationCallOrder[0])
+      .toBeLessThan(gateway.restartOwnedForProviderSecretChange.mock.invocationCallOrder[0]);
+    expect(gateway.restartOwnedForProviderSecretChange).toHaveBeenCalledOnce();
   });
 
   it('syncs Ollama provider config to runtime without adding model prefix', async () => {

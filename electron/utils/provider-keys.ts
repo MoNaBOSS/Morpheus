@@ -58,6 +58,25 @@ export function resolveOpenClawProviderKey(account: {
   return getOpenClawProviderKeyForType(account.vendorId, account.id);
 }
 
+/** Convert one runtime/account model reference to the provider's native model id. */
+export function normalizeOpenClawModelId(
+  runtimeProviderKey: string,
+  modelId: string,
+  legacyAccountId?: string,
+): string {
+  const raw = modelId.trim();
+  for (const providerKey of new Set([runtimeProviderKey, legacyAccountId])) {
+    if (!providerKey || !raw.startsWith(`${providerKey}/`)) continue;
+    const nativeModel = raw.slice(providerKey.length + 1);
+    // OpenRouter itself is a model publisher (openrouter/auto, openrouter/free).
+    // A removed runtime/account alias must leave the publisher/model namespace.
+    // This also keeps normalization idempotent across selector and adapter.
+    if (runtimeProviderKey === 'openrouter' && !nativeModel.includes('/')) continue;
+    return nativeModel;
+  }
+  return raw;
+}
+
 /**
  * Get all vendorId values that map to the given openclaw.json key via alias.
  * e.g. getAliasSourceTypes('minimax-portal') → ['minimax-portal-cn']

@@ -12,6 +12,23 @@ const LOCAL: ProviderAccount = {
 };
 
 describe('planner selection', () => {
+  it('routes the saved default OpenRouter account with its canonical runtime model normalized', async () => {
+    const getAccountRuntimeApiKey = vi.fn(async () => 'synthetic-main-owned-key');
+    const selector = createMorpheusPlannerSelector({ providerService: {
+      listAccounts: vi.fn(async () => [{
+        ...LOCAL, id: 'openrouter-work', vendorId: 'openrouter', authMode: 'api_key',
+        baseUrl: 'https://openrouter.ai/api/v1', apiProtocol: 'openai-completions',
+        model: 'openrouter/openai/gpt-test',
+      }]),
+      getDefaultAccountId: vi.fn(async () => 'openrouter-work'),
+      getAccountRuntimeApiKey,
+    } as never });
+    expect(await selector.select(MORPHEUS_STARTER_AGENT_PROFILES[0])).toMatchObject({
+      ok: true, providerAccountId: 'openrouter-work', modelId: 'openai/gpt-test',
+    });
+    expect(getAccountRuntimeApiKey).toHaveBeenCalledExactlyOnceWith('openrouter-work');
+  });
+
   it('reports the resolved model rather than an account-prefixed alias', async () => {
     const selector = createMorpheusPlannerSelector({ providerService: {
       listAccounts: vi.fn(async () => [{ ...LOCAL, model: 'ollama/qwen3:latest' }]),

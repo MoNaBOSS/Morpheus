@@ -4,6 +4,7 @@ import { getProviderSecret } from '../secrets/secret-store';
 import type { ProviderConfig } from '../../utils/secure-storage';
 import { getAllProviders, getApiKey, getDefaultProvider, getProvider } from '../../utils/secure-storage';
 import { getProviderConfig, getProviderDefaultModel } from '../../utils/provider-registry';
+import { normalizeOpenClawModelId } from '../../utils/provider-keys';
 import {
   ensureAnthropicMessagesModelMaxTokens,
   ensureOpenClawProviderAgentRuntimePins,
@@ -30,7 +31,7 @@ import {
 import { logger } from '../../utils/logger';
 import { listAgentsSnapshot } from '../../utils/agent-config';
 import { getRuntimeProviderSecretEnvVar, getRuntimeProviderSecretRef } from './provider-runtime-secret-ref';
-import { loadActiveRuntimeProviderAccounts } from './active-runtime-provider-selection';
+import { loadActiveRuntimeProviderAccounts, selectActiveRuntimeProviderAccounts } from './active-runtime-provider-selection';
 import { reconcileAppOwnedProviderModelKeysBeforeLaunch } from '../../gateway/provider-model-key-reconciliation';
 
 /** OpenClaw Codex OAuth hooks only apply to the canonical `openai` provider id. */
@@ -137,21 +138,8 @@ async function getBrowserOAuthRuntimeProvider(config: ProviderConfig): Promise<s
 
 export function getProviderModelRef(config: ProviderConfig): string | undefined {
   const providerKey = getOpenClawProviderKey(config.type, config.id);
-
-  if (config.model) {
-    return config.model.startsWith(`${providerKey}/`)
-      ? config.model
-      : `${providerKey}/${config.model}`;
-  }
-
-  const defaultModel = getProviderDefaultModel(config.type);
-  if (!defaultModel) {
-    return undefined;
-  }
-
-  return defaultModel.startsWith(`${providerKey}/`)
-    ? defaultModel
-    : `${providerKey}/${defaultModel}`;
+  const modelId = normalizeRuntimeModelId(providerKey, config.model || getProviderDefaultModel(config.type), config.id);
+  return modelId ? `${providerKey}/${modelId}` : undefined;
 }
 
 export async function getProviderFallbackModelRefs(config: ProviderConfig): Promise<string[]> {
@@ -165,9 +153,7 @@ export async function getProviderFallbackModelRefs(config: ProviderConfig): Prom
     const normalizedModel = fallbackModel.trim();
     if (!normalizedModel) continue;
 
-    const modelRef = normalizedModel.startsWith(`${providerKey}/`)
-      ? normalizedModel
-      : `${providerKey}/${normalizedModel}`;
+    const modelRef = `${providerKey}/${normalizeRuntimeModelId(providerKey, normalizedModel, config.id)}`;
 
     if (seen.has(modelRef)) continue;
     seen.add(modelRef);
@@ -205,14 +191,19 @@ export async function syncProviderApiKeyToRuntime(
     getRuntimeProviderSecretEnvVar(ock),
     [...(selected?.verifiedKeys ?? []), apiKey, previousKey].filter((key): key is string => Boolean(key)),
   );
-  await refreshOwnedGatewayProviderEnv(gatewayManager);
   // The key-only Settings route must also replace a legacy literal key in
   // models.providers; saving only the auth profile would leave that copy.
   const provider = await getProvider(providerId);
   if (provider) {
     const context = await resolveRuntimeSyncContext(provider);
     if (context) await syncRuntimeProviderConfig(provider, context, true);
+    if (await getDefaultProvider() === providerId) {
+      await syncDefaultProviderToRuntime(providerId);
+    } else {
+      await syncAgentModelsToRuntime();
+    }
   }
+  await refreshOwnedGatewayProviderEnv(gatewayManager);
 }
 
 async function refreshOwnedGatewayProviderEnv(gatewayManager?: GatewayManager): Promise<void> {
@@ -225,6 +216,33 @@ async function refreshOwnedGatewayProviderEnv(gatewayManager?: GatewayManager): 
 /** Re-select surviving accounts and retire the deleted credential's child env. */
 export async function finishProviderSecretDeletionToRuntime(gatewayManager?: GatewayManager): Promise<void> {
   await syncAllProviderAuthToRuntime();
+  const selected = await loadActiveRuntimeProviderAccounts();
+  // A removed key can select a surviving sibling in the same runtime slot.
+  // Deliver that sibling's endpoint/model before launching with its credential.
+  for (const { account, key } of selected.values()) {
+    const config = await getProvider(account.id);
+    if (!config) continue;
+    const browserOAuthProvider = await getBrowserOAuthRuntimeProvider(config);
+    if (browserOAuthProvider) {
+      await syncProviderConfigToOpenClaw(browserOAuthProvider,
+        normalizeRuntimeModelId(browserOAuthProvider, config.model, config.id),
+        OPENAI_CODEX_OAUTH_PROVIDER_CONFIG);
+      continue;
+    }
+    const context = await resolveRuntimeSyncContext(config);
+    if (!context) continue;
+    await syncRuntimeProviderConfig(config, context, Boolean(key));
+    await syncCustomProviderAgentModel(config, context.runtimeProviderKey, Boolean(key));
+  }
+  const defaultId = await getDefaultProvider();
+  const defaultConfig = defaultId ? await getProvider(defaultId) : null;
+  const activeDefault = defaultConfig
+    ? selected.get(await resolveRuntimeProviderKey(defaultConfig)) : undefined;
+  if (activeDefault) {
+    await syncDefaultProviderToRuntime(activeDefault.account.id);
+  } else {
+    await syncAgentModelsToRuntime();
+  }
   await refreshOwnedGatewayProviderEnv(gatewayManager);
 }
 
@@ -323,7 +341,7 @@ async function syncRuntimeProviderConfig(
   context: RuntimeProviderSyncContext,
   hasStaticKey: boolean,
 ): Promise<void> {
-  const modelId = normalizeRuntimeModelId(context.runtimeProviderKey, config.model);
+  const modelId = normalizeRuntimeModelId(context.runtimeProviderKey, config.model, config.id);
   await syncProviderConfigToOpenClaw(context.runtimeProviderKey, modelId, {
     baseUrl: normalizeProviderBaseUrl(config, config.baseUrl || context.meta?.baseUrl, context.api),
     api: context.api,
@@ -352,7 +370,7 @@ async function syncCustomProviderAgentModel(
     return;
   }
 
-  const modelId = normalizeRuntimeModelId(runtimeProviderKey, config.model);
+  const modelId = normalizeRuntimeModelId(runtimeProviderKey, config.model, config.id);
   await updateAgentModelProvider(runtimeProviderKey, {
     baseUrl: normalizeProviderBaseUrl(config, config.baseUrl, config.apiProtocol || 'openai-completions'),
     api: config.apiProtocol || 'openai-completions',
@@ -363,9 +381,8 @@ async function syncCustomProviderAgentModel(
 async function syncProviderToRuntime(
   config: ProviderConfig,
   apiKey: string | undefined,
-  gatewayManager?: GatewayManager,
   previousKey?: string,
-): Promise<RuntimeProviderSyncContext | null> {
+): Promise<(RuntimeProviderSyncContext & { hasStaticKey: boolean }) | null> {
   if (config.enabled === false) return null;
   const context = await resolveRuntimeSyncContext(config);
   if (!context) {
@@ -375,10 +392,9 @@ async function syncProviderToRuntime(
   if (selected && selected.account.id !== config.id) return null;
 
   const hasStaticKey = await syncProviderSecretToRuntime(config, context.runtimeProviderKey, apiKey, previousKey);
-  if (hasStaticKey) await refreshOwnedGatewayProviderEnv(gatewayManager);
   await syncRuntimeProviderConfig(config, context, hasStaticKey);
   await syncCustomProviderAgentModel(config, context.runtimeProviderKey, hasStaticKey);
-  return context;
+  return { ...context, hasStaticKey };
 }
 
 async function removeDeletedProviderFromOpenClaw(
@@ -435,19 +451,24 @@ function parseModelRef(modelRef: string): { providerKey: string; modelId: string
 function normalizeRuntimeModelId(
   runtimeProviderKey: string,
   modelId: string | undefined,
+  accountId?: string,
 ): string | undefined {
   const value = modelId?.trim();
   if (!value) return undefined;
-  const prefix = `${runtimeProviderKey}/`;
-  return value.startsWith(prefix) ? value.slice(prefix.length) : value;
+  // Preserve existing non-OpenRouter account-alias behavior. OpenRouter and
+  // Core share native namespace handling without rewriting saved metadata.
+  return normalizeOpenClawModelId(runtimeProviderKey, value, runtimeProviderKey === 'openrouter' ? accountId : undefined);
 }
 
 async function buildRuntimeProviderConfigMap(): Promise<Map<string, ProviderConfig>> {
   const configs = await getAllProviders();
+  const selected = await loadActiveRuntimeProviderAccounts();
   const runtimeMap = new Map<string, ProviderConfig>();
 
   for (const config of configs) {
     const runtimeKey = await resolveRuntimeProviderKey(config);
+    const active = selected.get(runtimeKey);
+    if (!active || active.account.id !== config.id) continue;
     runtimeMap.set(runtimeKey, config);
   }
 
@@ -536,13 +557,26 @@ export async function syncSavedProviderToRuntime(
   gatewayManager?: GatewayManager,
   previousKey?: string,
 ): Promise<void> {
-  const context = await syncProviderToRuntime(config, apiKey, gatewayManager, previousKey);
+  const context = await syncProviderToRuntime(config, apiKey, previousKey);
   if (!context) {
     return;
   }
 
-  await syncAgentModelsToRuntime();
+  if (await getDefaultProvider() === config.id) {
+    await syncDefaultProviderToRuntime(config.id);
+  } else {
+    await syncAgentModelsToRuntime();
+  }
+  if (context.hasStaticKey) await refreshOwnedGatewayProviderEnv(gatewayManager);
+}
 
+async function hasUsableRuntimeSibling(providerId: string, runtimeProviderKey: string): Promise<boolean> {
+  const siblings = (await listProviderAccounts()).filter((account) => account.id !== providerId
+    && getOpenClawProviderKey(account.vendorId, account.id) === runtimeProviderKey);
+  const secrets = new Map(await Promise.all(siblings.map(async (account) => (
+    [account.id, await getProviderSecret(account.id)] as const
+  ))));
+  return selectActiveRuntimeProviderAccounts(siblings, secrets).has(runtimeProviderKey);
 }
 
 /**
@@ -607,7 +641,7 @@ export async function syncUpdatedProviderToRuntime(
   gatewayManager?: GatewayManager,
   previousKey?: string,
 ): Promise<void> {
-  const context = await syncProviderToRuntime(config, apiKey, gatewayManager, previousKey);
+  const context = await syncProviderToRuntime(config, apiKey, previousKey);
   if (!context) {
     return;
   }
@@ -618,7 +652,7 @@ export async function syncUpdatedProviderToRuntime(
   const defaultProviderId = await getDefaultProvider();
   const isDefaultProvider = defaultProviderId === config.id;
   if (isDefaultProvider) {
-    const selectedModelId = normalizeRuntimeModelId(ock, config.model);
+    const selectedModelId = normalizeRuntimeModelId(ock, config.model, config.id);
     const modelOverride = selectedModelId ? `${ock}/${selectedModelId}` : undefined;
     if (!isUnregisteredProviderType(config.type)) {
       if (shouldUseExplicitDefaultOverride(config, ock)) {
@@ -643,7 +677,7 @@ export async function syncUpdatedProviderToRuntime(
   }
 
   await syncAgentModelsToRuntime();
-
+  if (context.hasStaticKey) await refreshOwnedGatewayProviderEnv(gatewayManager);
 }
 
 export async function syncDeletedProviderToRuntime(
@@ -659,9 +693,10 @@ export async function syncDeletedProviderToRuntime(
   const ock = runtimeProviderKey ?? await resolveRuntimeProviderKey({ ...provider, id: providerId });
   if (await hasEnabledRuntimeSibling(providerId, ock)) {
     // A built-in vendor has one runtime slot, shared by multiple app accounts.
-    // Convert all verified literals before removing this account's provenance.
-    await syncAllProviderAuthToRuntime();
-    await reconcileAppOwnedProviderModelKeysBeforeLaunch();
+    // Keep the saved sibling's slot, but retire abandoned owned refs before
+    // this account's protected credential loses its provenance.
+    await syncDeletedProviderApiKeyToRuntime(provider, providerId, ock,
+      (await getApiKey(providerId)) ?? undefined);
     return;
   }
   await removeDeletedProviderFromOpenClaw(provider, providerId, ock);
@@ -679,7 +714,7 @@ export async function syncDeletedProviderApiKeyToRuntime(
   }
 
   const ock = runtimeProviderKey ?? await resolveRuntimeProviderKey({ ...provider, id: providerId });
-  if (await hasEnabledRuntimeSibling(providerId, ock)) {
+  if (await hasUsableRuntimeSibling(providerId, ock)) {
     await syncAllProviderAuthToRuntime();
     await reconcileAppOwnedProviderModelKeysBeforeLaunch();
     return;
@@ -749,11 +784,8 @@ export async function syncDefaultProviderToRuntime(
   if (!isOAuthProvider) {
     if (providerKey) {
       await saveProviderKeyRefToOpenClaw(ock, getRuntimeProviderSecretEnvVar(ock), [providerKey]);
-      await refreshOwnedGatewayProviderEnv(gatewayManager);
     }
-    const modelOverride = provider.model
-      ? (provider.model.startsWith(`${ock}/`) ? provider.model : `${ock}/${provider.model}`)
-      : undefined;
+    const modelOverride = provider.model ? getProviderModelRef(provider) : undefined;
 
     if (isUnregisteredProviderType(provider.type)) {
       await setOpenClawDefaultModelWithOverride(ock, modelOverride, {
@@ -801,7 +833,6 @@ export async function syncDefaultProviderToRuntime(
       }
       await activateOpenClawOAuthProfile(browserOAuthRuntimeProvider);
       await removeAppOwnedProviderRuntimeKeyRefs(browserOAuthRuntimeProvider, getRuntimeProviderSecretEnvVar(browserOAuthRuntimeProvider));
-      await refreshOwnedGatewayProviderEnv(gatewayManager);
 
       const defaultModelRef = OPENAI_OAUTH_DEFAULT_MODEL_REF;
       const modelOverride = provider.model
@@ -821,6 +852,7 @@ export async function syncDefaultProviderToRuntime(
       );
       logger.info(`Configured openclaw.json for browser OAuth provider "${provider.id}"`);
       await syncAgentModelsToRuntime();
+      await refreshOwnedGatewayProviderEnv(gatewayManager);
       return;
     }
 
@@ -869,5 +901,5 @@ export async function syncDefaultProviderToRuntime(
   }
 
   await syncAgentModelsToRuntime();
-
+  if (providerKey) await refreshOwnedGatewayProviderEnv(gatewayManager);
 }

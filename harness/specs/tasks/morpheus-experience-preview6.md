@@ -61,9 +61,15 @@ expectedUserBehavior:
   - A successful single-step website or application action has a concise specific localized inline outcome and optional details; complex results and failures retain their controls.
   - First-success examples identify real local capabilities and the separate need for secure task-model connection, without claiming unavailable hosted plans are live.
   - Existing task-model connections can be explicitly tested without returning saved credentials to the renderer or overriding their saved destination.
+  - Each user supplies their own protected task-model account; no owner credential is bundled, and OpenRouter model choice is explicit instead of silently assuming account availability.
+  - Core and original runtime/default/fallback routing preserve native OpenRouter router model IDs; cancelled validation cannot later save an account or replacement credential.
+  - Listing saved connections preserves every account, selected default and original model; sharing a runtime vendor never authorizes deleting an account or attributing a sibling credential to it.
+  - Modern saved account and default reads take precedence over stale legacy aliases, while legacy-only connections remain available without metadata rewrites.
 requiredTests:
   - pnpm run typecheck
   - pnpm run lint:check
+  - pnpm exec vitest run tests/unit/provider-service-stale-cleanup.test.ts tests/unit/provider-migration.test.ts tests/unit/provider-runtime-sync.test.ts tests/unit/provider-secret-adapter.test.ts tests/unit/provider-settings-locales.test.ts
+  - pnpm exec playwright test tests/e2e/provider-lifecycle.spec.ts tests/e2e/provider-validation-cancel.spec.ts --grep 'explicit OpenRouter model|localizes a keyless default|cancelled provider validation' --workers=1
   - pnpm exec playwright test tests/e2e/morpheus-experience.spec.ts --workers=1
   - pnpm exec playwright test tests/e2e/morpheus-shell-recovery.spec.ts --workers=1
   - pnpm exec playwright test tests/e2e/morpheus-brand-motion.spec.ts tests/e2e/morpheus-shared-orb-motion.spec.ts --workers=1
@@ -86,6 +92,14 @@ requested autonomous completion and testing. The next preview.7 change is bounde
 speech responsiveness, verified conversation chronology, public capability reliability,
 and disposable hosted Windows installation qualification. No paid provider, checkout,
 signing identity or NerdGPT deployment is invented.
+
+October 4 per-user amendment: the owner requests OpenRouter and preparation for
+each user. Do not use the exposed chat credential; its replacement must be entered
+securely in Connections. Correct explicit model choice and per-user guidance,
+preserve existing accounts/defaults and qualify add/edit/restart with protected
+synthetic accounts. Metadata access is not generation acceptance. Included local
+English voice has no separate key requirement; hosted billing and NerdGPT remain
+deferred. The existing single specification/checklist record exact evidence.
 
 October 3 amendment: the owner approved the connected motion study and authorized
 full integration/qualification with substantial voice improvement and connected

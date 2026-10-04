@@ -144,6 +144,7 @@ describe('no-inference access probe', () => {
       expect(await validateProviderAccess(vendor, key)).toEqual({ success: true, code: 'connected' });
     }
     expect(fetchProbe.mock.calls.every(([, options]) => options.method === 'GET')).toBe(true);
+    expect(fetchProbe).toHaveBeenLastCalledWith('https://openrouter.ai/api/v1/key', expect.objectContaining({ method: 'GET' }));
   });
 
   it('honors an explicitly saved custom Google protocol without sending a chat probe', async () => {

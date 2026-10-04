@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import type { ProviderAccount, ProviderProtocol } from '../../../shared/providers/types';
 import { getProviderDefinition } from '../../../shared/providers/registry';
+import { normalizeOpenClawModelId, resolveOpenClawProviderKey } from '../../../utils/provider-keys';
 import { morpheusUsageCounts, type MorpheusUsageCounts } from '@shared/morpheus/usage-evidence';
 import type { MorpheusPlatform } from '@shared/morpheus/actions/registry';
 import {
@@ -123,8 +124,9 @@ function baseUrlFor(account: ProviderAccount, protocol: SupportedPlannerProtocol
 export function resolveMorpheusPlannerModelId(account: ProviderAccount, override?: string): string {
   const raw = (override ?? account.model ?? getProviderDefinition(account.vendorId)?.defaultModelId ?? '').trim();
   if (!raw || raw.length > 200) throw new Error(`Provider ${account.label} has no valid planner model selected.`);
-  const prefix = `${account.id}/`;
-  return raw.startsWith(prefix) ? raw.slice(prefix.length) : raw;
+  const model = normalizeOpenClawModelId(resolveOpenClawProviderKey(account), raw, account.id);
+  if (!model) throw new Error(`Provider ${account.label} has no valid planner model selected.`);
+  return model;
 }
 
 function safeProviderHeaders(account: ProviderAccount): Record<string, string> {

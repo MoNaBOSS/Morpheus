@@ -58,6 +58,19 @@ are returned to Renderer. The explicit access probe sends a bounded GET without
 inference fallback, prompt, or raw provider/network error text in UI or diagnostics.
 An access success is not model-generation acceptance. Rate limits, auth failures,
 unavailable no-prompt tests and secure-storage failures stay distinct and actionable.
+OpenRouter draft validation must use authenticated key metadata rather than its
+public model catalog. New and edited OpenRouter models require an explicit user
+choice; existing selections remain preserved. Core strips only known runtime or
+account reference prefixes and retains native publisher/model namespaces. Each
+user supplies their own protected account; no developer/owner key is bundled.
+Core, saved runtime model entries, default and fallback references must agree on
+native router namespaces as well as ordinary publisher models. Closing/cancelling
+setup invalidates pending validation before account mutation; once an explicit
+save enters Main commit, the controls must not imply that commit was cancelled.
+Connection listing must preserve every saved account, model and selected default.
+One shared runtime slot per vendor does not authorize deleting its alternatives.
+Only a sole saved account can use an unambiguous legacy runtime-key fallback;
+multiple saved accounts must not borrow a sibling credential or its ready status.
 
 Native presentation acknowledgement follows the applied editable state, not just
 queued DOM work. Escape cannot reopen from stationary-pointer resize events.

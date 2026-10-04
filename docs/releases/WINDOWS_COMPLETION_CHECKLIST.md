@@ -1,5 +1,36 @@
 # Current Windows experience completion checklist
 
+## Current bounded checkpoint — per-user OpenRouter setup
+
+- [x] Reverify clean source `4ee81a2a`, branch, remotes, fetched application branch
+  identity and storage; preserve preview.13 delivery and owner data.
+- [x] Require explicit OpenRouter model choice for new/edited configuration while
+  retaining existing selections; explain per-user BYOK and included local voice.
+- [x] Fix authenticated draft access validation, native router/runtime/default/
+  fallback model references, and validation cancellation before account mutation.
+- [x] Final 385 affected unit cases, Node/web/managed typechecks (affected Node
+  and web rechecked after final edits), full lint with zero errors/12 inherited
+  warnings and final scoped lint, comms replay/compare, harness validation/dry-run
+  and 18 harness CI cases passed. Independent source review cleared preservation,
+  legacy reads and runtime config/credential delivery. The repeated OpenClaw-auth
+  test module reload emits a listener warning; this is not a runtime observation.
+- [x] Five final Electron journeys passed: explicit model choice; protected saved
+  metadata access; two same-vendor accounts/model-only edit/default retention
+  through restart; Russian keyless-default repair; cancelled validation/commit
+  boundaries. Fixtures use synthetic accounts/service replies, not live inference.
+  Screenshots and full control rectangles passed at 1280×800 and 800×720 after
+  moving Add Provider into a fixed footer. Initial failures and corrections are
+  retained; same-vendor fixtures were not weakened to hide destructive listing.
+- [ ] Qualify the identified normal package and installer without owner credentials
+  or profiles. Source/fixture success is not live-service or physical acceptance.
+- [ ] Owner: revoke the exposed chat-posted credential and enter a replacement
+  directly in Connections. Never copy it into diagnostics or release files.
+- [ ] Test a bounded real model reply with the securely saved replacement.
+
+No exposed credential is used. Hosted Premium/payments and NerdGPT/Unrestricted
+remain future work; standard local English voice requires no separate API key.
+The preview.13 evidence and final BYOK gates below remain scope-specific.
+
 ## Final BYOK Windows release — confirmed October 4 scope
 
 The owner selected BYOK Windows first. Keep the approved experience and existing

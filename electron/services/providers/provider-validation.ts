@@ -94,6 +94,10 @@ function getValidationProfile(
   providerType: string,
   options?: { apiProtocol?: string }
 ): ValidationProfile {
+  // OpenRouter's /models catalog is public and cannot verify a credential.
+  // Its authenticated metadata endpoint takes precedence over the compatible
+  // generation protocol, including when that protocol is explicitly saved.
+  if (providerType === 'openrouter') return 'openrouter';
   const providerApi = options?.apiProtocol || getProviderConfig(providerType)?.api;
   if (providerApi === 'anthropic-messages') {
     return 'anthropic-header';
@@ -113,8 +117,6 @@ function getValidationProfile(
       return 'anthropic-header';
     case 'google':
       return 'google-query-key';
-    case 'openrouter':
-      return 'openrouter';
     case 'ollama':
       return 'none';
     default:
@@ -165,7 +167,7 @@ export async function validateProviderAccess(
   const headers: Record<string, string> = {};
   try {
     if (providerType === 'openrouter') {
-      url = new URL('https://openrouter.ai/api/v1/auth/key');
+      url = new URL('https://openrouter.ai/api/v1/key');
       headers.Authorization = `Bearer ${apiKey.trim()}`;
     } else {
       if (!baseUrl?.trim()) return { success: false, code: 'invalid-config' };
@@ -459,10 +461,12 @@ async function validateAnthropicHeaderKey(
 async function validateOpenRouterKey(
   providerType: string,
   apiKey: string,
+  apiProtocol?: string,
 ): Promise<ValidationResult> {
-  const url = 'https://openrouter.ai/api/v1/auth/key';
-  const headers = { Authorization: `Bearer ${apiKey}` };
-  return await performProviderValidationRequest(providerType, url, headers);
+  const result = await validateProviderAccess(providerType, apiKey, { apiProtocol });
+  if (result.success) return { valid: true };
+  return { valid: false, error: result.code === 'authentication'
+    ? 'Invalid API key' : `OpenRouter connection could not be verified (${result.code}).` };
 }
 
 export async function validateApiKeyWithProvider(
@@ -505,7 +509,7 @@ export async function validateApiKeyWithProvider(
       case 'anthropic-header':
         return await validateAnthropicHeaderKey(providerType, trimmedKey, resolvedBaseUrl);
       case 'openrouter':
-        return await validateOpenRouterKey(providerType, trimmedKey);
+        return await validateOpenRouterKey(providerType, trimmedKey, options?.apiProtocol);
       default:
         return { valid: false, error: `Unsupported validation profile for provider: ${providerType}` };
     }

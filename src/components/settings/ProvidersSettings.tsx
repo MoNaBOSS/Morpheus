@@ -2,7 +2,7 @@
  * Providers Settings Component
  * Manage AI provider configurations and API keys
  */
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ProviderConnectionTestResult } from '@shared/host-api/contract';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -56,7 +56,6 @@ import { useSettingsStore } from '@/stores/settings';
 import { hostApi } from '@/lib/host-api';
 import { hostEvents } from '@/lib/host-events';
 import type { OAuthCodeEvent, OAuthErrorEvent, OAuthSuccessEvent } from '@shared/host-events/contract';
-import { MORPHEUS_PLANNER_MODELS } from '@shared/morpheus/provider-policy';
 
 const inputClasses = 'h-[44px] rounded-xl font-mono text-meta bg-transparent border-black/10 dark:border-white/10 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:border-blue-500 shadow-sm transition-all text-foreground placeholder:text-foreground/40';
 const labelClasses = 'text-sm text-foreground/80 font-bold';
@@ -137,6 +136,18 @@ function shouldShowUserAgentFieldForNewProvider(providerType: ProviderType | nul
   return providerType === 'custom';
 }
 
+function getDefaultAccountRepairKey(error: unknown): string | null {
+  const message = (error instanceof Error ? error.message : typeof error === 'string' ? error : '')
+    .replace(/^Error:\s*/, '');
+  if (message === 'A disabled provider account cannot be the default') {
+    return 'aiProviders.toast.defaultDisabled';
+  }
+  if (message === 'Save an API key for this provider account before making it the default') {
+    return 'aiProviders.toast.defaultNeedsKey';
+  }
+  return null;
+}
+
 function getAuthModeLabel(
   authMode: ProviderAccount['authMode'],
   t: (key: string) => string
@@ -176,6 +187,8 @@ export function ProvidersSettings() {
 
   const [showAddDialog, setShowAddDialog] = useState(openAddProviderFromRoute);
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
+  const editGeneration = useRef(0);
+  const editSession = editGeneration.current;
   const vendorMap = new Map(vendors.map((vendor) => [vendor.id, vendor]));
   const existingVendorIds = new Set(accounts.map((account) => account.vendorId));
   const displayProviders = useMemo(
@@ -252,7 +265,8 @@ export function ProvidersSettings() {
       await setDefaultAccount(providerId);
       toast.success(t('aiProviders.toast.defaultUpdated'));
     } catch (error) {
-      toast.error(`${t('aiProviders.toast.failedDefault')}: ${error}`);
+      const repairKey = getDefaultAccountRepairKey(error);
+      toast.error(repairKey ? t(repairKey) : `${t('aiProviders.toast.failedDefault')}: ${error}`);
     }
   };
 
@@ -267,6 +281,10 @@ export function ProvidersSettings() {
           {t('aiProviders.add')}
         </Button>
       </div>
+
+      <p data-testid="providers-byok-description" className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+        {t('aiProviders.byokDescription')}
+      </p>
 
       {loading ? (
         <div className="flex items-center justify-center py-12 text-muted-foreground bg-black/5 dark:bg-white/5 rounded-3xl border border-transparent border-dashed">
@@ -293,8 +311,15 @@ export function ProvidersSettings() {
               allProviders={displayProviders}
               isDefault={item.account.id === defaultAccountId}
               isEditing={editingProvider === item.account.id}
-              onEdit={() => setEditingProvider(item.account.id)}
-              onCancelEdit={() => setEditingProvider(null)}
+              onEdit={() => {
+                editGeneration.current += 1;
+                setEditingProvider(item.account.id);
+              }}
+              onCancelEdit={() => {
+                editGeneration.current += 1;
+                setEditingProvider(null);
+              }}
+              isEditSessionCurrent={() => editingProvider === item.account.id && editGeneration.current === editSession}
               onDelete={() => handleDeleteProvider(item.account.id)}
               onSetDefault={() => handleSetDefault(item.account.id)}
               onSaveEdits={async (payload) => {
@@ -314,7 +339,8 @@ export function ProvidersSettings() {
                   updates,
                   payload.newApiKey
                 );
-                setEditingProvider(null);
+                toast.success(t('aiProviders.toast.updated'));
+                setEditingProvider((current) => current === item.account.id ? null : current);
               }}
               onValidateKey={(key, options) => validateAccountApiKey(item.account.id, key, options)}
               devModeUnlocked={devModeUnlocked}
@@ -344,6 +370,7 @@ interface ProviderCardProps {
   isEditing: boolean;
   onEdit: () => void;
   onCancelEdit: () => void;
+  isEditSessionCurrent: () => boolean;
   onDelete: () => void;
   onSetDefault: () => void;
   onSaveEdits: (payload: { newApiKey?: string; updates?: Partial<ProviderConfig> }) => Promise<void>;
@@ -363,6 +390,7 @@ function ProviderCard({
   isEditing,
   onEdit,
   onCancelEdit,
+  isEditSessionCurrent,
   onDelete,
   onSetDefault,
   onSaveEdits,
@@ -386,10 +414,19 @@ function ProviderCard({
   const [showFallback, setShowFallback] = useState(false);
   const [validating, setValidating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [committing, setCommitting] = useState(false);
+  const editRequest = useRef(0);
+  const editCommitInProgress = useRef(false);
+  const cardMounted = useRef(true);
+  const editingState = useRef(isEditing);
+  editingState.current = isEditing;
   const [codePlanMode, setCodePlanMode] = useState<CodePlanMode>('apikey');
   const [validationError, setValidationError] = useState<string | null>(null);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionResult, setConnectionResult] = useState<ProviderConnectionTestResult | null>(null);
+  const editDraft = JSON.stringify([newKey, baseUrl, apiProtocol, userAgent, modelId, fallbackModelsText, fallbackProviderIds]);
+  const currentEditDraft = useRef(editDraft);
+  currentEditDraft.current = editDraft;
   const connectionRequest = useRef(0);
   // A result belongs to these saved settings, never to an unsaved edit or replaced key.
   const connectionIdentity = JSON.stringify([
@@ -397,6 +434,26 @@ function ProviderCard({
     account.headers, account.model,
     account.enabled, account.authMode, status?.hasKey,
   ]);
+  const savedIdentity = useRef(connectionIdentity);
+  savedIdentity.current = connectionIdentity;
+  useLayoutEffect(() => {
+    cardMounted.current = true;
+    return () => {
+      cardMounted.current = false;
+      editRequest.current += 1;
+    };
+  }, []);
+  useEffect(() => {
+    editRequest.current += 1;
+    if (!isEditing) {
+      setNewKey('');
+      setShowKey(false);
+      setSaving(false);
+      setValidating(false);
+      setValidationError(null);
+    }
+    return () => { editRequest.current += 1; };
+  }, [isEditing]);
   useEffect(() => {
     connectionRequest.current += 1;
     setConnectionResult(null);
@@ -467,6 +524,18 @@ function ProviderCard({
   };
 
   const handleSaveEdits = async () => {
+    if (editCommitInProgress.current) return;
+    if (account.vendorId === 'openrouter' && !modelId.trim()) {
+      setValidationError(t('aiProviders.toast.modelRequired'));
+      return;
+    }
+    const request = ++editRequest.current;
+    const identity = connectionIdentity;
+    const draft = editDraft;
+    const isCurrent = () => request === editRequest.current
+      && cardMounted.current && editingState.current && isEditSessionCurrent();
+    const canCommit = () => isCurrent() && savedIdentity.current === identity && currentEditDraft.current === draft;
+    let startedCommit = false;
     setSaving(true);
     setValidationError(null);
     try {
@@ -481,6 +550,7 @@ function ProviderCard({
           apiProtocol: (account.vendorId === 'custom' || account.vendorId === 'ollama') ? apiProtocol : undefined,
           modelId: modelId.trim() || undefined,
         });
+        if (!canCommit()) return;
         setValidating(false);
         if (!result.valid) {
           setValidationError(result.error || t('aiProviders.toast.invalidKey'));
@@ -525,20 +595,44 @@ function ProviderCard({
       }
 
       if (!payload.newApiKey && !payload.updates) {
-        onCancelEdit();
+        cancelEdits();
         setSaving(false);
         return;
       }
 
+      if (!canCommit()) return;
+      // Validation may be cancelled; the Main-owned write must finish once started.
+      startedCommit = true;
+      editCommitInProgress.current = true;
+      setCommitting(true);
       await onSaveEdits(payload);
+      if (!isCurrent()) return;
       setNewKey('');
-      toast.success(t('aiProviders.toast.updated'));
     } catch (error) {
-      toast.error(`${t('aiProviders.toast.failedUpdate')}: ${error}`);
+      if (startedCommit || canCommit()) {
+        toast.error(`${t('aiProviders.toast.failedUpdate')}: ${error}`);
+      }
     } finally {
-      setSaving(false);
-      setValidating(false);
+      if (startedCommit) {
+        editCommitInProgress.current = false;
+        if (cardMounted.current) setCommitting(false);
+      }
+      if (isCurrent()) {
+        setSaving(false);
+        setValidating(false);
+      }
     }
+  };
+
+  const cancelEdits = () => {
+    if (editCommitInProgress.current) return;
+    editRequest.current += 1;
+    setNewKey('');
+    setShowKey(false);
+    setSaving(false);
+    setValidating(false);
+    setValidationError(null);
+    onCancelEdit();
   };
 
   const currentInputClasses = isDefault
@@ -628,6 +722,7 @@ function ProviderCard({
             )}
             <Button
               data-testid={`provider-edit-${account.id}`}
+              disabled={committing}
               variant="ghost"
               size="icon"
               className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-surface-modal shadow-sm"
@@ -680,7 +775,7 @@ function ProviderCard({
       )}
 
       {isEditing && (
-        <div className="space-y-6 mt-4 pt-4 border-t border-black/5 dark:border-white/5">
+        <fieldset disabled={committing} className="m-0 min-w-0 space-y-6 mt-4 p-0 pt-4 border-0 border-t border-black/5 dark:border-white/5">
           {effectiveDocsUrl && (
             <div className="flex justify-end -mt-2 mb-2">
               <a
@@ -728,17 +823,13 @@ function ProviderCard({
                     {t('aiProviders.dialog.modelIdEditDisabled')}
                   </p>
                   {account.vendorId === 'openrouter' ? (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      <button type="button" data-testid={`provider-edit-use-balanced-${account.id}`}
-                        onClick={() => setModelId(MORPHEUS_PLANNER_MODELS.openRouterBalanced)}
-                        className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-emerald-500/40">
-                        {t('aiProviders.dialog.useBalanced')}
-                      </button>
-                      <button type="button" data-testid={`provider-edit-use-economy-${account.id}`}
-                        onClick={() => setModelId(MORPHEUS_PLANNER_MODELS.openRouterEconomy)}
-                        className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-emerald-500/40">
-                        {t('aiProviders.dialog.useEconomy')}
-                      </button>
+                    <div data-testid={`provider-edit-openrouter-guidance-${account.id}`} className="space-y-2 pt-1 text-xs text-muted-foreground">
+                      <p className="leading-relaxed">{t('aiProviders.dialog.openRouterModelHelp')}</p>
+                      <a href={providerDocsUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 font-medium text-foreground hover:underline">
+                        {t('aiProviders.dialog.openRouterModelCatalog')}
+                        <ExternalLink aria-hidden="true" className="h-3 w-3" />
+                      </a>
                     </div>
                   ) : null}
                 </div>
@@ -956,8 +1047,11 @@ function ProviderCard({
                   disabled={
                     validating
                     || saving
+                    || committing
+                    || (account.vendorId === 'openrouter' && !modelId.trim())
                     || (
                       !newKey.trim()
+                      && (!showModelIdField || resolveProviderModelForSave(typeInfo, modelId, devModeUnlocked) === account.model)
                       && (baseUrl.trim() || undefined) === (account.baseUrl || undefined)
                       && userAgent.trim() === getUserAgentHeader(account.headers).trim()
                       && fallbackModelsEqual(normalizeFallbackModels(fallbackModelsText.split('\n')), account.fallbackModels)
@@ -974,7 +1068,8 @@ function ProviderCard({
                 <Button
                   data-testid={`provider-edit-cancel-${account.id}`}
                   variant="ghost"
-                  onClick={onCancelEdit}
+                  onClick={cancelEdits}
+                  disabled={committing}
                   className={cn(
                     "p-0 rounded-xl",
                     isDefault
@@ -1000,7 +1095,7 @@ function ProviderCard({
               </p>
             </div>
           </div>
-        </div>
+        </fieldset>
       )}
     </div>
   );
@@ -1052,6 +1147,11 @@ function AddProviderDialog({
   const [codePlanMode, setCodePlanMode] = useState<CodePlanMode>('apikey');
   const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [committing, setCommitting] = useState(false);
+  const addRequest = useRef(0);
+  const addCommitInProgress = useRef(false);
+  const dialogOpen = useRef(open);
+  dialogOpen.current = open;
   const [validationError, setValidationError] = useState<string | null>(null);
 
   // OAuth Flow State
@@ -1072,9 +1172,13 @@ function AddProviderDialog({
   // Default to the vendor's declared auth mode instead of hard-coding OAuth.
   const [authMode, setAuthMode] = useState<'oauth' | 'apikey'>('apikey');
   const [prevOpen, setPrevOpen] = useState(open);
+  const addDraft = JSON.stringify([selectedType, name, apiKey, baseUrl, modelId, apiProtocol, userAgent, codePlanMode, authMode]);
+  const currentAddDraft = useRef(addDraft);
+  currentAddDraft.current = addDraft;
   const pendingOAuthRef = React.useRef<{ accountId: string; label: string } | null>(null);
 
   if (prevOpen !== open) {
+    addRequest.current += 1;
     setPrevOpen(open);
     if (open) {
       setSelectedType(null);
@@ -1088,6 +1192,7 @@ function AddProviderDialog({
       setCodePlanMode('apikey');
       setShowKey(false);
       setSaving(false);
+      setCommitting(false);
       setValidationError(null);
       setOauthFlowing(false);
       setOauthData(null);
@@ -1097,6 +1202,22 @@ function AddProviderDialog({
       pendingOAuthRef.current = null;
     }
   }
+
+  useLayoutEffect(() => () => { addRequest.current += 1; }, []);
+
+  const discardPendingAdd = () => {
+    addRequest.current += 1;
+    setApiKey('');
+    setShowKey(false);
+    setSaving(false);
+    setValidationError(null);
+  };
+
+  const closeDialog = () => {
+    if (addCommitInProgress.current) return;
+    discardPendingAdd();
+    onClose();
+  };
 
   const typeInfo = PROVIDER_TYPE_INFO.find((t) => t.id === selectedType);
   const providerDocsUrl = getProviderDocsUrl(typeInfo, i18n.language);
@@ -1307,7 +1428,7 @@ function AddProviderDialog({
   });
 
   const handleAdd = async () => {
-    if (!selectedType) return;
+    if (!selectedType || addCommitInProgress.current) return;
 
     const hasMinimax = existingVendorIds.has('minimax-portal') || existingVendorIds.has('minimax-portal-cn');
     if ((selectedType === 'minimax-portal' || selectedType === 'minimax-portal-cn') && hasMinimax) {
@@ -1320,6 +1441,10 @@ function AddProviderDialog({
       return;
     }
 
+    const request = ++addRequest.current;
+    const draft = addDraft;
+    const isCurrent = () => request === addRequest.current && dialogOpen.current;
+    let startedCommit = false;
     setSaving(true);
     setValidationError(null);
 
@@ -1338,6 +1463,7 @@ function AddProviderDialog({
           apiProtocol: (selectedType === 'custom' || selectedType === 'ollama') ? apiProtocol : undefined,
           modelId: modelId.trim() || undefined,
         });
+        if (!isCurrent() || currentAddDraft.current !== draft) return;
         if (!result.valid) {
           setValidationError(result.error || t('aiProviders.toast.invalidKey'));
           setSaving(false);
@@ -1352,6 +1478,11 @@ function AddProviderDialog({
         return;
       }
 
+      if (!isCurrent() || currentAddDraft.current !== draft) return;
+      // Closing cancels validation, never a write already handed to Main.
+      startedCommit = true;
+      addCommitInProgress.current = true;
+      setCommitting(true);
       await onAdd(
         selectedType,
         name || (typeInfo?.id === 'custom' ? t('aiProviders.custom') : typeInfo?.name) || selectedType,
@@ -1371,12 +1502,16 @@ function AddProviderDialog({
     } catch {
       // error already handled via toast in parent
     } finally {
-      setSaving(false);
+      if (startedCommit) {
+        addCommitInProgress.current = false;
+        if (isCurrent()) setCommitting(false);
+      }
+      if (isCurrent()) setSaving(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && closeDialog()}>
       <DialogContent asChild className="w-[calc(100%-2rem)] max-w-2xl max-h-[90vh] flex flex-col rounded-3xl border-0 shadow-2xl bg-surface-modal overflow-hidden">
         <Card data-testid="add-provider-dialog">
         <CardHeader className="relative pb-2 shrink-0">
@@ -1393,12 +1528,14 @@ function AddProviderDialog({
             variant="ghost"
             size="icon"
             className="absolute right-4 top-4 rounded-full h-8 w-8 -mr-2 -mt-2 text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
-            onClick={onClose}
+            onClick={closeDialog}
+            disabled={committing}
+            aria-label={t('common:actions.close')}
           >
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
-        <CardContent className="overflow-y-auto flex-1 p-6">
+        <CardContent data-testid="add-provider-form-body" className="min-h-0 overflow-y-auto flex-1 p-6">
           {!selectedType ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {availableTypes.map((type) => (
@@ -1406,6 +1543,7 @@ function AddProviderDialog({
                   data-testid={`add-provider-type-${type.id}`}
                   key={type.id}
                   onClick={() => {
+                    discardPendingAdd();
                     setSelectedType(type.id);
                     setName(type.id === 'custom' ? t('aiProviders.custom') : type.name);
                     setBaseUrl(type.defaultBaseUrl || '');
@@ -1441,7 +1579,10 @@ function AddProviderDialog({
                   <p className="font-semibold text-sm">{typeInfo?.id === 'custom' ? t('aiProviders.custom') : typeInfo?.name}</p>
                   <button
                   data-testid="add-provider-change-type"
+                  disabled={committing}
                   onClick={() => {
+                    if (addCommitInProgress.current) return;
+                    discardPendingAdd();
                     setSelectedType(null);
                     setValidationError(null);
                     setBaseUrl('');
@@ -1471,7 +1612,7 @@ function AddProviderDialog({
                 </div>
               </div>
 
-              <div className="space-y-6 bg-transparent p-0">
+              <fieldset disabled={committing} className="m-0 min-w-0 space-y-6 border-0 bg-transparent p-0">
                 <div className="space-y-2.5">
                   <Label htmlFor="name" className={labelClasses}>{t('aiProviders.dialog.displayName')}</Label>
                   <Input
@@ -1586,19 +1727,14 @@ function AddProviderDialog({
                       className={inputClasses}
                     />
                     {selectedType === 'openrouter' ? (
-                      <div data-testid="openrouter-model-guidance" className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-3 text-xs text-muted-foreground">
-                        <p className="font-medium text-foreground">{t('aiProviders.dialog.openRouterRecommendationTitle')}</p>
-                        <p className="mt-1 leading-relaxed">{t('aiProviders.dialog.openRouterRecommendationBody')}</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <button type="button" onClick={() => setModelId(MORPHEUS_PLANNER_MODELS.openRouterBalanced)}
-                            className="rounded-lg border border-border px-2.5 py-1.5 font-medium text-foreground hover:border-emerald-500/40">
-                            {t('aiProviders.dialog.useBalanced')}
-                          </button>
-                          <button type="button" onClick={() => setModelId(MORPHEUS_PLANNER_MODELS.openRouterEconomy)}
-                            className="rounded-lg border border-border px-2.5 py-1.5 font-medium text-foreground hover:border-emerald-500/40">
-                            {t('aiProviders.dialog.useEconomy')}
-                          </button>
-                        </div>
+                      <div data-testid="openrouter-model-guidance" className="rounded-xl border border-border bg-surface-input p-3 text-xs text-muted-foreground">
+                        <p className="font-medium text-foreground">{t('aiProviders.dialog.openRouterModelTitle')}</p>
+                        <p className="mt-1 leading-relaxed">{t('aiProviders.dialog.openRouterModelHelp')}</p>
+                        <a href={providerDocsUrl} target="_blank" rel="noopener noreferrer"
+                          className="mt-2 inline-flex items-center gap-1 font-medium text-foreground hover:underline">
+                          {t('aiProviders.dialog.openRouterModelCatalog')}
+                          <ExternalLink aria-hidden="true" className="h-3 w-3" />
+                        </a>
                       </div>
                     ) : selectedType === 'openai' ? (
                       <p data-testid="openai-model-guidance" className="text-xs leading-relaxed text-muted-foreground">
@@ -1847,26 +1983,27 @@ function AddProviderDialog({
                     )}
                   </div>
                 )}
-              </div>
+              </fieldset>
 
-              <Separator className="bg-black/10 dark:bg-white/10" />
-
-              <div className="flex justify-end gap-3">
-                <Button
-                  data-testid="add-provider-submit-button"
-                  onClick={handleAdd}
-                  className={cn("rounded-full px-8 h-[42px] text-meta font-semibold shadow-sm", useOAuthFlow && "hidden")}
-                  disabled={!selectedType || saving || (showModelIdField && modelId.trim().length === 0)}
-                >
-                  {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : null}
-                  {t('aiProviders.dialog.add')}
-                </Button>
-              </div>
             </div>
           )}
         </CardContent>
+        {selectedType && !useOAuthFlow && (
+          <div data-testid="add-provider-action-footer" className="shrink-0 px-6 pb-6">
+            <Separator className="bg-black/10 dark:bg-white/10" />
+            <div className="flex justify-end gap-3 pt-6">
+              <Button
+                data-testid="add-provider-submit-button"
+                onClick={handleAdd}
+                className="rounded-full px-8 h-[42px] text-meta font-semibold shadow-sm"
+                disabled={saving || committing || (showModelIdField && modelId.trim().length === 0)}
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {t('aiProviders.dialog.add')}
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
       </DialogContent>
     </Dialog>

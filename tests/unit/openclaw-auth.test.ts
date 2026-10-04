@@ -597,6 +597,43 @@ describe('removeAppOwnedProviderRuntimeKeyRefs', () => {
     const providers = (config.models as Record<string, unknown>).providers as Record<string, Record<string, unknown>>;
     expect(providers.openrouter.apiKey).toBe('synthetic-imported-key');
   });
+
+  it('retires abandoned app refs while retaining a foreign default and OAuth auth under the same vendor', async () => {
+    const envVar = 'MORPHEUS_PROVIDER_KEY_0123456789ABCDEF01234567';
+    const ref = { source: 'env', provider: 'default', id: envVar };
+    await writeOpenClawJson({ models: { providers: {
+      openrouter: { apiKey: ref, baseUrl: 'https://retained.example/v1', models: [{ id: 'retained-model' }] },
+    } } });
+    const agentDir = join(testHome, '.openclaw', 'agents', 'main', 'agent');
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(join(agentDir, 'models.json'), JSON.stringify({ providers: {
+      openrouter: { apiKey: envVar, models: [{ id: 'retained-model' }] },
+    } }));
+    const foreign = { type: 'api_key', provider: 'openrouter', key: 'synthetic-foreign-key' };
+    const oauth = { type: 'oauth', provider: 'openrouter', access: 'synthetic-foreign-access',
+      refresh: 'synthetic-foreign-refresh', expires: 9000 };
+    await writeAgentAuthProfiles('main', { version: 1, profiles: {
+      'openrouter:default': foreign,
+      'openrouter:morpheus': { type: 'api_key', provider: 'openrouter', keyRef: ref },
+      'openrouter:oauth': oauth,
+    }, order: { openrouter: ['openrouter:morpheus', 'openrouter:default', 'openrouter:oauth'] },
+    lastGood: { openrouter: 'openrouter:morpheus' } });
+    const { removeAppOwnedProviderRuntimeKeyRefs, removeProviderKeyFromOpenClaw } = await import('@electron/utils/openclaw-auth');
+    await removeAppOwnedProviderRuntimeKeyRefs('openrouter', envVar, 'synthetic-deleted-key');
+    await removeProviderKeyFromOpenClaw('openrouter', 'main', 'synthetic-deleted-key');
+    const config = await readOpenClawJson();
+    const entry = ((config.models as Record<string, unknown>).providers as Record<string, Record<string, unknown>>).openrouter;
+    expect(entry.apiKey).toBeUndefined();
+    expect(entry.baseUrl).toBe('https://retained.example/v1');
+    expect(entry.models).toEqual([{ id: 'retained-model' }]);
+    const models = JSON.parse(await readFile(join(agentDir, 'models.json'), 'utf8')) as { providers: Record<string, Record<string, unknown>> };
+    expect(models.providers.openrouter.apiKey).toBeUndefined();
+    expect(models.providers.openrouter.models).toEqual([{ id: 'retained-model' }]);
+    const profiles = await readAuthProfiles('main');
+    expect(profiles.profiles).toEqual({ 'openrouter:default': foreign, 'openrouter:oauth': oauth });
+    expect(profiles.order).toEqual({ openrouter: ['openrouter:default', 'openrouter:oauth'] });
+    expect(profiles.lastGood).toEqual({});
+  });
 });
 
 describe('sanitizeOpenClawConfig', () => {
@@ -1528,6 +1565,28 @@ describe('setOpenClawDefaultModelWithOverride model metadata', () => {
     await rm(testHome, { recursive: true, force: true });
     await rm(testUserData, { recursive: true, force: true });
   });
+
+  it.each(['openrouter/auto', 'openrouter/free', 'openrouter/openrouter/auto'])(
+    'writes native OpenRouter namespaces from %s into the actual isolated default config', async (model) => {
+      const { getProviderModelRef } = await import('@electron/services/providers/provider-runtime-sync');
+      const { resolveMorpheusPlannerModelId } = await import('@electron/services/morpheus/planning/provider-planner');
+      const { setOpenClawDefaultModelWithOverride } = await import('@electron/utils/openclaw-auth');
+      const runtimeRef = getProviderModelRef({ id: 'openrouter-work', name: 'Synthetic Router', type: 'openrouter',
+        model, enabled: true, createdAt: '2026-10-04T00:00:00Z', updatedAt: '2026-10-04T00:00:00Z' });
+      await writeOpenClawJson({ models: { providers: { openrouter: { baseUrl: 'https://openrouter.ai/api/v1',
+        api: 'openai-completions', models: [{ id: 'retained/model', name: 'Retained model' }] } } } });
+      await setOpenClawDefaultModelWithOverride('openrouter', runtimeRef, {
+        baseUrl: 'https://openrouter.ai/api/v1', api: 'openai-completions',
+      }, ['openrouter/openrouter/free']);
+      const config = await readOpenClawJson();
+      const nativeModel = model.endsWith('/free') ? 'openrouter/free' : 'openrouter/auto';
+      expect((config.agents as { defaults: { model: { primary: string; fallbacks: string[] } } }).defaults.model)
+        .toEqual({ primary: `openrouter/${nativeModel}`, fallbacks: ['openrouter/openrouter/free'] });
+      expect((config.models as { providers: { openrouter: { models: Array<{ id: string }> } } }).providers.openrouter.models)
+        .toEqual(expect.arrayContaining([expect.objectContaining({ id: 'retained/model' }),
+          expect.objectContaining({ id: nativeModel }), expect.objectContaining({ id: 'openrouter/free' })]));
+      expect(resolveMorpheusPlannerModelId({ id: 'openrouter-work', vendorId: 'openrouter', model: runtimeRef } as never)).toBe(nativeModel);
+    });
 
   it('preserves old rows and infers image input for a newly selected vision model', async () => {
     await writeOpenClawJson({

@@ -1,4 +1,20 @@
-# Current continuation — preview.13 shareable Windows candidate, 2026-10-04
+# Current continuation — per-user OpenRouter correction, 2026-10-04
+
+Latest bounded source work prepares preview.14 while preserving the delivered
+preview.13 and owner profile. OpenRouter model choice is explicit; model-only
+edits can be saved, and Core removes only the runtime provider prefix while
+preserving native publisher/model IDs. Draft and saved OpenRouter access tests
+use authenticated key metadata rather than accepting the public model catalog.
+Persistence qualification also exposed inherited same-vendor account deletion
+during listing; the correction preserves saved alternatives and the explicit
+default, with no borrowed sibling credential status.
+Each user connects their own protected account; included local English voice
+needs no extra API key. The chat-posted credential is exposed and is not used.
+Owner must revoke it and enter a replacement directly in Connections before
+live-model qualification. Normal package/installer evidence for preview.14
+belongs in the existing specification/checklist; do not imply it is already
+accepted. The voice selected-device/wake mismatch and physical/echo gates below
+remain open. No broad redesign or hosted/billing/NerdGPT work in this correction.
 
 Latest scope decision: **finish BYOK Windows first**. Hosted Premium/billing is
 later work; NerdGPT/Unrestricted are explicitly deferred, not release blockers.

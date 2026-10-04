@@ -1,4 +1,5 @@
-import { completeSetup, expect, installIpcMocks, test } from './fixtures/electron';
+import { closeElectronApp, completeSetup, expect, getStableWindow, test } from './fixtures/electron';
+import ruSettings from '../../shared/i18n/locales/ru/settings.json';
 
 const TEST_PROVIDER_ID = 'moonshot-e2e';
 const TEST_PROVIDER_LABEL = 'Moonshot E2E';
@@ -235,34 +236,40 @@ test.describe('ClawX provider lifecycle', () => {
     await expect(page.getByTestId('provider-card-custom')).toContainText('LM Studio Local');
   });
 
-  test('edit form updates an existing OpenRouter account to the economy model', async ({ electronApp, page }) => {
+  test('saves only the explicit OpenRouter model while retaining other accounts, keys and the default', async ({ electronApp, launchElectronApp, page }, info) => {
     await completeSetup(page);
-    const now = new Date().toISOString();
-    const account = {
-      id: 'openrouter-edit',
-      vendorId: 'openrouter',
-      label: 'OpenRouter Review',
-      authMode: 'api_key',
-      baseUrl: 'https://openrouter.ai/api/v1',
-      apiProtocol: 'openai-completions',
-      model: 'openai/gpt-5.6-sol',
-      enabled: true,
-      isDefault: true,
-      createdAt: now,
-      updatedAt: now,
-    };
-    await installIpcMocks(electronApp, { hostApi: {
-      [JSON.stringify(['providers', 'accounts', null])]: [account],
-      [JSON.stringify(['providers', 'accountKeyInfo', null])]: [{
-        accountId: account.id,
-        hasKey: true,
-        keyMasked: 'sk-or-***',
-      }],
-      [JSON.stringify(['providers', 'vendors', null])]: [],
-      [JSON.stringify(['providers', 'getDefaultAccount', null])]: { accountId: account.id },
-    } });
+    // Disposable per-user profile, protected synthetic keys and real Main-owned
+    // account updates. No validation, prompt or paid-provider request is sent.
+    const originalAccounts = await page.evaluate(async () => {
+      const now = new Date().toISOString();
+      const accounts = [
+        { id: 'openrouter-retained', vendorId: 'openrouter', label: 'Retained account',
+          authMode: 'api_key', model: 'fixture/retained-model', enabled: true,
+          isDefault: false, createdAt: now, updatedAt: now },
+        { id: 'openrouter-edit', vendorId: 'openrouter', label: 'OpenRouter Review',
+          authMode: 'api_key', model: 'fixture/original-model', enabled: true,
+          isDefault: false, createdAt: now, updatedAt: now },
+      ];
+      for (const account of accounts) {
+        const result = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'providers', action: 'createAccount',
+          payload: { account, apiKey: `synthetic-${account.id}` } });
+        if (!result.ok || !(result.data as { success?: boolean }).success) throw new Error('Synthetic provider setup failed');
+      }
+      const selected = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'providers', action: 'setDefaultAccount',
+        payload: { accountId: 'openrouter-retained' } });
+      if (!selected.ok || !(selected.data as { success?: boolean }).success) throw new Error('Synthetic default setup failed');
+      const before = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'providers', action: 'accounts' });
+      if (!before.ok) throw new Error('Synthetic providers unavailable');
+      return before.data;
+    });
+    expect(originalAccounts).toHaveLength(2);
+    expect(originalAccounts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'openrouter-retained', model: 'fixture/retained-model' }),
+      expect.objectContaining({ id: 'openrouter-edit', model: 'fixture/original-model' }),
+    ]));
 
-    await page.evaluate(() => { window.location.hash = '#/models'; });
+    await page.reload();
+    await page.evaluate(() => { window.location.hash = '#/settings?section=connections'; });
     await expect(page.getByTestId('providers-settings')).toBeVisible();
     await expect(page.getByTestId('provider-card-openrouter-edit')).toBeVisible();
 
@@ -271,12 +278,130 @@ test.describe('ClawX provider lifecycle', () => {
 
     const modelInput = page.getByTestId('provider-edit-model-id-openrouter-edit');
     await expect(modelInput).toBeEnabled();
-    await expect(modelInput).toHaveValue('openai/gpt-5.6-sol');
+    await expect(modelInput).toHaveValue('fixture/original-model');
     await expect(page.getByTestId('provider-edit-model-id-help-openrouter-edit')).toContainText(
       'updates the provider used by Morpheus and OpenClaw',
     );
-    await page.getByTestId('provider-edit-use-economy-openrouter-edit').click();
-    await expect(modelInput).toHaveValue('deepseek/deepseek-v4-flash-0731');
+    const save = page.getByTestId('provider-edit-save-openrouter-edit');
+    await expect(save).toBeDisabled();
+    await modelInput.fill('   ');
+    await expect(save).toBeDisabled();
+    await expect(page.getByTestId('provider-edit-openrouter-guidance-openrouter-edit')).toContainText('service access only');
+    await expect(page.getByTestId('provider-edit-openrouter-guidance-openrouter-edit').getByRole('link')).toHaveAttribute('href', 'https://openrouter.ai/models');
+    await modelInput.fill('fixture/selected-model');
+    await expect(save).toBeEnabled();
+    await expect(page.getByTestId('provider-edit-key-input-openrouter-edit')).toHaveValue('');
+    await save.click();
+    await expect(modelInput).toHaveCount(0);
+    await expect(page.getByTestId('provider-card-openrouter-edit')).toContainText('fixture/selected-model');
+    await expect(page.getByTestId('provider-card-openrouter-retained')).toContainText('Default');
+    await expect(page.getByTestId('provider-connection-result-openrouter-edit')).toContainText('without sending a model prompt');
+
+    const readSavedState = async (target: typeof page) => target.evaluate(async () => {
+      const invoke = async (action: string, payload?: Record<string, unknown>) => {
+        const result = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'providers', action, payload });
+        if (!result.ok) throw new Error('Provider verification failed');
+        return result.data;
+      };
+      return {
+        accounts: await invoke('accounts'),
+        defaultAccount: await invoke('getDefaultAccount'),
+        originalKey: await invoke('hasAccountApiKey', { accountId: 'openrouter-edit' }),
+        retainedKey: await invoke('hasAccountApiKey', { accountId: 'openrouter-retained' }),
+      };
+    });
+    const saved = await readSavedState(page);
+    const before = originalAccounts as Array<{ id: string; [key: string]: unknown }>;
+    const after = saved.accounts as Array<{ id: string; [key: string]: unknown }>;
+    expect(after).toHaveLength(before.length);
+    expect(after.find((account) => account.id === 'openrouter-retained')).toEqual(before.find((account) => account.id === 'openrouter-retained'));
+    expect(after.find((account) => account.id === 'openrouter-edit')).toMatchObject({
+      ...before.find((account) => account.id === 'openrouter-edit'),
+      model: 'fixture/selected-model',
+      updatedAt: expect.any(String),
+    });
+    expect(saved.defaultAccount).toEqual({ accountId: 'openrouter-retained' });
+    expect(saved.originalKey).toBe(true);
+    expect(saved.retainedKey).toBe(true);
+    expect(await page.locator('body').innerText()).not.toContain('synthetic-openrouter');
+    await page.screenshot({ path: info.outputPath('openrouter-model-only-save.png') });
+
+    await closeElectronApp(electronApp);
+    const relaunched = await launchElectronApp({ skipSetup: true });
+    try {
+      const returning = await getStableWindow(relaunched);
+      await returning.evaluate(() => { window.location.hash = '#/settings?section=connections'; });
+      await expect(returning.getByTestId('provider-card-openrouter-edit')).toContainText('fixture/selected-model');
+      await expect(returning.getByTestId('provider-card-openrouter-retained')).toContainText('Default');
+      expect(await readSavedState(returning)).toEqual(saved);
+      await returning.screenshot({ path: info.outputPath('openrouter-retained-after-restart.png') });
+    } finally {
+      await closeElectronApp(relaunched);
+    }
+  });
+
+  test('localizes a keyless default rejection while retaining the configured default and both accounts', async ({ page }, info) => {
+    await completeSetup(page);
+    await page.evaluate(async () => {
+      const now = new Date().toISOString();
+      for (const account of [
+        { id: 'openrouter-configured-default', vendorId: 'openrouter', label: 'Configured default',
+          authMode: 'api_key', model: 'fixture/configured-default', enabled: true,
+          isDefault: false, createdAt: now, updatedAt: now },
+        { id: 'openrouter-keyless-sibling', vendorId: 'openrouter', label: 'Keyless sibling',
+          authMode: 'api_key', model: 'fixture/keyless-sibling', enabled: true,
+          isDefault: false, createdAt: now, updatedAt: now },
+      ]) {
+        const result = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'providers', action: 'createAccount',
+          payload: { account, ...(account.id === 'openrouter-configured-default' ? { apiKey: 'synthetic-default-rejection-key' } : {}) } });
+        if (!result.ok || !(result.data as { success?: boolean }).success) throw new Error('Synthetic provider setup failed');
+      }
+      const selected = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'providers', action: 'setDefaultAccount',
+        payload: { accountId: 'openrouter-configured-default' } });
+      if (!selected.ok || !(selected.data as { success?: boolean }).success) throw new Error('Synthetic default setup failed');
+      const language = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'settings', action: 'set',
+        payload: { key: 'language', value: 'ru' } });
+      if (!language.ok) throw new Error('Fixture language setup failed');
+    });
+    const readSavedState = async () => page.evaluate(async () => {
+      const invoke = async (action: string, payload?: Record<string, unknown>) => {
+        const result = await window.clawx.hostInvoke({ id: crypto.randomUUID(), module: 'providers', action, payload });
+        if (!result.ok) throw new Error('Provider verification failed');
+        return result.data;
+      };
+      return {
+        accounts: await invoke('accounts'),
+        defaultAccount: await invoke('getDefaultAccount'),
+        configuredKey: await invoke('hasAccountApiKey', { accountId: 'openrouter-configured-default' }),
+        siblingKey: await invoke('hasAccountApiKey', { accountId: 'openrouter-keyless-sibling' }),
+      };
+    });
+    const before = await readSavedState();
+    expect(before.accounts).toHaveLength(2);
+    expect(before.accounts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'openrouter-configured-default', model: 'fixture/configured-default' }),
+      expect.objectContaining({ id: 'openrouter-keyless-sibling', model: 'fixture/keyless-sibling' }),
+    ]));
+    expect(before.defaultAccount).toEqual({ accountId: 'openrouter-configured-default' });
+    expect(before.configuredKey).toBe(true);
+    expect(before.siblingKey).toBe(false);
+
+    await page.reload();
+    await page.evaluate(() => { window.location.hash = '#/settings?section=connections'; });
+    const configured = page.getByTestId('provider-card-openrouter-configured-default');
+    const sibling = page.getByTestId('provider-card-openrouter-keyless-sibling');
+    await expect(configured).toContainText(ruSettings.aiProviders.card.default);
+    await expect(configured).toContainText(ruSettings.aiProviders.card.configured);
+    await expect(sibling).toContainText(ruSettings.aiProviders.dialog.apiKeyMissing);
+    await sibling.hover();
+    await page.getByTestId('provider-set-default-openrouter-keyless-sibling').click();
+    await expect(page.locator('[data-sonner-toast][data-type="error"]')).toHaveText(ruSettings.aiProviders.toast.defaultNeedsKey);
+    await expect(page.locator('body')).not.toContainText('Save an API key for this provider account before making it the default');
+    await expect(configured).toContainText(ruSettings.aiProviders.card.default);
+    await expect(page.getByTestId('provider-set-default-openrouter-configured-default')).toHaveCount(0);
+    expect(await readSavedState()).toEqual(before);
+    await expect(page.locator('body')).not.toContainText('synthetic-default-rejection-key');
+    await page.screenshot({ path: info.outputPath('localized-keyless-default-rejection.png') });
   });
 
   test('shows Z.AI CN/Global options and Code Plan endpoint toggle', async ({ page }) => {

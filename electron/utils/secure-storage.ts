@@ -106,14 +106,11 @@ export async function saveProvider(config: ProviderConfig): Promise<void> {
  */
 export async function getProvider(providerId: string): Promise<ProviderConfig | null> {
   await ensureProviderStoreMigrated();
-  const s = await getClawXProviderStore();
-  const providers = s.get('providers') as Record<string, ProviderConfig>;
-  if (providers[providerId]) {
-    return providers[providerId];
-  }
-
   const account = await getProviderAccount(providerId);
-  return account ? providerAccountToConfig(account) : null;
+  if (account) return providerAccountToConfig(account);
+  const s = await getClawXProviderStore();
+  const providers = (s.get('providers') ?? {}) as Record<string, ProviderConfig>;
+  return providers[providerId] ?? null;
 }
 
 /**
@@ -121,15 +118,14 @@ export async function getProvider(providerId: string): Promise<ProviderConfig | 
  */
 export async function getAllProviders(): Promise<ProviderConfig[]> {
   await ensureProviderStoreMigrated();
-  const s = await getClawXProviderStore();
-  const providers = s.get('providers') as Record<string, ProviderConfig>;
-  const legacyProviders = Object.values(providers);
-  if (legacyProviders.length > 0) {
-    return legacyProviders;
-  }
-
   const accounts = await listProviderAccounts();
-  return accounts.map(providerAccountToConfig);
+  const providersById = new Map(accounts.map((account) => [account.id, providerAccountToConfig(account)]));
+  const s = await getClawXProviderStore();
+  const providers = (s.get('providers') ?? {}) as Record<string, ProviderConfig>;
+  for (const provider of Object.values(providers)) {
+    if (!providersById.has(provider.id)) providersById.set(provider.id, provider);
+  }
+  return [...providersById.values()];
 }
 
 /**
@@ -177,8 +173,8 @@ export async function setDefaultProvider(providerId: string): Promise<void> {
 export async function getDefaultProvider(): Promise<string | undefined> {
   await ensureProviderStoreMigrated();
   const s = await getClawXProviderStore();
-  return (s.get('defaultProvider') as string | undefined)
-    ?? (s.get('defaultProviderAccountId') as string | undefined);
+  return (s.get('defaultProviderAccountId') as string | undefined)
+    ?? (s.get('defaultProvider') as string | undefined);
 }
 
 /**
