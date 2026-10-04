@@ -43,7 +43,7 @@ export function validateMorpheusLocalRecording(audio: Buffer): void {
   throw new MorpheusNoSpeechError();
 }
 
-const ANNOTATION = /^(?:blank[ _-]audio|no[ _-]speech|silence|silent|inaudible|unintelligible|music(?: playing)?|background (?:music|noise)|noise|static|wind(?: blowing| howling)?|applause|laughter|laughing|breathing|coughing|sighing)$/i;
+const ANNOTATION = /^(?:blank[ _-]audio|no[ _-]speech|silence|silent|inaudible|unintelligible|sound(?: effects?)?|music(?: playing)?|background (?:music|noise|sounds?)|noise|static|wind(?: blowing| howling)?|applause|laughter|laughing|breathing|coughing|sighing)$/i;
 
 /**
  * Reject only an entire annotation-only result. Never remove bracketed portions

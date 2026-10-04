@@ -1,4 +1,10 @@
-# Current continuation — preview.10 connected Voice, 2026-10-04
+# Current continuation — preview.11 connected Voice, 2026-10-04
+
+Actual preview.10 owner-PC capture exposed `[SOUND]` incorrectly passing the
+input check. Preview.11 adds that observed non-speech marker to the Main gate.
+Keep the connected design and native-scope fixes; qualify the new payload and
+real capture below. Preview.10 packaged lifecycle evidence remains valid for
+its scope but does not establish physical speech readiness.
 
 The owner enabled microphone permission and authorized a bounded Voice/mode
 correction: beautiful connected controls, companion-only automatic listening,

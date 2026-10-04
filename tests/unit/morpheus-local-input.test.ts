@@ -45,6 +45,7 @@ describe('included voice input gate', () => {
   it.each([
     '', '  ', '[BLANK_AUDIO]', '[BLANK_AUDIO', '(wind blowing)', '(wind blowing', '(wind howling',
     '[Silence]', '(inaudible)', '[music]', '[Music playing].', '[noise] (breathing)',
+    '[SOUND]', '[sound', '(sound effects)', '[background sound]', '[Sound]. [noise]',
     '<|nospeech|>', '<|endoftext|>', '♪ ♫', '[blank audio] — [background noise]',
   ])('rejects annotation-only decoder result %j', transcript => {
     expect(() => validateMorpheusLocalTranscript(transcript)).toThrow(MorpheusNoSpeechError);
@@ -52,6 +53,7 @@ describe('included voice input gate', () => {
 
   it.each([
     'yes', 'no', 'stop', 'Open YouTube.', 'music', 'wind blowing',
+    'sound', 'Sounds good.', 'Explain [SOUND].', '[sound] Open YouTube.',
     'What does [BLANK_AUDIO] mean?', 'Play wind blowing sounds.', '(Open YouTube)',
     'Use [music] as the title.', '[music] Open YouTube.', 'Say (wind blowing).',
     'There is no speech in this video.', 'Thank you.', '♪ Play this song',

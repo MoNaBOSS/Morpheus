@@ -1,6 +1,12 @@
 # Morpheus experience specification
 
-## Current voice correction — October 4, implementation authorized
+## Current voice correction — October 4, preview.11 qualification
+
+Actual owner-PC preview.10 input check opened the microphone but decoded room
+noise as `[SOUND]` and wrongly declared the check passed. This is a verified
+defect, not successful spoken recognition. Preview.11 extends the existing
+Main-owned annotation-only gate for sound/background-sound markers, preserving
+ordinary text and mixed quoted commands. Recheck real input before handoff.
 
 The owner enabled microphone access and requested a connected Voice settings
 experience, faster natural listening/execution and more fluid motion. Preserve the

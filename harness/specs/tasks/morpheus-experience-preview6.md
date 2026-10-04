@@ -51,6 +51,7 @@ expectedUserBehavior:
   - Full and compact conversation expose a labeled Settings control; contextual return preserves the draft and conversation.
   - Original M and orb identity have perceptible bounded motion at actual size, with real audio-driven response and hidden/reduced-motion guards.
   - Local silence and standalone recognition annotations are rejected before draft or command admission; short valid commands remain usable.
+  - The actual owner-PC decoder marker [SOUND] is non-speech and cannot pass the microphone check; ordinary sound-related requests remain intact.
   - Opening Voice settings preserves actionable capture errors; a configuration refresh is not represented as a successful input test.
   - Hidden or covered identity surfaces remove their decorative animations, since a reported paused state alone may leave Chromium clocks advancing.
   - Companion voice commands preserve explicit consent but suspend automatic capture and wake detection while full, compact or Settings is visible; chat microphone input remains explicit and master mute always wins.

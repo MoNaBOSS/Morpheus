@@ -1,6 +1,11 @@
 # Current Windows experience completion checklist
 
-## October 4 connected Voice correction — in progress
+## October 4 connected Voice correction — preview.11 qualification
+
+Preview.10 normal packaged lifecycle checks passed, but actual owner-PC capture
+then exposed `[SOUND]` falsely passing the microphone test. Do not call this
+recognized speech or accept preview.10. Preview.11 adds the observed annotation
+to the existing local transcript gate and must be packaged/rechecked below.
 
 - [x] Recheck source: clean `e1e2151207ac188980a4e1dfd78839f5115eb8f2`, branch
   `codex/morpheus-preview9-shell-recovery`, expected GitHub origin. Preserve owner
