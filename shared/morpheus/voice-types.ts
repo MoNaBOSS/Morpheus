@@ -70,6 +70,8 @@ export type MorpheusVoicePresenceState =
 export type MorpheusVoicePresence = {
   /** Invalidates capture and buffered playback when service authority changes. */
   authorityRevision?: number;
+  /** Advances only after a deliberate voice settings edit is saved atomically. */
+  settingsRevision?: number;
   v: typeof MORPHEUS_VOICE_VERSION;
   state: MorpheusVoicePresenceState;
   ambientEnabled: boolean;

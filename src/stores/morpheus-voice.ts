@@ -130,6 +130,7 @@ let followUpTimer: number | undefined;
 let explicitConversationTurns = 0;
 let microphoneMuteRequested = false;
 let settingsOperationRevision = 0;
+let statusRequestRevision = 0;
 
 function effectiveVoiceStatus(status: MorpheusVoiceStatus): MorpheusVoiceStatus {
   return microphoneMuteRequested ? { ...status, transcriptionAvailable: false,
@@ -470,10 +471,12 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
 
     async loadStatus() {
       const generation = operationGeneration;
+      const requestRevision = ++statusRequestRevision;
       try {
         const previousStatus = get().status;
         const status = effectiveVoiceStatus(await hostApi.morpheus.voiceStatus());
-        if (generation !== operationGeneration) return get().status;
+        if (generation !== operationGeneration || requestRevision !== statusRequestRevision) return get().status;
+        if ((status.presence?.settingsRevision ?? 0) < (get().presence?.settingsRevision ?? 0)) return get().status;
         if (status.transcriptionAvailable && previousStatus?.transcriptionAvailable !== true) {
           ambientAutoStartBlocked = false;
         }
@@ -483,7 +486,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
           ...(state.phase === 'error' ? {} : { error: null, errorKind: null }) }));
         return status;
       } catch (error) {
-        if (generation !== operationGeneration) return get().status;
+        if (generation !== operationGeneration || requestRevision !== statusRequestRevision) return get().status;
         set({
           status: null,
           error: error instanceof Error ? error.message : String(error),
@@ -502,6 +505,27 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
           ambientAutoStartBlocked = true;
           set({ status: null, presence });
           void get().loadStatus();
+          return;
+        }
+        const previousSettingsRevision = get().presence?.settingsRevision ?? 0;
+        const incomingSettingsRevision = presence.settingsRevision ?? 0;
+        if (incomingSettingsRevision < previousSettingsRevision) return;
+        if (incomingSettingsRevision > previousSettingsRevision) {
+          const operation = operationGeneration, settingsOperation = settingsOperationRevision;
+          stopAmbientLocal();
+          set((state) => ({ presence, status: state.status ? { ...state.status, presence } : null }));
+          // A native tray edit has no renderer response to update cached settings.
+          // Read once per committed revision, never poll or infer microphone readiness.
+          void get().loadStatus().then(async (status) => {
+            if (operation !== operationGeneration || settingsOperation !== settingsOperationRevision
+              || get().presence?.settingsRevision !== incomingSettingsRevision
+              || status?.presence?.settingsRevision !== incomingSettingsRevision) return;
+            if (!microphoneMuteRequested) {
+              ambientAutoStartBlocked = false;
+              set((state) => ({ error: null, errorKind: null, phase: state.phase === 'error' ? 'idle' : state.phase }));
+            }
+            await get().ensureAmbient();
+          }).catch(() => undefined);
           return;
         }
         const previousWake = get().presence?.wakeSequence ?? 0;

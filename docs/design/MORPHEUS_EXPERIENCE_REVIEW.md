@@ -33,10 +33,19 @@ pause/accent evidence supports tuning. A prepared worker can remain cached for
 up to 60 seconds after an ordinary Stop; mute/output-off, configuration change
 and shutdown release it. No perpetual idle warming or paid fallback.
 
-Next: implement and qualify this bounded Voice/mode component, with compositor
+Next: qualify this implemented, bounded Voice/mode component, with compositor
 motion driven by real input/output levels, then deliver a separately identified
 Windows review app and short actual motion/audio evidence. Preserve preview.9
 and historical work. This does not close commercial release or hardware gates.
+
+The connected Voice component is implemented. Native tray consent changes now
+publish a committed settings revision to the renderer, which reloads once and
+uses the same capture owner as Settings. Pending mute, native visibility and
+failed-acquisition recovery still govern input. Do not restore automatic native
+startup to work around a stale renderer cache. Initial package exercises found
+two qualification-script navigation/ownership mistakes; their reports remain
+preserved. Final qualification must use actual controls plus the native tray's
+Main settings service, not silently seed renderer readiness.
 
 ## Current correction — preview.9 review build
 

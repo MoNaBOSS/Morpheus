@@ -173,6 +173,97 @@ describe('Morpheus renderer voice controller', () => {
     expect(getUserMedia).toHaveBeenCalledTimes(2); expect(useMorpheusVoiceStore.getState().ambientReady).toBe(true);
   });
 
+  it('reloads committed native settings once and applies tray off/on only in companion scope', async () => {
+    const base = await companionStatus();
+    const statusAt = (revision: number, ambientEnabled: boolean) => ({ ...base,
+      settings: { ...base.settings, ambientEnabled },
+      presence: { v: 4, state: 'asleep', ambientEnabled, settingsRevision: revision },
+    });
+    const initial = statusAt(0, false);
+    mocks.voiceStatus.mockResolvedValue(initial);
+    await useMorpheusVoiceStore.getState().loadStatus();
+    await useMorpheusVoiceStore.getState().setAmbientScope('companion');
+    const unsubscribe = useMorpheusVoiceStore.getState().subscribePresence();
+    mocks.voiceStatus.mockClear();
+    const enabled = statusAt(1, true);
+    mocks.voiceStatus.mockResolvedValue(enabled);
+    mocks.beginAmbientVoice.mockResolvedValue({ ...enabled.presence, state: 'armed' });
+    mocks.voicePresenceHandler?.(enabled.presence);
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().ambientReady).toBe(true));
+    mocks.voicePresenceHandler?.({ ...enabled.presence, state: 'armed' });
+    expect(mocks.voiceStatus).toHaveBeenCalledOnce(); expect(getUserMedia).toHaveBeenCalledOnce();
+    const disabled = statusAt(2, false);
+    mocks.voiceStatus.mockResolvedValue(disabled);
+    mocks.voicePresenceHandler?.(disabled.presence);
+    expect(track.stop).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().status?.settings.ambientEnabled).toBe(false));
+    const restored = statusAt(3, true);
+    mocks.voiceStatus.mockResolvedValue(restored);
+    mocks.beginAmbientVoice.mockResolvedValue({ ...restored.presence, state: 'armed' });
+    mocks.voicePresenceHandler?.(restored.presence);
+    await vi.waitFor(() => expect(getUserMedia).toHaveBeenCalledTimes(2));
+    await useMorpheusVoiceStore.getState().setAmbientScope('conversation');
+    const foregroundEdit = statusAt(4, true);
+    mocks.voiceStatus.mockResolvedValue(foregroundEdit);
+    mocks.voicePresenceHandler?.(foregroundEdit.presence);
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().presence?.settingsRevision).toBe(4));
+    await Promise.resolve();
+    expect(getUserMedia).toHaveBeenCalledTimes(2); expect(mocks.beginAmbientVoice).toHaveBeenCalledTimes(2);
+    expect(useMorpheusVoiceStore.getState().ambientReady).toBe(false);
+    unsubscribe();
+  });
+
+  it('keeps immediate master mute while a native settings reload and persistence are pending', async () => {
+    const base = await companionStatus();
+    const status = { ...base, presence: { v: 4, state: 'armed', ambientEnabled: true, settingsRevision: 0 } };
+    mocks.voiceStatus.mockResolvedValue(status);
+    await useMorpheusVoiceStore.getState().loadStatus();
+    await useMorpheusVoiceStore.getState().setAmbientScope('companion');
+    const unsubscribe = useMorpheusVoiceStore.getState().subscribePresence();
+    let reload!: (value: unknown) => void, persist!: (value: unknown) => void;
+    mocks.voiceStatus.mockReturnValueOnce(new Promise(resolve => { reload = resolve; }));
+    mocks.voicePresenceHandler?.({ ...status.presence, settingsRevision: 1 });
+    mocks.updateVoiceSettings.mockReturnValueOnce(new Promise(resolve => { persist = resolve; }));
+    const muting = useMorpheusVoiceStore.getState().updateSettings({ enabled: false });
+    reload({ ...status, presence: { ...status.presence, settingsRevision: 1 } });
+    await Promise.resolve(); await Promise.resolve();
+    await useMorpheusVoiceStore.getState().ensureAmbient();
+    mocks.voicePresenceHandler?.({ ...status.presence, settingsRevision: 1, state: 'understanding', wakeSequence: 50, wakeCommand: 'Open YouTube' });
+    await useMorpheusVoiceStore.getState().startListening();
+    expect(getUserMedia).toHaveBeenCalledOnce(); expect(mocks.routeInteraction).not.toHaveBeenCalled();
+    expect(useMorpheusVoiceStore.getState().status?.settings.enabled).toBe(false);
+    const muted = { ...status, settings: { ...status.settings, enabled: false },
+      presence: { ...status.presence, state: 'asleep', settingsRevision: 2 } };
+    persist(muted); await muting;
+    const nativeEdit = { ...muted, presence: { ...muted.presence, settingsRevision: 3 } };
+    mocks.voiceStatus.mockResolvedValue(nativeEdit);
+    mocks.voicePresenceHandler?.(nativeEdit.presence);
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().status?.presence.settingsRevision).toBe(3));
+    expect(getUserMedia).toHaveBeenCalledOnce(); expect(useMorpheusVoiceStore.getState().ambientReady).toBe(false);
+    unsubscribe();
+  });
+
+  it('preserves a failed acquisition until a deliberate committed settings edit retries it', async () => {
+    const base = await companionStatus();
+    const status = { ...base, presence: { v: 4, state: 'asleep', ambientEnabled: true, settingsRevision: 0 } };
+    mocks.voiceStatus.mockResolvedValue(status);
+    getUserMedia.mockRejectedValueOnce(new DOMException('Permission denied', 'NotAllowedError'));
+    await useMorpheusVoiceStore.getState().loadStatus();
+    await expect(useMorpheusVoiceStore.getState().setAmbientScope('companion')).rejects.toThrow('Permission denied');
+    const unsubscribe = useMorpheusVoiceStore.getState().subscribePresence();
+    mocks.voicePresenceHandler?.({ ...status.presence, state: 'armed' });
+    await useMorpheusVoiceStore.getState().loadStatus();
+    await useMorpheusVoiceStore.getState().ensureAmbient();
+    expect(getUserMedia).toHaveBeenCalledOnce(); expect(useMorpheusVoiceStore.getState().errorKind).toBe('permission');
+    const deliberate = { ...status, presence: { ...status.presence, settingsRevision: 1 } };
+    mocks.voiceStatus.mockResolvedValue(deliberate);
+    mocks.beginAmbientVoice.mockResolvedValue({ ...deliberate.presence, state: 'armed' });
+    mocks.voicePresenceHandler?.(deliberate.presence);
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().ambientReady).toBe(true));
+    expect(getUserMedia).toHaveBeenCalledTimes(2); expect(useMorpheusVoiceStore.getState().error).toBeNull();
+    unsubscribe();
+  });
+
   it('discards a microphone returned after a rapid companion to chat transition', async () => {
     const status = await companionStatus(); mocks.voiceStatus.mockResolvedValue(status);
     let acquire!: (value: Awaited<ReturnType<typeof getUserMedia>>) => void;

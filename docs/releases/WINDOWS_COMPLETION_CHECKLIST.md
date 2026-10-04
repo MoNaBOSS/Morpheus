@@ -22,6 +22,10 @@
   build, comms replay/compare and diff-aware task/harness checks passed. Narrow
   independent source review confirmed pending-mute, failed-acquisition restart,
   native-visible occlusion and delayed-follow-up races resolved.
+- [x] Follow-up native tray fix: 140 focused cases now pass, including committed
+  settings revision, hidden off/on synchronization, foreground/pending-mute veto
+  and permission recovery. Node/web typecheck and targeted lint pass. The initial
+  preview.10 package is superseded; final package needs the updated code below.
 - [x] Rendered source qualification: 12 distinct relevant Electron journeys
   passed across two runs (initial obsolete size/state assertions corrected).
   Voice controls fit 1280×800; 430px device repair has no horizontal overflow.

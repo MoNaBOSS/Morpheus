@@ -298,6 +298,7 @@ export function createMorpheusVoiceService(options: {
   let ambientStartRevision = 0;
   let preparationRevision = 0;
   let settingsUpdateRevision = 0;
+  let settingsRevision = 0;
   let inputVeto = false;
   let disposed = false;
   const inputAllowed = () => !disposed && settings.enabled && !inputVeto;
@@ -348,6 +349,7 @@ export function createMorpheusVoiceService(options: {
   };
   let currentPresence: MorpheusVoicePresence = {
     v: MORPHEUS_VOICE_VERSION,
+    settingsRevision,
     state: 'asleep',
     ambientEnabled: settings.ambientEnabled,
   };
@@ -360,6 +362,7 @@ export function createMorpheusVoiceService(options: {
     currentPresence = {
       v: MORPHEUS_VOICE_VERSION,
       authorityRevision,
+      settingsRevision,
       state,
       ambientEnabled: settings.ambientEnabled,
       ...(ambientSession ? {
@@ -923,8 +926,13 @@ export function createMorpheusVoiceService(options: {
         options.localVoice?.releaseWarm?.();
       }
       settings = structuredClone(next);
+      settingsRevision += 1;
       if (patch.enabled === true) inputVeto = false;
       if (disableAmbient || restartAmbient || !next.enabled) await service.endAmbientSession();
+      // Tray edits bypass the renderer's settings action. Publish the committed
+      // revision even when an existing session does not change its audio state.
+      currentPresence = { ...currentPresence, settingsRevision, ambientEnabled: settings.ambientEnabled };
+      options.emitPresence?.(structuredClone(currentPresence));
       if (settings.enabled && settings.ambientEnabled && companionVoiceAllowed()) await service.beginAmbientSession();
       else publish('asleep');
       return status();

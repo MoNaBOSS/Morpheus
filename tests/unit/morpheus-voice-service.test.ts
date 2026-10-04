@@ -14,6 +14,7 @@ import * as voiceStorage from '../../electron/services/morpheus/storage/atomic-j
 import { composeMorpheusPersonaContext } from '@shared/morpheus/persona-context';
 import { DEFAULT_MORPHEUS_ONBOARDING_PREFERENCES } from '@shared/morpheus/onboarding-types';
 import { MorpheusNoSpeechError } from '../../electron/services/morpheus/voice/local-input';
+import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
 
 const ACCOUNT: ProviderAccount = {
   id: 'voice-openai',
@@ -71,6 +72,7 @@ function createHarness(options?: {
   temporaryDirectories.push(userDataDir);
   const auditOrder: string[] = [];
   const presenceEvents: string[] = [];
+  const presenceSnapshots: MorpheusVoicePresence[] = [];
   const recordControl = vi.fn(async (entry: { event: string }) => {
     auditOrder.push(`audit:${entry.event}`);
   });
@@ -101,13 +103,33 @@ function createHarness(options?: {
     isCompanionVoiceScope: options?.isCompanionVoiceScope,
     emitPresence: (presence) => {
       presenceEvents.push(presence.state);
+      presenceSnapshots.push(presence);
       auditOrder.push(`emit:${presence.state}`);
     },
   });
-  return { userDataDir, service, providerService, fetchImpl, recordControl, auditOrder, presenceEvents };
+  return { userDataDir, service, providerService, fetchImpl, recordControl, auditOrder, presenceEvents, presenceSnapshots };
 }
 
 describe('Morpheus voice service', () => {
+  it('publishes a native settings revision only after the deliberate edit commits atomically', async () => {
+    const h = createHarness({ isCompanionVoiceScope: () => false });
+    let commitAudit!: () => void;
+    h.recordControl.mockImplementationOnce(() => new Promise<void>(resolve => { commitAudit = resolve; }));
+    const editing = h.service.updateSettings({ ambientEnabled: true });
+    await vi.waitFor(() => expect(commitAudit).toBeTypeOf('function'));
+    expect(h.service.presence().settingsRevision).toBe(0);
+    expect(h.presenceSnapshots).toEqual([]);
+    commitAudit();
+    const status = await editing;
+    expect(status.presence).toMatchObject({ state: 'asleep', ambientEnabled: true, settingsRevision: 1, authorityRevision: 0 });
+    expect(JSON.parse(readFileSync(join(h.userDataDir, 'morpheus', 'voice-settings.json'), 'utf8')).ambientEnabled).toBe(true);
+    expect(h.presenceSnapshots.some(presence => presence.settingsRevision === 1)).toBe(true);
+    vi.spyOn(voiceStorage, 'writeJsonAtomically').mockImplementationOnce(() => { throw new Error('disk unavailable'); });
+    await expect(h.service.updateSettings({ ambientEnabled: false })).rejects.toThrow('disk unavailable');
+    expect(h.service.presence()).toMatchObject({ ambientEnabled: true, settingsRevision: 1, authorityRevision: 0 });
+    expect(h.presenceSnapshots.every(presence => presence.settingsRevision === 1)).toBe(true);
+    h.service.dispose();
+  });
   it('keeps companion voice consent while native foreground scope prevents automatic wake and capture', async () => {
     let companion = false;
     const stop = vi.fn(), startLocalWake = vi.fn(() => ({ ready: Promise.resolve(), stop }));
@@ -818,9 +840,9 @@ describe('Morpheus voice service', () => {
     await harness.service.transcribeAmbient(PAYLOAD);
     await harness.service.endAmbientSession();
 
-    expect(harness.presenceEvents).toEqual(['armed', 'listening', 'armed', 'transcribing', 'armed', 'asleep']);
+    expect(harness.presenceEvents).toEqual(['asleep', 'armed', 'listening', 'armed', 'transcribing', 'armed', 'asleep']);
     expect(harness.auditOrder).toEqual([
-      'audit:settings-updated',
+      'audit:settings-updated', 'emit:asleep',
       'audit:ambient-session-started', 'emit:armed',
       'audit:ambient-capture-started', 'emit:listening',
       'audit:ambient-capture-ended', 'emit:armed',
