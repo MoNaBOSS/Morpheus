@@ -92,8 +92,14 @@ import {
   type MorpheusTranscribeAudioPayload,
   type MorpheusSynthesizeSpeechPayload,
   type MorpheusVoiceSettingsPatch,
+  type MorpheusDeepgramVoiceConnectionPayload,
+  type MorpheusDeepgramVoiceInputSession,
 } from '@shared/morpheus/voice-types';
 import type { MorpheusVoiceService } from './morpheus/voice/voice-service';
+import {
+  validateDeepgramConnectionInput,
+  type MorpheusDeepgramConnectionService,
+} from './morpheus/voice/deepgram-connection';
 import { isMorpheusWakeAudioFrame } from '@shared/morpheus/wake-audio-types';
 import type { SetMorpheusRuntimePausedPayload } from '@shared/morpheus/runtime-control-types';
 import {
@@ -301,6 +307,7 @@ export type CreateMorpheusApiOptions = {
   };
   onPresentationLevel?: (level: number) => void;
   voice: MorpheusVoiceService;
+  deepgramVoice?: MorpheusDeepgramConnectionService;
   runtimeControl: MorpheusRuntimeControlService;
   workspaces: MorpheusWorkspaceStore;
   audit: MorpheusAuditSink;
@@ -1020,6 +1027,22 @@ export function validateCancelObjectivePayload(payload: unknown): CancelMorpheus
   return { objectiveRunId: validateObjectiveId(record.objectiveRunId) };
 }
 
+export function validateDeepgramVoiceConnectionPayload(payload: unknown): MorpheusDeepgramVoiceConnectionPayload {
+  const record = requireRecord(payload, 'Deepgram voice connection payload');
+  assertNoUnknownKeys(record, ['apiKey', 'recognitionModel'], 'Deepgram voice connection payload');
+  try { return validateDeepgramConnectionInput(record); }
+  catch { throw new MorpheusValidationError('invalid Deepgram voice connection payload'); }
+}
+
+export function validateDeepgramVoiceInputSessionPayload(payload: unknown): MorpheusDeepgramVoiceInputSession {
+  const record = requireRecord(payload, 'Deepgram voice input session');
+  assertNoUnknownKeys(record, ['sessionId'], 'Deepgram voice input session');
+  if (typeof record.sessionId !== 'string' || !/^voice-[a-f0-9-]{36}$/.test(record.sessionId)) {
+    throw new MorpheusValidationError('invalid Deepgram voice input session');
+  }
+  return { sessionId: record.sessionId };
+}
+
 export function validateVoiceSettingsPatch(payload: unknown): MorpheusVoiceSettingsPatch {
   const record = requireRecord(payload, 'updateVoiceSettings payload');
   assertNoUnknownKeys(record, [
@@ -1028,7 +1051,7 @@ export function validateVoiceSettingsPatch(payload: unknown): MorpheusVoiceSetti
     'ambientEnabled', 'localWakeEnabled', 'wakePhrase', 'ambientSilenceMs', 'ambientMaxUtteranceMs', 'bargeIn',
     'handsFreeFollowUp', 'engine', 'inputDeviceId', 'replySpeechMode',
   ], 'updateVoiceSettings payload');
-  if (record.engine !== undefined && !['local', 'provider'].includes(record.engine as string)) throw new MorpheusValidationError('invalid voice engine');
+  if (record.engine !== undefined && !['local', 'provider', 'deepgram'].includes(record.engine as string)) throw new MorpheusValidationError('invalid voice engine');
   if (record.replySpeechMode !== undefined && !['orb', 'voice', 'all'].includes(record.replySpeechMode as string)) throw new MorpheusValidationError('invalid spoken reply preference');
   if (record.inputDeviceId !== undefined && (typeof record.inputDeviceId !== 'string' || record.inputDeviceId.length > 256)) throw new MorpheusValidationError('invalid microphone device');
   for (const key of ['enabled', 'speakResponses', 'autoSubmitTranscript', 'ambientEnabled', 'localWakeEnabled', 'bargeIn', 'handsFreeFollowUp'] as const) {
@@ -1712,6 +1735,29 @@ export function createMorpheusApi(options: CreateMorpheusApiOptions): CompleteHo
     expandCompanionSurface: () => companionSurface.expand(),
     showCompanionSurface: () => { if (!companionSurface.show) throw new Error('Native compact conversation is unavailable.'); return companionSurface.show(); },
     voiceStatus: () => voice.status(),
+    deepgramVoiceStatus: () => options.deepgramVoice?.snapshot() ?? ({
+      configured: false, recognitionModel: 'nova-3', speechModel: 'flux-kit-en', storage: 'protected', reason: 'storage',
+    }),
+    saveDeepgramVoiceConnection: (payload) => {
+      const validated = validateDeepgramVoiceConnectionPayload(payload);
+      if (!options.deepgramVoice) throw new MorpheusValidationError('Deepgram voice setup is unavailable');
+      return options.deepgramVoice.save(validated);
+    },
+    testDeepgramVoiceConnection: () => options.deepgramVoice?.test() ?? ({
+      ok: false, recognition: false, speech: false, reason: 'unavailable',
+    }),
+    removeDeepgramVoiceConnection: () => {
+      if (!options.deepgramVoice) throw new MorpheusValidationError('Deepgram voice setup is unavailable');
+      return options.deepgramVoice.remove();
+    },
+    beginDeepgramVoiceInput: () => voice.beginDeepgramInput(),
+    feedDeepgramVoiceInput: (payload) => {
+      if (!isMorpheusWakeAudioFrame(payload)) throw new MorpheusValidationError('invalid Deepgram voice input frame');
+      return voice.feedDeepgramInput(payload);
+    },
+    waitDeepgramVoiceInput: (payload) => voice.waitDeepgramInput(validateDeepgramVoiceInputSessionPayload(payload)),
+    finishDeepgramVoiceInput: (payload) => voice.finishDeepgramInput(validateDeepgramVoiceInputSessionPayload(payload)),
+    cancelDeepgramVoiceInput: (payload) => voice.cancelDeepgramInput(validateDeepgramVoiceInputSessionPayload(payload)),
     updateVoiceSettings: (payload) => voice.updateSettings(validateVoiceSettingsPatch(payload)),
     transcribeAudio: (payload) => voice.transcribe(validateTranscribeAudioPayload(payload)),
     synthesizeSpeech: (payload) => voice.synthesize(validateSynthesizeSpeechPayload(payload)),

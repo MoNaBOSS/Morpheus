@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { MorpheusVoiceCheck } from './MorpheusVoiceCheck';
 import { MorpheusReplySpeechControl } from './MorpheusReplySpeechControl';
+import { MorpheusDeepgramConnection } from './MorpheusDeepgramConnection';
 import { morpheusAdvancedSettingsPath } from '@/lib/morpheus-settings-route';
 import { useSettingsStore, type VoiceCaptionMode } from '@/stores/settings';
 
@@ -40,7 +41,7 @@ export function MorpheusVoiceSetup() {
   </div>;
 
   const settings = status.settings;
-  const local = settings.engine === 'local' || status.speechFormat === 'wav';
+  const local = settings.engine !== 'deepgram' && (settings.engine === 'local' || status.speechFormat === 'wav');
   const displayError = errorKind === 'device' ? t('morpheus.voice.deviceBody')
     : errorKind === 'repeat' ? t('morpheus.voice.repeatBody') : error;
   const cardClass = 'min-w-0 space-y-3 rounded-2xl border border-border bg-surface-input p-4';
@@ -115,7 +116,7 @@ export function MorpheusVoiceSetup() {
             value={settings.speechVoice === 'coral' ? 'coral' : 'cedar'} onChange={(event) => void update({ speechVoice: event.target.value as 'cedar' | 'coral' })}>
             <option value="cedar">{t('morpheus.experience.voice.warm')}</option><option value="coral">{t('morpheus.experience.voice.bright')}</option>
           </select>
-        </div> : <p className="text-xs leading-relaxed text-muted-foreground">{t('morpheus.experience.voice.providerBody', { provider: status.speechProviderLabel ?? status.providerLabel ?? '' })}</p>}
+        </div> : <p className="text-xs leading-relaxed text-muted-foreground">{settings.engine === 'deepgram' ? t('morpheus.voice.cloud.speech') : t('morpheus.experience.voice.providerBody', { provider: status.speechProviderLabel ?? status.providerLabel ?? '' })}</p>}
         <MorpheusVoiceCheck mode="output" status={status} key={JSON.stringify([settings.engine, settings.speechVoice, settings.speechProviderAccountId, settings.speechModelId])} />
         <div className="flex items-center justify-between gap-4 border-t border-border/70 pt-3">
           <label htmlFor="morpheus-spoken-replies" className="flex items-center gap-2 text-sm"><Volume2 size={15} className="text-muted-foreground" aria-hidden />{t('morpheus.voice.settings.speakResponses')}</label>
@@ -127,6 +128,8 @@ export function MorpheusVoiceSetup() {
         <p className="text-xs leading-relaxed text-muted-foreground">{t(local ? 'morpheus.experience.voice.panel.localDisclosure' : 'morpheus.voice.check.description')}</p>
       </div>
     </div>
+
+    <MorpheusDeepgramConnection />
 
     <details data-testid="morpheus-voice-more-options" className="group rounded-xl border border-border bg-surface-input px-4 py-3">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm [&::-webkit-details-marker]:hidden">

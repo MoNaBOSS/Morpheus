@@ -14,6 +14,7 @@ import {
 } from '@shared/morpheus/provider-policy';
 import { MorpheusVoiceCheck } from './MorpheusVoiceCheck';
 import { MorpheusReplySpeechControl } from './MorpheusReplySpeechControl';
+import { MorpheusDeepgramConnection } from './MorpheusDeepgramConnection';
 
 export function MorpheusVoiceSettings() {
   const { t } = useTranslation('dashboard');
@@ -39,13 +40,14 @@ export function MorpheusVoiceSettings() {
 
   const settings = status.settings;
   const managed = status.speechFormat === 'pcm24';
-  const local = status.settings.engine === 'local' || status.speechFormat === 'wav';
-  const provider = !managed && !local;
+  const cloud = settings.engine === 'deepgram';
+  const local = !cloud && (status.settings.engine === 'local' || status.speechFormat === 'wav');
+  const provider = !managed && !local && !cloud;
   const selectedProvider = settings.providerAccountId ?? '';
   const openRouterProvider = status.providers.find((provider) => (
     provider.vendorId === 'openrouter' && provider.configured
   ));
-  const recommendedVoices = managed || local ? status.availableSpeechVoices ?? [] : speechVoicesForModel(settings.speechModelId);
+  const recommendedVoices = managed || local || cloud ? status.availableSpeechVoices ?? [] : speechVoicesForModel(settings.speechModelId);
   const speechVoices = local || recommendedVoices.includes(settings.speechVoice)
     ? recommendedVoices
     : [settings.speechVoice, ...recommendedVoices];
@@ -91,13 +93,14 @@ export function MorpheusVoiceSettings() {
       </div>
 
       <div className="space-y-4">
-        <label className="block space-y-2 text-sm"><span>{t('morpheus.experience.voice.engine')}</span><select data-testid="morpheus-voice-engine" className="block w-full rounded-lg border border-border bg-surface-input px-3 py-2" value={settings.engine ?? (local ? 'local' : 'provider')} onChange={(event) => void updateSettings({ engine: event.target.value as 'local' | 'provider' })}><option value="local">{t('morpheus.experience.voice.local')}</option><option value="provider">{t('morpheus.experience.voice.provider')}</option></select></label>
+        <label className="block space-y-2 text-sm"><span>{t('morpheus.experience.voice.engine')}</span><select data-testid="morpheus-voice-engine" className="block w-full rounded-lg border border-border bg-surface-input px-3 py-2" value={settings.engine ?? (local ? 'local' : 'provider')} onChange={(event) => void updateSettings({ engine: event.target.value as 'local' | 'provider' | 'deepgram' })}><option value="local">{t('morpheus.experience.voice.local')}</option><option value="provider">{t('morpheus.experience.voice.provider')}</option><option value="deepgram" disabled={!status.deepgram?.configured}>{t('morpheus.voice.cloud.title')}</option></select></label>
+        <MorpheusDeepgramConnection />
         <MorpheusVoiceCheck status={status} key={JSON.stringify([
           settings.engine, settings.inputDeviceId, settings.enabled,
           settings.providerAccountId, settings.modelId, settings.speechProviderAccountId,
           settings.speechModelId, settings.speechVoice,
         ])} />
-        {!managed ? <div
+        {!managed && !cloud ? <div
           data-testid="morpheus-openrouter-voice-presets"
           className="rounded-lg border border-[hsl(var(--morpheus-accent-dim))]/35 bg-[hsl(var(--morpheus-accent))]/[0.045] p-3.5"
         >
@@ -156,7 +159,7 @@ export function MorpheusVoiceSettings() {
                 testId="morpheus-voice-ambient"
                 onChange={(ambientEnabled) => void updateSettings({ ambientEnabled })}
               />
-              {!local ? <div className="mt-3">
+              {!local && !cloud ? <div className="mt-3">
                 <SettingToggle label={t('morpheus.voice.localWake.title')}
                   description={t('morpheus.voice.localWake.description')}
                   checked={settings.localWakeEnabled === true} testId="morpheus-local-wake"
@@ -320,7 +323,7 @@ export function MorpheusVoiceSettings() {
                   className="h-10 rounded-lg bg-surface-input font-mono text-sm"
                 />
               </div> : null}
-              <div className="space-y-2">
+              {cloud ? <p data-testid="morpheus-deepgram-speech" className="text-sm text-foreground">{t('morpheus.voice.cloud.speech')}</p> : <div className="space-y-2">
                 <Label htmlFor="morpheus-speech-voice" className="text-xs text-foreground/80">
                   {t('morpheus.voice.settings.speechVoice')}
                 </Label>
@@ -334,7 +337,7 @@ export function MorpheusVoiceSettings() {
                 >
                   {speechVoices.map((voice) => <option key={voice} value={voice}>{local ? t(voice === 'coral' ? 'morpheus.experience.voice.bright' : 'morpheus.experience.voice.warm') : voice}</option>)}
                 </select>
-              </div>
+              </div>}
             </div>
           </div>
         ) : null}

@@ -420,3 +420,17 @@ failures and large artifact inspection. Use bounded streaming/event batching,
 lazy-load advanced pages, virtualize long histories and release transient audio,
 DOM snapshots and inactive browser resources. The exact targets and final
 completion boundary are in the acceptance document, not adjectives in the UI.
+# October 5 optional hosted speech component
+
+The existing task planner/Core, ACP conversation and provider accounts remain
+the reasoning/execution owners. `deepgram-connection.ts` saves a separate
+protected voice credential through SecretStore and safe metadata; it cannot
+select a task model or unmute. `deepgram-voice.ts` owns fixed service endpoints,
+transient recognition/speech and sanitized failures. Voice Main admits sequenced
+selected-microphone PCM, natural finals and one result consumer. Existing
+AudioWorklet/meter/playback drive real audio feedback; provider partials never
+dispatch. Local wake remains consented and Main verifies original addressed
+audio using the selected recognizer. Key/model/mute changes cancel old work.
+This optional connection is not the hosted entitlement or an all-user funded key.
+Evidence and unresolved acceptance live in the single experience specification
+and Windows checklist; the historical architecture below remains preserved.

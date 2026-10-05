@@ -60,6 +60,9 @@ import {
 import { createMorpheusPlannerSelector } from './planning/planner-selector';
 import { getProviderService, type ProviderService } from '../providers/provider-service';
 import { createMorpheusVoiceService, type MorpheusVoiceService } from './voice/voice-service';
+import { createMorpheusDeepgramConnectionService, type MorpheusDeepgramConnectionService } from './voice/deepgram-connection';
+import { createMorpheusDeepgramVoice, probeMorpheusDeepgramConnection } from './voice/deepgram-voice';
+import { getSecretStore } from '../secrets/secret-store';
 import {
   createMorpheusWorkspaceStore,
   type MorpheusWorkspaceStore,
@@ -115,6 +118,7 @@ export type MorpheusService = {
   systemStore: MorpheusSystemStore;
   systems: MorpheusSystemService;
   voice: MorpheusVoiceService;
+  deepgramVoice?: MorpheusDeepgramConnectionService;
   workspaces: MorpheusWorkspaceStore;
   audit: MorpheusAuditSink;
   runtimeControl: MorpheusRuntimeControlService;
@@ -231,7 +235,14 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
       });
     },
   });
+  const deepgramVoice = createMorpheusDeepgramConnectionService({
+    dataDir: join(options.userDataDir, 'morpheus'), secretStore: getSecretStore(),
+    probe: probeMorpheusDeepgramConnection,
+    onChanged: () => voice.invalidateService?.(),
+  });
+  const deepgram = createMorpheusDeepgramVoice({ getKey: async () => (await deepgramVoice.credentials())?.apiKey ?? null });
   const voice = createMorpheusVoiceService({
+    deepgram, deepgramConnection: deepgramVoice,
     localVoice: process.platform === 'win32' ? createMorpheusLocalVoice(
       existsSync(join(getResourcesDir(), 'local-voice')) ? join(getResourcesDir(), 'local-voice') : join(getResourcesDir(), '..', 'build', 'local-voice'),
       join(options.userDataDir, 'morpheus', 'voice-temporary'),
@@ -332,6 +343,7 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
     systemStore,
     systems,
     voice,
+    deepgramVoice,
     workspaces,
     audit,
     runtimeControl,

@@ -133,6 +133,8 @@ let ambientStarting: Promise<void> | null = null;
 let ambientAutoStartBlocked = false;
 let ambientGeneration = 0;
 let stopMeter: (() => void) | null = null;
+let cloudCapture: MorpheusAmbientVoiceCapture | null = null;
+let cloudSessionId: string | null = null;
 const dialogue = new MorpheusVoiceDialogue();
 let followUpTimer: number | undefined;
 let explicitConversationTurns = 0;
@@ -161,6 +163,12 @@ function stopStream(): void {
 
 function releaseRecording(): void {
   clearDurationTimer();
+  cloudCapture?.stop();
+  cloudCapture = null;
+  if (cloudSessionId) {
+    void hostApi.morpheus.cancelDeepgramVoiceInput({ sessionId: cloudSessionId }).catch(() => undefined);
+    cloudSessionId = null;
+  }
   stopStream();
   recorder = null;
   chunks = [];
@@ -289,6 +297,76 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
     });
   };
 
+  const acceptTranscript = async (transcript: string, generation: number, question?: MorpheusDraftAnswerFor): Promise<void> => {
+    if (generation !== operationGeneration) return;
+    if (question && !isLiveQuestion(question)) {
+      set({ phase: 'ready', transcript: null, error: null, errorKind: null, startedAt: null });
+      return;
+    }
+    const source = get().source;
+    // Calibration is ephemeral and never dispatches a command.
+    if (source !== 'onboarding') {
+      useMorpheusCommandStore.getState().setInput(transcript);
+      useMorpheusConversationStore.getState().setDraft(transcript, question);
+    }
+    set({ phase: 'ready', transcript, error: null, errorKind: null, startedAt: null });
+    if (get().status?.settings.autoSubmitTranscript && source !== 'onboarding') {
+      await routeVoiceInput(transcript, generation, question);
+    }
+  };
+
+  const startCloudCapture = async (status: MorpheusVoiceStatus, generation: number, question?: MorpheusDraftAnswerFor): Promise<void> => {
+    const { sessionId } = await hostApi.morpheus.beginDeepgramVoiceInput();
+    if (generation !== operationGeneration) {
+      await hostApi.morpheus.cancelDeepgramVoiceInput({ sessionId });
+      return;
+    }
+    cloudSessionId = sessionId;
+    let sequence = 0;
+    let completed = false;
+    const capture = new MorpheusAmbientVoiceCapture({
+      inputDeviceId: status.settings.inputDeviceId,
+      silenceMs: status.settings.ambientSilenceMs,
+      maxUtteranceMs: MORPHEUS_VOICE_MAX_DURATION_MS,
+      // Provider end-of-turn owns completion. Local RMS only animates.
+      shouldCapture: () => false,
+      async onAudioFrame(pcm) {
+        if (completed) return;
+        if (generation !== operationGeneration || cloudSessionId !== sessionId || microphoneMuteRequested) {
+          throw new DOMException('Voice input stopped', 'AbortError');
+        }
+        const pcmBase64 = window.btoa(String.fromCharCode(...pcm));
+        const result = await hostApi.morpheus.feedDeepgramVoiceInput({ sessionId, sequence: sequence++, pcmBase64 });
+        if (!result.ready) capture.stop();
+      },
+      async onCaptureStarted() {},
+      async onCaptureEnded() {},
+      onBargeIn() { if (status.settings.bargeIn) stopMorpheusSpeech(); },
+      async onUtterance() {},
+      onError(error) { if (!completed && generation === operationGeneration) fail(error); },
+    });
+    cloudCapture = capture;
+    // Wait before acquisition so a socket failure also closes a pending mic.
+    void hostApi.morpheus.waitDeepgramVoiceInput({ sessionId }).then(async result => {
+      if (generation !== operationGeneration || cloudSessionId !== sessionId) return;
+      completed = true;
+      releaseRecording();
+      await acceptTranscript(result.transcript, generation, question);
+    }).catch(error => {
+      if (generation === operationGeneration) fail(error);
+    }).finally(() => {
+      if (generation === operationGeneration) ambientCapture?.setSuppressed(false);
+    });
+    try { await capture.start(); }
+    catch (error) { if (completed) return; throw error; }
+    if (generation !== operationGeneration || cloudSessionId !== sessionId) { capture.stop(); return; }
+    ambientAutoStartBlocked = false;
+    set({ phase: 'listening', startedAt: Date.now() });
+    durationTimer = window.setTimeout(() => {
+      if (generation === operationGeneration) fail(new Error('Voice input timed out. Try a shorter request.'));
+    }, MORPHEUS_VOICE_MAX_DURATION_MS);
+  };
+
   const finishRecording = async (
     generation: number,
     mimeType: MorpheusVoiceMimeType,
@@ -321,32 +399,7 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
       if (generation !== operationGeneration) return;
       const result = await hostApi.morpheus.transcribeAudio(payload);
       if (generation !== operationGeneration) return;
-      const status = get().status;
-      const source = get().source;
-      if (question && !isLiveQuestion(question)) {
-        // A retired answer must not survive as a draft for a later new request.
-        set({ phase: 'ready', transcript: null, error: null, errorKind: null, startedAt: null });
-        return;
-      }
-      // Activation uses the same real microphone and provider-backed
-      // transcription path as normal voice commands, but calibration must
-      // never become an Objective or leak a person's name into the command
-      // composer. The transcript remains ephemeral renderer state until the
-      // user explicitly accepts it as their preferred name.
-      if (source !== 'onboarding') {
-        useMorpheusCommandStore.getState().setInput(result.transcript);
-        useMorpheusConversationStore.getState().setDraft(result.transcript, question);
-      }
-      set({
-        phase: 'ready',
-        transcript: result.transcript,
-        error: null,
-        errorKind: null,
-        startedAt: null,
-      });
-      if (status?.settings.autoSubmitTranscript && source !== 'onboarding') {
-        await routeVoiceInput(result.transcript, generation, question);
-      }
+      await acceptTranscript(result.transcript, generation, question);
     } catch (error) {
       if (generation === operationGeneration) fail(error);
     } finally {
@@ -819,6 +872,10 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
         if (!status.settings.enabled || !status.transcriptionAvailable) {
           throw new Error(status.reason ?? 'Voice transcription is not configured.');
         }
+        if (status.settings.engine === 'deepgram') {
+          await startCloudCapture(status, generation, question);
+          return;
+        }
         const mimeType = supportedMimeType();
         if (!mimeType || !navigator.mediaDevices?.getUserMedia) {
           throw new Error('Voice recording is not supported on this system.');
@@ -883,6 +940,16 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
     },
 
     stopListening() {
+      if (get().phase === 'listening' && cloudSessionId) {
+        const sessionId = cloudSessionId;
+        clearDurationTimer();
+        cloudCapture?.stop(); cloudCapture = null;
+        set({ phase: 'transcribing', startedAt: null });
+        void hostApi.morpheus.finishDeepgramVoiceInput({ sessionId }).catch(error => {
+          if (cloudSessionId === sessionId) fail(error);
+        });
+        return;
+      }
       if (get().phase !== 'listening' || recorder?.state !== 'recording') return;
       clearDurationTimer();
       set({ phase: 'transcribing', startedAt: null });

@@ -97,3 +97,14 @@ the first matched utility command.
 Public Windows release and update checks require the configured publisher and
 valid timestamped signatures for the actual installer and embedded application.
 An unsigned preview or self-signed test cannot satisfy commercial signing.
+
+Optional Deepgram speech is a separate protected connection, not a task-model
+account or a funded entitlement. Save/test never unmute or activate it. Main
+owns fixed HTTPS/WebSocket endpoints, credential headers and bounded deadlines;
+Renderer sends sequenced selected-microphone PCM through the typed host API.
+Only natural final turns or explicitly requested finish can complete input.
+One session has one result consumer; overlapping starts, mute, setting/key
+changes and cancellation abort old transport and discard stale results. Cloud
+mode retains local wake detection, uploads only admitted original addressed
+audio, and never opens a paid idle ambient stream. Kit model alias resolution
+is allowlisted; matching SpeechMetadata, not Flushed, completes actual PCM.

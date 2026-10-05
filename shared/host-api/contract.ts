@@ -72,6 +72,10 @@ import type {
   MorpheusVoicePresence,
   MorpheusVoiceSettingsPatch,
   MorpheusVoiceStatus,
+  MorpheusDeepgramVoiceStatus,
+  MorpheusDeepgramVoiceConnectionPayload,
+  MorpheusDeepgramVoiceTestResult,
+  MorpheusDeepgramVoiceInputSession,
 } from '../morpheus/voice-types';
 import type {
   MorpheusRuntimeControlSnapshot,
@@ -1282,6 +1286,15 @@ export type HostApiContract = {
     expandCompanionSurface: () => MorpheusCompanionSurfaceStatus;
     showCompanionSurface: () => MorpheusCompanionSurfaceStatus;
     voiceStatus: () => MorpheusVoiceStatus;
+    deepgramVoiceStatus: () => MorpheusDeepgramVoiceStatus;
+    saveDeepgramVoiceConnection: (payload: MorpheusDeepgramVoiceConnectionPayload) => MorpheusDeepgramVoiceStatus;
+    testDeepgramVoiceConnection: () => MorpheusDeepgramVoiceTestResult;
+    removeDeepgramVoiceConnection: () => MorpheusDeepgramVoiceStatus;
+    beginDeepgramVoiceInput: () => MorpheusDeepgramVoiceInputSession;
+    feedDeepgramVoiceInput: (payload: MorpheusWakeAudioFrame) => { ready: boolean };
+    waitDeepgramVoiceInput: (payload: MorpheusDeepgramVoiceInputSession) => MorpheusTranscriptionResult;
+    finishDeepgramVoiceInput: (payload: MorpheusDeepgramVoiceInputSession) => { finished: boolean };
+    cancelDeepgramVoiceInput: (payload: MorpheusDeepgramVoiceInputSession) => { cancelled: boolean };
     prepareVoiceOutput: () => { prepared: boolean };
     updateVoiceSettings: (payload: MorpheusVoiceSettingsPatch) => MorpheusVoiceStatus;
     transcribeAudio: (payload: MorpheusTranscribeAudioPayload) => MorpheusTranscriptionResult;

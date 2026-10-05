@@ -1,11 +1,15 @@
 ---
 id: morpheus-voice-interaction-recovery
-title: Included voice recognition lifetime and conversational recovery
+title: Addressed hosted speech and secure connected voice setup
 scenario: gateway-backend-communication
 taskType: runtime-bridge
-intent: Make addressed voice turns responsive and repairable while preserving exact wake verification, mute authority and the existing execution platform.
+intent: Add optional protected Deepgram speech into the existing addressed task route while preserving included voice, exact wake verification, mute authority, task providers and capabilities.
 touchedAreas:
   - electron/services/morpheus/voice/**
+  - electron/services/morpheus/index.ts
+  - electron/services/morpheus-api.ts
+  - shared/host-api/**
+  - src/lib/host-api.ts
   - electron/main/morpheus-wake-orb.ts
   - shared/morpheus/**
   - src/lib/morpheus-*.ts
@@ -43,12 +47,18 @@ requiredTests:
   - pnpm run typecheck
   - pnpm run lint:check
   - pnpm exec vitest run tests/unit/morpheus-local-voice.test.ts tests/unit/morpheus-voice-service.test.ts tests/unit/morpheus-voice-store.test.ts
+  - pnpm exec vitest run tests/unit/morpheus-deepgram-voice.test.ts tests/unit/morpheus-deepgram-connection.test.ts tests/unit/morpheus-deepgram-connection.test.tsx tests/unit/morpheus-deepgram-integration.test.ts tests/unit/morpheus-deepgram-input-store.test.ts
+  - pnpm exec playwright test tests/e2e/morpheus-deepgram-voice.spec.ts
   - pnpm exec playwright test tests/e2e/morpheus-wake-command.spec.ts tests/e2e/morpheus-selected-wake-handoff.spec.ts
   - pnpm exec playwright test tests/e2e/morpheus-voice-interaction-recovery.spec.ts tests/e2e/morpheus-voice-silence.spec.ts tests/e2e/morpheus-unrestricted-appearance.spec.ts tests/e2e/morpheus-voice-panel.spec.ts
   - pnpm run comms:replay
   - pnpm run comms:compare
   - pnpm run harness:ci
 acceptance:
+  - Deepgram connection setup remains optional, separate from task providers, stores credentials protected in Main, never reads secrets back, and offers an actionable bounded connection test.
+  - A configured Deepgram tray wake uses original addressed audio through the selected hosted recognizer rather than forcing included tiny.en; no ambient cloud stream or unaddressed action is admitted.
+  - Only validated natural final transcript or explicitly requested finish may complete a hosted turn; partial updates, close/flush, stale results and revoked authority never submit a command.
+  - Hosted speech uses real bounded PCM playback with interruption and no late chunks after cancellation; saved task-model, personality and conversations remain unchanged.
   - Explicit microphone commands automatically finish from real speech-end samples; paused/unavailable audio never fabricates silence or revives cancelled capture.
   - Opted-in tray wake accepts exact Morpheus and Hey Morpheus while expanded chat and manual mute retain authority; clear same-breath commands execute once.
   - Reusable local recognition has bounded resource lifetime and rejects cancelled, stale, malformed or cross-session results.
@@ -66,3 +76,10 @@ Owner authorization, October 5: implement the proposed voice interaction correct
 This is the bounded wake → command → repair/question → response component, not a
 platform restart. Included local English voice remains a Basic responsibility.
 Hosted speech requires actual funded service configuration and is not fabricated.
+
+Latest authorization: implement modular Deepgram speech with the supplied test
+access and provide easy secure setup for other users. This bounded change adds an
+optional personal cloud connection; included local voice remains available without
+another key, and global operator-funded service is still a separate deployment gate.
+Do not embed the owner's service key in source, scripts, diagnostics or installers.
+Voice transport is Main-owned; the existing task agent and planner selection stay.

@@ -40,6 +40,7 @@ import type {
   WorkspaceFileRef,
 } from '@shared/host-api/contract';
 import type { WebBrowserNavigatePayload } from '@shared/web-browser';
+import type { MorpheusWakeAudioFrame } from '@shared/morpheus/wake-audio-types';
 import type {
   AcpChatCancelPayload,
   AcpChatLoadPayload,
@@ -63,6 +64,8 @@ import type {
   MorpheusSynthesizeSpeechPayload,
   MorpheusAmbientListeningPayload,
   MorpheusVoiceSettingsPatch,
+  MorpheusDeepgramVoiceConnectionPayload,
+  MorpheusDeepgramVoiceInputSession,
 } from '@shared/morpheus/voice-types';
 import type { SetMorpheusRuntimePausedPayload } from '@shared/morpheus/runtime-control-types';
 import type {
@@ -565,6 +568,17 @@ export const hostApi = {
     expandCompanionSurface: () => invokeHost('morpheus', 'expandCompanionSurface'),
     showCompanionSurface: () => invokeHost('morpheus', 'showCompanionSurface'),
     voiceStatus: () => invokeHost('morpheus', 'voiceStatus'),
+    deepgramVoiceStatus: () => invokeHost('morpheus', 'deepgramVoiceStatus'),
+    saveDeepgramVoiceConnection: (payload: MorpheusDeepgramVoiceConnectionPayload) => (
+      invokeHost('morpheus', 'saveDeepgramVoiceConnection', payload)
+    ),
+    testDeepgramVoiceConnection: () => invokeHost('morpheus', 'testDeepgramVoiceConnection'),
+    removeDeepgramVoiceConnection: () => invokeHost('morpheus', 'removeDeepgramVoiceConnection'),
+    beginDeepgramVoiceInput: () => invokeHost('morpheus', 'beginDeepgramVoiceInput'),
+    feedDeepgramVoiceInput: (payload: MorpheusWakeAudioFrame) => invokeHost('morpheus', 'feedDeepgramVoiceInput', payload),
+    waitDeepgramVoiceInput: (payload: MorpheusDeepgramVoiceInputSession) => invokeHost('morpheus', 'waitDeepgramVoiceInput', payload),
+    finishDeepgramVoiceInput: (payload: MorpheusDeepgramVoiceInputSession) => invokeHost('morpheus', 'finishDeepgramVoiceInput', payload),
+    cancelDeepgramVoiceInput: (payload: MorpheusDeepgramVoiceInputSession) => invokeHost('morpheus', 'cancelDeepgramVoiceInput', payload),
     prepareVoiceOutput: () => invokeHost('morpheus', 'prepareVoiceOutput'),
     updateVoiceSettings: (payload: MorpheusVoiceSettingsPatch) => (
       invokeHost('morpheus', 'updateVoiceSettings', payload)

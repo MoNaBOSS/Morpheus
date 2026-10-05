@@ -17,6 +17,8 @@ import {
   validateWorkspaceIdPayload,
   validateWorkflowDraft,
   validateVoiceSettingsPatch,
+  validateDeepgramVoiceConnectionPayload,
+  validateDeepgramVoiceInputSessionPayload,
   validatePresentationLevelPayload,
   validateRuntimePausedPayload,
   validateMissionIdPayload,
@@ -155,6 +157,11 @@ function stubOptions(runtime = stubRuntime()) {
       prepareAmbientInput: vi.fn(async () => ({ sessionId: 'voice-00000000-0000-0000-0000-000000000001', localWakeEnabled: true,
         presence: { v: 3, ambientEnabled: true, state: 'asleep' } })),
       feedWakeAudio: vi.fn(async () => ({ ready: true })),
+      beginDeepgramInput: vi.fn(async () => ({ sessionId: 'voice-00000000-0000-0000-0000-000000000001' })),
+      feedDeepgramInput: vi.fn(async () => ({ ready: true })),
+      waitDeepgramInput: vi.fn(async () => ({ transcript: 'open YouTube', providerAccountId: 'deepgram', modelId: 'nova-3', durationMs: 1000 })),
+      finishDeepgramInput: vi.fn(async () => ({ finished: true })),
+      cancelDeepgramInput: vi.fn(async () => ({ cancelled: true })),
     } as never,
     proactive: {
       snapshot: vi.fn(() => ({ settings: { enabled: false }, attentions: [] })),
@@ -592,6 +599,17 @@ describe('validateAuditRecentPayload', () => {
 });
 
 describe('voice payload validation', () => {
+  it('accepts write-only Deepgram credentials or a model-only change without endpoint authority', () => {
+    expect(validateVoiceSettingsPatch({ engine: 'deepgram' })).toEqual({ engine: 'deepgram' });
+    expect(validateDeepgramVoiceConnectionPayload({ apiKey: 'synthetic-deepgram-key-1234', recognitionModel: 'nova-3' }))
+      .toEqual({ apiKey: 'synthetic-deepgram-key-1234', recognitionModel: 'nova-3' });
+    expect(validateDeepgramVoiceConnectionPayload({ recognitionModel: 'flux-general-en' }))
+      .toEqual({ recognitionModel: 'flux-general-en' });
+    for (const payload of [{}, { apiKey: 'too-short' }, { apiKey: 1234 }, { recognitionModel: 'invented' },
+      { apiKey: 'synthetic-deepgram-key-1234', endpoint: 'https://example.com' }]) {
+      expect(() => validateDeepgramVoiceConnectionPayload(payload)).toThrow(MorpheusValidationError);
+    }
+  });
   it('accepts only bounded settings fields and ephemeral audio metadata', () => {
     expect(validateVoiceSettingsPatch({ enabled: true, speakResponses: false }))
       .toEqual({ enabled: true, speakResponses: false });
@@ -624,6 +642,41 @@ describe('runtime control validation', () => {
 });
 
 describe('createMorpheusApi', () => {
+  it('delegates explicit cloud PCM only through exact Main-issued session envelopes', async () => {
+    const options = stubOptions(), api = createMorpheusApi(options);
+    const session = { sessionId: 'voice-00000000-0000-0000-0000-000000000001' };
+    await expect(api.beginDeepgramVoiceInput()).resolves.toEqual(session);
+    const frame = { ...session, sequence: 0, pcmBase64: Buffer.alloc(6400).toString('base64') };
+    await expect(api.feedDeepgramVoiceInput(frame)).resolves.toEqual({ ready: true });
+    await expect(api.waitDeepgramVoiceInput(session)).resolves.toMatchObject({ transcript: 'open YouTube' });
+    await expect(api.finishDeepgramVoiceInput(session)).resolves.toEqual({ finished: true });
+    await expect(api.cancelDeepgramVoiceInput(session)).resolves.toEqual({ cancelled: true });
+    expect(options.voice.feedDeepgramInput).toHaveBeenCalledWith(frame);
+    for (const payload of [{}, { sessionId: 'not-issued' }, { ...session, apiKey: 'synthetic-deepgram-key-1234' }]) {
+      expect(() => validateDeepgramVoiceInputSessionPayload(payload)).toThrow(MorpheusValidationError);
+      expect(() => api.waitDeepgramVoiceInput(payload as never)).toThrow(MorpheusValidationError);
+    }
+    expect(() => api.feedDeepgramVoiceInput({ ...frame, endpoint: 'https://example.com' } as never)).toThrow(MorpheusValidationError);
+    expect(options.voice.feedDeepgramInput).toHaveBeenCalledOnce();
+    expect(options.voice.waitDeepgramInput).toHaveBeenCalledOnce();
+  });
+  it('keeps Deepgram credentials write-only and setup separate from voice input/task providers', async () => {
+    const safe = { configured: true, recognitionModel: 'nova-3' as const, speechModel: 'flux-kit-en' as const, storage: 'protected' as const };
+    const deepgramVoice = { snapshot: vi.fn(async () => safe), save: vi.fn(async () => safe),
+      test: vi.fn(async () => ({ ok: true, recognition: true, speech: true })), remove: vi.fn(async () => ({ ...safe, configured: false })),
+      credentials: vi.fn(), dispose: vi.fn() };
+    const options = stubOptions();
+    const api = createMorpheusApi({ ...options, deepgramVoice });
+    await expect(api.deepgramVoiceStatus()).resolves.toEqual(safe);
+    await expect(api.saveDeepgramVoiceConnection({ apiKey: 'synthetic-deepgram-key-1234' })).resolves.toEqual(safe);
+    await expect(api.testDeepgramVoiceConnection()).resolves.toEqual({ ok: true, recognition: true, speech: true });
+    await expect(api.removeDeepgramVoiceConnection()).resolves.toMatchObject({ configured: false });
+    expect(deepgramVoice.credentials).not.toHaveBeenCalled();
+    expect(options.voice.updateSettings).not.toHaveBeenCalled();
+    expect(() => api.saveDeepgramVoiceConnection({ apiKey: 'synthetic-deepgram-key-1234', endpoint: 'https://example.com' } as never))
+      .toThrow(MorpheusValidationError);
+    expect(deepgramVoice.save).toHaveBeenCalledOnce();
+  });
   it('delegates input preparation and only an exact bounded opaque-token PCM envelope', async () => {
     const options = stubOptions(), api = createMorpheusApi(options);
     await expect(api.prepareAmbientVoiceInput()).resolves.toMatchObject({ localWakeEnabled: true, presence: { state: 'asleep' } });
@@ -659,7 +712,9 @@ describe('createMorpheusApi', () => {
       'auditQuery',
       'auditRecent',
       'beginAmbientVoice',
+      'beginDeepgramVoiceInput',
       'cancelAction',
+      'cancelDeepgramVoiceInput',
       'cancelObjective',
       'cancelSpeech',
       'companionSurfaceStatus',
@@ -668,6 +723,7 @@ describe('createMorpheusApi', () => {
       'correctObjective',
       'createReminder',
       'createSystemFromMission',
+      'deepgramVoiceStatus',
       'describeActions',
       'dismissAttention',
       'dismissCompanionSurface',
@@ -677,7 +733,9 @@ describe('createMorpheusApi', () => {
       'expandCompanionSurface',
       'exportMemories',
       'feedAmbientWakeAudio',
+      'feedDeepgramVoiceInput',
       'filesRoot',
+      'finishDeepgramVoiceInput',
       'goal',
       'goals',
       'interpretCommand',
@@ -705,6 +763,7 @@ describe('createMorpheusApi', () => {
       'publicationStatus',
       'refreshProactive',
       'removeAgentProfile',
+      'removeDeepgramVoiceConnection',
       'removeGoal',
       'removeMemory',
       'removeProject',
@@ -728,6 +787,7 @@ describe('createMorpheusApi', () => {
       'runWorkflow',
       'runtimeControl',
       'saveAgentProfile',
+      'saveDeepgramVoiceConnection',
       'saveGoal',
       'saveMemory',
       'saveProject',
@@ -746,6 +806,7 @@ describe('createMorpheusApi', () => {
       'system',
       'systemInfo',
       'systems',
+      'testDeepgramVoiceConnection',
       'testSystem',
       'transcribeAmbientAudio',
       'transcribeAudio',
@@ -756,6 +817,7 @@ describe('createMorpheusApi', () => {
       'updateVoiceSettings',
       'updateWorkspace',
       'voiceStatus',
+      'waitDeepgramVoiceInput',
       'workflow',
       'workflows',
       'workspaces',

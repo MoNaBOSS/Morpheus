@@ -5,6 +5,8 @@ type: runtime-bridge
 ownedPaths:
   - src/lib/api-client.ts
   - src/lib/host-api.ts
+  - src/stores/morpheus-voice.ts
+  - shared/morpheus/voice-types.ts
   - src/stores/gateway.ts
   - src/stores/chat.ts
   - src/stores/chat/**

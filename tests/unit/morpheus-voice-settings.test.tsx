@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   setVoiceSpeaking: vi.fn(),
   play: vi.fn(),
   stop: vi.fn(),
+  deepgramVoiceStatus: vi.fn(),
 }));
 
 vi.mock('@/lib/host-api', () => ({
@@ -55,6 +56,7 @@ const STATUS = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.voiceStatus.mockResolvedValue(STATUS);
+  mocks.deepgramVoiceStatus.mockResolvedValue({ configured: false, recognitionModel: 'nova-3', speechModel: 'flux-kit-en', storage: 'protected' });
   mocks.updateVoiceSettings.mockImplementation(async (patch) => ({
     ...STATUS,
     settings: { ...STATUS.settings, ...patch },
@@ -65,6 +67,23 @@ beforeEach(() => {
 });
 
 describe('Morpheus voice settings', () => {
+  it('shows fixed cloud speech and keeps task-provider and ambient-wake controls out of the cloud setup', async () => {
+    mocks.voiceStatus.mockResolvedValue({
+      ...STATUS,
+      deepgram: { configured: true, recognitionModel: 'nova-3', speechModel: 'flux-kit-en', storage: 'protected' },
+      speechFormat: 'pcm24', captureFormat: 'pcm16-wav',
+      settings: { ...STATUS.settings, engine: 'deepgram', localWakeEnabled: true },
+    });
+    render(<MorpheusVoiceSettings />);
+    expect(await screen.findByTestId('morpheus-voice-engine')).toHaveValue('deepgram');
+    expect(screen.getByTestId('morpheus-deepgram-speech')).toHaveTextContent('morpheus.voice.cloud.speech');
+    expect(screen.queryByTestId('morpheus-speech-voice')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('morpheus-voice-provider')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('morpheus-speech-provider')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('morpheus-local-wake')).not.toBeInTheDocument();
+    expect(screen.getByTestId('morpheus-voice-preview')).toBeInTheDocument();
+    expect(mocks.updateVoiceSettings).not.toHaveBeenCalled();
+  });
   it('shows the orb default and saves a deliberate speech mode without enabling an existing quiet choice', async () => {
     const quiet = { ...STATUS, settings: { ...STATUS.settings, speakResponses: false } };
     mocks.voiceStatus.mockResolvedValue(quiet);

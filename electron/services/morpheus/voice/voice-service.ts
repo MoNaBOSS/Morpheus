@@ -47,6 +47,12 @@ import type { ManagedRuntimeBridge } from '../managed/runtime-bridge';
 import { createManagedVoiceOperation, managedVoiceAvailability } from './managed-voice';
 import type { MorpheusLocalVoice } from './local-voice';
 import { MorpheusNoSpeechError, validateMorpheusLocalTranscript } from './local-input';
+import { DeepgramVoiceError, type MorpheusDeepgramVoice, type MorpheusDeepgramRecognitionSession } from './deepgram-voice';
+import type { MorpheusDeepgramConnectionService } from './deepgram-connection';
+
+function isIncludedVoiceEngine(engine: MorpheusVoiceSettings['engine']): boolean {
+  return engine !== 'provider' && engine !== 'deepgram';
+}
 
 const DEFAULT_VOICE_SETTINGS: MorpheusVoiceSettings = Object.freeze({
   v: MORPHEUS_VOICE_VERSION,
@@ -76,6 +82,12 @@ class VoiceHttpError extends Error {
 }
 
 function speechFailureKind(error: unknown): NonNullable<MorpheusVoicePresence['speechFailure']> {
+  if (error instanceof DeepgramVoiceError) {
+    if (error.code === 'authentication') return 'authentication';
+    if (error.code === 'access') return 'access';
+    if (error.code === 'rate-limit') return 'rate-limit';
+    return 'unavailable';
+  }
   if (!(error instanceof VoiceHttpError)) return 'unavailable';
   if (error.status === 401) return 'authentication';
   if (error.status === 403) return 'access';
@@ -89,6 +101,11 @@ export interface MorpheusVoiceService {
   presence(): MorpheusVoicePresence;
   updateSettings(patch: MorpheusVoiceSettingsPatch): Promise<MorpheusVoiceStatus>;
   transcribe(payload: MorpheusTranscribeAudioPayload): Promise<MorpheusTranscriptionResult>;
+  beginDeepgramInput(): Promise<{ sessionId: string }>;
+  feedDeepgramInput(frame: MorpheusWakeAudioFrame): Promise<{ ready: boolean }>;
+  waitDeepgramInput(payload: { sessionId: string }): Promise<MorpheusTranscriptionResult>;
+  finishDeepgramInput(payload: { sessionId: string }): { finished: boolean };
+  cancelDeepgramInput(payload: { sessionId: string }): { cancelled: boolean };
   synthesize(payload: MorpheusSynthesizeSpeechPayload): Promise<MorpheusSynthesizeSpeechResult>;
   cancelSpeech(): void;
   prepareOutput(): Promise<{ prepared: boolean }>;
@@ -131,7 +148,7 @@ function validateSettings(value: unknown): MorpheusVoiceSettings | null {
     || typeof handsFreeFollowUp !== 'boolean') return null;
   if (migrated.localWakeEnabled !== undefined && typeof migrated.localWakeEnabled !== 'boolean') return null;
   if (migrated.replySpeechMode !== undefined && !['orb', 'voice', 'all'].includes(migrated.replySpeechMode as string)) return null;
-  if (migrated.engine !== undefined && !['local', 'provider'].includes(migrated.engine as string)) return null;
+  if (migrated.engine !== undefined && !['local', 'provider', 'deepgram'].includes(migrated.engine as string)) return null;
   if (migrated.inputDeviceId !== undefined && (typeof migrated.inputDeviceId !== 'string' || migrated.inputDeviceId.length > 256)) return null;
   if (typeof wakePhrase !== 'string'
     || !MORPHEUS_AMBIENT_WAKE_PHRASE_PATTERN.test(wakePhrase.trim())) return null;
@@ -146,7 +163,7 @@ function validateSettings(value: unknown): MorpheusVoiceSettings | null {
     || !MORPHEUS_SPEECH_VOICES.includes(speechVoice as typeof MORPHEUS_SPEECH_VOICES[number])) return null;
   return {
     v: MORPHEUS_VOICE_VERSION,
-    ...(migrated.engine ? { engine: migrated.engine as 'local' | 'provider' } : {}),
+    ...(migrated.engine ? { engine: migrated.engine as MorpheusVoiceSettings['engine'] } : {}),
     ...(typeof migrated.inputDeviceId === 'string' ? { inputDeviceId: migrated.inputDeviceId } : {}),
     enabled: value.enabled,
     providerAccountId: value.providerAccountId,
@@ -288,6 +305,8 @@ export function createMorpheusVoiceService(options: {
   startLocalWake?: typeof startWindowsWake;
   getManagedRuntime?: () => ManagedRuntimeBridge | null;
   localVoice?: MorpheusLocalVoice;
+  deepgram?: MorpheusDeepgramVoice;
+  deepgramConnection?: MorpheusDeepgramConnectionService;
   /** Main-owned native visibility; foreground conversations require an explicit microphone press. */
   isCompanionVoiceScope?: () => boolean;
 }): MorpheusVoiceService {
@@ -296,7 +315,9 @@ export function createMorpheusVoiceService(options: {
   const speechTimeoutMs = options.speechTimeoutMs ?? MORPHEUS_VOICE_PROVIDER_TIMEOUT_MS;
   const settingsPath = join(options.userDataDir, 'morpheus', 'voice-settings.json');
   let settings = readValidatedJson(settingsPath, validateSettings) ?? structuredClone(DEFAULT_VOICE_SETTINGS);
-  if (options.localVoice && settings.engine !== 'provider') settings = { ...settings, localWakeEnabled: true };
+  if (settings.engine === 'deepgram' || (options.localVoice && isIncludedVoiceEngine(settings.engine))) {
+    settings = { ...settings, localWakeEnabled: true };
+  }
   let ambientSession: { sessionId: string; startedAt: string; providerLabel: string } | null = null;
   const wakeAudio = new MorpheusWakeAudioBuffer();
   let ambientInputReady = false;
@@ -349,6 +370,24 @@ export function createMorpheusVoiceService(options: {
   let followUpPending = false;
   let followUpRevision = 0;
   const transcriptions = new Map<AbortController, boolean>();
+  let cloudInputRevision = 0;
+  let cloudInputStarting: AbortController | undefined;
+  let cloudInput: {
+    sessionId: string; sequence: number; byteLength: number; windowBytes: number; windowAt: number;
+    controller: AbortController; session: MorpheusDeepgramRecognitionSession;
+    result: Promise<MorpheusTranscriptionResult>; firstFrame: boolean; completed: boolean; busy: boolean; claimed: boolean;
+    timer: ReturnType<typeof setTimeout>;
+  } | undefined;
+  const cancelCloudInput = () => {
+    cloudInputRevision += 1;
+    cloudInputStarting?.abort(new DOMException('Voice input cancelled', 'AbortError'));
+    if (cloudInputStarting) transcriptions.delete(cloudInputStarting);
+    cloudInputStarting = undefined;
+    if (!cloudInput) return;
+    const input = cloudInput; cloudInput = undefined;
+    clearTimeout(input.timer); input.controller.abort(new DOMException('Voice input cancelled', 'AbortError'));
+    input.session.cancel(); transcriptions.delete(input.controller);
+  };
   const clearFollowUp = (): void => {
     followUpRevision += 1;
     if (followUpTimer) clearTimeout(followUpTimer);
@@ -374,7 +413,7 @@ export function createMorpheusVoiceService(options: {
   const publish = (state: MorpheusVoicePresenceState, reason?: string, wakeCommand?: string): MorpheusVoicePresence => {
     // Warm only during an actual addressed interaction, never on idle wake monitoring.
     // Input/audio authority is unchanged; this only loads the offline output model.
-    if (inputAllowed() && settings.speakResponses && settings.engine !== 'provider' && ['listening', 'transcribing', 'understanding'].includes(state)) {
+    if (inputAllowed() && settings.speakResponses && isIncludedVoiceEngine(settings.engine) && ['listening', 'transcribing', 'understanding'].includes(state)) {
       void options.localVoice?.warm?.().catch(() => undefined);
     }
     currentPresence = {
@@ -457,11 +496,23 @@ export function createMorpheusVoiceService(options: {
   };
 
   const status = async (): Promise<MorpheusVoiceStatus> => {
-    if (options.localVoice && settings.engine !== 'provider') {
+    const deepgram = await options.deepgramConnection?.snapshot();
+    if (settings.engine === 'deepgram') {
+      const configured = Boolean(options.deepgram && deepgram?.configured);
+      return {
+        settings: effectiveSettings(), presence: structuredClone(currentPresence), providers: [],
+        transcriptionAvailable: inputAllowed() && configured, neuralSpeechAvailable: configured,
+        captureFormat: 'pcm16-wav', speechFormat: 'pcm24', deepgram,
+        providerLabel: 'Deepgram', speechProviderLabel: 'Deepgram Kit',
+        ...(!configured ? { reason: 'Connect Deepgram securely in Voice settings, then test the connection.' }
+          : !inputAllowed() ? { reason: 'Microphone is muted. Enable it in Voice settings.' } : {}),
+      };
+    }
+    if (options.localVoice && isIncludedVoiceEngine(settings.engine)) {
       const ready = options.localVoice.ready();
       return { settings: { ...effectiveSettings(), engine: 'local' }, presence: structuredClone(currentPresence), providers: [],
         transcriptionAvailable: inputAllowed() && ready, neuralSpeechAvailable: ready, captureFormat: 'pcm16-wav', speechFormat: options.localVoice.synthesizeStream ? 'pcm24' : 'wav',
-        availableSpeechVoices: ['cedar', 'coral'], providerLabel: 'Included local English voice', speechProviderLabel: 'Included local neural voice',
+        availableSpeechVoices: ['cedar', 'coral'], providerLabel: 'Included local English voice', speechProviderLabel: 'Included local neural voice', deepgram,
         ...(!ready || !inputAllowed() ? { reason: !inputAllowed() ? 'Microphone is muted. Enable it in Voice settings.' : 'Included voice files are missing. Repair the Morpheus installation.' } : {}) };
     }
     const managed = options.getManagedRuntime?.();
@@ -471,7 +522,7 @@ export function createMorpheusVoiceService(options: {
       return { ...available, captureFormat: 'pcm16-wav', speechFormat: 'pcm24',
         settings: { ...effectiveSettings(), ...(available.modelId ? { modelId: available.modelId } : {}),
           ...(available.speechModelId ? { speechModelId: available.speechModelId } : {}) },
-        presence: structuredClone(currentPresence), providers: [], providerLabel: 'Morpheus managed', speechProviderLabel: 'Morpheus managed',
+        presence: structuredClone(currentPresence), providers: [], providerLabel: 'Morpheus managed', speechProviderLabel: 'Morpheus managed', deepgram,
         ...(!available.transcriptionAvailable ? { reason: 'Managed voice is unavailable. Check your managed account and allowance.' } : {}) };
     }
     const accounts = (await options.providerService.listAccounts()).filter(eligibleAccount);
@@ -484,7 +535,7 @@ export function createMorpheusVoiceService(options: {
     })));
     if (!inputAllowed()) {
       return {
-        settings: effectiveSettings(), presence: structuredClone(currentPresence),
+        settings: effectiveSettings(), presence: structuredClone(currentPresence), deepgram,
         transcriptionAvailable: false, neuralSpeechAvailable: false, providers,
         reason: 'Voice input is disabled.',
       };
@@ -492,7 +543,7 @@ export function createMorpheusVoiceService(options: {
     const resolved = await resolveAccount(accounts);
     const speech = await resolveAccount(accounts, settings.speechProviderAccountId ?? settings.providerAccountId);
     return {
-      settings: effectiveSettings(), presence: structuredClone(currentPresence), providers,
+      settings: effectiveSettings(), presence: structuredClone(currentPresence), providers, deepgram,
       transcriptionAvailable: Boolean(resolved), neuralSpeechAvailable: Boolean(speech),
       ...(resolved ? { providerLabel: resolved.account.label } : {
         reason: 'Configure an API-key OpenAI, OpenRouter or compatible transcription provider.',
@@ -528,7 +579,35 @@ export function createMorpheusVoiceService(options: {
       recovery = undefined;
       publish(currentPresence.state);
     }
-    if (options.localVoice && (settings.engine !== 'provider' || forceIncludedLocal)) {
+    if (settings.engine === 'deepgram' && !forceIncludedLocal) {
+      if (!options.deepgram || !options.deepgramConnection) throw new Error('Connect Deepgram in Voice settings.');
+      if (payload.mimeType !== 'audio/wav') throw new Error('Cloud voice requires WAV capture. Reopen Voice settings and retry.');
+      const controller = new AbortController(); transcriptions.set(controller, ambient);
+      const started = performance.now();
+      try {
+        checkInput();
+        const credentials = await options.deepgramConnection.credentials();
+        checkInput();
+        if (!credentials) throw new Error('Connect Deepgram securely in Voice settings.');
+        await options.audit.recordControl({ category: 'voice', event: 'transcription-started', subjectId: 'deepgram',
+          details: { modelId: credentials.recognitionModel, bytes: audio.length, durationMs: payload.durationMs, ambient, costStatus: 'unknown' }, appVersion: options.appVersion });
+        checkInput();
+        if (ambient) publish('transcribing');
+        const transcript = validateMorpheusLocalTranscript(await options.deepgram.transcribe(audio, controller.signal, { model: credentials.recognitionModel }));
+        checkInput();
+        await options.audit.recordControl({ category: 'voice', event: 'transcription-completed', subjectId: 'deepgram',
+          details: { modelId: credentials.recognitionModel, durationMs: payload.durationMs, providerLatencyMs: Math.round(performance.now() - started), ambient, costStatus: 'unknown' }, appVersion: options.appVersion });
+        checkInput();
+        if (ambient) publish('armed');
+        return { transcript, providerAccountId: 'deepgram', modelId: credentials.recognitionModel, durationMs: payload.durationMs, providerLatencyMs: Math.round(performance.now() - started) };
+      } catch (error) {
+        checkInput();
+        if (error instanceof MorpheusNoSpeechError) publishRecovery('no-speech');
+        else if (ambient) publish('error', error instanceof DeepgramVoiceError ? error.message : 'Cloud recognition failed. Check Voice settings and retry.');
+        throw error;
+      } finally { transcriptions.delete(controller); }
+    }
+    if (options.localVoice && (isIncludedVoiceEngine(settings.engine) || forceIncludedLocal)) {
       if (payload.mimeType !== 'audio/wav') throw new Error('Local voice needs WAV capture. Reopen Voice settings and retry.');
       const controller = new AbortController(); transcriptions.set(controller, ambient);
       const started = performance.now();
@@ -688,13 +767,63 @@ export function createMorpheusVoiceService(options: {
     const checkCurrent = (): void => {
       if (generation !== speechGeneration) throw new DOMException('Speech cancelled', 'AbortError');
     };
-    if (!settings.speakResponses && !(options.localVoice && settings.engine !== 'provider')) throw new Error('Spoken responses are disabled.');
+    if (!settings.speakResponses && !(options.localVoice && isIncludedVoiceEngine(settings.engine))) throw new Error('Spoken responses are disabled.');
     if (!options.audit.isHealthy()) throw new Error('Neural speech is blocked while Audit is unavailable.');
     const text = payload.text.trim();
     if (!text || text.length > MORPHEUS_SPEECH_MAX_TEXT_CHARS) {
       throw new Error('Speech text is empty or exceeds the permitted length.');
     }
-    if (options.localVoice && settings.engine !== 'provider') {
+    if (settings.engine === 'deepgram') {
+      if (!options.deepgram || !options.deepgramConnection) throw new Error('Connect Deepgram in Voice settings.');
+      const controller = new AbortController(); speechController = controller;
+      const started = performance.now();
+      const configuration = settings;
+      const checkCloud = () => {
+        checkCurrent();
+        if (settings !== configuration || controller.signal.aborted) throw new DOMException('Speech cancelled', 'AbortError');
+      };
+      const timer = setTimeout(() => controller.abort(new DOMException('Cloud speech timed out', 'TimeoutError')), speechTimeoutMs); timer.unref?.();
+      let firstAudioByteMs: number | undefined, sequence = 0, bytes = 0;
+      try {
+        checkCloud();
+        if (!await options.deepgramConnection.credentials()) throw new Error('Connect Deepgram securely in Voice settings.');
+        checkCloud();
+        await options.audit.recordControl({ category: 'voice', event: 'speech-started', subjectId: 'deepgram',
+          details: { modelId: 'flux-kit-en', textChars: text.length, costStatus: 'unknown' }, appVersion: options.appVersion });
+        checkCloud(); publish('preparing-speech');
+        let audio: Buffer;
+        const streaming = Boolean(payload.streamId && options.emitSpeechChunk);
+        if (streaming) {
+          await options.deepgram.synthesizeStream(text, controller.signal, pcm => {
+            checkCloud();
+            bytes += pcm.length;
+            if (!pcm.length || pcm.length % 2 || bytes > MORPHEUS_SPEECH_MAX_AUDIO_BYTES) throw new Error('Cloud speech exceeded its audio limit.');
+            firstAudioByteMs ??= Math.round(performance.now() - started);
+            for (let offset = 0; offset < pcm.length; offset += 48 * 1024) {
+              options.emitSpeechChunk!({ streamId: payload.streamId!, sequence: sequence++, mimeType: 'audio/pcm',
+                audioBase64: pcm.subarray(offset, offset + 48 * 1024).toString('base64') });
+            }
+          });
+          if (!bytes) throw new Error('Cloud speech returned no audio.');
+          audio = Buffer.alloc(0);
+        } else audio = await options.deepgram.synthesize(text, controller.signal);
+        checkCloud();
+        await options.audit.recordControl({ category: 'voice', event: 'speech-completed', subjectId: 'deepgram',
+          details: { modelId: 'flux-kit-en', providerLatencyMs: Math.round(performance.now() - started), costStatus: 'unknown',
+            ...(firstAudioByteMs !== undefined ? { firstAudioByteMs } : {}) }, appVersion: options.appVersion });
+        checkCloud(); speechFailure = undefined;
+        return { audioBase64: audio.toString('base64'), mimeType: streaming ? 'audio/pcm' : 'audio/wav',
+          providerAccountId: 'deepgram', modelId: 'flux-kit-en', voice: settings.speechVoice,
+          providerLatencyMs: Math.round(performance.now() - started), ...(firstAudioByteMs !== undefined ? { firstAudioByteMs } : {}),
+          ...(streaming ? { pcmStream: { streamId: payload.streamId!, chunkCount: sequence, byteLength: bytes } } : {}) };
+      } catch (error) { if (generation === speechGeneration) speechFailure = speechFailureKind(error); throw error; }
+      finally {
+        clearTimeout(timer);
+        if (speechController === controller) speechController = null;
+        if (generation === speechGeneration && currentPresence.state === 'preparing-speech') publish(ambientSession && ambientInputReady ? 'armed' : 'asleep');
+      }
+    }
+    if (options.localVoice && isIncludedVoiceEngine(settings.engine)) {
       const controller = new AbortController(); speechController = controller;
       const started = performance.now();
       try {
@@ -903,7 +1032,7 @@ export function createMorpheusVoiceService(options: {
         ...settings,
         enabled: inputAllowed(),
         ...patch,
-        ...(options.localVoice && (patch.engine ?? settings.engine) !== 'provider' ? { localWakeEnabled: true } : {}),
+        ...((patch.engine ?? settings.engine) === 'deepgram' || options.localVoice && isIncludedVoiceEngine(patch.engine ?? settings.engine) ? { localWakeEnabled: true } : {}),
         v: MORPHEUS_VOICE_VERSION,
       };
       const next = validateSettings(candidate);
@@ -912,6 +1041,7 @@ export function createMorpheusVoiceService(options: {
         // Manual mute is an immediate runtime veto. Audit or disk latency cannot
         // keep recording or allow a late wake to execute. Failure stays muted.
         inputVeto = true;
+        cancelCloudInput();
         recovery = undefined;
         question = undefined;
         preparationRevision += 1;
@@ -924,7 +1054,8 @@ export function createMorpheusVoiceService(options: {
       if (enableAmbient && next.enabled) {
         if (!options.audit.isHealthy()) throw new Error('Ambient voice is blocked while Audit is unavailable.');
         const managed = options.getManagedRuntime?.();
-        if (options.localVoice && next.engine !== 'provider' ? !options.localVoice.ready() : managed ? !(await managedStatus(managed, next.speechVoice)).transcriptionAvailable : !await resolveAccount()) {
+        if (next.engine === 'deepgram' ? !options.deepgram || !(await options.deepgramConnection?.snapshot())?.configured
+          : options.localVoice && isIncludedVoiceEngine(next.engine) ? !options.localVoice.ready() : managed ? !(await managedStatus(managed, next.speechVoice)).transcriptionAvailable : !await resolveAccount()) {
           throw new Error(managed ? 'Managed transcription is unavailable.' : 'No compatible transcription provider is configured.');
         }
       }
@@ -949,6 +1080,7 @@ export function createMorpheusVoiceService(options: {
       // authoritative even if persistence fails.
       if (updatingAuthority !== authorityRevision || updateRevision !== settingsUpdateRevision) throw new Error('Voice service changed. Retry the setting.');
       writeJsonAtomically(settingsPath, next);
+      cancelCloudInput();
       for (const controller of transcriptions.keys()) controller.abort(new DOMException('Voice settings changed', 'AbortError'));
       if (settings.engine !== next.engine || !next.enabled || settings.speechProviderAccountId !== next.speechProviderAccountId
         || settings.replySpeechMode !== next.replySpeechMode
@@ -975,9 +1107,107 @@ export function createMorpheusVoiceService(options: {
     },
 
     transcribe: (payload) => transcribeWithMode(payload, false),
+    async beginDeepgramInput() {
+      if (!inputAllowed() || settings.engine !== 'deepgram') throw new Error('Enable Cloud voice in Voice settings before recording.');
+      if (!options.audit.isHealthy() || !options.deepgram || !options.deepgramConnection) throw new Error('Cloud voice is unavailable. Check Voice settings.');
+      cancelCloudInput();
+      const revision = cloudInputRevision;
+      const authority = authorityRevision, configuration = settings;
+      const controller = new AbortController(); transcriptions.set(controller, false);
+      cloudInputStarting = controller;
+      const check = () => {
+        if (!inputAllowed() || controller.signal.aborted || revision !== cloudInputRevision || authority !== authorityRevision || settings !== configuration) {
+          throw new DOMException('Voice input cancelled', 'AbortError');
+        }
+      };
+      try {
+        const credentials = await options.deepgramConnection.credentials(); check();
+        if (!credentials) throw new Error('Connect Deepgram securely in Voice settings.');
+        const started = performance.now();
+        const sessionId = `voice-${randomUUID()}`;
+        await options.audit.recordControl({ category: 'voice', event: 'transcription-started', subjectId: 'deepgram',
+          details: { modelId: credentials.recognitionModel, streaming: true, costStatus: 'unknown' }, appVersion: options.appVersion }); check();
+        const session = await options.deepgram.createRecognitionSession({ signal: controller.signal, model: credentials.recognitionModel }); check();
+        const input = {
+          sessionId, sequence: 0, byteLength: 0, windowBytes: 0, windowAt: Date.now(),
+          controller, session, firstFrame: true, completed: false, busy: false, claimed: false,
+          result: Promise.resolve({} as MorpheusTranscriptionResult),
+          timer: setTimeout(() => controller.abort(new DOMException('Voice input timed out', 'TimeoutError')), 35_000),
+        };
+        input.timer.unref?.();
+        input.result = session.result.then(async text => {
+          input.completed = true;
+          check();
+          if (cloudInput !== input || input.firstFrame) throw new DOMException('Voice input cancelled', 'AbortError');
+          const transcript = validateMorpheusLocalTranscript(text);
+          await options.audit.recordControl({ category: 'voice', event: 'transcription-completed', subjectId: 'deepgram',
+            details: { modelId: credentials.recognitionModel, streaming: true, durationMs: Math.round(input.byteLength / 32),
+              providerLatencyMs: Math.round(performance.now() - started), costStatus: 'unknown' }, appVersion: options.appVersion }); check();
+          return { transcript, providerAccountId: 'deepgram', modelId: credentials.recognitionModel,
+            durationMs: Math.round(input.byteLength / 32), providerLatencyMs: Math.round(performance.now() - started) };
+        });
+        void input.result.catch(() => undefined); // Wait/cancel owns delivery, never a detached rejection.
+        cloudInput = input;
+        cloudInputStarting = undefined;
+        return { sessionId };
+      } catch (error) {
+        if (cloudInputStarting === controller) cloudInputStarting = undefined;
+        controller.abort(); transcriptions.delete(controller); throw error;
+      }
+    },
+    async feedDeepgramInput(frame) {
+      const input = cloudInput;
+      if (!isMorpheusWakeAudioFrame(frame) || !input || frame.sessionId !== input.sessionId || !inputAllowed()
+        || input.controller.signal.aborted || settings.engine !== 'deepgram') throw new Error('Voice input is no longer active.');
+      if (input.completed) return { ready: false };
+      try {
+        if (input.busy) throw new Error('Cloud microphone audio is out of sequence. Retry the microphone.');
+        input.busy = true;
+        if (frame.sequence !== input.sequence) throw new Error('Cloud microphone audio is out of sequence. Retry the microphone.');
+        const pcm = Buffer.from(frame.pcmBase64, 'base64');
+        if (pcm.length !== MORPHEUS_WAKE_FRAME_BYTES || pcm.toString('base64') !== frame.pcmBase64) throw new Error('Invalid cloud microphone audio.');
+        const time = Date.now();
+        if (time - input.windowAt >= 1000) { input.windowAt = time; input.windowBytes = 0; }
+        input.windowBytes += pcm.length; input.byteLength += pcm.length;
+        if (input.windowBytes > MORPHEUS_WAKE_FRAME_BYTES * 7 || input.byteLength > 30 * 32_000) throw new Error('Cloud microphone audio exceeded its live input limit.');
+        input.sequence += 1;
+        if (input.firstFrame) {
+          await options.audit.recordControl({ category: 'voice', event: 'explicit-capture-started', subjectId: 'deepgram',
+            details: {}, appVersion: options.appVersion });
+          if (cloudInput !== input || !inputAllowed() || input.controller.signal.aborted) throw new DOMException('Voice input cancelled', 'AbortError');
+          input.firstFrame = false; publish('listening');
+        }
+        input.session.writePcm(pcm);
+        return { ready: true };
+      } catch (error) { cancelCloudInput(); throw error; }
+      finally { input.busy = false; }
+    },
+    async waitDeepgramInput({ sessionId }) {
+      const input = cloudInput;
+      if (!input || input.sessionId !== sessionId || input.claimed) throw new Error('Voice input is no longer active.');
+      input.claimed = true;
+      try { return await input.result; }
+      finally {
+        if (cloudInput === input) {
+          cancelCloudInput();
+          if (currentPresence.state === 'listening') publish(ambientSession && ambientInputReady ? 'armed' : 'asleep');
+        }
+      }
+    },
+    finishDeepgramInput({ sessionId }) {
+      if (!cloudInput || cloudInput.sessionId !== sessionId || !inputAllowed()) return { finished: false };
+      cloudInput.session.finish(); return { finished: true };
+    },
+    cancelDeepgramInput({ sessionId }) {
+      if (!cloudInput || cloudInput.sessionId !== sessionId) return { cancelled: false };
+      cancelCloudInput();
+      if (currentPresence.state === 'listening') publish(ambientSession && ambientInputReady ? 'armed' : 'asleep');
+      return { cancelled: true };
+    },
     synthesize,
     cancelSpeech,
     invalidateService() {
+      cancelCloudInput();
       authorityRevision += 1;
       recovery = undefined;
       question = undefined;
@@ -1008,7 +1238,9 @@ export function createMorpheusVoiceService(options: {
       if (!options.audit.isHealthy()) throw new Error('Ambient voice is blocked while Audit is unavailable.');
       const managed = options.getManagedRuntime?.();
       const available = managed ? await managedStatus(managed) : null;
-      const resolved = options.localVoice && settings.engine !== 'provider' ? (options.localVoice.ready() ? { account: { id: 'included-local', label: 'Included local English voice' } } : null) : managed ? (available?.transcriptionAvailable ? { account: { id: 'managed', label: 'Morpheus managed' } } : null) : await resolveAccount();
+      const resolved = settings.engine === 'deepgram' ? (options.deepgram && (await options.deepgramConnection?.snapshot())?.configured
+        ? { account: { id: 'deepgram', label: 'Deepgram' } } : null)
+        : options.localVoice && isIncludedVoiceEngine(settings.engine) ? (options.localVoice.ready() ? { account: { id: 'included-local', label: 'Included local English voice' } } : null) : managed ? (available?.transcriptionAvailable ? { account: { id: 'managed', label: 'Morpheus managed' } } : null) : await resolveAccount();
       checkStart();
       if (!resolved) {
         publish('error', 'Configure a compatible transcription provider before enabling ambient voice.');
@@ -1074,7 +1306,7 @@ export function createMorpheusVoiceService(options: {
                 lastWakeAt = Date.now();
                 wakeVerificationInFlight = true;
                 // Native dictation is deliberately ignored. Only the original
-                // bounded selected-stream audio and included Whisper can supply words.
+                // bounded selected-stream audio and selected recognizer supply words.
                 void (async () => {
                   if (!audioRange) throw new Error('The addressed audio was incomplete. Say the wake phrase and try again.');
                   const wave = wakeAudio.wave(audioRange);
@@ -1087,7 +1319,7 @@ export function createMorpheusVoiceService(options: {
                   let transcript: string;
                   try {
                     transcript = (await transcribeWithMode({ audioBase64: wave.toString('base64'), mimeType: 'audio/wav',
-                      durationMs: Math.max(100, Math.round((wave.length - 44) / 32)) }, true, true)).transcript;
+                      durationMs: Math.max(100, Math.round((wave.length - 44) / 32)) }, true, settings.engine !== 'deepgram')).transcript;
                   } finally {
                     if (ambientSession?.sessionId === sessionId && startingRevision === ambientStartRevision) await service.setAmbientListening(false);
                   }
@@ -1269,6 +1501,9 @@ export function createMorpheusVoiceService(options: {
     },
 
     dispose() {
+      cancelCloudInput();
+      options.deepgram?.dispose();
+      options.deepgramConnection?.dispose();
       disposed = true;
       recovery = undefined;
       question = undefined;

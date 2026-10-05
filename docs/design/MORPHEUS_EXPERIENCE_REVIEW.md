@@ -1,5 +1,48 @@
 # Morpheus experience specification
 
+## Current component — optional Deepgram speech, October 5
+
+Owner authorized modular hosted speech integration and easy secure configuration.
+Baseline `08f48658` is clean and matches fetched application origin; C: 5.4 GiB /
+E: 114.6 GiB. Preserve preview.17, owner profiles, task-provider routing and backend.
+Use Main-owned Deepgram recognition (initial Nova-3, optional Flux) and real Kit
+speech, retaining local wake/foreground/mute and exact addressed-audio verification.
+Settings adds optional Cloud voice with protected save/remove, a real connection
+test, selected microphone test and actual sample. Included voice remains no-key.
+No global funded voice, hosted account, subscription or signing is claimed.
+Explicit cloud input now streams selected-microphone PCM through Main and waits
+for natural provider finals, with one result consumer and immediate cancellation.
+Nova-3 uses recorded recognition for already completed native wake WAVs, avoiding
+a second paced replay. Optional Flux retains paced buffered recognition there.
+The native helper still waits for SAPI's utterance completion: instant keyword
+appearance is not implemented by this component. Main verifies the exact wake
+prefix before admitting any command; hidden idle room audio never goes to Deepgram.
+Connection changes cancel old work before committing new credentials; no shared
+key ships, no credentials are read back to Renderer, no plaintext fallback.
+Record source/live/provider/package/human evidence separately in the checklist.
+
+Live production-adapter checks used the supplied access ephemerally, with no
+owner profile changes. Three recorded generated utterances completed in 495–1632
+ms; Nova-3 and Flux streaming completed naturally without Finish on the same
+4.4-second generated request. One Nova-3 result was `u tube`, so these checks do
+not claim perfect command recognition. Kit's resolved model is `kit` although
+requested as `flux-kit-en`; a real test found and fixed that strict alias mismatch.
+Actual Kit PCM completed in 3781 ms with first PCM at 1391 ms and 3440 ms of audio;
+interruption stopped after one callback with zero late callbacks. Network region,
+handshake and a short single sample limit these measurements. This is not physical
+microphone, speaker/echo, task-model or installed-app acceptance.
+
+Secure setup path: conversation Settings -> Voice -> Cloud voice (optional) ->
+paste once into the masked field -> Save & test -> Use cloud voice. Save/test
+never unmutes. The existing microphone selection, input check and audible sample
+remain beside this connection. Included voice needs no additional key. A shared
+operator-funded service still requires an authenticated backend and usage policy;
+never bundle the owner key or describe this optional connection as funded for all.
+
+The older routing audit below describes the pre-integration baseline. Strict
+`opened` routing and arbitrary website-build/tool gaps remain independent follow-up
+work; hosted STT is not a new task brain or proof of those capabilities.
+
 ## Hosted voice decision and low-hardware requirement — October 5
 
 **Routing audit and corrected recommendation:** the owner asks how speech relates

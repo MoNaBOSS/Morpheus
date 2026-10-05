@@ -1,5 +1,43 @@
 # Current Windows experience completion checklist
 
+## Current component — optional Deepgram speech, October 5
+
+- [x] Inspect clean `08f48658`, actual branch/remotes/fetched origin and storage;
+  existing installer, profiles and source preserved. All large outputs stay on E:.
+- [x] Record owner's modular speech/setup authorization and bounded contract in
+  the existing specification/task harness; task-model selection stays unchanged.
+- [x] Add protected optional Cloud voice save/remove/test with no key readback.
+- [x] Add bounded Main recognition/Kit PCM adapter and cancellation/protocol tests.
+- [x] Use selected cloud recognition for the addressed tray command instead of
+  forcing local tiny.en; retain exact wake and live authority checks.
+- [x] Explicit input streams actual selected-microphone PCM and automatically
+  accepts a natural provider final; one consumer, pending-start cancellation and
+  immediate mute prevent duplicate or stale command admission.
+- [x] Render and test discoverable Voice setup, input test/sample, errors and
+  return to the original conversation. Fixtures remain labelled, no owner secrets.
+- [x] Live adapter recognition: three generated WAVs through Nova-3 REST; same
+  generated request naturally ends through Nova-3 and Flux streaming. This tests
+  real service protocols, not human accuracy or task execution.
+- [x] Live Kit output and interruption: actual 165120-byte / 3440-ms PCM, first
+  PCM 1391 ms, total 3781 ms; cancelled response has one callback, zero late PCM.
+  Live testing exposed and fixed resolved `kit` versus `flux-kit-en` alias.
+- [x] Node/web/managed typechecks, full lint (0 errors, 12 existing warnings),
+  focused input/settings/service/protocol and existing voice lifecycle tests;
+  comms replay/compare and harness CI pass. Local native opt-in tests were skipped,
+  so they are not counted as new local runtime acceptance.
+- [ ] Package and independently qualify identified preview.18 Windows candidate
+  after final rendered checks pass; preview.17 and owner installation preserved.
+- [ ] Human microphone/noise/echo/native keyword latency acceptance and funded
+  all-user backend/signing remain distinct gates, not bundled into API success.
+
+Real adapter receipts: `E:\Morpheus-builds\experience-deepgram-preview18\live-1791177524273`
+(recognition and retained initial TTS protocol failure) and `live-1791177774566`
+(fixed real Kit WAV and interruption). Secrets entered via private no-echo stdin,
+stayed memory/header only, and never entered app/source/installer/evidence. No
+owner key is saved by these probes. Setup for the owner/users is Settings -> Voice
+-> Cloud voice (optional) -> Save & test -> Use cloud voice, then explicit input
+test/sample. Microphone consent remains a separate explicit control.
+
 ## Hosted voice evaluation — October 5
 
 - [x] Recheck actual saved provider metadata and source routing: default task

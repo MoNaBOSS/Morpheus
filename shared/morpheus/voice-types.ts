@@ -32,9 +32,39 @@ export type MorpheusReplySpeechMode = 'orb' | 'voice' | 'all';
 export type MorpheusReplySurface = 'compact' | 'full';
 export type MorpheusReplySpeechOrigin = { surface: MorpheusReplySurface; input: 'typed' | 'voice' };
 
+export const MORPHEUS_DEEPGRAM_RECOGNITION_MODELS = ['nova-3', 'flux-general-en'] as const;
+export type MorpheusDeepgramRecognitionModel = typeof MORPHEUS_DEEPGRAM_RECOGNITION_MODELS[number];
+export type MorpheusDeepgramVoiceFailure = 'not-configured' | 'storage' | 'authentication' | 'access' | 'rate-limit' | 'endpoint' | 'unavailable' | 'cancelled';
+
+/** Safe connection metadata. Credentials are write-only and Main-owned. */
+export type MorpheusDeepgramVoiceStatus = {
+  configured: boolean;
+  recognitionModel: MorpheusDeepgramRecognitionModel;
+  speechModel: 'flux-kit-en';
+  storage: 'protected';
+  reason?: 'storage';
+};
+
+/** A model-only change preserves the protected credential. At least one field is required. */
+export type MorpheusDeepgramVoiceConnectionPayload = {
+  apiKey?: string;
+  recognitionModel?: MorpheusDeepgramRecognitionModel;
+};
+
+/** Provider admission and real bounded speech generation, not a microphone/playback test. */
+export type MorpheusDeepgramVoiceTestResult = {
+  ok: boolean;
+  recognition: boolean;
+  speech: boolean;
+  reason?: MorpheusDeepgramVoiceFailure;
+};
+
+/** Ephemeral Main-issued explicit microphone stream identity, never a credential. */
+export type MorpheusDeepgramVoiceInputSession = { sessionId: string };
+
 export type MorpheusVoiceSettings = {
   /** Included local voice is the default; preserved provider configuration is opt-in. */
-  engine?: 'local' | 'provider';
+  engine?: 'local' | 'provider' | 'deepgram';
   inputDeviceId?: string;
   v: typeof MORPHEUS_VOICE_VERSION;
   enabled: boolean;
@@ -110,6 +140,7 @@ export type MorpheusVoiceProviderOption = {
 };
 
 export type MorpheusVoiceStatus = {
+  deepgram?: MorpheusDeepgramVoiceStatus;
   /** Managed service requires canonical WAV input and streams mono PCM output. */
   captureFormat?: 'pcm16-wav';
   speechFormat?: 'pcm24' | 'wav';
