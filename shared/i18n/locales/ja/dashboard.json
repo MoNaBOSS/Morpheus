@@ -306,7 +306,9 @@
         "speaking": "応答中",
         "complete": "完了",
         "failed": "要確認",
-        "degraded": "制限状態"
+        "degraded": "制限状態",
+        "question": "回答をどうぞ",
+        "retry": "もう一度"
       },
       "phases": {
         "understand": "理解",
@@ -1535,6 +1537,14 @@
         "transcribing": "音声を理解中…",
         "ready": "音声の目的を取得しました",
         "error": "音声入力を利用できません"
+      },
+      "recovery": {
+        "title": "もう一度",
+        "body": "何も送信されていません。もう一度話すか、入力してください。",
+        "type": "入力する"
+      },
+      "question": {
+        "hint": "回答を選ぶか、自分の言葉で入力してください。確定するまで送信されません。"
       }
     },
     "capture": {
@@ -1659,13 +1669,13 @@
       },
       "unrestrictedPreview": {
         "title": "Morpheus の外観",
-        "description": "いつもの緑の姿を使うか、暗い赤の外観をプレビューできます。",
+        "description": "いつもの緑の姿、または邪悪な Morpheus を選べます。",
         "green": "オリジナルの緑",
         "greenBody": "いつもの Morpheus の姿。",
-        "red": "Unrestricted の赤 · プレビュー",
-        "redBody": "赤い光と落ち着いた動きによる、よりダークな姿。",
+        "red": "邪悪な Morpheus",
+        "redBody": "赤い光、伸びる二本の角、落ち着いた動きを備えたダークな姿。",
         "boundary": "外観のみの変更です。NerdGPT は未接続です。プラン、個性、モデル、ツールの権限は変わりません。",
-        "badge": "プレビュー",
+        "badge": "邪悪な Morpheus",
         "saving": "外観を保存中…",
         "failed": "外観を保存できませんでした。もう一度お試しください。"
       },

@@ -185,3 +185,12 @@
   .morpheus-opening *, .morpheus-opening *::after,
   .morpheus-welcome .morpheus-motion__mark { animation: none!important; transition: none!important; }
 }
+/* Recovery is a quiet, aligned fresh-input choice, never task progress. */
+.morpheus-voice-recovery { flex: none; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; margin-top: 10px; padding: 10px 12px; border: 1px solid hsl(var(--morpheus-accent-dim)); border-radius: 12px; background: hsl(var(--morpheus-surface-2)); color: hsl(var(--foreground)); font-size: 12px; }
+.morpheus-voice-recovery strong { font-weight: 600; }
+.morpheus-voice-recovery p { margin: 3px 0 0; color: hsl(var(--muted-foreground)); font-size: 11px; }
+.morpheus-voice-recovery-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.morpheus-voice-recovery-actions button { display: inline-flex; align-items: center; gap: 5px; padding: 5px 0; color: hsl(var(--morpheus-accent)); }
+.morpheus-voice-recovery-actions button:focus-visible, .morpheus-question-choice:focus-visible { outline: 2px solid hsl(var(--morpheus-accent)); outline-offset: 3px; }
+.morpheus-question-choice { border-color: hsl(var(--morpheus-accent-dim)); background: hsl(var(--morpheus-surface-2)); color: hsl(var(--foreground)); }
+.morpheus-question-choice:hover { border-color: hsl(var(--morpheus-accent)); }

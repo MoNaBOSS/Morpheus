@@ -1,5 +1,85 @@
 # Current Windows experience completion checklist
 
+## Active voice interaction correction — October 5
+
+- [x] Inspect actual directory/remotes/branch/clean `593da4b4`; fetch without
+  overwriting work, confirm 0/0 divergence, preserve preview.16 and profiles.
+- [x] Read current contracts and record the bounded component in the single
+  experience specification. C: 5.5 GiB/E: 120.2 GiB; build and test artifacts stay on E:.
+- [x] Inspect explicit microphone endpoint: RMS/silence auto-stop already exists;
+  its meter did not resume/check AudioContext. Add bounded resume, cancellation,
+  paused-graph clock handling and unavailable repair hook. Eleven focused meter
+  tests passed, including real-sample silence ending; hardware remains unverified.
+- [ ] Verify automatic speech-end submission, exact two wake forms in opted-in tray,
+  admitted-wake acknowledgment, foreground veto and mute in the rendered application.
+- [x] Implement bounded reusable local recognition and prove actual pinned-engine
+  output/lifetime/cancellation; retain baseline corpus failures and measure timing.
+- [x] Give unusable addressed recognition explicit nonexecuting repair; preserve
+  exact wake, fresh-input, manual mute and foreground authority.
+- [x] Connect actual question/retry state to native and React motion, existing
+  answer choices and bounded spoken follow-up without losing task/draft/personality.
+- [x] Use owner-approved Evil Morpheus appearance label without preview wording;
+  animate two horns on M and orb, retain service/entitlement separation and motion
+  accessibility. Older preview.16 evidence remains tied to that older build.
+- [x] Research optional hosted speech recommendation and document active-session
+  Deepgram Flux cost/privacy/network/operation tradeoffs in the existing spec.
+- [ ] Later hosted acceptance: funded operator service, secure credentials, consent,
+  quotas, actual human command/turn-taking tests and offline recovery. Not connected.
+- [ ] Run focused source, real engine, rendered/native and normal packaged checks;
+  record actual motion/output plus source/hash/version in a separate delivery.
+- [ ] Complete the owner's short physical command/clarification/Stop/mute check;
+  generated audio does not qualify human recognition or acoustic interruption.
+
+Current source evidence, before rendered/package acceptance: exact production
+recognizer adapter versus fresh CLI and immutable original transcripts passes
+40/40 parity, retaining the old 24/40 strict corpus outcomes. Fresh worker first
+request 753 ms; 39 warm requests median/p95 210/283 ms versus CLI 500/553 ms.
+This PC/OS-cache experiment measures recognition IPC only. The reuse does not
+improve hearing accuracy. Native invalid IPC 5/5 fail closed; load/decode abort,
+fresh session after abort/idle, dispose and the 60-second default idle bound pass.
+Measured working set is about 277 MB after one job and 315 MB after 21; no soak
+or universal resource limit is inferred. Evidence:
+`E:\Morpheus-builds\experience-voice-worker-evidence\WORKER-RESULTS.md` and adjacent
+retained transcripts, WAV/asset/source identities and timing/resource reports.
+
+Main recovery/question source passes 89 focused cases. A new red regression
+demonstrated that an older question's completion could overwrite a newer verified
+same-breath command; a bounded activity guard now preserves the new command while
+clearing the obsolete question pointer. It does not replay tasks or grant answers.
+The red log is preserved beside the passing log at
+`E:\Morpheus-builds\experience-voice-recovery-evidence`. Existing provider engine
+choice is retained: only native wake verification forces included recognition.
+The owner's current installed preview.16 matches the delivered ASAR, but its saved
+explicit recognition/speech preference requests provider Whisper large-v3-turbo
+and Orpheus/Leo, not local Kokoro. This configuration is not a live success test;
+no profile or key was changed or exported.
+
+Current rendered evidence: run2 passes automatic real Chromium sine/silence
+endpoint, fresh retry/type, one repair row and contextual Voice controls. Run6
+passes exact question/run/iteration draft continuity in both directions,
+retirement after each switch, visible M/orb horns, finite native question/retry
+presentation and reduced motion; four locale journeys also preserve actual
+simple-action details/results. Core question and native recovery presentations
+are explicitly labelled fixtures; endpoint analyser/recorder samples are real
+synthetic Chromium input. No physical or hosted accuracy claim follows.
+The visual review removed a false unsupported banner and duplicate empty Result
+for validated-choice questions, while preserving actual artifacts and no-choice
+provider/capability repair guidance. Twenty-seven focused event/snapshot/composer
+regressions pass; the earlier final shared-draft/voice checks pass 87 focused cases.
+Root's joined 218-case check includes four opt-in actual included ASR/TTS cases;
+three typechecks, final changed-source Web types, lint (zero errors, 12 existing
+warnings), comms replay/compare and harness checks pass. Worker/Main source stays
+bound to the earlier retained engine/protocol receipts.
+
+Evidence is on E: in `experience-preview17-ui-evidence` and
+`experience-preview17-qualification`. Retain run1's load-event timeout, run3's
+pre-interaction capture timeout and run4's corrected test syntax failure. The
+native fixture hides Main at first ready-to-show; the test now awaits that actual
+native lifecycle before restoring/focusing Main and capturing. Run5 verifies
+visible-window capture and transition removal. Run6 records the final corrected
+question layout. No production code change was inferred from the capture timeout.
+Normal package/installer verification is the next step, not completed yet.
+
 ## Active public-release extension — October 4
 
 - [x] Verify clean continuation `cbc43c60`, exact remote/branch, fetched 0/0 origin

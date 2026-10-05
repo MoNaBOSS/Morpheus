@@ -299,6 +299,8 @@ describe('Morpheus voice service', () => {
     expect(h.recordControl).toHaveBeenCalledWith(expect.objectContaining({ event: 'transcription-rejected',
       details: expect.objectContaining({ reason: 'no-speech', ambient: false }) }));
     expect(h.recordControl).not.toHaveBeenCalledWith(expect.objectContaining({ event: 'transcription-completed' }));
+    expect(h.service.presence()).toMatchObject({ state: 'asleep', recovery: { kind: 'no-speech', sequence: 1 } });
+    expect(h.service.presence().followUpUntil).toBeUndefined();
     expect(h.fetchImpl).not.toHaveBeenCalled();
     if (text) expect(JSON.stringify(h.recordControl.mock.calls)).not.toContain(text);
     h.service.dispose();
@@ -318,9 +320,12 @@ describe('Morpheus voice service', () => {
     h.auditOrder.length = 0;
     await expect(h.service.transcribeAmbient({ ...PAYLOAD, mimeType: 'audio/wav' })).rejects.toThrow(MorpheusNoSpeechError);
     expect(h.service.presence().state).toBe('armed');
+    expect(h.service.presence().recovery).toEqual({ kind: 'no-speech', sequence: 1 });
+    expect(h.service.presence().followUpUntil).toBeUndefined();
     expect(h.auditOrder).toEqual(['emit:transcribing', 'audit:transcription-rejected', 'emit:armed']);
     // A fresh explicit press-to-talk remains valid; rejected input never becomes a command.
     await expect(h.service.transcribe({ ...PAYLOAD, mimeType: 'audio/wav' })).resolves.toMatchObject({ transcript: 'yes' });
+    expect(h.service.presence().recovery).toBeUndefined();
     h.service.dispose();
   });
 
@@ -794,10 +799,13 @@ describe('Morpheus voice service', () => {
     } });
     await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: true }); await acquireAmbientInput(h);
     wakeNative(wake, 'Morpheus Open YouTube');
-    await vi.waitFor(() => expect(h.recordControl).toHaveBeenCalledWith(expect.objectContaining({ event: 'ambient-capture-ended' })));
+    await vi.waitFor(() => expect(h.service.presence().recovery).toEqual({ kind: 'wake-unverified', sequence: 1 }));
     expect(localVoice.transcribe).toHaveBeenCalledOnce(); expect(h.service.presence().state).toBe('armed');
     expect(h.service.presence().wakeSequence).toBeUndefined(); expect(h.service.presence().wakeCommand).toBeUndefined();
     expect(h.service.presence().followUpUntil).toBeUndefined(); expect(h.fetchImpl).not.toHaveBeenCalled();
+    const rejectionAudit = h.auditOrder.lastIndexOf('audit:wake-verification-rejected');
+    expect(rejectionAudit).toBeGreaterThan(-1);
+    expect(rejectionAudit).toBeLessThan(h.auditOrder.lastIndexOf('emit:armed'));
     expect(JSON.stringify(h.recordControl.mock.calls)).not.toContain(transcript); h.service.dispose();
   });
 
@@ -815,6 +823,167 @@ describe('Morpheus voice service', () => {
     wakeNative(wake, 'wrong native dictation');
     await vi.waitFor(() => expect(h.service.presence()).toMatchObject({ state: 'understanding', wakeCommand: command, wakeSequence: 1 }));
     expect(localVoice.transcribe).toHaveBeenCalledOnce(); expect(h.fetchImpl).not.toHaveBeenCalled(); h.service.dispose();
+  });
+
+  it('preserves provider input preference while exact native wake verification uses only included recognition', async () => {
+    let wake!: WakeCallback;
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Hey Morpheus Open Notepad'), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() };
+    } });
+    await h.service.updateSettings({ engine: 'provider', ambientEnabled: true, localWakeEnabled: true });
+    const status = await h.service.status();
+    expect(status.settings.engine).toBe('provider'); expect(status.providerLabel).toBe(ACCOUNT.label);
+    expect(status.speechProviderLabel).toBe(ACCOUNT.label);
+    await acquireAmbientInput(h); wakeNative(wake);
+    await vi.waitFor(() => expect(h.service.presence()).toMatchObject({ wakeSequence: 1, wakeCommand: 'Open Notepad' }));
+    expect(localVoice.transcribe).toHaveBeenCalledOnce(); expect(h.fetchImpl).not.toHaveBeenCalled();
+    await expect(h.service.transcribe(PAYLOAD)).resolves.toMatchObject({ providerAccountId: ACCOUNT.id, transcript: 'Open Notepad' });
+    expect(h.fetchImpl).toHaveBeenCalledOnce(); expect(localVoice.transcribe).toHaveBeenCalledOnce();
+    expect((await h.service.status()).settings.engine).toBe('provider'); h.service.dispose();
+  });
+
+  it('keeps repair sequenced, suppresses cooldown duplicates and admits only a fresh exact wake once', async () => {
+    let wake!: WakeCallback, time = Date.now();
+    vi.spyOn(Date, 'now').mockImplementation(() => time);
+    const localVoice = { ready: () => true,
+      transcribe: vi.fn().mockResolvedValueOnce('Morpheuss Open YouTube').mockResolvedValueOnce('Open YouTube')
+        .mockResolvedValueOnce('Hey Morpheus Open Notepad'), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true }); await acquireAmbientInput(h);
+    wakeNative(wake);
+    await vi.waitFor(() => expect(h.service.presence().recovery).toEqual({ kind: 'wake-unverified', sequence: 1 }));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    wakeNative(wake); await new Promise(resolve => setTimeout(resolve, 0));
+    expect(localVoice.transcribe).toHaveBeenCalledOnce(); expect(h.service.presence().recovery?.sequence).toBe(1);
+    await expect(h.service.setAmbientListening(true)).rejects.toThrow('wake phrase');
+    time += 1_501; wakeNative(wake);
+    await vi.waitFor(() => expect(h.service.presence().recovery).toEqual({ kind: 'wake-unverified', sequence: 2 }));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    time += 1_501; wakeNative(wake);
+    await vi.waitFor(() => expect(h.service.presence()).toMatchObject({ wakeSequence: 1, wakeCommand: 'Open Notepad' }));
+    expect(h.service.presence().recovery).toBeUndefined(); expect(h.service.presence().followUpUntil).toBeUndefined();
+    expect(h.presenceSnapshots.filter(presence => presence.wakeCommand === 'Open Notepad')).toHaveLength(1);
+    expect(h.fetchImpl).not.toHaveBeenCalled(); h.service.dispose();
+  });
+
+  it.each(['mute', 'scope', 'cancel', 'generation'])(
+    'cannot publish late repair after %s revokes pending recognition', async action => {
+    let wake!: WakeCallback, complete!: (text: string) => void, companion = true;
+    const localVoice = { ready: () => true, transcribe: vi.fn(() => new Promise<string>(resolve => { complete = resolve; })), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, isCompanionVoiceScope: () => companion, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true }); await acquireAmbientInput(h);
+    wakeNative(wake); await vi.waitFor(() => expect(localVoice.transcribe).toHaveBeenCalledOnce());
+    if (action === 'mute') await h.service.updateSettings({ enabled: false });
+    else if (action === 'scope') { companion = false; await h.service.reconcileAmbientScope(); }
+    else if (action === 'cancel') await h.service.endAmbientSession();
+    else h.service.invalidateService?.();
+    h.presenceSnapshots.length = 0;
+    complete('Morpheuss delete files'); await new Promise(resolve => setTimeout(resolve, 0));
+    expect(h.service.presence()).toMatchObject({ state: 'asleep' });
+    expect(h.service.presence().recovery).toBeUndefined(); expect(h.service.presence().question).toBeUndefined();
+    expect(h.service.presence().wakeCommand).toBeUndefined(); expect(h.service.presence().followUpUntil).toBeUndefined();
+    expect(h.presenceSnapshots).toEqual([]); expect(h.fetchImpl).not.toHaveBeenCalled(); h.service.dispose();
+  });
+
+  it('audits prefix rejection before repair and drops it if mute wins that audit', async () => {
+    let wake!: WakeCallback, releaseAudit!: () => void;
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Open YouTube'), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true }); await acquireAmbientInput(h);
+    h.recordControl.mockImplementation(entry => entry.event === 'wake-verification-rejected'
+      ? new Promise<void>(resolve => { releaseAudit = resolve; }) : Promise.resolve());
+    wakeNative(wake); await vi.waitFor(() => expect(releaseAudit).toBeTypeOf('function'));
+    expect(h.service.presence().recovery).toBeUndefined();
+    await h.service.updateSettings({ enabled: false }); h.presenceSnapshots.length = 0;
+    releaseAudit(); await new Promise(resolve => setTimeout(resolve, 0));
+    expect(h.service.presence()).toMatchObject({ state: 'asleep', inputEnabled: false });
+    expect(h.service.presence().recovery).toBeUndefined(); expect(h.presenceSnapshots).toEqual([]); h.service.dispose();
+  });
+
+  it.each(['mute', 'scope', 'cancel', 'generation'])(
+    'clears existing repair and actual question immediately on %s', async action => {
+    let wake!: WakeCallback, companion = true;
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Open YouTube'), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, isCompanionVoiceScope: () => companion, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true }); await acquireAmbientInput(h);
+    h.service.observeObjective({ objectiveRunId: 'question-task', state: 'understanding', run: { origin: { type: 'voice' } } } as never);
+    h.service.observeObjective({ objectiveRunId: 'question-task', state: 'needs-clarification', run: { origin: { type: 'voice' }, clarification: 'Which app?' } } as never);
+    wakeNative(wake); await vi.waitFor(() => expect(h.service.presence().recovery?.kind).toBe('wake-unverified'));
+    expect(h.service.presence().question).toEqual({ objectiveRunId: 'question-task' });
+    let release!: () => void;
+    h.recordControl.mockImplementation(() => new Promise<void>(resolve => { release = resolve; }));
+    const revoke = action === 'mute' ? h.service.updateSettings({ enabled: false })
+      : action === 'scope' ? (companion = false, h.service.reconcileAmbientScope())
+      : action === 'cancel' ? h.service.endAmbientSession() : (h.service.invalidateService?.(), Promise.resolve());
+    expect(h.service.presence().recovery).toBeUndefined(); expect(h.service.presence().question).toBeUndefined();
+    expect(h.service.presence().followUpUntil).toBeUndefined();
+    release(); await revoke; h.service.dispose();
+  });
+
+  it('keeps the Core question through playback and answer capture, then clears cancellation without reopening input', async () => {
+    const h = createHarness();
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: false }); await acquireAmbientInput(h);
+    h.service.observeObjective({ objectiveRunId: 'question-task', state: 'understanding', run: { origin: { type: 'voice' } } } as never);
+    const event = { objectiveRunId: 'question-task', state: 'needs-clarification',
+      run: { origin: { type: 'voice' }, clarification: 'Which app?', clarificationChoices: ['Notepad', 'Calculator'] } };
+    const original = structuredClone(event);
+    h.service.observeObjective(event as never);
+    expect(h.service.presence()).toMatchObject({ state: 'waiting-for-approval', question: { objectiveRunId: 'question-task' } });
+    expect(h.service.presence().followUpUntil).toBeUndefined(); h.service.setSpeaking(true);
+    expect(h.service.presence().question).toEqual({ objectiveRunId: 'question-task' });
+    h.service.setSpeaking(false); await vi.waitFor(() => expect(h.service.presence().followUpUntil).toBeDefined());
+    expect(h.service.presence().question).toEqual({ objectiveRunId: 'question-task' });
+    await h.service.setAmbientListening(true);
+    expect(h.service.presence()).toMatchObject({ state: 'listening', question: { objectiveRunId: 'question-task' } });
+    h.service.observeObjective({ ...event, state: 'cancelled' } as never);
+    expect(h.service.presence()).toMatchObject({ state: 'listening' });
+    expect(h.service.presence().question).toBeUndefined(); expect(h.service.presence().followUpUntil).toBeUndefined();
+    const followUps = h.recordControl.mock.calls.filter(([entry]) => entry.event === 'follow-up-opened').length;
+    h.service.setSpeaking(true); h.service.setSpeaking(false); await new Promise(resolve => setTimeout(resolve, 0));
+    expect(h.recordControl.mock.calls.filter(([entry]) => entry.event === 'follow-up-opened')).toHaveLength(followUps);
+    expect(event).toEqual(original); h.service.dispose();
+  });
+
+  it('clears a question on an accepted next objective or terminal state and keeps ordinary approval distinct', async () => {
+    const h = createHarness();
+    await h.service.updateSettings({ ambientEnabled: true, localWakeEnabled: false }); await acquireAmbientInput(h);
+    const event = { objectiveRunId: 'question-task', run: { origin: { type: 'voice' }, clarification: 'Which app?' } };
+    h.service.observeObjective({ ...event, state: 'understanding' } as never);
+    h.service.observeObjective({ ...event, state: 'needs-clarification' } as never);
+    h.service.observeObjective({ objectiveRunId: 'next-task', state: 'understanding', run: { origin: { type: 'voice' } } } as never);
+    expect(h.service.presence().question).toBeUndefined();
+    h.service.observeObjective({ objectiveRunId: 'next-task', state: 'waiting-for-approval', run: { origin: { type: 'voice' } } } as never);
+    expect(h.service.presence()).toMatchObject({ state: 'waiting-for-approval' }); expect(h.service.presence().question).toBeUndefined();
+    h.service.observeObjective({ ...event, state: 'understanding' } as never);
+    h.service.observeObjective({ ...event, state: 'needs-clarification' } as never);
+    h.service.observeObjective({ ...event, state: 'complete' } as never);
+    expect(h.service.presence().question).toBeUndefined(); h.service.dispose();
+  });
+
+  it('does not let an older question result close a freshly verified same-breath command', async () => {
+    let wake!: WakeCallback;
+    const localVoice = { ready: () => true, transcribe: vi.fn(async () => 'Morpheus Open Notepad'), synthesize: vi.fn() };
+    const h = createHarness({ localVoice, startLocalWake: ({ onWake }) => {
+      wake = onWake; return { ready: Promise.resolve(), pushAudio: vi.fn(async () => {}), stop: vi.fn() };
+    } });
+    await h.service.updateSettings({ ambientEnabled: true }); await acquireAmbientInput(h);
+    const old = { objectiveRunId: 'older-task', run: { origin: { type: 'voice' }, clarification: 'Which app?' } };
+    h.service.observeObjective({ ...old, state: 'understanding' } as never);
+    h.service.observeObjective({ ...old, state: 'needs-clarification' } as never);
+    wakeNative(wake); await vi.waitFor(() => expect(h.service.presence()).toMatchObject({ state: 'understanding', wakeSequence: 1, wakeCommand: 'Open Notepad' }));
+    h.service.observeObjective({ ...old, state: 'complete' } as never);
+    expect(h.service.presence()).toMatchObject({ state: 'understanding', wakeSequence: 1 });
+    expect(h.service.presence().question).toBeUndefined(); expect(h.service.presence().followUpUntil).toBeUndefined();
+    expect(h.presenceSnapshots.filter(presence => presence.wakeCommand === 'Open Notepad')).toHaveLength(1); h.service.dispose();
   });
 
   it('cannot dispatch deferred wake recognition after mute invalidates its original input', async () => {

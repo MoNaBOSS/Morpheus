@@ -2,12 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MorpheusAssistantSessionChanged, MorpheusAssistantSnapshot } from '@shared/morpheus/assistant-session-types';
 
 const mocks = vi.hoisted(() => ({
-  workspace: vi.fn(), load: vi.fn(), send: vi.fn(), snapshot: vi.fn(), ack: vi.fn(), admit: vi.fn(),
+  workspace: vi.fn(), load: vi.fn(), send: vi.fn(), snapshot: vi.fn(), ack: vi.fn(), admit: vi.fn(), updateDraft: vi.fn(),
   sessions: [] as Array<{ key: string; createdLocally?: boolean }>,
   replyGeneration: vi.fn(() => 17), registerReply: vi.fn(),
   sessionListener: null as ((event: MorpheusAssistantSessionChanged) => void) | null,
 }));
-vi.mock('@/lib/host-api', () => ({ hostApi: { files: { resolveWorkspaceContext: mocks.workspace }, morpheus: { assistantSnapshot: mocks.snapshot, ackAssistantTurn: mocks.ack, admitAssistantTurn: mocks.admit } } }));
+vi.mock('@/lib/host-api', () => ({ hostApi: { files: { resolveWorkspaceContext: mocks.workspace }, morpheus: { assistantSnapshot: mocks.snapshot, ackAssistantTurn: mocks.ack, admitAssistantTurn: mocks.admit, updateAssistantDraft: mocks.updateDraft } } }));
 vi.mock('@/lib/host-events', () => ({ hostEvents: { onMorpheusAssistantSessionChanged: (listener: (event: MorpheusAssistantSessionChanged) => void) => {
   mocks.sessionListener = listener; return () => { mocks.sessionListener = null; };
 } } }));
@@ -36,7 +36,7 @@ describe('Morpheus original-history recovery', () => {
     mocks.sessions = [{ key: 'agent:main:main' }];
     mocks.workspace.mockResolvedValue({ ok: true, workspaceRoot: '/fixture', executionCwd: '/fixture' });
     mocks.load.mockResolvedValue(true);
-    store.setState({ snapshot: snapshot(), dispatchError: null, blockedTurnId: null });
+    store.setState({ snapshot: snapshot(), draftText: '', draftAnswerFor: null, dispatchError: null, blockedTurnId: null });
   });
 
   it('loads existing history without creating a session or dispatching another prompt', async () => {
@@ -141,5 +141,44 @@ describe('Morpheus original-history recovery', () => {
     expect(mocks.ack).not.toHaveBeenCalled();
     expect(store.getState().snapshot?.pendingTurns).toHaveLength(0);
     expect(mocks.registerReply).not.toHaveBeenCalled();
+  });
+  it('keeps answer correlation ephemeral and clears it on unrelated draft replacement', () => {
+    store.setState({ snapshot: null });
+    store.getState().setDraft('Markdown', { objectiveRunId: 'question-one', iteration: 1 });
+    expect(store.getState().draftAnswerFor).toEqual({ objectiveRunId: 'question-one', iteration: 1 });
+    store.getState().setDraft('A fresh request');
+    expect(store.getState().draftAnswerFor).toBeNull();
+  });
+  it('preserves the same live draft on refresh but clears correlation for changed text or conversation', async () => {
+    const current = { ...snapshot('association-refresh'), draft: { conversationId: 'association-refresh', revision: 1, text: 'Markdown' } };
+    store.setState({ snapshot: current, draftText: 'Markdown', draftAnswerFor: { objectiveRunId: 'question-one', iteration: 1 } });
+    mocks.snapshot.mockResolvedValue({ ...current, sequence: 2 });
+    await store.getState().refresh();
+    expect(store.getState().draftAnswerFor).toEqual({ objectiveRunId: 'question-one', iteration: 1 });
+    mocks.snapshot.mockResolvedValue({ ...current, sequence: 3, draft: { ...current.draft, text: 'Changed elsewhere' } });
+    await store.getState().refresh();
+    expect(store.getState().draftAnswerFor).toBeNull();
+    store.setState({ draftText: 'Markdown', draftAnswerFor: { objectiveRunId: 'question-one', iteration: 1 } });
+    mocks.snapshot.mockResolvedValue({ ...snapshot('association-other'), sequence: 4, draft: { conversationId: 'association-other', revision: 1, text: 'Markdown' } });
+    await store.getState().refresh();
+    expect(store.getState().draftAnswerFor).toBeNull();
+  });
+  it('writes only the existing draft text payload and never persists the question association', async () => {
+    const current = snapshot('association-payload');
+    store.setState({ snapshot: current });
+    mocks.snapshot.mockResolvedValue(current);
+    mocks.updateDraft.mockResolvedValue({ ...current.draft, revision: 1, text: 'Markdown' });
+    store.getState().setDraft('Markdown', { objectiveRunId: 'question-one', iteration: 1 });
+    await vi.waitFor(() => expect(mocks.updateDraft).toHaveBeenCalledExactlyOnceWith({
+      conversationId: 'association-payload', expectedRevision: 0, text: 'Markdown',
+    }));
+    expect(store.getState().draftAnswerFor).toEqual({ objectiveRunId: 'question-one', iteration: 1 });
+  });
+  it('loads a restored text draft without inventing an answer association', async () => {
+    store.setState({ snapshot: null, draftText: '', draftAnswerFor: null });
+    mocks.snapshot.mockResolvedValue({ ...snapshot('association-restored'), draft: { conversationId: 'association-restored', revision: 1, text: 'Markdown' } });
+    await store.getState().refresh();
+    expect(store.getState().draftText).toBe('Markdown');
+    expect(store.getState().draftAnswerFor).toBeNull();
   });
 });

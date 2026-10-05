@@ -1,4 +1,14 @@
-# Current continuation — connected appearance/payment preview, 2026-10-05
+# Current continuation — voice interaction correction, 2026-10-05
+
+**Active bounded component:** automatic microphone speech-end handling, reusable
+included recognition, nonexecuting retry, original-question answer continuity and
+state/audio-driven motion. `1.2.0-preview.17` is being qualified separately; it is
+not yet a delivered or installed release. Preview.16 and owner profiles remain.
+The original generated command corpus still has 24/40 strict outcomes; the new
+worker proves unchanged transcripts and faster warm recognition, not better
+hearing. Hosted Flux/Groq recognition are recommendations requiring a funded,
+consented operator service, not connected capabilities. The current specification
+and completion checklist own exact evidence and the next step.
 
 **Latest separate delivery:** `1.2.0-preview.16`, application
 checkpoint `b3a0bff5`, clean qualification source

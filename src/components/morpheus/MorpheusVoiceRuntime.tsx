@@ -152,6 +152,7 @@ export function MorpheusVoiceIndicator({ inWelcome = false }: { inWelcome?: bool
   const transcript = useMorpheusVoiceStore((state) => state.transcript);
   const error = useMorpheusVoiceStore((state) => state.error);
   const errorKind = useMorpheusVoiceStore((state) => state.errorKind);
+  const recovery = useMorpheusVoiceStore((state) => state.recovery);
   const source = useMorpheusVoiceStore((state) => state.source);
   const status = useMorpheusVoiceStore((state) => state.status);
   const presence = useMorpheusVoiceStore((state) => state.presence);
@@ -180,21 +181,27 @@ export function MorpheusVoiceIndicator({ inWelcome = false }: { inWelcome?: bool
   // Presence owns the same state inside Quick Command. Avoid stacking a second
   // floating voice surface over the compact Windows companion.
   if (quickCommandOpen) return null;
+  // Full chat owns its inline retry row. Keep this HUD for active capture and
+  // setup/other routes, where there is no visible composer repair control.
+  if (!welcomeOpen && location.pathname === '/' && source !== 'onboarding'
+    && (recovery || phase === 'error' && errorKind === 'repeat')
+    && !['requesting', 'listening', 'transcribing'].includes(phase)
+    && !['listening', 'transcribing', 'speaking', 'preparing-speech'].includes(presence?.state ?? '')) return null;
   const quietPhase = phase === 'idle' || phase === 'ready';
-  if (quietPhase && !error && !followUpUntil && !speaking && !preparingSpeech && !ambientActive) return null;
+  if (quietPhase && !error && !recovery && !followUpUntil && !speaking && !preparingSpeech && !ambientActive) return null;
 
   const listening = phase === 'listening' || presence?.state === 'listening';
   const processing = preparingSpeech || phase === 'requesting' || phase === 'transcribing'
     || presence?.state === 'transcribing' || presence?.state === 'understanding'
     || presence?.state === 'working';
   const ambientEngaged = ambientActive && presence?.state !== 'armed';
-  const label = error || phase === 'error' ? t(errorKind === 'repeat' ? 'morpheus.voice.repeatTitle' : 'morpheus.voice.states.error') : followUpUntil ? t('morpheus.voice.dialogue.listening') : speaking
+  const label = recovery ? t('morpheus.voice.recovery.title') : error || phase === 'error' ? t(errorKind === 'repeat' ? 'morpheus.voice.repeatTitle' : 'morpheus.voice.states.error') : followUpUntil ? t('morpheus.voice.dialogue.listening') : speaking
     ? t('morpheus.voice.speaking')
     : preparingSpeech ? t('morpheus.voice.preparingSpeech') : ambientActive
       ? t(`morpheus.voice.presence.${presence?.state ?? 'armed'}`)
       : t(`morpheus.voice.states.${phase}`);
 
-  if (ambientActive && !ambientEngaged && quietPhase && !speaking && !error && !followUpUntil) {
+  if (ambientActive && !ambientEngaged && quietPhase && !speaking && !error && !recovery && !followUpUntil) {
     return (
       <aside
         data-morpheus
@@ -230,10 +237,12 @@ export function MorpheusVoiceIndicator({ inWelcome = false }: { inWelcome?: bool
     >
       <div className="morpheus-voice-strip-content flex items-center gap-3">
         <MorpheusFluidOrb className="h-9 w-9 shrink-0"
-          state={resolveMorpheusSignalState({ voicePhase: phase, voicePresence: presence?.state })} />
+          state={resolveMorpheusSignalState({ voicePhase: phase, voicePresence: presence?.state,
+            voiceRecovery: Boolean(recovery) || errorKind === 'repeat', voiceQuestion: Boolean(presence?.question) })} />
 
         <div className="min-w-0 flex-1">
           <p className="text-tiny font-medium text-foreground">{label}</p>
+          {recovery ? <p className="mt-1 text-xs text-muted-foreground">{t('morpheus.voice.recovery.body')}</p> : null}
           {followUpUntil ? <p data-testid="morpheus-voice-follow-up" className="mt-1 text-xs text-muted-foreground">
             {t('morpheus.voice.dialogue.hint')}
           </p> : null}

@@ -98,6 +98,13 @@ The local HTML Preview privileged bridge is also Main-owned: Renderer may load a
 
 Gateway session-catalog subscription, normalization, ordered list/event replay, attention transitions, and reconnect recovery are documented in `harness/reference/sidebar-session-attention.md`.
 
+The bounded addressed voice recovery component is specified in
+`harness/specs/tasks/morpheus-voice-interaction-recovery.md`: running-graph speech
+endpointing, Main-owned repair/question identity, fresh-input authority and reusable
+included recognizer lifetime. The current experience specification/checklist own
+actual engine, rendered, packaged and physical evidence; no hosted speech service
+is assumed merely because a provider is recommended.
+
 Morpheus appearance uses the existing validated `settings.set` owner. A saved
 green/red-preview choice projects to native and React surfaces on startup and
 after a successful save. It never changes account entitlement, voice consent or

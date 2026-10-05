@@ -306,7 +306,9 @@
         "speaking": "Speaking",
         "complete": "Complete",
         "failed": "Needs attention",
-        "degraded": "Degraded"
+        "degraded": "Degraded",
+        "question": "Your answer",
+        "retry": "Try again"
       },
       "phases": {
         "understand": "Understand",
@@ -1535,6 +1537,14 @@
         "transcribing": "Understanding your voice…",
         "ready": "Voice objective captured",
         "error": "Voice input unavailable"
+      },
+      "recovery": {
+        "title": "Try again",
+        "body": "Nothing was sent. Speak again or type your request.",
+        "type": "Type instead"
+      },
+      "question": {
+        "hint": "Choose an answer or type your own. Nothing is sent until you confirm."
       }
     },
     "capture": {
@@ -1659,13 +1669,13 @@
       },
       "unrestrictedPreview": {
         "title": "Morpheus appearance",
-        "description": "Keep the familiar green companion, or preview its darker red look.",
+        "description": "Keep the familiar green companion, or choose Evil Morpheus.",
         "green": "Original green",
         "greenBody": "The familiar Morpheus identity.",
-        "red": "Unrestricted red · Preview",
-        "redBody": "A darker presence with red light and deliberate motion.",
+        "red": "Evil Morpheus",
+        "redBody": "A darker presence with red light, growing horns and deliberate motion.",
         "boundary": "Appearance only. NerdGPT is not connected. Your plan, personality, models and tool permissions stay the same.",
-        "badge": "Preview",
+        "badge": "Evil Morpheus",
         "saving": "Saving appearance…",
         "failed": "The appearance could not be saved. Try again."
       },

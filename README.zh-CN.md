@@ -1,3 +1,5 @@
+当前语音修正（10 月 5 日，尚未交付）：麦克风自动结束录音必须基于实际运行的音频图；无法识别的已唤醒输入提供不会执行任务的重试提示，真实问题保留原任务与选项。正在验证内置识别器的有界进程复用，识别结果保持不变。Evil Morpheus 是带双角动画的可选外观，与订阅及 NerdGPT 服务权限分离。[唯一体验规范](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md)记录可选的活动会话云端识别建议及成本、隐私和运营条件；尚未连接云端服务。[当前 Windows 清单](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md)区分源码、合成输入、打包和真人验证。preview.16 与用户资料保留。
+
 当前扩展（preview.16）：“个性”新增可保存的动态红色外观预览，并同步到伙伴和对话界面；这不会启用 Unrestricted 或 NerdGPT。“账户与方案”连接 Basic 设置、外观和计划中的 Stripe/USDT/USDC 付款说明。未配置真实服务前不可付款。语音验证使用版本化合成语音语料，检查指定网站搜索和多步请求的准确路由。公开发布签名与更新必须验证 Morpheus 发布者，不再沿用旧签名设置。目前尚无签名服务或 Stripe 账户。实际证据和待完成项见[当前 Windows 清单](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md)；下文为历史记录。
 
 当前 BYOK Windows 修正（preview.15）：明确要求在 YouTube 搜索时保留网站和查询内容。已启用的助手唤醒使用所选麦克风，在显示对话或设置时暂停，并始终遵守静音。Windows 只检测唤醒音频，内置 Whisper 转写原始音频后才接收指令。默认朗读悬浮球／紧凑界面中的语音和文字请求回复，展开对话保持安静；语音设置保留静音、仅语音输入和所有界面朗读的选择。紧凑界面反馈跟随真实音量，任务结束后恢复轻柔动画。保留现有设计和高级能力。每位用户在“连接”中配置自己的安全账户；不捆绑所有者密钥，本地英语语音无需额外密钥。preview.14 的首次密钥激活修正已通过正常软件包和隔离安装检查；preview.13 保持不变。preview.15 的软件包和真人语音需单独验证，准确证据见[当前 Windows 清单](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md)。托管服务、支付及 NerdGPT/Unrestricted 延后。下方旧检查点为历史记录。

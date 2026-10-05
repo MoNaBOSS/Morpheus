@@ -334,6 +334,9 @@ export function createMorpheusVoiceService(options: {
   let speechFailure: MorpheusVoicePresence['speechFailure'];
   let localWake: LocalWakeController | null = null;
   let wakeSequence = 0;
+  let recoverySequence = 0;
+  let recovery: MorpheusVoicePresence['recovery'];
+  let question: MorpheusVoicePresence['question'];
   let voiceObjectiveId: string | undefined;
   let voiceObjectiveWakeSequence = 0;
   let lastWakeAt = 0;
@@ -387,6 +390,8 @@ export function createMorpheusVoiceService(options: {
       } : {}),
       ...(reason ? { reason } : {}),
       ...(speechFailure ? { speechFailure } : {}),
+      ...(recovery ? { recovery } : {}),
+      ...(question ? { question } : {}),
       ...(wakeSequence ? { wakeSequence } : {}),
       ...(wakeCommand ? { wakeCommand } : {}),
       ...(followUpUntil > Date.now() ? { followUpUntil: new Date(followUpUntil).toISOString() } : {}),
@@ -394,6 +399,13 @@ export function createMorpheusVoiceService(options: {
     };
     options.emitPresence?.(structuredClone(currentPresence));
     return structuredClone(currentPresence);
+  };
+  const publishRecovery = (kind: NonNullable<MorpheusVoicePresence['recovery']>['kind']): void => {
+    clearFollowUp();
+    localCaptureUntil = 0;
+    followUpPending = false;
+    recovery = { kind, sequence: ++recoverySequence };
+    publish(ambientSession && ambientInputReady && companionVoiceAllowed() ? 'armed' : 'asleep');
   };
   const conversationActive = (): boolean => conversationStartedAt > 0
     && Date.now() - conversationStartedAt <= MORPHEUS_VOICE_CONVERSATION_MAX_MS
@@ -512,6 +524,10 @@ export function createMorpheusVoiceService(options: {
     }
     const audio = decodeAudio(payload);
     if (forceIncludedLocal && !options.localVoice?.ready()) throw new Error('Included recognition is unavailable. Repair the local voice installation.');
+    if (recovery) {
+      recovery = undefined;
+      publish(currentPresence.state);
+    }
     if (options.localVoice && (settings.engine !== 'provider' || forceIncludedLocal)) {
       if (payload.mimeType !== 'audio/wav') throw new Error('Local voice needs WAV capture. Reopen Voice settings and retry.');
       const controller = new AbortController(); transcriptions.set(controller, ambient);
@@ -535,9 +551,8 @@ export function createMorpheusVoiceService(options: {
             details: { durationMs: payload.durationMs, providerLatencyMs: Math.round(performance.now() - started), ambient,
               modelId: 'whisper-tiny.en', costStatus: 'local', reason: 'no-speech' }, appVersion: options.appVersion });
           checkInput();
-          // Keep the next consented wake available; do not leave the companion
-          // claiming to transcribe after a rejected recording. UI owns recovery.
-          if (ambient) publish('armed');
+          // This records a repair cue, never a transcript or another capture grant.
+          publishRecovery('no-speech');
         }
         throw error;
       } finally { transcriptions.delete(controller); }
@@ -897,6 +912,8 @@ export function createMorpheusVoiceService(options: {
         // Manual mute is an immediate runtime veto. Audit or disk latency cannot
         // keep recording or allow a late wake to execute. Failure stays muted.
         inputVeto = true;
+        recovery = undefined;
+        question = undefined;
         preparationRevision += 1;
         for (const controller of transcriptions.keys()) controller.abort(new DOMException('Microphone muted', 'AbortError'));
         cancelSpeech();
@@ -962,6 +979,8 @@ export function createMorpheusVoiceService(options: {
     cancelSpeech,
     invalidateService() {
       authorityRevision += 1;
+      recovery = undefined;
+      question = undefined;
       preparationRevision += 1;
       options.localVoice?.releaseWarm?.();
       managedAvailability = null;
@@ -1074,13 +1093,19 @@ export function createMorpheusVoiceService(options: {
                   }
                   checkStart();
                   const command = addressedLocalWakeTranscript(transcript, settings.wakePhrase);
-                  if (command === null) return; // Grammar false positive or absent exact local prefix: no execution.
+                  if (command === null) {
+                    await options.audit.recordControl({ category: 'voice', event: 'wake-verification-rejected',
+                      subjectId: sessionId, details: { reason: 'wake-unverified' }, appVersion: options.appVersion });
+                    checkStart();
+                    publishRecovery('wake-unverified');
+                    return;
+                  }
                   wakeSequence += 1;
                   if (command) { clearFollowUp(); publish('understanding', undefined, command); }
                   else await openFollowUp('wake');
                 })().catch((error) => {
                   if (!companionVoiceAllowed() || ambientSession?.sessionId !== sessionId || startingRevision !== ambientStartRevision) return;
-                  if (error instanceof MorpheusNoSpeechError) { publish('armed'); return; }
+                  if (error instanceof MorpheusNoSpeechError) return; // Audited repair already published by transcription.
                   void service.endAmbientSession().catch(() => undefined);
                   publish('error', error instanceof Error ? error.message : 'Local wake stopped. Restart companion voice.');
                 }).finally(() => {
@@ -1119,6 +1144,9 @@ export function createMorpheusVoiceService(options: {
 
     async endAmbientSession() {
       ambientStartRevision += 1;
+      recovery = undefined;
+      question = undefined;
+      lastWakeAt = 0;
       ambientInputReady = false;
       wakeAudio.clear();
       wakeAudioSequence = 0; wakeAudioBytes = 0; wakeAudioWindow = 0; wakeAudioBusy = false;
@@ -1144,6 +1172,7 @@ export function createMorpheusVoiceService(options: {
         });
       } finally {
         if (!['preparing-speech', 'speaking'].includes(currentPresence.state)) publish('asleep');
+        else if (currentPresence.recovery || currentPresence.question) publish(currentPresence.state, currentPresence.reason);
       }
       await stopAudit;
       return structuredClone(currentPresence);
@@ -1171,6 +1200,7 @@ export function createMorpheusVoiceService(options: {
       if (!companionVoiceAllowed() || ambientSession !== session || revision !== ambientStartRevision) {
         throw new DOMException('Ambient voice changed', 'AbortError');
       }
+      if (listening) recovery = undefined;
       return publish(listening ? 'listening' : 'armed');
     },
 
@@ -1198,17 +1228,28 @@ export function createMorpheusVoiceService(options: {
     observeObjective(event) {
       if (!ambientSession || !ambientInputReady || event.run.origin.type !== 'voice') return;
       if (event.state === 'understanding') {
+        question = undefined;
+        recovery = undefined;
         voiceObjectiveId = event.objectiveRunId;
         voiceObjectiveWakeSequence = wakeSequence;
       }
       if (voiceObjectiveId && voiceObjectiveId !== event.objectiveRunId) return;
+      const questionEnded = Boolean(question && question.objectiveRunId === event.objectiveRunId && event.state !== 'needs-clarification');
+      if (questionEnded) {
+        question = undefined;
+        if (event.state === 'cancelled') { followUpPending = false; clearFollowUp(); }
+      }
       // A background result cannot close capture for a newer wake/utterance.
       if (event.state !== 'understanding' && (['listening', 'transcribing'].includes(currentPresence.state)
-        || (currentPresence.state === 'armed' && voiceObjectiveWakeSequence !== wakeSequence))) return;
+        || (['armed', 'understanding'].includes(currentPresence.state) && voiceObjectiveWakeSequence !== wakeSequence))) {
+        if (questionEnded) publish(currentPresence.state, currentPresence.reason);
+        return;
+      }
       if (!conversationActive() && event.state === 'understanding') {
         conversationStartedAt = Date.now();
         conversationTurn = 0;
       }
+      if (event.state === 'needs-clarification' && event.objectiveRunId) question = { objectiveRunId: event.objectiveRunId };
       const next = objectivePresence(event.state);
       if (next) publish(next, event.state === 'error' ? event.run.error?.message : undefined);
       if (['complete', 'needs-clarification', 'error', 'degraded'].includes(event.state)) {
@@ -1229,6 +1270,8 @@ export function createMorpheusVoiceService(options: {
 
     dispose() {
       disposed = true;
+      recovery = undefined;
+      question = undefined;
       authorityRevision += 1;
       preparationRevision += 1;
       ambientStartRevision += 1;

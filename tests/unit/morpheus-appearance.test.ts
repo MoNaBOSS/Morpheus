@@ -69,7 +69,11 @@ describe('Morpheus appearance stays a local presentation preference', () => {
     expect(Object.keys(copy).sort()).toEqual(['badge', 'boundary', 'description', 'failed', 'green', 'greenBody', 'red', 'redBody', 'saving', 'title']);
     expect(Object.values(copy).every((value) => typeof value === 'string' && value.trim().length > 0)).toBe(true);
     expect(copy.boundary).toContain('NerdGPT');
-    expect(copy.red).toContain('Unrestricted');
+    expect(copy.red).not.toMatch(/preview|プレビュー|预览|Просмотр/i);
     expect(copy.red).toContain(copy.badge);
+    expect(dictionary.morpheus.voice.recovery.body.trim()).not.toBe('');
+    expect(dictionary.morpheus.voice.question.hint.trim()).not.toBe('');
+    expect(dictionary.morpheus.signalOs.signal.question.trim()).not.toBe('');
+    expect(dictionary.morpheus.signalOs.signal.retry.trim()).not.toBe('');
   });
 });

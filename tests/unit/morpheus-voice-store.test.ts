@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   prepareVoiceOutput: vi.fn(async () => ({ prepared: true })),
   transcribeAudio: vi.fn(),
   submitObjective: vi.fn(),
+  correctObjective: vi.fn(async () => ({ accepted: true })),
+  meterByte: 128,
   routeInteraction: vi.fn(),
   expandCompanionSurface: vi.fn(),
   beginAmbientVoice: vi.fn(),
@@ -24,6 +26,7 @@ vi.mock('@/lib/host-api', () => ({
       prepareVoiceOutput: mocks.prepareVoiceOutput,
       transcribeAudio: mocks.transcribeAudio,
       submitObjective: mocks.submitObjective,
+      correctObjective: mocks.correctObjective,
       routeInteraction: mocks.routeInteraction,
       expandCompanionSurface: mocks.expandCompanionSurface,
       prepareAmbientVoiceInput: async () => ({ sessionId: 'voice-00000000-0000-0000-0000-000000000001', localWakeEnabled: true,
@@ -79,6 +82,7 @@ const getUserMedia = vi.fn(async () => ({ getTracks: () => [track], getAudioTrac
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.meterByte = 128;
   getUserMedia.mockResolvedValue({ getTracks: () => [track], getAudioTracks: () => [] });
   vi.stubGlobal('AudioWorkletNode', class {
     port = { onmessage: null as ((event: MessageEvent) => void) | null };
@@ -89,7 +93,7 @@ beforeEach(async () => {
     state = 'running'; resume = vi.fn(async () => undefined);
     audioWorklet = { addModule: vi.fn(async () => undefined) };
     destination = {}; createGain() { return { gain: { value: 0 }, connect: vi.fn((node) => node), disconnect: vi.fn() }; }
-    createAnalyser() { return { fftSize: 32, getByteTimeDomainData: (sample: Uint8Array) => sample.fill(128) }; }
+    createAnalyser() { return { fftSize: 32, getByteTimeDomainData: (sample: Uint8Array) => sample.fill(mocks.meterByte) }; }
     createMediaStreamSource() { return { connect: vi.fn() }; }
     close = vi.fn(async () => undefined);
   });
@@ -131,7 +135,7 @@ beforeEach(async () => {
   useMorpheusVoiceStore.setState({
     ambientScope: 'conversation', ambientReady: false,
     phase: 'idle', status: null, presence: null, transcript: null, error: null, errorKind: null, source: null, startedAt: null,
-    followUpUntil: null,
+    followUpUntil: null, recovery: null,
     replyTurn: null,
   });
   useMorpheusCommandStore.setState({
@@ -809,6 +813,164 @@ describe('Morpheus renderer voice controller', () => {
     useMorpheusVoiceStore.getState().cancel();
   });
 
+  it('auto-finishes explicit speech through the existing recorder and submits exactly once', async () => {
+    vi.useFakeTimers();
+    try {
+      await useMorpheusVoiceStore.getState().startListening('quick-command');
+      mocks.meterByte = 160;
+      await vi.advanceTimersByTimeAsync(200);
+      mocks.meterByte = 128;
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(track.stop).toHaveBeenCalled();
+      vi.useRealTimers();
+      await vi.waitFor(() => expect(mocks.transcribeAudio).toHaveBeenCalledOnce());
+      await vi.waitFor(() => expect(mocks.submitObjective).toHaveBeenCalledOnce());
+      useMorpheusVoiceStore.getState().stopListening();
+      expect(mocks.transcribeAudio).toHaveBeenCalledOnce();
+    } finally { vi.useRealTimers(); }
+  });
+  it('uses the saved speech pause for explicit automatic finish', async () => {
+    const status = await mocks.voiceStatus();
+    mocks.voiceStatus.mockResolvedValue({ ...status, settings: { ...status.settings, ambientSilenceMs: 1_600 } });
+    vi.useFakeTimers();
+    try {
+      await useMorpheusVoiceStore.getState().startListening('quick-command');
+      mocks.meterByte = 160; await vi.advanceTimersByTimeAsync(200);
+      mocks.meterByte = 128; await vi.advanceTimersByTimeAsync(1_000);
+      expect(useMorpheusVoiceStore.getState().phase).toBe('listening');
+      expect(mocks.transcribeAudio).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(700); vi.useRealTimers();
+      await vi.waitFor(() => expect(mocks.transcribeAudio).toHaveBeenCalledOnce());
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('shows one bounded nonexecuting ambient repair and does not reopen it after dismissal or foreground', async () => {
+    const status = await companionStatus(); mocks.voiceStatus.mockResolvedValue(status);
+    await useMorpheusVoiceStore.getState().loadStatus();
+    await useMorpheusVoiceStore.getState().setAmbientScope('companion');
+    useMorpheusVoiceStore.getState().subscribePresence();
+    const baseline = getUserMedia.mock.calls.length;
+    const repair = { v: 4, state: 'armed', ambientEnabled: true, inputEnabled: true,
+      recovery: { kind: 'wake-unverified', sequence: 901 } };
+    mocks.voicePresenceHandler?.(repair);
+    expect(useMorpheusVoiceStore.getState()).toMatchObject({ recovery: repair.recovery, transcript: null, followUpUntil: null });
+    expect(mocks.routeInteraction).not.toHaveBeenCalled(); expect(mocks.submitObjective).not.toHaveBeenCalled();
+    expect(getUserMedia).toHaveBeenCalledTimes(baseline);
+    useMorpheusVoiceStore.getState().clearRecovery(); mocks.voicePresenceHandler?.(repair);
+    expect(useMorpheusVoiceStore.getState().recovery).toBeNull();
+    mocks.voicePresenceHandler?.({ ...repair, recovery: { kind: 'no-speech', sequence: 902 } });
+    expect(useMorpheusVoiceStore.getState().recovery?.sequence).toBe(902);
+    await useMorpheusVoiceStore.getState().setAmbientScope('conversation');
+    expect(useMorpheusVoiceStore.getState().recovery).toBeNull();
+    mocks.voicePresenceHandler?.(repair);
+    expect(useMorpheusVoiceStore.getState().recovery).toBeNull();
+  });
+
+  it('clears a repair before fresh explicit input and a mute never opens input', async () => {
+    useMorpheusVoiceStore.setState({ recovery: { kind: 'no-speech', sequence: 903 } });
+    await useMorpheusVoiceStore.getState().startListening('quick-command');
+    expect(useMorpheusVoiceStore.getState().recovery).toBeNull();
+    useMorpheusVoiceStore.getState().cancel();
+    await useMorpheusVoiceStore.getState().updateSettings({ enabled: false });
+    getUserMedia.mockClear();
+    await useMorpheusVoiceStore.getState().startListening('quick-command');
+    expect(getUserMedia).not.toHaveBeenCalled();
+    expect(useMorpheusVoiceStore.getState().errorKind).toBe('muted');
+  });
+
+  it('answers only the same captured live question instead of admitting a second objective', async () => {
+    const status = await mocks.voiceStatus();
+    mocks.voiceStatus.mockResolvedValue({ ...status, presence: { v: 4, state: 'waiting-for-approval', ambientEnabled: false,
+      question: { objectiveRunId: 'question-live' } } });
+    await useMorpheusVoiceStore.getState().loadStatus();
+    useMorpheusCommandStore.setState({ objectiveRun: { objectiveRunId: 'question-live', state: 'needs-clarification', iteration: 1 } as never });
+    mocks.transcribeAudio.mockResolvedValue({ transcript: 'Markdown', providerAccountId: 'local', modelId: 'local', durationMs: 1_000 });
+    await useMorpheusVoiceStore.getState().startListening('quick-command');
+    useMorpheusVoiceStore.getState().stopListening();
+    await vi.waitFor(() => expect(mocks.correctObjective).toHaveBeenCalledExactlyOnceWith({ objectiveRunId: 'question-live', correction: 'Markdown' }));
+    expect(mocks.routeInteraction).not.toHaveBeenCalled(); expect(mocks.submitObjective).not.toHaveBeenCalled();
+  });
+  it('does not reinterpret a delayed answer after its question has been replaced', async () => {
+    const status = await mocks.voiceStatus();
+    mocks.voiceStatus.mockResolvedValue({ ...status, presence: { v: 4, state: 'waiting-for-approval', ambientEnabled: false,
+      question: { objectiveRunId: 'question-retired' } } });
+    await useMorpheusVoiceStore.getState().loadStatus();
+    useMorpheusCommandStore.setState({ objectiveRun: { objectiveRunId: 'question-retired', state: 'needs-clarification', iteration: 1 } as never });
+    let resolveTranscription!: (result: unknown) => void;
+    mocks.transcribeAudio.mockImplementationOnce(() => new Promise(resolve => { resolveTranscription = resolve; }));
+    await useMorpheusVoiceStore.getState().startListening('quick-command');
+    useMorpheusVoiceStore.getState().stopListening();
+    await vi.waitFor(() => expect(mocks.transcribeAudio).toHaveBeenCalledOnce());
+    useMorpheusCommandStore.setState({ objectiveRun: { objectiveRunId: 'a-new-task', state: 'executing' } as never });
+    resolveTranscription({ transcript: 'Markdown', providerAccountId: 'local', modelId: 'local', durationMs: 1_000 });
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().phase).toBe('ready'));
+    expect(mocks.correctObjective).not.toHaveBeenCalled(); expect(mocks.routeInteraction).not.toHaveBeenCalled();
+    expect(mocks.submitObjective).not.toHaveBeenCalled();
+  });
+  it('correlates a foreground explicit answer without an ambient question marker', async () => {
+    const status = await mocks.voiceStatus();
+    mocks.voiceStatus.mockResolvedValue({ ...status, presence: { v: 4, state: 'asleep', ambientEnabled: false, inputEnabled: true } });
+    await useMorpheusVoiceStore.getState().loadStatus();
+    useMorpheusCommandStore.setState({ objectiveRun: { objectiveRunId: 'foreground-question', state: 'needs-clarification', iteration: 1 } as never });
+    mocks.transcribeAudio.mockResolvedValue({ transcript: 'Markdown', providerAccountId: 'local', modelId: 'local', durationMs: 1_000 });
+    await useMorpheusVoiceStore.getState().startListening('command-center');
+    useMorpheusVoiceStore.getState().stopListening();
+    await vi.waitFor(() => expect(mocks.correctObjective).toHaveBeenCalledExactlyOnceWith({ objectiveRunId: 'foreground-question', correction: 'Markdown' }));
+    expect(mocks.routeInteraction).not.toHaveBeenCalled(); expect(mocks.submitObjective).not.toHaveBeenCalled();
+  });
+  it('drops a foreground answer when its captured question retires during transcription', async () => {
+    const status = await mocks.voiceStatus();
+    mocks.voiceStatus.mockResolvedValue({ ...status, presence: { v: 4, state: 'asleep', ambientEnabled: false, inputEnabled: true } });
+    await useMorpheusVoiceStore.getState().loadStatus();
+    useMorpheusCommandStore.setState({ objectiveRun: { objectiveRunId: 'foreground-retired', state: 'needs-clarification', iteration: 1 } as never });
+    let resolveTranscription!: (result: unknown) => void;
+    mocks.transcribeAudio.mockImplementationOnce(() => new Promise(resolve => { resolveTranscription = resolve; }));
+    await useMorpheusVoiceStore.getState().startListening('command-center');
+    useMorpheusVoiceStore.getState().stopListening();
+    await vi.waitFor(() => expect(mocks.transcribeAudio).toHaveBeenCalledOnce());
+    useMorpheusCommandStore.setState({ objectiveRun: { objectiveRunId: 'foreground-retired', state: 'cancelled' } as never });
+    resolveTranscription({ transcript: 'Markdown', providerAccountId: 'local', modelId: 'local', durationMs: 1_000 });
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().phase).toBe('ready'));
+    expect(mocks.correctObjective).not.toHaveBeenCalled(); expect(mocks.routeInteraction).not.toHaveBeenCalled(); expect(mocks.submitObjective).not.toHaveBeenCalled();
+    expect(mocks.setDraft).not.toHaveBeenCalled();
+    expect(useMorpheusVoiceStore.getState().transcript).toBeNull();
+  });
+  it('routes a Main-admitted fresh native follow-up to its exact pending question', async () => {
+    const status = await companionStatus(); mocks.voiceStatus.mockResolvedValue(status);
+    await useMorpheusVoiceStore.getState().loadStatus();
+    await useMorpheusVoiceStore.getState().setAmbientScope('companion');
+    useMorpheusCommandStore.setState({ objectiveRun: { objectiveRunId: 'native-question', state: 'needs-clarification', iteration: 1 } as never });
+    useMorpheusVoiceStore.getState().subscribePresence();
+    mocks.voicePresenceHandler?.({ v: 4, state: 'understanding', ambientEnabled: true, inputEnabled: true,
+      wakeSequence: 5001, wakeCommand: 'Markdown', question: { objectiveRunId: 'native-question' } });
+    await vi.waitFor(() => expect(mocks.correctObjective).toHaveBeenCalledExactlyOnceWith({ objectiveRunId: 'native-question', correction: 'Markdown' }));
+    expect(mocks.routeInteraction).not.toHaveBeenCalled(); expect(mocks.submitObjective).not.toHaveBeenCalled();
+  });
+  it('keeps a reviewed explicit answer correlated when automatic submission is disabled', async () => {
+    const status = await mocks.voiceStatus();
+    mocks.voiceStatus.mockResolvedValue({ ...status, settings: { ...status.settings, autoSubmitTranscript: false },
+      presence: { v: 4, state: 'asleep', ambientEnabled: false, inputEnabled: true } });
+    await useMorpheusVoiceStore.getState().loadStatus();
+    useMorpheusCommandStore.setState({ objectiveRun: { objectiveRunId: 'reviewed-question', state: 'needs-clarification', iteration: 7 } as never });
+    mocks.transcribeAudio.mockResolvedValue({ transcript: 'Markdown', providerAccountId: 'local', modelId: 'local', durationMs: 1_000 });
+    await useMorpheusVoiceStore.getState().startListening('command-center');
+    useMorpheusVoiceStore.getState().stopListening();
+    await vi.waitFor(() => expect(mocks.setDraft).toHaveBeenCalledExactlyOnceWith('Markdown', { objectiveRunId: 'reviewed-question', iteration: 7 }));
+    expect(mocks.correctObjective).not.toHaveBeenCalled(); expect(mocks.routeInteraction).not.toHaveBeenCalled();
+  });
+  it('drops a recorded answer after the same run moves to a new question iteration', async () => {
+    useMorpheusCommandStore.setState({ objectiveRun: { objectiveRunId: 'iterated-question', state: 'needs-clarification', iteration: 1 } as never });
+    let resolveTranscription!: (result: unknown) => void;
+    mocks.transcribeAudio.mockImplementationOnce(() => new Promise(resolve => { resolveTranscription = resolve; }));
+    await useMorpheusVoiceStore.getState().startListening('command-center');
+    useMorpheusVoiceStore.getState().stopListening();
+    await vi.waitFor(() => expect(mocks.transcribeAudio).toHaveBeenCalledOnce());
+    useMorpheusCommandStore.setState({ objectiveRun: { objectiveRunId: 'iterated-question', state: 'needs-clarification', iteration: 2 } as never });
+    resolveTranscription({ transcript: 'Markdown', providerAccountId: 'local', modelId: 'local', durationMs: 1_000 });
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().phase).toBe('ready'));
+    expect(mocks.setDraft).not.toHaveBeenCalled(); expect(mocks.correctObjective).not.toHaveBeenCalled(); expect(mocks.routeInteraction).not.toHaveBeenCalled();
+  });
+
   it('does not mislabel provider, permission or Audit failures as unclear speech', () => {
     expect(classifyMorpheusVoiceError(new Error('No compatible transcription provider is configured.'))).toBe('configuration');
     expect(classifyMorpheusVoiceError(new Error('Transcription provider timed out after 30 seconds.'))).toBe('network');
@@ -867,6 +1029,20 @@ describe('Morpheus renderer voice controller', () => {
     expect(mocks.submitObjective).not.toHaveBeenCalled();
     expect(useMorpheusCommandStore.getState().input).toBe('');
     expect(track.stop).toHaveBeenCalled();
+  });
+  it('automatically finishes a spoken onboarding/check field without routing or executing', async () => {
+    mocks.transcribeAudio.mockResolvedValue({ transcript: 'My name is Larry', providerAccountId: 'local', modelId: 'local', durationMs: 1_000 });
+    vi.useFakeTimers();
+    try {
+      await useMorpheusVoiceStore.getState().startListening('onboarding');
+      mocks.meterByte = 160; await vi.advanceTimersByTimeAsync(200);
+      mocks.meterByte = 128; await vi.advanceTimersByTimeAsync(1_000);
+      vi.useRealTimers();
+      await vi.waitFor(() => expect(useMorpheusVoiceStore.getState()).toMatchObject({ phase: 'ready', source: 'onboarding', transcript: 'My name is Larry' }));
+      expect(mocks.transcribeAudio).toHaveBeenCalledOnce();
+      expect(mocks.routeInteraction).not.toHaveBeenCalled(); expect(mocks.submitObjective).not.toHaveBeenCalled();
+      expect(mocks.setDraft).not.toHaveBeenCalled(); expect(track.stop).toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
   });
 
   it('does not reopen the foreground chat microphone after a spoken reply', async () => {

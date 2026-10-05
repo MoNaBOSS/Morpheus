@@ -9,6 +9,11 @@ import { normalizeMorpheusAppearance, type MorpheusAppearance } from '@shared/mo
 export class MorpheusWakeOrb {
   private window: BrowserWindow | null = null;
   private presence: MorpheusVoicePresence['state'] = 'armed';
+  private question = false;
+  private recovery: MorpheusVoicePresence['recovery'] | null = null;
+  private recoverySequence = 0;
+  private recoveryAuthority = 0;
+  private recoveryTimer: ReturnType<typeof setTimeout> | null = null;
   private wantsVisible = false;
   private ready = false;
   private hovered = false;
@@ -61,7 +66,7 @@ export class MorpheusWakeOrb {
   }
 
   private scheduleDismiss(): void {
-    if (this.dismissTimer || !this.wantsVisible || this.hovered || this.dragging
+    if (this.dismissTimer || !this.wantsVisible || this.hovered || this.dragging || this.question
       || ['listening', 'transcribing', 'understanding', 'preparing-speech', 'speaking', 'waiting-for-approval'].includes(this.presence)) return;
     this.dismissTimer = setTimeout(() => {
       this.dismissTimer = null;
@@ -85,7 +90,7 @@ export class MorpheusWakeOrb {
   }
 
   isAvailableForSocial(): boolean {
-    return this.wantsVisible && this.ready && !this.hovered
+    return this.wantsVisible && this.ready && !this.hovered && !this.question && !this.recovery
       && ['idle', 'asleep', 'armed'].includes(this.presence)
       && Boolean(this.window && !this.window.isDestroyed());
   }
@@ -169,11 +174,27 @@ export class MorpheusWakeOrb {
   }
 
   updatePresence(presence: MorpheusVoicePresence): void {
-    const changed = this.presence !== presence.state;
+    const changed = this.presence !== presence.state || this.question !== Boolean(presence.question);
     this.presence = presence.state;
+    this.question = Boolean(presence.question);
+    const authority = presence.authorityRevision ?? 0;
+    if (authority !== this.recoveryAuthority) { this.recoveryAuthority = authority; this.recoverySequence = 0; }
+    if (!presence.recovery || presence.inputEnabled === false || !presence.ambientEnabled) this.clearRecovery();
+    else if (presence.recovery.sequence > this.recoverySequence) {
+      this.recoverySequence = presence.recovery.sequence;
+      this.clearRecovery();
+      this.recovery = presence.recovery;
+      // Main already owns input/scope. This restores an informational orb only,
+      // without focus, follow-up admission or a new microphone acquisition.
+      this.show();
+      this.reposition();
+      this.recoveryTimer = setTimeout(() => { this.clearRecovery(); this.reposition(); this.applyPresence(); }, 8_000);
+      this.recoveryTimer.unref?.();
+    }
     if (changed) { this.clearDismiss(); this.applyVisibility(); this.scheduleDismiss(); }
     if (this.caption && ['listening', 'working', 'error'].includes(this.presence)) this.showCaption(null);
     if (this.presence !== 'listening' && this.presence !== 'speaking') this.updateLevel(0);
+    this.reposition();
     // Ambient microphone availability is independent of the typed companion.
     this.applyPresence();
   }
@@ -209,6 +230,7 @@ export class MorpheusWakeOrb {
 
   present(action: OrbPresentationAction): void | Promise<void> {
     this.showCaption(null);
+    if (action === 'focus' || action === 'open') { this.clearRecovery(); this.applyPresence(); }
     const window = this.window;
     if (!this.wantsVisible || !window || window.isDestroyed()) return;
     if (action === 'drag-start') {
@@ -261,6 +283,8 @@ export class MorpheusWakeOrb {
   }
 
   hide(): void {
+    this.clearRecovery();
+    this.applyPresence();
     this.clearDismiss();
     this.showCaption(null);
     this.wantsVisible = false;
@@ -281,11 +305,12 @@ export class MorpheusWakeOrb {
     const window = this.window;
     if (!this.wantsVisible || !window || window.isDestroyed()) return;
     const workArea = this.workArea();
-    window.setBounds(this.hovered || this.caption ? wakeOrbHoverBounds(workArea, this.anchorBounds()) : this.anchorBounds());
+    window.setBounds(this.hovered || this.caption || this.recovery ? wakeOrbHoverBounds(workArea, this.anchorBounds()) : this.anchorBounds());
     this.shapeWindow();
   }
 
   dispose(): void {
+    this.clearRecovery();
     this.clearDismiss();
     if (this.captionTimer) clearTimeout(this.captionTimer);
     this.captionTimer = null;
@@ -304,8 +329,15 @@ export class MorpheusWakeOrb {
     if (!window || window.isDestroyed() || !this.ready) return;
     // Only a fixed Main-owned enum enters this script; no transcript or provider data.
     const state = JSON.stringify(this.presence);
-    void window.webContents.executeJavaScript(`document.documentElement.dataset.state = ${state}`, true)
+    const recovery = JSON.stringify(this.recovery?.kind ?? '');
+    void window.webContents.executeJavaScript(`document.documentElement.dataset.state = ${state}; document.documentElement.dataset.question = '${String(this.question)}'; document.documentElement.dataset.recovery = ${recovery}`, true)
       .catch(() => undefined);
+  }
+
+  private clearRecovery(): void {
+    if (this.recoveryTimer) clearTimeout(this.recoveryTimer);
+    this.recoveryTimer = null;
+    this.recovery = null;
   }
 
   private applyAppearance(): void {
@@ -368,7 +400,7 @@ export class MorpheusWakeOrb {
       strips.push({ x: orbX + Math.max(0, Math.floor(orbSize / 2 - half)), y: orbY + y,
         width: Math.min(orbSize, Math.ceil(half * 2)), height: Math.min(10, orbSize - y) });
     }
-    const shapes = this.hovered || this.caption
+    const shapes = this.hovered || this.caption || this.recovery
       ? [{ x: Math.max(0, bounds.width - 352), y: panelY,
         width: Math.min(344, bounds.width), height: Math.min(55, bounds.height) }, ...strips]
       : strips;

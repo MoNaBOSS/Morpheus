@@ -65,6 +65,8 @@ try {
   const sourceFiles = ['scripts/qualify-voice-command-corpus.mjs', 'scripts/lib/voice-command-corpus.ts', 'scripts/lib/voice-command-corpus-adapter.ts',
     'scripts/lib/voice-command-corpus-audio.mjs', 'tests/fixtures/morpheus/voice-command-corpus.json', 'src/lib/morpheus-wake-audio-worklet.js',
     'electron/services/morpheus/voice/local-voice.ts', 'electron/services/morpheus/voice/local-voice-worker.ts', 'electron/services/morpheus/voice/local-speech.ts',
+    'electron/services/morpheus/voice/local-recognizer-worker.ts', 'resources/scripts/morpheus-asr-worker.cjs',
+    'scripts/prepare-local-voice.mjs', 'scripts/package-local-voice-worker.cjs',
     'electron/services/morpheus/voice/local-input.ts', 'electron/services/morpheus/voice/wake-audio-buffer.ts', 'electron/services/morpheus/core/task-controls.ts',
     'shared/morpheus/operator-types.ts', 'shared/morpheus/interpreter/deterministic.ts', 'shared/morpheus/interpreter/browser-search.ts'];
   evidence.source = { root: sourceRoot, head: (await git(['rev-parse', 'HEAD'])).trim(), status: (await git(['status', '--porcelain'])).trim(),

@@ -28,6 +28,7 @@ export function MorpheusFluidOrb({ state, className, label, identity = 'orb', ac
   const motionState = state === 'asleep' ? 'quiet'
     : state === 'listening' || state === 'speaking' ? state
       : state === 'understanding' ? 'understanding'
+        : state === 'question' || state === 'retry' ? state
         : state === 'complete' ? 'complete'
           : state === 'planning' || state === 'executing' ? 'working'
         : state === 'trust' || state === 'failed' || state === 'degraded' ? 'attention' : 'idle';
@@ -72,8 +73,10 @@ export function MorpheusFluidOrb({ state, className, label, identity = 'orb', ac
     >
       <span className="morpheus-motion__aurora" aria-hidden />
       <span className="morpheus-motion__halo" aria-hidden />
+      <span className="morpheus-motion__horn morpheus-motion__horn--left" aria-hidden />
+      <span className="morpheus-motion__horn morpheus-motion__horn--right" aria-hidden />
       <img className={identity === 'arrival' ? 'morpheus-motion__mark' : 'morpheus-motion__artwork'} src={identity === 'arrival' ? morpheusLogo : orbArtwork} alt="" draggable={false} />
-      <span className="morpheus-motion__cue" aria-hidden>{state === 'trust' ? '?' : state === 'failed' || state === 'degraded' ? '!' : ''}</span>
+      <span className="morpheus-motion__cue" aria-hidden>{state === 'trust' || state === 'question' ? '?' : state === 'retry' ? '↻' : state === 'failed' || state === 'degraded' ? '!' : ''}</span>
       {appearance === 'unrestricted-preview' ? <span className="morpheus-motion__preview" aria-hidden>{previewLabel}</span> : null}
     </div>
   );

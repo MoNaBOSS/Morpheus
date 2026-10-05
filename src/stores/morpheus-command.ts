@@ -139,6 +139,14 @@ function mergeObjectiveArtifacts(
     .slice(0, MAX_ARTIFACTS);
 }
 
+function unsupportedForObjective(run: MorpheusObjectiveRun | null): UnsupportedCommand | null {
+  if (run?.state !== 'needs-clarification') return null;
+  const count = run.clarificationChoices?.length ?? 0;
+  // Validated choices describe an answerable Core question, not missing tools.
+  if (count >= 2 && count <= 4) return null;
+  return { objective: run.objective, reason: 'not-understood', supportedCapabilities: supportedCapabilityIds() };
+}
+
 function objectiveStatePatch(
   event: MorpheusObjectiveEvent,
   previous: MorpheusCommandState,
@@ -170,13 +178,7 @@ function objectiveStatePatch(
     planResult: executionResultFromObjective(event.run),
     interpreting,
     executing: !terminal && !interpreting,
-    unsupported: event.run.state === 'needs-clarification'
-      ? {
-          objective: event.run.objective,
-          reason: 'not-understood',
-          supportedCapabilities: supportedCapabilityIds(),
-        }
-      : null,
+    unsupported: unsupportedForObjective(event.run),
     artifacts: mergeObjectiveArtifacts(previous.artifacts, event.run.artifacts),
   };
 }
@@ -554,9 +556,7 @@ export const useMorpheusCommandStore = create<MorpheusCommandState>((set, get) =
         interpreting: run ? ['understanding', 'planning', 'replanning'].includes(run.state) : false,
         executing: run ? !isObjectiveTerminalState(run.state)
           && !['understanding', 'planning', 'replanning'].includes(run.state) : false,
-        unsupported: run?.state === 'needs-clarification'
-          ? { objective: run.objective, reason: 'not-understood', supportedCapabilities: supportedCapabilityIds() }
-          : null,
+        unsupported: unsupportedForObjective(run),
         artifacts: run ? mergeObjectiveArtifacts(state.artifacts, run.artifacts) : state.artifacts,
         ...(snapshot.pendingPlanConsents && current.consentQueue === before.consentQueue ? {
           consentQueue: [...snapshot.pendingPlanConsents], consent: snapshot.pendingPlanConsents[0] ?? null,

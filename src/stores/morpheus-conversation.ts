@@ -12,10 +12,15 @@ import type {
   MorpheusAssistantTurn,
   MorpheusAssistantTurnSource,
 } from '@shared/morpheus/assistant-session-types';
+import type { MorpheusObjectiveRun } from '@shared/morpheus/core/objective-types';
+
+export type MorpheusDraftAnswerFor = Pick<MorpheusObjectiveRun, 'objectiveRunId' | 'iteration'>;
 
 type MorpheusConversationState = {
   snapshot: MorpheusAssistantSnapshot | null;
   draftText: string;
+  /** Ephemeral correlation for the same draft across full and compact chat. */
+  draftAnswerFor: MorpheusDraftAnswerFor | null;
   loading: boolean;
   submitting: boolean;
   submissionSource: MorpheusAssistantTurnSource | null;
@@ -23,7 +28,7 @@ type MorpheusConversationState = {
   blockedTurnId: string | null;
   start: () => () => void;
   refresh: () => Promise<void>;
-  setDraft: (text: string) => void;
+  setDraft: (text: string, answerFor?: MorpheusDraftAnswerFor | null) => void;
   submit: (text: string, source: MorpheusAssistantTurnSource, onAdmitted?: (turn: MorpheusAssistantTurn) => void) => Promise<boolean>;
   selectConversation: (conversationId: string) => Promise<void>;
   retryPending: () => void;
@@ -72,6 +77,7 @@ async function flushDrafts(): Promise<void> {
           useMorpheusConversationStore.setState({
             snapshot: { ...state.snapshot, draft: updated },
             draftText: state.draftText === text ? updated.text : state.draftText,
+            draftAnswerFor: state.draftText === text && updated.text !== state.draftText ? null : state.draftAnswerFor,
             dispatchError: null,
           });
         }
@@ -190,9 +196,12 @@ function applySnapshot(snapshot: MorpheusAssistantSnapshot): void {
     dirtyDrafts.set(selected, current.draftText);
     void flushDrafts();
   }
+  const draftText = dirtyDrafts.get(selected) ?? snapshot.draft.text;
   useMorpheusConversationStore.setState({
     snapshot,
-    draftText: dirtyDrafts.get(selected) ?? snapshot.draft.text,
+    draftText,
+    draftAnswerFor: draftText === current.draftText
+      && (!current.snapshot || current.snapshot.selectedConversationId === selected) ? current.draftAnswerFor : null,
     loading: false,
   });
   if (useChatStore.getState().currentSessionKey !== selected) {
@@ -206,6 +215,7 @@ function applySnapshot(snapshot: MorpheusAssistantSnapshot): void {
 export const useMorpheusConversationStore = create<MorpheusConversationState>((set, get) => ({
   snapshot: null,
   draftText: '',
+  draftAnswerFor: null,
   loading: false,
   submitting: false,
   submissionSource: null,
@@ -266,9 +276,10 @@ export const useMorpheusConversationStore = create<MorpheusConversationState>((s
     }
   },
 
-  setDraft: (text) => {
+  setDraft: (text, answerFor = null) => {
     const conversationId = get().snapshot?.selectedConversationId;
-    set({ draftText: text });
+    set({ draftText: text, draftAnswerFor: text.trim() && answerFor
+      ? { objectiveRunId: answerFor.objectiveRunId, iteration: answerFor.iteration } : null });
     if (!conversationId) return;
     queuedDrafts.set(conversationId, text);
     dirtyDrafts.set(conversationId, text);

@@ -58,12 +58,14 @@ test('saved red appearance preview reaches native, compact and full without chan
     await page.evaluate(() => { window.location.hash = '#/settings?section=personality'; });
     const settings = page.getByTestId('morpheus-unrestricted-preview');
     await expect(settings).toBeVisible();
+    await expect(settings).toContainText(en.morpheus.experience.unrestrictedPreview.red);
     await expect(page.getByTestId('morpheus-appearance-green')).toBeChecked();
     const before = await appearanceBoundary(page);
     await page.getByTestId('morpheus-appearance-unrestricted-preview').check();
     await expect(page.getByTestId('morpheus-appearance-unrestricted-preview')).toBeEnabled();
     await expect(page.locator('html')).toHaveAttribute('data-morpheus-appearance', 'unrestricted-preview');
     const nativeOrb = native.locator('.orb');
+    await expect(nativeOrb.locator('.morpheus-motion__horn')).toHaveCount(2);
     await expect(nativeOrb).toHaveAttribute('data-appearance', 'unrestricted-preview');
     expect(await appearanceBoundary(page)).toEqual(before);
     await expect(settings.getByTestId('morpheus-appearance-boundary')).toHaveText(en.morpheus.experience.unrestrictedPreview.boundary);
@@ -72,6 +74,7 @@ test('saved red appearance preview reaches native, compact and full without chan
     expect(await settings.getByTestId('morpheus-fluid-orb').locator('.morpheus-motion__artwork').evaluate((node) => getComputedStyle(node).filter)).toBe(redFilter);
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus')?.hide());
     await expect(nativeOrb).toBeVisible();
+    for (const horn of await nativeOrb.locator('.morpheus-motion__horn').all()) await expect(horn).toBeVisible();
 
     // These are labelled presentation fixtures, not microphone/task activity.
     for (const [presence, motion, cue] of [['armed', 'idle', ''], ['listening', 'listening', ''], ['working', 'working', ''], ['waiting-for-approval', 'attention', '?'], ['error', 'attention', '!']] as const) {

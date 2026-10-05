@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Loader2, Square } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { MorpheusVoiceButton } from '@/components/morpheus/MorpheusVoiceButton';
@@ -10,9 +10,12 @@ import { useAcpChatSessionStore } from '@/stores/acp-chat-session';
 import { MorpheusLiveVoiceCaption } from '@/components/morpheus/MorpheusLiveVoiceCaption';
 import { morpheusSettingsPath } from '@/lib/morpheus-settings-route';
 import { useMorpheusVoiceStore } from '@/stores/morpheus-voice';
+import { MorpheusQuestionAnswers } from '@/components/morpheus/MorpheusQuestionAnswers';
+import { MorpheusVoiceRecoveryCue } from '@/components/morpheus/MorpheusVoiceRecoveryCue';
 
 export function CommandBar() {
   const { t } = useTranslation('dashboard');
+  const navigate = useNavigate();
   const input = useMorpheusConversationStore((state) => state.draftText);
   const setInput = useMorpheusConversationStore((state) => state.setDraft);
   const submitConversation = useMorpheusConversationStore((state) => state.submit);
@@ -24,6 +27,10 @@ export function CommandBar() {
   const blockedTurnId = useMorpheusConversationStore((state) => state.blockedTurnId);
   const retryConversation = useMorpheusConversationStore((state) => state.retryPending);
   const runObjective = useMorpheusCommandStore((state) => state.runObjective);
+  const correctObjective = useMorpheusCommandStore((state) => state.correctObjective);
+  const objectiveRun = useMorpheusCommandStore((state) => state.objectiveRun);
+  const voicePhase = useMorpheusVoiceStore((state) => state.phase);
+  const voicePresence = useMorpheusVoiceStore((state) => state.presence?.state);
   const submitting = useMorpheusCommandStore((state) => state.submitting);
   const unsupported = useMorpheusCommandStore((state) => state.unsupported);
   const route = useMorpheusOperatorStore((state) => state.route);
@@ -31,15 +38,27 @@ export function CommandBar() {
   const clearClarification = useMorpheusOperatorStore((state) => state.clearClarification);
   const editInput = (text: string) => {
     const voice = useMorpheusVoiceStore.getState();
+    voice.clearRecovery();
+    if (voice.errorKind === 'repeat') voice.dismiss();
     if (['requesting', 'listening', 'transcribing'].includes(voice.phase)
       || ['speaking', 'preparing-speech'].includes(voice.presence?.state ?? '')) voice.cancel();
-    setInput(text); clearClarification();
+    setInput(text, objectiveRun?.state === 'needs-clarification' ? objectiveRun : null); clearClarification();
   };
 
   const submit = async (): Promise<void> => {
     const text = input.trim();
     if (!text || submitting || conversationSubmitting) return;
     try {
+      const answerFor = useMorpheusConversationStore.getState().draftAnswerFor;
+      if (answerFor) {
+        const liveQuestion = useMorpheusCommandStore.getState().objectiveRun;
+        if (liveQuestion?.objectiveRunId === answerFor.objectiveRunId && liveQuestion.iteration === answerFor.iteration && liveQuestion.state === 'needs-clarification') {
+          await correctObjective(text);
+          setInput('');
+        }
+        // Keep a retired answer bound until the user deliberately edits it.
+        return;
+      }
       const decision = await route(text, 'command-center');
       if (decision.route === 'objective') {
         if (await runObjective(decision.text, 'command-bar')) setInput('');
@@ -53,7 +72,14 @@ export function CommandBar() {
 
   return (
     <div data-testid="morpheus-command-bar" className="morpheus-workspace-composer-wrap shrink-0 pt-3">
-      <MorpheusLiveVoiceCaption surface="full" onEdit={(text) => { setInput(text); document.querySelector<HTMLInputElement>('[data-testid="morpheus-command-input"]')?.focus(); }} />
+      {objectiveRun?.state === 'needs-clarification' ? <MorpheusQuestionAnswers
+        key={`${objectiveRun.objectiveRunId}:${objectiveRun.iteration}`} question={objectiveRun.clarification ?? null}
+        choices={objectiveRun.clarificationChoices} speechPending={voicePresence === 'speaking' || voicePresence === 'preparing-speech'}
+        inputActive={Boolean(input.trim()) || ['requesting', 'listening', 'transcribing'].includes(voicePhase)}
+        onAnswer={(answer) => { setInput(answer, objectiveRun); document.querySelector<HTMLInputElement>('[data-testid="morpheus-command-input"]')?.focus(); }} /> : null}
+      <MorpheusVoiceRecoveryCue source="command-center" onType={() => document.querySelector<HTMLInputElement>('[data-testid="morpheus-command-input"]')?.focus()}
+        onRepair={() => navigate(morpheusSettingsPath('voice', '/', 'full'))} />
+      <MorpheusLiveVoiceCaption surface="full" onEdit={(text) => { editInput(text); document.querySelector<HTMLInputElement>('[data-testid="morpheus-command-input"]')?.focus(); }} />
       {clarification ? <p data-testid="morpheus-command-clarification" className="mb-2 text-xs text-[#edf5ef]">{clarification}</p> : null}
       {conversationError ? <p role="alert" className="mb-2 text-xs text-red-200">{conversationError}{blockedTurnId ? <button type="button" onClick={retryConversation} className="ml-2 underline">{t('morpheus.conversation.retry')}</button> : null}</p> : null}
       {unsupported ? <div data-testid="morpheus-command-unsupported" className="mb-2 flex items-center justify-between gap-3 text-xs text-[#d8e7dd]"><span>{t('morpheus.command.unsupportedTitle')}</span><Link to={morpheusSettingsPath('connections')} className="text-[#53edb4] underline">{t('morpheus.command.configureProvider')}</Link></div> : null}

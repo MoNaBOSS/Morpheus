@@ -73,6 +73,10 @@ export type MorpheusVoicePresenceState =
   | 'error';
 
 export type MorpheusVoicePresence = {
+  /** Ephemeral Main-authored repair cue. Never grants capture or reuses words. */
+  recovery?: { kind: 'wake-unverified' | 'no-speech'; sequence: number };
+  /** Presentation pointer to the actual live Core question; choices stay Core-owned. */
+  question?: { objectiveRunId: string };
   /** Effective Main input authority, including a mute veto before settings commit. */
   inputEnabled?: boolean;
   /** Invalidates capture and buffered playback when service authority changes. */

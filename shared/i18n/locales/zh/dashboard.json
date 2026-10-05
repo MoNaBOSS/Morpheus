@@ -306,7 +306,9 @@
         "speaking": "正在回应",
         "complete": "已完成",
         "failed": "需要处理",
-        "degraded": "受限状态"
+        "degraded": "受限状态",
+        "question": "等待你的回答",
+        "retry": "再试一次"
       },
       "phases": {
         "understand": "理解",
@@ -1535,6 +1537,14 @@
         "transcribing": "正在理解您的语音…",
         "ready": "已获取语音目标",
         "error": "语音输入不可用"
+      },
+      "recovery": {
+        "title": "再试一次",
+        "body": "未发送任何内容。请再说一次或输入请求。",
+        "type": "改为输入"
+      },
+      "question": {
+        "hint": "选择答案或输入自己的回答。确认之前不会发送。"
       }
     },
     "capture": {
@@ -1659,13 +1669,13 @@
       },
       "unrestrictedPreview": {
         "title": "Morpheus 外观",
-        "description": "保留熟悉的绿色助手，或预览深色红光外观。",
+        "description": "保留熟悉的绿色助手，或选择邪恶 Morpheus。",
         "green": "经典绿色",
         "greenBody": "熟悉的 Morpheus 形象。",
-        "red": "Unrestricted 红色 · 预览",
-        "redBody": "更深沉的形象，配以红光和从容的动态。",
+        "red": "邪恶 Morpheus",
+        "redBody": "深沉的红光形象，配有生长的双角和从容的动态。",
         "boundary": "仅改变外观。NerdGPT 尚未连接。套餐、个性、模型和工具权限保持不变。",
-        "badge": "预览",
+        "badge": "邪恶 Morpheus",
         "saving": "正在保存外观…",
         "failed": "无法保存外观，请重试。"
       },

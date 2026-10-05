@@ -15,6 +15,7 @@ class FakeAnalyser {
 class FakeAudioContext {
   static latest: FakeAudioContext;
   state: AudioContextState = 'running';
+  onstatechange: (() => void) | null = null;
   destination = {} as AudioDestinationNode;
   analyser = new FakeAnalyser();
   streamSource = { connect: vi.fn() };
@@ -77,6 +78,129 @@ describe('ephemeral audio level', () => {
     expect(context.close).toHaveBeenCalledOnce();
     expect(stream.getTracks).not.toHaveBeenCalled();
     unsubscribe();
+  });
+
+  it('resumes a suspended microphone context before measuring speech and finishes once after real silence', async () => {
+    vi.useFakeTimers();
+    class SuspendedContext extends FakeAudioContext {
+      state: AudioContextState = 'suspended';
+    }
+    vi.stubGlobal('AudioContext', SuspendedContext);
+    const onSpeechEnd = vi.fn();
+    const onNoSpeech = vi.fn();
+    const onUnavailable = vi.fn();
+    const stop = meterMorpheusMicrophone({} as MediaStream, { autoStop: true, onSpeechEnd, onNoSpeech, onUnavailable });
+    const context = FakeAudioContext.latest;
+    await vi.advanceTimersByTimeAsync(150);
+    expect(context.resume).toHaveBeenCalledOnce();
+    expect(context.createMediaStreamSource).toHaveBeenCalledOnce();
+    context.analyser.getByteTimeDomainData.mockImplementation((sample) => sample.fill(128));
+    await vi.advanceTimersByTimeAsync(850);
+    expect(onSpeechEnd).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(50);
+    expect(onSpeechEnd).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(onSpeechEnd).toHaveBeenCalledOnce();
+    expect(onNoSpeech).not.toHaveBeenCalled();
+    expect(onUnavailable).not.toHaveBeenCalled();
+    stop();
+  });
+
+  it('bounds a stalled microphone resume and reports repair without submitting silence or owning capture', async () => {
+    vi.useFakeTimers();
+    class StalledContext extends FakeAudioContext {
+      state: AudioContextState = 'suspended';
+      resume = vi.fn(() => new Promise<void>(() => undefined));
+    }
+    vi.stubGlobal('AudioContext', StalledContext);
+    const onSpeechEnd = vi.fn();
+    const onNoSpeech = vi.fn();
+    const onUnavailable = vi.fn();
+    const stream = { getTracks: vi.fn() } as unknown as MediaStream;
+    const stop = meterMorpheusMicrophone(stream, { autoStop: true, onSpeechEnd, onNoSpeech, onUnavailable });
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(onUnavailable).toHaveBeenCalledOnce();
+    expect(onSpeechEnd).not.toHaveBeenCalled();
+    expect(onNoSpeech).not.toHaveBeenCalled();
+    expect(FakeAudioContext.latest.createMediaStreamSource).not.toHaveBeenCalled();
+    expect(FakeAudioContext.latest.close).toHaveBeenCalledOnce();
+    expect(stream.getTracks).not.toHaveBeenCalled();
+    stop();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('does not revive a cancelled microphone meter when pending resume completes', async () => {
+    vi.useFakeTimers();
+    let completeResume: (() => void) | undefined;
+    class PendingContext extends FakeAudioContext {
+      state: AudioContextState = 'suspended';
+      resume = vi.fn(() => new Promise<void>((resolve) => { completeResume = resolve; }));
+    }
+    vi.stubGlobal('AudioContext', PendingContext);
+    const onUnavailable = vi.fn();
+    const stop = meterMorpheusMicrophone({} as MediaStream, { autoStop: true, onUnavailable });
+    stop();
+    completeResume?.();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(FakeAudioContext.latest.createMediaStreamSource).not.toHaveBeenCalled();
+    expect(FakeAudioContext.latest.close).toHaveBeenCalledOnce();
+    expect(onUnavailable).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('reports synchronous microphone-meter startup failure after caller setup and suppresses a cancelled repair', async () => {
+    vi.useFakeTimers();
+    class BrokenContext { constructor() { throw new Error('No Web Audio device'); } }
+    vi.stubGlobal('AudioContext', BrokenContext);
+    const onUnavailable = vi.fn();
+    meterMorpheusMicrophone({} as MediaStream, { onUnavailable });
+    expect(onUnavailable).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(onUnavailable).toHaveBeenCalledOnce();
+    const cancelledRepair = vi.fn();
+    const stop = meterMorpheusMicrophone({} as MediaStream, { onUnavailable: cancelledRepair });
+    stop();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(cancelledRepair).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('rejects a successful resume promise that leaves the microphone graph suspended', async () => {
+    vi.useFakeTimers();
+    class StillSuspendedContext extends FakeAudioContext {
+      state: AudioContextState = 'suspended';
+      resume = vi.fn(async () => undefined);
+    }
+    vi.stubGlobal('AudioContext', StillSuspendedContext);
+    const onUnavailable = vi.fn();
+    const stop = meterMorpheusMicrophone({} as MediaStream, { autoStop: true, onUnavailable });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(onUnavailable).toHaveBeenCalledOnce();
+    expect(FakeAudioContext.latest.createMediaStreamSource).not.toHaveBeenCalled();
+    expect(FakeAudioContext.latest.close).toHaveBeenCalledOnce();
+    stop();
+  });
+
+  it('excludes an interrupted audio graph from the speech-end clock', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+    const onSpeechEnd = vi.fn();
+    const stop = meterMorpheusMicrophone({} as MediaStream, { autoStop: true, onSpeechEnd });
+    const context = FakeAudioContext.latest;
+    await vi.advanceTimersByTimeAsync(150);
+    let resume: (() => void) | undefined;
+    context.resume.mockImplementation(() => new Promise<void>((resolve) => { resume = () => { context.state = 'running'; resolve(); }; }));
+    context.state = 'suspended';
+    context.onstatechange?.();
+    context.analyser.getByteTimeDomainData.mockImplementation((sample) => sample.fill(128));
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(onSpeechEnd).not.toHaveBeenCalled();
+    resume?.();
+    await vi.advanceTimersByTimeAsync(850);
+    expect(onSpeechEnd).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(50);
+    expect(onSpeechEnd).toHaveBeenCalledOnce();
+    stop();
   });
 
   it('does not reroute or stop playback when no capture stream is available', () => {

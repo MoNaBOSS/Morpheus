@@ -148,3 +148,15 @@ turn start times from the existing bounded transcript timing supplement. Preserv
 its user-text/reverse-occurrence identity and stale-generation guards. Missing,
 invalid or ambiguous timing stays unknown; never invent dates or persist another
 conversation history merely to position a task.
+
+Addressed voice recovery retains Main authority. Unverified wake or unusable
+recognition may publish a bounded, ephemeral repair cue but never answer authority,
+an addressed follow-up or a reconstructed command. Retry requires fresh verified
+wake or explicit microphone action. Actual question identity belongs to its
+existing objective, including through playback and bounded answer capture; visual
+feedback cannot invent a second task. Explicit microphone endpointing consumes
+real running-graph audio samples; suspended audio is not silence and a cancelled
+resume cannot revive capture. Opted-in tray wake and visible-conversation veto
+are independent of orb visibility. Included recognizer reuse must bound jobs,
+idle lifetime, cancellation and native worker environment, and retain actual
+output parity. Lifetime measurements cannot substitute for recognition accuracy.

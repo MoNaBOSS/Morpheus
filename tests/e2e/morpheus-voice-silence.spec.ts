@@ -35,11 +35,12 @@ test('silent synthetic Chromium capture releases input with zero provider or tas
     });
     await page.getByTestId('morpheus-voice-button-command-center').click();
     await expect(page.getByTestId('morpheus-voice-indicator')).toHaveAttribute('data-phase', 'listening');
-    await expect(page.getByTestId('morpheus-voice-indicator')).toHaveAttribute('data-phase', 'error', { timeout: 15_000 });
-    await expect(page.getByTestId('morpheus-voice-error')).toContainText("I couldn't hear that clearly. Please say it once more.");
-    await expect(page.getByTestId('morpheus-voice-indicator')).toContainText('I didn’t catch that');
-    await expect(page.getByTestId('morpheus-voice-indicator')).not.toContainText('Voice input unavailable');
-    await expect(page.getByTestId('morpheus-voice-connect-provider')).toHaveText('Voice');
+    const recovery = page.getByTestId('morpheus-voice-recovery-command-center');
+    await expect(recovery).toBeVisible({ timeout: 15_000 });
+    await expect(recovery).toContainText('Try again');
+    await expect(recovery).toContainText('Nothing was sent');
+    await expect(recovery.getByTestId('morpheus-recovery-retry')).toBeEnabled();
+    await expect(page.getByTestId('morpheus-voice-indicator')).toHaveCount(0);
     expect(await page.evaluate(() => (window as unknown as { __silentInput: { stream: MediaStream } })
       .__silentInput.stream.getTracks().every((track) => track.readyState === 'ended'))).toBe(true);
     expect((await getRecordedHostInvocations(app)).filter((request) => [

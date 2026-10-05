@@ -49,7 +49,8 @@ export function CommandCenter() {
   const cancelObjective = useMorpheusCommandStore((state) => state.cancelObjective);
   const voicePhase = useMorpheusVoiceStore((state) => state.phase);
   const voicePresence = useMorpheusVoiceStore((state) => state.presence?.state);
-  const signalState = resolveMorpheusSignalState({ voicePhase, voicePresence: voicePresence === 'asleep' ? 'armed' : voicePresence, objectiveState: conversationWorking ? 'understanding' : objectiveRun?.state });
+  const voiceRecovery = useMorpheusVoiceStore((state) => Boolean(state.recovery) || state.phase === 'error' && state.errorKind === 'repeat');
+  const signalState = resolveMorpheusSignalState({ voicePhase, voicePresence: voicePresence === 'asleep' ? 'armed' : voicePresence, voiceRecovery, objectiveState: conversationWorking ? 'understanding' : objectiveRun?.state });
   const recentRuns = (history?.runOrder ?? []).slice(0, 8).map((id) => history?.runsById[id]).filter((run) => run != null);
   const activeCount = (history?.runOrder ?? []).filter((id) => {
     const run = history?.runsById[id];
@@ -58,8 +59,11 @@ export function CommandCenter() {
   const resultArtifacts = objectiveRun?.artifacts ?? recentArtifacts;
   const inlineOutcome = morpheusSimpleActionOutcome(objectiveRun);
   const showDetails = detailsRunId === objectiveRun?.objectiveRunId;
+  const answeringQuestion = objectiveRun?.state === 'needs-clarification'
+    && (objectiveRun.clarificationChoices?.length ?? 0) >= 2
+    && (objectiveRun.clarificationChoices?.length ?? 0) <= 4;
   const hasResult = (!inlineOutcome || showDetails)
-    && (resultArtifacts.length > 0 || Boolean(objectiveRun && (objectiveRun.summary || objectiveRun.error || objectiveRun.clarification)));
+    && (resultArtifacts.length > 0 || Boolean(objectiveRun && (objectiveRun.summary || objectiveRun.error || !answeringQuestion && objectiveRun.clarification)));
   const keepInTray = async (): Promise<void> => {
     setTrayError(false);
     stopMorpheusSpeech();

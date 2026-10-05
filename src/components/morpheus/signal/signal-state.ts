@@ -9,6 +9,8 @@ export type MorpheusSignalState =
   | 'understanding'
   | 'planning'
   | 'trust'
+  | 'question'
+  | 'retry'
   | 'executing'
   | 'speaking'
   | 'complete'
@@ -19,6 +21,8 @@ type SignalInput = {
   voicePhase?: MorpheusVoicePhase | null;
   voicePresence?: MorpheusVoicePresenceState | null;
   objectiveState?: MorpheusSystemState | null;
+  voiceRecovery?: boolean;
+  voiceQuestion?: boolean;
 };
 
 const OBJECTIVE_SIGNAL: Readonly<Record<MorpheusSystemState, MorpheusSignalState>> = {
@@ -32,7 +36,7 @@ const OBJECTIVE_SIGNAL: Readonly<Record<MorpheusSystemState, MorpheusSignalState
   replanning: 'planning',
   speaking: 'speaking',
   complete: 'complete',
-  'needs-clarification': 'trust',
+  'needs-clarification': 'question',
   cancelled: 'ready',
   degraded: 'degraded',
   error: 'failed',
@@ -55,14 +59,18 @@ export function resolveMorpheusSignalState({
   voicePhase,
   voicePresence,
   objectiveState,
+  voiceRecovery,
+  voiceQuestion,
 }: SignalInput): MorpheusSignalState {
   if (voicePhase === 'listening') return 'listening';
   if (voicePhase === 'requesting' || voicePhase === 'transcribing') return 'understanding';
-  if (voicePhase === 'error') return 'failed';
+  if (voicePhase === 'error') return voiceRecovery ? 'retry' : 'failed';
   // A previous completed Mission must not hide live microphone or playback state.
   // Trust/failure still remains visible in the Mission's own status and controls.
   if (voicePresence === 'speaking' || voicePresence === 'listening'
     || voicePresence === 'transcribing' || voicePresence === 'preparing-speech') return PRESENCE_SIGNAL[voicePresence];
+  if (voiceRecovery) return 'retry';
+  if (voiceQuestion) return 'question';
   if (objectiveState) return OBJECTIVE_SIGNAL[objectiveState];
   if (voicePresence) return PRESENCE_SIGNAL[voicePresence];
   return 'ready';

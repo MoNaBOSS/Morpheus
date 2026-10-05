@@ -122,6 +122,8 @@ export type MorpheusMicrophoneMeterOptions = {
   noSpeechMs?: number;
   onSpeechEnd?(): void;
   onNoSpeech?(): void;
+  /** Recording remains caller-owned; do not mistake a paused meter for silence. */
+  onUnavailable?(): void;
 };
 
 /** Metering must never prevent a valid recording if Web Audio is unavailable. */
@@ -132,34 +134,97 @@ export function meterMorpheusMicrophone(
   const level = createMorpheusAudioLevelSource();
   let context: AudioContext | undefined;
   let timer: number | undefined;
+  let resumeTimer: number | undefined;
+  let cancelResume: (() => void) | undefined;
   let disposed = false;
-  const detector = options.autoStop
-    ? new MorpheusUtteranceDetector(performance.now(), options.silenceMs, options.noSpeechMs)
-    : null;
+  let notifyUnavailable = false;
+  let detector: MorpheusUtteranceDetector | null = null;
+  let pausedAt: number | null = null;
+  let pausedMs = 0;
+  let resuming = false;
   const dispose = () => {
+    notifyUnavailable = false;
     if (disposed) return;
     disposed = true;
     window.clearInterval(timer);
+    window.clearTimeout(resumeTimer);
+    cancelResume?.();
+    if (context) context.onstatechange = null;
     level.dispose();
     void context?.close().catch(() => undefined);
   };
-  try {
-    context = new AudioContext();
-    const analyser = context.createAnalyser();
-    analyser.fftSize = 512;
-    context.createMediaStreamSource(stream).connect(analyser);
-    const sample = new Uint8Array(analyser.fftSize);
-    timer = window.setInterval(() => {
-      analyser.getByteTimeDomainData(sample);
-      let energy = 0;
-      for (const value of sample) energy += ((value - 128) / 128) ** 2;
-      const rms = Math.sqrt(energy / sample.length);
-      level.update(rms);
-      const event = detector?.sample(rms, performance.now());
-      if (event === 'speech-ended') options.onSpeechEnd?.();
-      else if (event === 'no-speech') options.onNoSpeech?.();
-    }, 50);
-  } catch { dispose(); }
+  const unavailable = () => {
+    if (disposed) return;
+    dispose();
+    // Starting a meter returns its disposer before reporting failure. Otherwise
+    // a synchronous Web Audio error can race the caller's recorder setup.
+    notifyUnavailable = true;
+    queueMicrotask(() => {
+      if (!notifyUnavailable) return;
+      notifyUnavailable = false;
+      options.onUnavailable?.();
+    });
+  };
+  const resume = async () => {
+    if (!context || disposed) return;
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const finish = (error?: Error) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(resumeTimer);
+        cancelResume = undefined;
+        if (error) reject(error);
+        else resolve();
+      };
+      cancelResume = () => finish(new Error('Microphone metering stopped'));
+      resumeTimer = window.setTimeout(() => finish(new Error('Microphone metering could not start')), 5_000);
+      try { void context!.resume().then(() => finish(), () => finish(new Error('Microphone metering could not start'))); }
+      catch { finish(new Error('Microphone metering could not start')); }
+    });
+    if (!disposed && context.state !== 'running') throw new Error('Microphone metering could not start');
+  };
+  const start = async () => {
+    try {
+      context = new AudioContext();
+      if (context.state !== 'running') await resume();
+      if (disposed) return;
+      detector = options.autoStop
+        ? new MorpheusUtteranceDetector(performance.now(), options.silenceMs, options.noSpeechMs)
+        : null;
+      context.onstatechange = () => {
+        if (!context || disposed || context.state === 'running' || resuming) return;
+        // An interrupted graph emits no valid samples. Suspend the endpoint clock
+        // while attempting a bounded restart, rather than submitting false silence.
+        pausedAt ??= performance.now();
+        level.update(0);
+        resuming = true;
+        void resume().then(() => {
+          if (disposed) return;
+          pausedMs += performance.now() - (pausedAt ?? performance.now());
+          pausedAt = null;
+        }).catch(unavailable).finally(() => { resuming = false; });
+      };
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 512;
+      context.createMediaStreamSource(stream).connect(analyser);
+      const sample = new Uint8Array(analyser.fftSize);
+      timer = window.setInterval(() => {
+        if (disposed || context?.state !== 'running' || resuming) return;
+        try {
+          analyser.getByteTimeDomainData(sample);
+          let energy = 0;
+          for (const value of sample) energy += ((value - 128) / 128) ** 2;
+          const rms = Math.sqrt(energy / sample.length);
+          level.update(rms);
+          const event = detector?.sample(rms, performance.now() - pausedMs);
+          if (event === 'speech-ended') options.onSpeechEnd?.();
+          else if (event === 'no-speech') options.onNoSpeech?.();
+        } catch { unavailable(); }
+      }, LEVEL_INTERVAL_MS);
+    } catch { unavailable(); }
+  };
+  void start();
   return dispose;
 }
 

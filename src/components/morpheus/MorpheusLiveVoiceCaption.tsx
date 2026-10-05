@@ -23,6 +23,9 @@ export function MorpheusLiveVoiceCaption({ surface, onEdit, onRepair }: {
   useEffect(() => {
     let timer: number | undefined;
     const unsubscribe = useMorpheusVoiceStore.subscribe((next, previous) => {
+      if (next.recovery || next.phase === 'requesting' || next.errorKind === 'repeat') {
+        window.clearTimeout(timer); setRecent(null); return;
+      }
       if (!next.transcript || next.source === 'onboarding' || next.transcript === previous.transcript) return;
       window.clearTimeout(timer);
       setRecent(next.transcript);
@@ -32,6 +35,8 @@ export function MorpheusLiveVoiceCaption({ surface, onEdit, onRepair }: {
   }, []);
   const active = phase === 'listening' || phase === 'requesting' || phase === 'transcribing';
   const failed = phase === 'error';
+  // The fresh-input repair row owns repeat failures, without an old transcript.
+  if (failed && errorKind === 'repeat') return null;
   const caption = mode === 'always' ? transcript : recent;
   const errorKey = errorKind === 'muted' ? 'morpheus.experience.voice.panel.microphoneMuted'
     : errorKind === 'permission' ? 'morpheus.experience.voice.permission'

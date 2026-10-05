@@ -56,6 +56,33 @@ vi.mock('electron', async () => {
 });
 
 describe.skipIf(process.platform !== 'win32')('native orb visibility across delayed loading', () => {
+  it('shows a bounded informational retry without focus and ignores duplicate or muted cues', () => {
+    vi.useFakeTimers(); const orb = new MorpheusWakeOrb(vi.fn());
+    try {
+      const repair = { v: 4 as const, state: 'armed' as const, ambientEnabled: true, inputEnabled: true,
+        recovery: { kind: 'wake-unverified' as const, sequence: 1 } };
+      orb.updatePresence(repair); const window = mock.windows[0]; window.finishLoad();
+      expect(window.showInactive).toHaveBeenCalled(); expect(window.focus).not.toHaveBeenCalled();
+      expect(window.getBounds().width).toBeGreaterThan(56);
+      vi.advanceTimersByTime(8_000);
+      expect(window.getBounds().width).toBe(56);
+      orb.updatePresence(repair);
+      expect(window.getBounds().width).toBe(56);
+      orb.updatePresence({ ...repair, inputEnabled: false, recovery: { ...repair.recovery, sequence: 2 } });
+      expect(window.getBounds().width).toBe(56); expect(window.focus).not.toHaveBeenCalled();
+    } finally { orb.dispose(); vi.useRealTimers(); }
+  });
+  it('keeps a genuine question visible through a response opportunity and clears the presentation on terminal state', () => {
+    vi.useFakeTimers(); const orb = new MorpheusWakeOrb(vi.fn());
+    try {
+      orb.show(); const window = mock.windows[0]; window.finishLoad();
+      orb.updatePresence({ v: 4, state: 'armed', ambientEnabled: true, question: { objectiveRunId: 'question-run' } });
+      vi.advanceTimersByTime(30_000); expect(window.hide).not.toHaveBeenCalled();
+      expect(window.webContents.executeJavaScript.mock.calls.some(([script]) => script.includes("dataset.question = 'true'"))).toBe(true);
+      orb.updatePresence({ v: 4, state: 'armed', ambientEnabled: true });
+      vi.advanceTimersByTime(10_180); expect(window.hide).toHaveBeenCalledOnce();
+    } finally { orb.dispose(); vi.useRealTimers(); }
+  });
   it('restores and updates the validated appearance across native loading without changing visibility or presence', () => {
     const orb = new MorpheusWakeOrb(vi.fn());
     orb.updateAppearance('unrestricted-preview');

@@ -25,6 +25,9 @@ body { transition: opacity 180ms ease; }
 .orb { left: var(--orb-x, auto); top: var(--orb-y, auto); touch-action: none; cursor: grab; }
 .orb:active { cursor: grabbing; }
 .hover-composer, .social-caption { top: var(--panel-y, auto); }
+.recovery-caption { position: absolute; right: 8px; top: var(--panel-y, auto); bottom: 64px; display: none; box-sizing: border-box; width: min(344px, calc(100% - 16px)); min-height: 55px; padding: 10px 16px; border: 1px solid #88d9aa54; border-radius: 17px; background: #0b1c15f5; color: #eaffef; font: 13px/1.35 'Segoe UI', sans-serif; pointer-events: none; }
+html[data-recovery]:not([data-recovery=''])[data-hover='false'] .recovery-caption { display: block; }
+html[data-morpheus-appearance='unrestricted-preview'] .recovery-caption { border-color: #ff899254; background: #2b101af5; color: #fff0f3; }
 
 html[data-morpheus-appearance='unrestricted-preview'] .hover-composer { border-color: #ff899254; background: linear-gradient(120deg, #2b101af2, #190910f7); color: #f4d9e0; }
 html[data-morpheus-appearance='unrestricted-preview'] .hover-composer input { color: #fff0f3; }

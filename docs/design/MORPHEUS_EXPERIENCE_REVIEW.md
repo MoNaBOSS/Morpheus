@@ -1,5 +1,89 @@
 # Morpheus experience specification
 
+## Active voice interaction correction — October 5
+
+The owner authorized the measured next component: explicit voice retry and
+clarification, faster recognition lifetime, and coherent audio/state-driven motion.
+Baseline `593da4b43e7275a19992a793b1597631473a6a22` is clean and matches fetched origin.
+Preserve the separately delivered preview.16 and all owner profiles. Existing
+green/red appearance, typed/voice reply scope, selected-input ownership, exact wake
+verification, mute, permissions and Core remain authoritative.
+
+Confirmed direction: a failed addressed turn gives a compact nonexecuting repair
+cue; a genuine question keeps its task and answer choices and permits a bounded
+spoken follow-up after speech finishes. Reuse the included recognizer during active
+interaction with bounded idle/disposal and cancellation; evaluate actual pinned
+engine behavior before replacing the CLI path. Do not equate worker reuse with
+recognition accuracy or weaken wake verification to make tests pass. Finish motion
+for these real transitions and qualify native/compact/expanded continuity.
+
+Latest owner steering: a microphone command ends automatically when speech ends;
+manual Finish is an optional override. Opted-in companion input remains available
+in the tray, accepts exact "Morpheus" and "Hey Morpheus", restores the orb and
+acknowledges an admitted wake. Visible expanded chat/Settings suspend ambient input
+and manual mute always wins. A clear same-breath command executes once without
+planning narration. Unclear input gets a specific nonexecuting retry; actual Core
+questions keep their objective and choices. No speculative transcript may act.
+The red appearance is now called "Evil Morpheus" and selectable without a preview
+label, with two growing horns on both orb and M. This visual choice does not grant
+paid entitlement, connect NerdGPT or relax execution permissions. This supersedes
+the older appearance-control wording below, not the recorded release evidence.
+
+Hosted recommendation, not connected: keep local wake and included Kokoro speech,
+evaluate Deepgram Flux for streaming recognition/turn detection only during an
+intentional active conversation, and route final turns through the existing Core
+and task-model account. Simple known actions keep the deterministic fast path;
+ambiguous objectives ask a question and complex work may use a stronger task model.
+An inexpensive text model cannot reconstruct missing audio reliably. Do not train
+a proprietary recognizer now or present a new worker as an accuracy improvement.
+Flux English currently lists a promotional USD 0.0065/audio minute; task models, service hosting
+and other output costs are separate. These prices require rechecking before launch.
+See [provider pricing](https://deepgram.com/pricing) and
+[turn detection](https://developers.deepgram.com/docs/flux/configuration).
+For short recorded commands, Groq's hosted Whisper large-v3-turbo currently lists
+USD 0.04/audio hour, with a 10-second minimum billable request. It is a cheaper
+transcription alternative, not a replacement for streaming turn detection,
+interruption or Core action authority. See
+[Groq speech documentation](https://console.groq.com/docs/speech-to-text).
+Evaluate both on the same retained command/clarification corpus and real human
+microphone samples before choosing a default; provider benchmark scores are not
+Morpheus acceptance evidence. Keep Kokoro while assessing recognition and turn
+handling; changing the output voice alone cannot fix command understanding.
+Hosted audio trades local CPU/English-model limits for network latency, outage
+dependence and third-party processing. Funding, operator-owned secure credentials,
+consent, quotas and backend service operation remain unresolved; no customer voice
+key is required for standard included local voice and no hosted claim is live.
+
+Read-only owner baseline recheck: the running installed package is preview.16 at
+`C:\Users\monir\AppData\Local\Programs\Morpheus`, with ASAR SHA256
+`5a3306241f43989093fb7a5dd3b068e5ab2db9f9dedbe126fe486fde047890ce`, matching the
+delivered normal package. Its existing voice preference selects `engine: provider`
+with master/ambient/local-wake/auto-submit/speech/follow-up enabled. Native wake
+verification uses included recognition, while explicit capture and speech keep
+that saved provider choice. No credentials were read and no profile was changed.
+An installed symptom therefore cannot automatically be attributed to Kokoro/tiny
+without checking the active path. Fresh-profile local defaults do not overwrite
+an existing selected provider. Evaluate wake false positives/negatives, command
+recognition and reply sound separately; hosted active recognition must not silently
+upload unaddressed ambient audio or bypass admitted-input authority.
+
+Implemented and source/rendered checked: the narrow recovery component resumes
+and checks the real microphone meter, ends speech automatically (including setup
+tests), reuses bounded included recognition, and presents one nonexecuting retry.
+Answers capture exact question run and iteration before recording/editing; their
+shared ephemeral draft association follows full/compact transitions. Retired or
+replaced questions cannot turn old spoken/typed answers into ordinary requests.
+Valid 2–4 choice questions no longer show the unsupported-provider banner or an
+empty duplicate Results panel. Actual artifacts/results and no-choice setup
+failures remain. Native/React question/retry motion and Evil orb/M horns are
+checked; only real RMS drives audio motion. No hosted recognition was connected.
+
+Next exact action: qualify a separately identified normal Windows preview.17
+package from the reviewed source and record its exact bytes. Human
+accent/microphone/echo and taste require a short
+physical acceptance step. Hosted voice remains a later funded, consented service;
+no additional user voice API key is required for this local correction.
+
 ## Current extension — October 4, public release and Unrestricted appearance
 
 The owner now requests a complete signed public Windows release, broader measured

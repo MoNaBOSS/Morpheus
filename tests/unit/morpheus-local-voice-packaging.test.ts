@@ -8,7 +8,7 @@ const { copyLocalVoiceWorker, REQUIRED_LOCAL_VOICE_WORKER_FILES: required } = cr
 };
 const temporary: string[] = [];
 afterEach(() => { for (const path of temporary.splice(0)) rmSync(path, { recursive: true, force: true }); });
-describe('packaged included speech runtime', () => {
+describe('packaged included voice runtime', () => {
   it('copies every pinned worker dependency even when the normal packager omits node_modules', () => {
     const root = mkdtempSync(join(tmpdir(), 'voice-package-')); temporary.push(root);
     const source = join(root, 'source'), destination = join(root, 'resources', 'local-voice', 'worker');
@@ -21,5 +21,15 @@ describe('packaged included speech runtime', () => {
     const source = join(root, 'source'), destination = join(root, 'destination');
     mkdirSync(source); writeFileSync(join(source, 'morpheus-tts-worker.cjs'), 'fixture');
     expect(() => copyLocalVoiceWorker(source, destination)).toThrow('voice:prepare'); expect(existsSync(destination)).toBe(false);
+  });
+  it.each(['morpheus-asr-worker.cjs', 'node_modules/sherpa-onnx-node/non-streaming-asr.js'])('requires %s before copying any payload', missing => {
+    expect(required).toContain(missing);
+    const root = mkdtempSync(join(tmpdir(), 'voice-package-')); temporary.push(root);
+    const source = join(root, 'source'), destination = join(root, 'destination');
+    for (const file of required.filter(file => file !== missing)) {
+      mkdirSync(dirname(join(source, file)), { recursive: true }); writeFileSync(join(source, file), `qualified fixture ${file}`);
+    }
+    expect(() => copyLocalVoiceWorker(source, destination)).toThrow(missing);
+    expect(existsSync(destination)).toBe(false);
   });
 });

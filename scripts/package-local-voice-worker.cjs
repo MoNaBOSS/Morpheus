@@ -3,8 +3,10 @@ const { join } = require('node:path');
 
 const REQUIRED_LOCAL_VOICE_WORKER_FILES = [
   'morpheus-tts-worker.cjs',
+  'morpheus-asr-worker.cjs',
   'node_modules/sherpa-onnx-node/sherpa-onnx.js',
   'node_modules/sherpa-onnx-node/non-streaming-tts.js',
+  'node_modules/sherpa-onnx-node/non-streaming-asr.js',
   'node_modules/sherpa-onnx-node/addon.js',
   'node_modules/sherpa-onnx-node/addon-static-import.js',
   'node_modules/sherpa-onnx-win-x64/sherpa-onnx.node',

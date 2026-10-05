@@ -150,7 +150,9 @@ const selectedFiles = ['Morpheus.exe', 'resources/app.asar', 'resources/resource
   'resources/resources/local-voice/whisper/tiny.en-decoder.int8.onnx', 'resources/resources/local-voice/kokoro/model.int8.onnx',
   'resources/resources/local-voice/kokoro/voices.bin',
   'resources/resources/local-voice/worker/morpheus-tts-worker.cjs',
+  'resources/resources/local-voice/worker/morpheus-asr-worker.cjs',
   'resources/resources/local-voice/worker/node_modules/sherpa-onnx-node/non-streaming-tts.js',
+  'resources/resources/local-voice/worker/node_modules/sherpa-onnx-node/non-streaming-asr.js',
   'resources/resources/local-voice/worker/node_modules/sherpa-onnx-win-x64/sherpa-onnx.node',
   'resources/resources/local-voice/worker/node_modules/sherpa-onnx-win-x64/sherpa-onnx-c-api.dll',
   'resources/resources/local-voice/worker/node_modules/sherpa-onnx-win-x64/onnxruntime.dll'];

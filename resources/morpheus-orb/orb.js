@@ -9,8 +9,15 @@ const status = document.querySelector('#orb-status');
 const presenceStatus = document.querySelector('#orb-presence-status');
 const motionCue = document.querySelector('.morpheus-motion__cue');
 const previewBadge = document.querySelector('.morpheus-motion__preview');
+const recoveryCaption = document.querySelector('#orb-recovery-caption');
 const root = document.documentElement;
 let language = 'en';
+const recoveryLabels = {
+  en: { retry: 'Try again', body: 'Say “Morpheus…” again, or click to type your request.', question: 'Morpheus has a question' },
+  zh: { retry: '再试一次', body: '再说一次“Morpheus…”，或点击输入请求。', question: 'Morpheus 有个问题' },
+  ja: { retry: 'もう一度', body: 'もう一度「Morpheus…」と話すか、クリックして入力してください。', question: 'Morpheus からの質問' },
+  ru: { retry: 'Попробуйте снова', body: 'Снова скажите «Morpheus…» или нажмите, чтобы ввести запрос.', question: 'У Morpheus есть вопрос' },
+};
 
 const motionLabels = {
   en: { asleep: 'Ask Morpheus, quiet', armed: 'Ask Morpheus, ready', listening: 'Morpheus listening', transcribing: 'Morpheus transcribing', understanding: 'Morpheus understanding', 'waiting-for-approval': 'Morpheus needs approval', working: 'Morpheus working', 'preparing-speech': 'Morpheus preparing speech', speaking: 'Morpheus speaking', error: 'Morpheus needs attention' },
@@ -34,15 +41,19 @@ const motionStates = {
 
 function syncMotionState() {
   const state = root.dataset.state || 'armed';
-  orb.dataset.motionState = motionStates[state] || 'idle';
+  const audioActive = state === 'listening' || state === 'speaking' || state === 'transcribing' || state === 'preparing-speech';
+  const retry = Boolean(root.dataset.recovery) && !audioActive;
+  const question = root.dataset.question === 'true' && !audioActive;
+  orb.dataset.motionState = retry ? 'retry' : question ? 'question' : motionStates[state] || 'idle';
   orb.dataset.motionTone = state === 'error' ? 'error' : 'normal';
-  motionCue.textContent = state === 'error' ? '!' : state === 'waiting-for-approval' ? '?' : '';
-  const stateLabel = motionLabels[language][state] || motionLabels[language].armed;
+  motionCue.textContent = retry ? '↻' : question || state === 'waiting-for-approval' ? '?' : state === 'error' ? '!' : '';
+  recoveryCaption.textContent = retry ? `${recoveryLabels[language].retry}. ${recoveryLabels[language].body}` : '';
+  const stateLabel = retry ? recoveryLabels[language].retry : question ? recoveryLabels[language].question : motionLabels[language][state] || motionLabels[language].armed;
   const label = root.dataset.morpheusAppearance === 'unrestricted-preview' && previewBadge.textContent
     ? `${stateLabel} · ${previewBadge.textContent}` : stateLabel;
   orb.ariaLabel = label;
   orb.title = label;
-  presenceStatus.textContent = state === 'error' || state === 'waiting-for-approval' ? label : '';
+  presenceStatus.textContent = retry || question || state === 'error' || state === 'waiting-for-approval' ? label : '';
 }
 
 function syncMotionVisibility() {
@@ -51,7 +62,7 @@ function syncMotionVisibility() {
   if (hidden) orb.style.setProperty('--morpheus-audio-level', '0');
 }
 
-new MutationObserver(syncMotionState).observe(root, { attributes: true, attributeFilter: ['data-state'] });
+new MutationObserver(syncMotionState).observe(root, { attributes: true, attributeFilter: ['data-state', 'data-recovery', 'data-question'] });
 new MutationObserver(syncMotionState).observe(root, { attributes: true, attributeFilter: ['data-morpheus-appearance'] });
 new MutationObserver(syncMotionVisibility).observe(root, { attributes: true, attributeFilter: ['data-window-visible'] });
 document.addEventListener('visibilitychange', syncMotionVisibility);

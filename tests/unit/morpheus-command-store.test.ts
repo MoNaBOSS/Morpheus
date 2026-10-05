@@ -274,4 +274,31 @@ describe('unified Morpheus objective store', () => {
     expect(state.consent).toBeNull();
     expect(state.unsupported?.supportedCapabilities).toEqual(['file.createText', 'system.report']);
   });
+  describe.each(['event', 'snapshot'] as const)('clarification presentation from %s', (source) => {
+    async function project(value: MorpheusObjectiveRun): Promise<void> {
+      if (source === 'event') {
+        let handler!: (next: MorpheusObjectiveEvent) => void;
+        mocks.onObjective.mockImplementation(next => { handler = next; return vi.fn(); });
+        useMorpheusCommandStore.getState().subscribeObjectives();
+        handler(event(value));
+      } else {
+        mocks.objectiveSnapshot.mockResolvedValue({ activeObjectiveRunId: value.objectiveRunId,
+          runOrder: [value.objectiveRunId], runsById: { [value.objectiveRunId]: value }, plansByObjectiveRunId: {} });
+        await useMorpheusCommandStore.getState().loadObjectives();
+      }
+    }
+    it.each([['Markdown', 'Text'], ['Markdown', 'Text', 'PDF', 'HTML']])('shows actual choices %j without unsupported provider guidance', async (...choices) => {
+      await project(run({ state: 'needs-clarification', clarification: 'A configured reasoning provider is required.' }));
+      expect(useMorpheusCommandStore.getState().unsupported).not.toBeNull();
+      await project(run({ state: 'needs-clarification', clarification: 'Which report format?', clarificationChoices: choices }));
+      expect(useMorpheusCommandStore.getState().objectiveRun?.clarificationChoices).toEqual(choices);
+      expect(useMorpheusCommandStore.getState().unsupported).toBeNull();
+      expect(mocks.submitObjective).not.toHaveBeenCalled(); expect(mocks.respondPlanPermission).not.toHaveBeenCalled();
+    });
+    it('preserves capability/provider guidance for a no-choice clarification failure', async () => {
+      await project(run({ state: 'needs-clarification', clarification: 'A configured reasoning provider is required.' }));
+      expect(useMorpheusCommandStore.getState().unsupported).toEqual({ objective: 'Show system information', reason: 'not-understood',
+        supportedCapabilities: ['file.createText', 'system.report'] });
+    });
+  });
 });

@@ -110,6 +110,18 @@
 .morpheus-motion[data-motion-state='attention'] .morpheus-motion__artwork {
   animation: morpheus-motion-core-attention 500ms ease-out both;
 }
+.morpheus-motion[data-motion-state='question'] .morpheus-motion__artwork {
+  animation: morpheus-motion-question 620ms ease-out both;
+}
+.morpheus-motion[data-motion-state='retry'] .morpheus-motion__artwork {
+  animation: morpheus-motion-retry 480ms ease-out both;
+}
+.morpheus-motion[data-motion-state='question'] .morpheus-motion__halo,
+.morpheus-motion[data-motion-state='retry'] .morpheus-motion__halo { opacity: .85; border-color: rgb(var(--morpheus-motion-cue) / .8); }
+.morpheus-motion[data-motion-state='question'] .morpheus-motion__cue,
+.morpheus-motion[data-motion-state='retry'] .morpheus-motion__cue { opacity: 1; transform: scale(1); }
+@keyframes morpheus-motion-question { 0% { transform: scale(.96); } 45% { transform: translateY(-2px) rotate(7deg) scale(.98); } 100% { transform: rotate(4deg) scale(.96); } }
+@keyframes morpheus-motion-retry { 0% { transform: scale(.95); } 35% { transform: rotate(-7deg) scale(.92); } 65% { transform: rotate(5deg) scale(.96); } 100% { transform: scale(.96); } }
 /* Silent capture and playback have no invented pulse. These transforms change
    only when the existing microphone/PCM meter supplies a real amplitude. */
 .morpheus-motion[data-motion-state='listening'] .morpheus-motion__artwork {
@@ -305,6 +317,18 @@
   50% { transform: rotate(-5deg) scale(.99); }
 }
 
+/* Two additive horns keep the original orb/M geometry. Their entrance is finite;
+   during input/output only real RMS changes their height. */
+.morpheus-motion__horn { display: none; position: absolute; z-index: 4; top: 2%; width: 22%; height: 28%; pointer-events: none; background: linear-gradient(145deg, #ffd1d5 0%, #f45b70 36%, #851a37 100%); clip-path: polygon(4% 100%, 12% 48%, 30% 8%, 48% 0%, 43% 37%, 60% 66%, 96% 100%); transform-origin: 50% 100%; }
+.morpheus-motion__horn--left { left: 14%; --morpheus-horn-direction: -1; }
+.morpheus-motion__horn--right { right: 14%; --morpheus-horn-direction: 1; }
+[data-appearance='unrestricted-preview'] .morpheus-motion__horn { display: block; transform: scaleX(var(--morpheus-horn-direction)) scaleY(1); animation: morpheus-horn-grow 700ms cubic-bezier(.16,.8,.24,1) both; }
+.morpheus-brand-mark[data-appearance='unrestricted-preview'] .morpheus-brand-mark__identity { filter: hue-rotate(195deg) saturate(1.15); }
+.morpheus-brand-mark__arrival { position: relative; }
+.morpheus-motion[data-motion-state='listening'] .morpheus-motion__horn,
+.morpheus-motion[data-motion-state='speaking'] .morpheus-motion__horn { animation: none; transition: transform 140ms var(--morpheus-motion-ease); transform: scaleX(var(--morpheus-horn-direction)) scaleY(calc(.88 + var(--morpheus-motion-amplitude) * .24)); }
+@keyframes morpheus-horn-grow { from { transform: scaleX(var(--morpheus-horn-direction)) scaleY(.08); opacity: 0; } to { transform: scaleX(var(--morpheus-horn-direction)) scaleY(1); opacity: 1; } }
+
 @media (prefers-reduced-motion: reduce) {
   .morpheus-motion[data-motion-state] .morpheus-motion__aurora,
   .morpheus-motion[data-motion-state] .morpheus-motion__halo,
@@ -320,6 +344,8 @@
   .morpheus-motion[data-motion-state='speaking'] .morpheus-motion__halo {
     opacity: 0.7;
   }
+  [data-appearance='unrestricted-preview'] .morpheus-motion__horn,
+  .morpheus-motion[data-motion-state] .morpheus-motion__horn { animation: none; transition: none; transform: scaleX(var(--morpheus-horn-direction)); will-change: auto; }
   .morpheus-motion[data-motion-paused][data-motion-state] .morpheus-motion__aurora {
     will-change: auto;
   }
@@ -337,3 +363,4 @@
   transition: none;
   will-change: auto;
 }
+[data-motion-paused='true'][data-appearance='unrestricted-preview'] .morpheus-motion__horn { animation: none; transition: none; will-change: auto; }
