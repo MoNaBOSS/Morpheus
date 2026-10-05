@@ -14,6 +14,7 @@ ownedPaths:
   - src/stores/chat/session-status.ts
   - src/stores/chat/session-catalog.ts
   - electron/main/ipc/**
+  - electron/main/ipc-handlers.ts
   - electron/services/**
   - services/managed/**
   - electron/gateway/**

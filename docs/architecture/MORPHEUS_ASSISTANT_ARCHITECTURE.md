@@ -433,4 +433,8 @@ dispatch. Local wake remains consented and Main verifies original addressed
 audio using the selected recognizer. Key/model/mute changes cancel old work.
 This optional connection is not the hosted entitlement or an all-user funded key.
 Evidence and unresolved acceptance live in the single experience specification
-and Windows checklist; the historical architecture below remains preserved.
+and Windows checklist; the historical architecture above remains preserved.
+The ordinary Main host registry explicitly owns `deepgramVoice`; source-only
+factory creation is insufficient. Normal preview.18 now exercises protected
+connection and actual cloud PCM through that route with an isolated synthetic
+profile. Physical voice and installed-app acceptance remain separately open.

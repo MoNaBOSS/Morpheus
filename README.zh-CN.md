@@ -1,4 +1,6 @@
-当前语音组件（preview.18 源码，10 月 5 日）：设置 -> Voice -> Cloud voice（可选）提供遮蔽的受保护密钥输入、Save & test 和明确的 Use cloud voice。内置语音仍无需额外密钥。Main 流式接收选定麦克风 PCM，仅接受自然结束的最终发言；本地托盘唤醒通过所选云端识别器验证被呼叫的原始音频。初始识别为 Nova-3，Flux 可选，真实 Kit PCM 复用可取消的播放路径。任务模型账户、Core 工具、个性和历史均保留。合成输入的真实服务识别和 Kit 测试通过；真人麦克风、回声、原生唤醒时机、签名及面向所有用户的付费语音后台仍待验收。不会打包所有者密钥。准确安装包标识、证据及下一步见[当前清单](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md)与[唯一规范](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md)。
+已识别的音频交付（10 月 5 日）：**1.2.0-preview.18**，冻结应用源代码 `fa89ee18fdf97226a6c758f6591eeda2a614efda`，独立交付目录为 `E:/Morpheus-builds/deliveries/Morpheus-Windows-BYOK-1.2.0-preview.18`。实际普通 Windows 包已验证安全连接、真实生成音频经麦克风/AudioWorklet 的自然结束、Kit 播放、重启后的静音/安静偏好和测试凭据删除。NSIS 内嵌文件、CRC 和选定哈希匹配这些已测试应用字节。安装程序 **NotSigned**；真人麦克风/本机唤醒、安装升级及全用户付费托管仍未验收。首次实机检查：设置 -> Voice -> Deepgram cloud voice -> Save & test -> Use cloud voice，保持麦克风静音并播放示例。内置音频无需额外密钥，交付物不含所有者密钥。精确 EXE 信息及证据边界见[当前清单](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md)。
+
+当前语音组件（preview.18，10 月 5 日）：设置 -> Voice -> Cloud voice（可选）提供遮蔽的受保护密钥输入、Save & test 和明确的 Use cloud voice。内置语音仍无需额外密钥。Main 流式接收选定麦克风 PCM，仅接受自然结束的最终发言；本地托盘唤醒通过所选云端识别器验证被呼叫的原始音频。初始识别为 Nova-3，Flux 可选，真实 Kit PCM 复用可取消的播放路径。任务模型账户、Core 工具、个性和历史均保留。合成输入的真实服务识别和 Kit 测试通过；真人麦克风、回声、原生唤醒时机、签名及面向所有用户的付费语音后台仍待验收。不会打包所有者密钥。准确安装包标识、证据及下一步见[当前清单](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md)与[唯一规范](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md)。
 
 下方为此前检查点的历史证据；其中“当前”均指当时状态。
 

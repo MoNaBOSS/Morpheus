@@ -1,6 +1,7 @@
 # Current component — Deepgram connected speech, 2026-10-05
 
-Owner authorized modular hosted speech and easy secure setup. Preview.18 source
+Owner authorized modular hosted speech and easy secure setup. Preview.18 delivery
+from frozen `fa89ee18`
 adds optional protected Cloud voice in ordinary/Advanced Voice; no owner/shared
 key ships and Included voice remains available without a key. Main owns live
 selected-microphone PCM recognition, natural final turn admission, one result
@@ -11,8 +12,13 @@ has a replay cost. Existing task model/Core/ACP, profiles and personality remain
 
 Live production-adapter recognition and Kit/interruption checks passed on
 immutable generated audio; they exposed and fixed Kit's canonical `kit` model
-alias. Typechecks, focused voice regressions and comms/harness gates pass. Final
-rendered/package evidence and exact next step live in the single
+alias. Typechecks, focused voice regressions and comms/harness gates pass. Actual
+normal package now passes protected setup, generated-file microphone
+through the real worklet/Main path, natural final, Kit playback, restart mute/quiet
+and protected removal. Static installer payload matches those exact application
+bytes. Separate unsigned delivery is
+`E:\Morpheus-builds\deliveries\Morpheus-Windows-BYOK-1.2.0-preview.18`.
+Rendered/package evidence, exact EXE identity and next sample test live in the single
 [checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) and
 [specification](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md). Instant native keyword
 wake, human mic/noise/echo, installed upgrade, signing and funded all-user hosting

@@ -25,8 +25,10 @@
   focused input/settings/service/protocol and existing voice lifecycle tests;
   comms replay/compare and harness CI pass. Local native opt-in tests were skipped,
   so they are not counted as new local runtime acceptance.
-- [ ] Package and independently qualify identified preview.18 Windows candidate
-  after final rendered checks pass; preview.17 and owner installation preserved.
+- [x] Package and independently qualify preview.18 on frozen `fa89ee18`: actual
+  normal protected setup, natural final/worklet input, Kit output, mute/quiet
+  persistence and removal; static installer bytes match the qualified package.
+  Preview.17 and the owner installation remain preserved. No install is claimed.
 - [ ] Human microphone/noise/echo/native keyword latency acceptance and funded
   all-user backend/signing remain distinct gates, not bundled into API success.
 
@@ -38,7 +40,48 @@ owner key is saved by these probes. Setup for the owner/users is Settings -> Voi
 -> Cloud voice (optional) -> Save & test -> Use cloud voice, then explicit input
 test/sample. Microphone consent remains a separate explicit control.
 
-## Hosted voice evaluation — October 5
+Normal packaged qualification now passes on frozen application source
+`fa89ee18fdf97226a6c758f6591eeda2a614efda`, without E2E app mode or fake provider replies.
+An isolated synthetic profile used the actual protected setup/Main/host routes,
+real Nova-3 admission and natural final, and fixed generated audio through the
+actual Renderer getUserMedia/AudioWorklet path. It stopped all fake-file tracks
+without Finish, did not execute a task or copy calibration into the draft, and
+played actual Kit PCM. Explicit sample works with spoken replies off and the mic
+muted. Restart preserved protected configuration and mute/quiet; the test key was
+removed through the actual setup route, independently confirmed deleted with no
+ciphertext. No owner profile or physical microphone was read or changed.
+Receipt: `E:/Morpheus-builds/experience-deepgram-preview18/latest-packaged-cloud-qualification.json`.
+
+Separate delivery: `E:/Morpheus-builds/deliveries/Morpheus-Windows-BYOK-1.2.0-preview.18`. EXE `Morpheus-1.2.0-preview.18-win-x64.exe`,
+494134120 bytes, SHA256 `a7d5631a398247506cb856e8dcecd463fbbeb55977395a107837c286fbca6be5`,
+**NotSigned**. ASAR SHA256 `74a904cf2dc3429824ec842846829516d5e44e14decf418d11a469aa4dd13d45`.
+NSIS was built from this exact qualified prepackaged directory with normal
+compression. Static inspection passed all 40928 embedded file paths/sizes,
+archive CRCs and selected payload hashes, including the preserved local voice/Core
+resources. ASAR and application EXE match the successful runtime receipt.
+Static receipt: `E:/Morpheus-builds/experience-deepgram-preview18/installer-inspection.json`. This is not execution
+of the installer or a transfer of preview.17 runtime evidence to preview.18.
+
+The retained first normal-package failure exposed a missing connection-service
+entry in the ordinary Main host registry. It saved no credential (no vault file
+was created); `fa89ee18` fixes that wire and the actual normal runtime passes.
+The earlier quiet-reply sample defect is fixed by `611aab7e`. Failed receipts and
+obsolete partial build folders remain separate and are not delivered. The actual
+6.8-second Kit sample has first PCM 1156 ms and renderer playback
+completed; this includes connection/network behavior and does not prove physical
+speaker quality. Setup motion video uses UI fixtures/dummy key and is labelled;
+the delivered WAV is actual provider output, not simulated voice.
+
+Exact next acceptance step: quit the old tray app, install the identified candidate,
+open Settings -> Voice -> Deepgram cloud voice, save/test a personal key, explicitly
+choose Use cloud voice, keep the microphone muted and play Preview selected voice.
+After that sample is accepted, run one Check microphone utterance without Finish.
+Human microphone/accent/noise/echo, acoustic interruption, native tray keyword
+latency, actual install/upgrade, signing and an authenticated funded operator
+backend remain open. Do not describe this optional personal connection as included
+shared cloud voice, complete commercial readiness or a solved task-routing gap.
+
+## Historical hosted voice evaluation — before preview.18 integration
 
 - [x] Recheck actual saved provider metadata and source routing: default task
   account OpenRouter GPT-5.6 Luna, nondefault OpenAI GPT-5.6 Sol, configured provider
