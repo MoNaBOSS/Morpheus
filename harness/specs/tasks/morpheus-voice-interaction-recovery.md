@@ -11,6 +11,7 @@ touchedAreas:
   - shared/host-api/**
   - src/lib/host-api.ts
   - electron/main/morpheus-wake-orb.ts
+  - electron/main/ipc-handlers.ts
   - shared/morpheus/**
   - src/lib/morpheus-*.ts
   - src/stores/morpheus-voice.ts

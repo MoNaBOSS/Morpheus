@@ -271,6 +271,7 @@ function registerTypedHostHandlers(
     systems: morpheusService.systems,
     companionSurface,
     voice: morpheusService.voice,
+    deepgramVoice: morpheusService.deepgramVoice,
     runtimeControl: morpheusService.runtimeControl,
     workspaces: morpheusService.workspaces,
     audit: morpheusService.audit,
