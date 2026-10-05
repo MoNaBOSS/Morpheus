@@ -1,16 +1,30 @@
 # Current continuation — voice interaction correction, 2026-10-05
 
-**Active bounded component:** automatic microphone speech-end handling, reusable
-included recognition, nonexecuting retry, original-question answer continuity and
-state/audio-driven motion. `1.2.0-preview.17` is being qualified separately; it is
-not yet a delivered or installed release. Preview.16 and owner profiles remain.
-The original generated command corpus still has 24/40 strict outcomes; the new
-worker proves unchanged transcripts and faster warm recognition, not better
-hearing. Hosted Flux/Groq recognition are recommendations requiring a funded,
-consented operator service, not connected capabilities. The current specification
-and completion checklist own exact evidence and the next step.
+**Current separate handoff:** `1.2.0-preview.17`, frozen application source
+`c64f132c3d43f17e5d1794779de1429795b08010`, passed normal packaged qualification
+and installer byte/integrity inspection. The normal runtime used no E2E mode and
+an isolated synthetic profile: real local PCM output, generated selected-stream
+Windows-helper/Whisper/Core wake, system report, mute/tray/foreground veto,
+connected settings/drafts, restart and Evil M/orb horns passed. Rendered checks
+also cover automatic speech-end, nonexecuting retry and exact question continuity.
+The separate delivery is
+`E:\Morpheus-builds\deliveries\Morpheus-Windows-BYOK-1.2.0-preview.17`.
+Its EXE is 492,813,297 bytes, SHA256
+`b2c2849f7ff3aab46cd96cb3c4dab130d8e710a633a0df0588201293b0299939`, **NotSigned**;
+ASAR SHA256 is `10bc7c82023743202521bff5f7c37dc0d318822ffad429eb79a0060682d91c3b`.
+All 40,928 installer payload paths/sizes, CRC and 74 selected hashes match the
+normally tested payload. Evidence in `experience-preview17-qualification` and
+the handoff includes an actual 33.242-second app-window video and 7.6-second local
+Kokoro WAV. This is generated-input qualification, not human microphone/echo,
+preview.17 installation/upgrade, signing or hosted-service acceptance.
+Preview.16 and owner profiles remain preserved. The worker retains 40/40 identical
+transcripts and 24/40 strict generated outcomes; warm IPC speed is not accuracy.
+Hosted Flux/Groq remain recommendations, not integrations. Next: in Voice choose
+**Included voice** and the intended microphone, enable consented companion input,
+move to the tray and say **“Hey Morpheus, show system information”** without Finish.
+The single specification and checklist retain the exact evidence and open gates.
 
-**Latest separate delivery:** `1.2.0-preview.16`, application
+**Previous separate delivery:** `1.2.0-preview.16`, application
 checkpoint `b3a0bff5`, clean qualification source
 `f01ebe907b2b4e258a649ce9413a63fa257afe34`. Saved red appearance, meaningful state
 motion and connected payment-option presentation are real local features; they

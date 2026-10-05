@@ -10,8 +10,9 @@
   its meter did not resume/check AudioContext. Add bounded resume, cancellation,
   paused-graph clock handling and unavailable repair hook. Eleven focused meter
   tests passed, including real-sample silence ending; hardware remains unverified.
-- [ ] Verify automatic speech-end submission, exact two wake forms in opted-in tray,
-  admitted-wake acknowledgment, foreground veto and mute in the rendered application.
+- [x] Verify automatic speech-end submission, exact two wake forms in opted-in tray,
+  admitted-wake acknowledgment, foreground veto and mute in rendered/generated
+  application checks; this does not qualify physical human audio or echo.
 - [x] Implement bounded reusable local recognition and prove actual pinned-engine
   output/lifetime/cancellation; retain baseline corpus failures and measure timing.
 - [x] Give unusable addressed recognition explicit nonexecuting repair; preserve
@@ -25,12 +26,18 @@
   Deepgram Flux cost/privacy/network/operation tradeoffs in the existing spec.
 - [ ] Later hosted acceptance: funded operator service, secure credentials, consent,
   quotas, actual human command/turn-taking tests and offline recovery. Not connected.
-- [ ] Run focused source, real engine, rendered/native and normal packaged checks;
-  record actual motion/output plus source/hash/version in a separate delivery.
+- [x] Run focused source, real engine, rendered/native and normal packaged checks;
+  record actual generated-input motion/output plus source/hash/version in the
+  separately identified preview.17 handoff.
 - [ ] Complete the owner's short physical command/clarification/Stop/mute check;
   generated audio does not qualify human recognition or acoustic interruption.
+- [ ] Qualify preview.17 installation, previous-version upgrade, reinstall and
+  profile-preserving uninstall. Preview.16 installed evidence does not qualify
+  these changed preview.17 bytes.
+- [ ] Qualify actual publisher signatures and live hosted services; local preview
+  evidence activates neither signing nor hosted/payment/NerdGPT capability.
 
-Current source evidence, before rendered/package acceptance: exact production
+Retained worker source evidence: exact production
 recognizer adapter versus fresh CLI and immutable original transcripts passes
 40/40 parity, retaining the old 24/40 strict corpus outcomes. Fresh worker first
 request 753 ms; 39 warm requests median/p95 210/283 ms versus CLI 500/553 ms.
@@ -78,7 +85,34 @@ native fixture hides Main at first ready-to-show; the test now awaits that actua
 native lifecycle before restoring/focusing Main and capturing. Run5 verifies
 visible-window capture and transition removal. Run6 records the final corrected
 question layout. No production code change was inferred from the capture timeout.
-Normal package/installer verification is the next step, not completed yet.
+Normal preview.17 package and installer verification passed at frozen clean
+application source `c64f132c3d43f17e5d1794779de1429795b08010`, version
+`1.2.0-preview.17`. `latest-normal-qualification.json` records a normally packaged
+runtime with no E2E mode and an isolated synthetic profile, zero recorded Main or
+renderer errors, real local PCM/Core/system.report and generated selected-stream
+Windows-helper/Whisper wake. Mute, tray and foreground veto, connected settings,
+drafts, full process restart and visible Evil M/orb horns passed. This is generated
+audio evidence, not physical human recognition, speaker/echo or live services.
+
+`installer-inspection.json` binds the actual local EXE to that normal payload:
+492,813,297 bytes, SHA256
+`b2c2849f7ff3aab46cd96cb3c4dab130d8e710a633a0df0588201293b0299939`, **NotSigned**;
+ASAR SHA256 `10bc7c82023743202521bff5f7c37dc0d318822ffad429eb79a0060682d91c3b`.
+CRC, all 40,928 payload paths/sizes and 74 selected hashes match. The EXE was
+inspected, not installed; preview.17 installation/upgrade acceptance stays open.
+The separate handoff at
+`E:\Morpheus-builds\deliveries\Morpheus-Windows-BYOK-1.2.0-preview.17` includes
+START-HERE, build/verification receipts, screenshots, an actual 33.242-second
+app-window video and 7.6-second generated local Kokoro WAV. Older deliveries and
+owner profiles remain preserved; no owner or posted key is shared.
+
+Next short PC test: choose **Included voice** and the intended microphone in
+**Voice**, enable consented companion input, move to the tray and say
+**“Hey Morpheus, show system information”** without Finish. Observe automatic
+utterance ending and exactly one report, then check mute/foreground veto. Worker
+40/40 transcript parity and 24/40 strict generated outcomes remain unchanged;
+the warm IPC speed gain is not recognition accuracy. Flux/Groq are recommendations
+only, without a funded/consented hosted service integration.
 
 ## Active public-release extension — October 4
 

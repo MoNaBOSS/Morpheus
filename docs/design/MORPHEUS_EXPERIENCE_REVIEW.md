@@ -2,7 +2,7 @@
 
 ## Active voice interaction correction — October 5
 
-The owner authorized the measured next component: explicit voice retry and
+The owner authorized this measured component: explicit voice retry and
 clarification, faster recognition lifetime, and coherent audio/state-driven motion.
 Baseline `593da4b43e7275a19992a793b1597631473a6a22` is clean and matches fetched origin.
 Preserve the separately delivered preview.16 and all owner profiles. Existing
@@ -78,11 +78,37 @@ empty duplicate Results panel. Actual artifacts/results and no-choice setup
 failures remain. Native/React question/retry motion and Evil orb/M horns are
 checked; only real RMS drives audio motion. No hosted recognition was connected.
 
-Next exact action: qualify a separately identified normal Windows preview.17
-package from the reviewed source and record its exact bytes. Human
-accent/microphone/echo and taste require a short
-physical acceptance step. Hosted voice remains a later funded, consented service;
-no additional user voice API key is required for this local correction.
+Normal package and installer receipt: frozen clean application source
+`c64f132c3d43f17e5d1794779de1429795b08010`, version `1.2.0-preview.17`, passed the
+normal runtime and byte/integrity checks recorded at
+`E:\Morpheus-builds\experience-preview17-qualification\latest-normal-qualification.json`
+and `installer-inspection.json`. No E2E mode or owner profile was used. Actual
+local PCM output, generated selected-stream Windows-helper/Whisper/Core wake,
+system report, mute/tray/foreground behavior, settings/draft continuity, full
+restart and Evil M/orb horns passed with zero recorded Main/renderer errors.
+Rendered automatic endpointing, recovery and exact question transitions passed
+with their real synthetic-audio versus labelled presentation-fixture boundaries.
+
+The separate handoff is
+`E:\Morpheus-builds\deliveries\Morpheus-Windows-BYOK-1.2.0-preview.17`, containing
+the identified installer, guide, build/verification receipts, screenshots, actual
+33.242-second chronological app-window video and 7.6-second local Kokoro WAV.
+EXE: 492,813,297 bytes, SHA256
+`b2c2849f7ff3aab46cd96cb3c4dab130d8e710a633a0df0588201293b0299939`, **NotSigned**.
+ASAR: `10bc7c82023743202521bff5f7c37dc0d318822ffad429eb79a0060682d91c3b`.
+Installer CRC, all 40,928 payload paths/sizes and 74 selected hashes match the
+normal tested payload. Inspection is not installation: preview.17 install/upgrade,
+physical human microphone/accent/speaker/echo, signing and hosted acceptance remain
+open. Preview.16 delivery and owner data remain preserved. Bounded local-worker
+reuse retains 40/40 transcripts and the prior 24/40 strict generated outcomes;
+its warm IPC gain does not improve measured recognition accuracy.
+
+Next exact PC test: in **Voice**, choose **Included voice** and the intended
+microphone, enable consented companion listening, move to the tray and say
+**“Hey Morpheus, show system information”** without Finish. Record whether it
+ends the utterance, admits exactly one report and obeys mute/foreground scope.
+Hosted Flux/Groq remain later funded, consented recommendations; neither is
+integrated, and standard included local voice needs no additional API key.
 
 ## Current extension — October 4, public release and Unrestricted appearance
 
