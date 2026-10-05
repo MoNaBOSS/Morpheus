@@ -1,3 +1,12 @@
+Active component — 1.5.1 reliability repair, October 5: continue from clean
+`919a12d8`; owner rejected actual 1.5.0. Actual protected Deepgram setup passed
+and was selected through installed Voice settings. Preserve connection result
+through authority refresh, acknowledge hidden addressed capture with the existing
+native orb, and reuse Chrome's validated existing last-used profile when it is the
+Windows default. Exact wake/action authority, mute, visible-chat suspension and
+capabilities are unchanged. Qualify corrected source and normal package before a
+new delivery claim. The single experience specification and checklist own evidence.
+
 # Current component — 1.5.0 bounded task routing, 2026-10-05
 
 Owner PC acceptance has since **rejected** 1.5.0. Installed ASAR/app EXE match the

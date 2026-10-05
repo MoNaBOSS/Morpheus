@@ -87,6 +87,7 @@ import type { PermissionProfile } from '@shared/morpheus/permission-types';
 import type { MorpheusRuntimeControlSnapshot } from '@shared/morpheus/runtime-control-types';
 import type { MorpheusCompanionSurfaceStatus } from '@shared/morpheus/companion-types';
 import type { MorpheusVoicePresence } from '@shared/morpheus/voice-types';
+import { shouldRestoreAddressedVoiceOrb } from './morpheus-wake-orb';
 import type { MorpheusAppearance } from '@shared/morpheus/appearance-types';
 import { writeMorpheusMemoryExport } from '../services/morpheus/memory/memory-export';
 
@@ -199,6 +200,7 @@ function registerTypedHostHandlers(
   // channel; the window guard mirrors `sendMainWindowEvent` in main/index.ts so
   // a closed window cannot throw out of the runtime.
   let presentedWake = 0;
+  let presentedVoiceState: MorpheusVoicePresence['state'] | undefined;
   const managedAccount = createManagedAccountApi({
     userDataDir: app.getPath('userData'), env: process.env,
     protection: {
@@ -232,6 +234,11 @@ function registerTypedHostHandlers(
     emitVoicePresence: (presence) => {
       if (mainWindow.isDestroyed()) return;
       companionSurface.presence?.(presence);
+      // Restore presentation as soon as real addressed capture starts. This is
+      // not a verified wakeSequence and grants no command or follow-up authority.
+      if (shouldRestoreAddressedVoiceOrb(presentedVoiceState, presence,
+        !mainWindow.isVisible() || mainWindow.isMinimized())) companionSurface.wake?.();
+      presentedVoiceState = presence.state;
       if (presence.ambientEnabled && presence.state === 'armed' && (presence.wakeSequence ?? 0) > presentedWake) {
         presentedWake = presence.wakeSequence!;
         companionSurface.wake?.();

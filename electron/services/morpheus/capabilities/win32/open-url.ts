@@ -1,5 +1,6 @@
 /** Opens a validated public URL through Electron's external browser bridge. */
 import { shell } from 'electron';
+import { openInExistingChromeProfile, resolveExistingChromeProfile } from './browser-profile';
 
 import type { MorpheusActionResult } from '@shared/morpheus/action-types';
 import type { MorpheusParamsFor } from '@shared/morpheus/actions/registry';
@@ -17,7 +18,7 @@ export const win32OpenUrlCapability: MorpheusCapability<'web.openUrl'> = {
 
   async resolve(
     params: MorpheusParamsFor<'web.openUrl'>,
-    _context: MorpheusCapabilityContext,
+    context: MorpheusCapabilityContext,
   ): Promise<MorpheusResolution> {
     let parsed: URL;
     try { parsed = new URL(params.url); } catch {
@@ -27,11 +28,13 @@ export const win32OpenUrlCapability: MorpheusCapability<'web.openUrl'> = {
       throw new MorpheusCapabilityError('invalid-params', 'Only http and https URLs are allowed');
     }
     const url = parsed.toString();
+    const chrome = await resolveExistingChromeProfile(context.env, parsed.protocol === 'https:' ? 'https' : 'http');
     return {
       target: { kind: 'none' },
       execute: async (): Promise<MorpheusActionResult> => {
         try {
-          await shell.openExternal(url);
+          if (chrome) await openInExistingChromeProfile(chrome, url);
+          else await shell.openExternal(url);
         } catch {
           throw new MorpheusCapabilityError('execution-failed', 'The URL could not be opened');
         }

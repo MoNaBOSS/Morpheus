@@ -12,6 +12,8 @@ touchedAreas:
   - src/lib/host-api.ts
   - electron/main/morpheus-wake-orb.ts
   - electron/main/ipc-handlers.ts
+  - electron/services/morpheus/capabilities/win32/open-url.ts
+  - electron/services/morpheus/capabilities/win32/browser-profile.ts
   - shared/morpheus/**
   - src/lib/morpheus-*.ts
   - src/stores/morpheus-voice.ts
@@ -56,6 +58,9 @@ requiredTests:
   - pnpm run comms:compare
   - pnpm run harness:ci
 acceptance:
+  - Native wake verification immediately restores an informational orb in hidden companion scope, without granting transcript, follow-up or execution authority; visible chat and mute suppress restoration.
+  - Saving protected voice credentials preserves the mounted connection form and its test result while old audio authority is revoked.
+  - When Chrome is the Windows HTTP/HTTPS default, URL actions reuse its validated existing last-used profile without creating a user-data directory; other defaults retain Windows delegation.
   - Deepgram connection setup remains optional, separate from task providers, stores credentials protected in Main, never reads secrets back, and offers an actionable bounded connection test.
   - A configured Deepgram tray wake uses original addressed audio through the selected hosted recognizer rather than forcing included tiny.en; no ambient cloud stream or unaddressed action is admitted.
   - Only validated natural final transcript or explicitly requested finish may complete a hosted turn; partial updates, close/flush, stale results and revoked authority never submit a command.
@@ -84,3 +89,11 @@ optional personal cloud connection; included local voice remains available witho
 another key, and global operator-funded service is still a separate deployment gate.
 Do not embed the owner's service key in source, scripts, diagnostics or installers.
 Voice transport is Main-owned; the existing task agent and planner selection stay.
+
+October 5 owner reliability repair: actual installed 1.5.0 used legacy provider
+audio despite the available cloud integration. The supplied test access has now
+been securely saved, tested and selected through the installed application.
+Repair the reproduced connection-form remount on credential invalidation,
+acknowledge real native wake capture before secondary ASR, and preserve Chrome's
+existing profile. Native wake acknowledgement is presentation only; exact
+selected-stream verification still owns all command/follow-up admission.

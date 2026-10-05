@@ -705,6 +705,23 @@ describe('Morpheus renderer voice controller', () => {
     unsubscribe();
   });
 
+  it('preserves mounted setup metadata while replacement status is pending without advertising audio readiness', async () => {
+    await useMorpheusVoiceStore.getState().loadStatus();
+    const previous = useMorpheusVoiceStore.getState().status;
+    let finish!: (value: unknown) => void;
+    mocks.voiceStatus.mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+    const unsubscribe = useMorpheusVoiceStore.getState().subscribePresence();
+    mocks.voicePresenceHandler?.({ v: 4, state: 'asleep', ambientEnabled: false, inputEnabled: false, authorityRevision: 1 });
+    expect(useMorpheusVoiceStore.getState().status).not.toBeNull();
+    expect(useMorpheusVoiceStore.getState().status).toMatchObject({
+      transcriptionAvailable: false, neuralSpeechAvailable: false, presence: { authorityRevision: 1, inputEnabled: false },
+    });
+    expect(useMorpheusVoiceStore.getState().status?.settings.modelId).toBe(previous?.settings.modelId);
+    expect(mocks.submitObjective).not.toHaveBeenCalled();
+    finish({ ...previous, presence: { v: 4, state: 'asleep', ambientEnabled: false, inputEnabled: false, authorityRevision: 1 } });
+    await Promise.resolve(); await Promise.resolve(); unsubscribe();
+  });
+
   it('releases old capture when a status reply reveals replacement before its authority event', async () => {
     const base = await companionStatus();
     const initial = { ...base, presence: { v: 4, state: 'armed', ambientEnabled: true, authorityRevision: 0 } };

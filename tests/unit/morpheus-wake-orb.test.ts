@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MorpheusWakeOrb } from '@electron/main/morpheus-wake-orb';
+import { MorpheusWakeOrb, shouldRestoreAddressedVoiceOrb } from '@electron/main/morpheus-wake-orb';
 import { wakeOrbBounds, wakeOrbHoverBounds } from '@electron/main/morpheus-presence-layout';
 
 const mock = vi.hoisted(() => ({ cursor: { x: 1500, y: 900 }, windows: [] as Array<{
@@ -56,6 +56,16 @@ vi.mock('electron', async () => {
 });
 
 describe.skipIf(process.platform !== 'win32')('native orb visibility across delayed loading', () => {
+  it('acknowledges real hidden capture before verification without waking for mute, foreground, or duplicate states', () => {
+    const capture = { v: 4 as const, state: 'listening' as const, ambientEnabled: true, inputEnabled: true };
+    expect(shouldRestoreAddressedVoiceOrb('armed', capture, true)).toBe(true);
+    expect(capture).not.toHaveProperty('wakeSequence');
+    expect(shouldRestoreAddressedVoiceOrb('listening', capture, true)).toBe(false);
+    expect(shouldRestoreAddressedVoiceOrb('armed', capture, false)).toBe(false);
+    expect(shouldRestoreAddressedVoiceOrb('armed', { ...capture, inputEnabled: false }, true)).toBe(false);
+    expect(shouldRestoreAddressedVoiceOrb('armed', { ...capture, ambientEnabled: false }, true)).toBe(false);
+    expect(shouldRestoreAddressedVoiceOrb('armed', { ...capture, state: 'armed' }, true)).toBe(false);
+  });
   it('shows a bounded informational retry without focus and ignores duplicate or muted cues', () => {
     vi.useFakeTimers(); const orb = new MorpheusWakeOrb(vi.fn());
     try {

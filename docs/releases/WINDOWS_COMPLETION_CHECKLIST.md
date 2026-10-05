@@ -1,5 +1,16 @@
 # Current Windows experience completion checklist
 
+Active reliability repair, October 5:
+- [x] Securely save and test the provided Deepgram connection in the actual
+  installed application; explicitly select cloud voice without changing mute.
+- [x] Reproduce lost Save & test result caused by voice authority refresh.
+- [ ] Preserve the connection panel/result through invalidation and rendered QA.
+- [ ] Restore informational wake orb before secondary recognition, with hidden
+  scope and mute veto; no change to execution or follow-up authority.
+- [ ] Reuse validated existing Chrome profile for its default-browser URL actions.
+- [ ] Qualify corrected normal package, real cloud stages and browser delegation;
+  distinguish generated speech from owner accent and physical microphone acceptance.
+
 Owner acceptance, October 5: **REJECTED**. Exact installed 1.5.0 ASAR/app EXE
 match the local delivery identities below. The owner reports inconsistent wake,
 wrong Chrome profile and slow/unreliable commands.

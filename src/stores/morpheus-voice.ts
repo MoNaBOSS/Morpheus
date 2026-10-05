@@ -674,7 +674,11 @@ export const useMorpheusVoiceStore = create<MorpheusVoiceState>((set, get) => {
           get().cancel();
           stopAmbientLocal();
           ambientAutoStartBlocked = true;
-          set({ status: null, presence });
+          // Keep mounted setup controls and their in-flight connection test.
+          // Cached metadata is presentation only: capture/playback are unavailable
+          // until the new Main authority returns its current status.
+          set((state) => ({ status: state.status ? effectiveVoiceStatus({ ...state.status,
+            presence, transcriptionAvailable: false, neuralSpeechAvailable: false }) : null, presence }));
           void get().loadStatus();
           return;
         }

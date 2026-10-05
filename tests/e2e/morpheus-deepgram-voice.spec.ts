@@ -50,6 +50,11 @@ for (const locale of ['en', 'zh', 'ja', 'ru']) {
             if (payload.apiKey) fixture.secretAccepted = payload.apiKey === 'fixture-only-deepgram-key';
             connection = { ...connection, configured: connection.configured || fixture.secretAccepted, recognitionModel: payload.recognitionModel ?? connection.recognitionModel };
             status = { ...status, deepgram: connection };
+            // Actual protected connection mutation revokes old audio authority.
+            // Keep the form mounted while status is refreshed, as production does.
+            status.presence = { ...status.presence, authorityRevision: (status.presence.authorityRevision ?? 0) + 1 };
+            event.sender.send('morpheus:voice-presence', status.presence);
+            await new Promise((resolve) => setTimeout(resolve, 120));
             return response(connection);
           }
           if (request.action === 'testDeepgramVoiceConnection') {

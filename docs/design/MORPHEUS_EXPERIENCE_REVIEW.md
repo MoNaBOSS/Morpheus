@@ -1,5 +1,19 @@
 # Morpheus experience specification
 
+Active repair, October 5: owner authorized autonomous correction of the rejected
+installed 1.5.0. Secure Deepgram setup in the actual application passed service
+access and cloud voice was explicitly selected; no credentials enter source or
+delivery. Reproduced save/test remount loses its result. Preserve the mounted
+connection panel during authority refresh, restore an informational native orb
+during real addressed capture only while the main window is hidden, and reuse
+Chrome's validated existing last-used profile when Chrome is the Windows default.
+Do not relax exact wake verification, mute, chat suspension or action authority.
+Next step: implement and qualify this bounded component, then test normal packaged
+bytes. Earlier owner rejection remains in force until the corrected interaction
+is demonstrated. Browser computer control was blocked by URL verification; use
+isolated Electron rendered tests and explicit runtime evidence, not a claimed
+inspection of the owner's Chrome page.
+
 Owner PC review, October 5: **1.5.0 is rejected for reliability and latency**.
 Read-only identity confirms the installed ASAR/app EXE exactly match the delivered
 `7ae1423a` local package; do not blame an older installer. Actual audit shows native

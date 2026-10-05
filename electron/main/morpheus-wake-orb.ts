@@ -5,6 +5,13 @@ import { clampPresenceBounds, wakeOrbBounds, wakeOrbHoverBounds } from './morphe
 import type { MorpheusOrbPlacement, OrbPresentationAction } from '@shared/morpheus/orb-presentation';
 import { normalizeMorpheusAppearance, type MorpheusAppearance } from '@shared/morpheus/appearance-types';
 
+/** Visual acknowledgement only; verified wake/turn admission remains in Voice/Core. */
+export function shouldRestoreAddressedVoiceOrb(previous: MorpheusVoicePresence['state'] | undefined,
+  presence: MorpheusVoicePresence, hidden: boolean): boolean {
+  return hidden && previous !== 'listening' && presence.state === 'listening'
+    && presence.inputEnabled === true && presence.ambientEnabled;
+}
+
 /** A narrow native companion surface. Main owns draft/turn admission and the hidden renderer owns execution. */
 export class MorpheusWakeOrb {
   private window: BrowserWindow | null = null;
