@@ -62,8 +62,8 @@ Rebuild and requalify changed bytes; do not carry the old baseline forward as fi
 Historical generated wake qualification on the same `838010ad` package executed
 one real `system.report`, but the native path lost the final word in
 `Morpheus, show system information`. The complete generated WAV transcribes
-exactly with the bundled recognizer. Capture-range/context diagnosis is open;
-retain the exact transcript miss and compare actual admitted PCM before changing
+exactly with the bundled recognizer. The diagnosis and correction below preserve
+the exact transcript miss and compare actual admitted PCM before changing
 the voice pipeline. A correct system action does not prove complete recognition.
 Same-input comparison now confirms approximately 900 ms of active tail audio was
 omitted: captured and complete waveforms align at 0.905 correlation, and padding
@@ -78,13 +78,30 @@ range protocol, wake grammar, confidence, endpoints and 300 ms context. Verify
 over-21.5-second idle and two successive addressed utterances before freezing.
 The corrected guarded native helper now passes that source-level proof: 23 seconds
 of actual generated-stream silence, then the unchanged phrase twice, both recognized
-exactly with absolute ranges and owned-child stop/late-frame refusal. This is real
-Windows helper/recognizer evidence with generated input, not packaged or human
-acceptance. Node boundary/service/voice tests and independent authority review pass.
+exactly with absolute ranges and owned-child stop/late-frame refusal. This first
+proof is source-level Windows helper/recognizer evidence with generated input;
+final normal package evidence follows below. Human acceptance remains separate.
+Node boundary/service/voice tests and independent authority review pass.
 
-Exact next step: freeze the tested corrections, build once on E:,
-qualify the actual normal package,
-then create and inspect its exact NSIS payload. Keep source, generated/provider,
+Final local evidence: frozen application `7ae1423a` passes 30 actual direct safe
+commands with zero planning calls (warm Core p95 19 ms), 23 seconds armed silence
+then two complete identical addressed phrases and once-per-command execution,
+actual included speech/visible motion, ambiguity and mute/foreground checks.
+Actual normal Main/HTTP adapter/Core tests prove model choice, one strict repair,
+payment-error veto and restart persistence using clearly labelled provider fixtures.
+The separate 1.5.0 EXE's NSIS inventory/CRC/74 selected hashes match those exact
+qualified app bytes. It is unsigned; exact path/hashes/media and evidence are in
+the single current checklist and curated handoff. Cold included speech takes about
+four seconds to first PCM on this PC; this is not a measured Siri latency claim.
+
+Exact-source disposable Windows installed qualification now passes in run
+`37277301637`: actual upgrade/reinstall/uninstall and normal installed runtime,
+with synthetic credential/settings/history retention. Its independently rebuilt
+CI bytes differ from the local EXE; exact identities and scope are in the checklist.
+It is not owner installation or physical audio acceptance.
+
+Exact next step: run the short actual PC acceptance checklist and configure signing.
+Keep source, generated/provider,
 package, installed and human evidence distinct. Owner still runs preview.16;
 preview.18 was delivered separately and must not be described as installed.
 Bare-SemVer public release requires the existing signing/publisher guards. No

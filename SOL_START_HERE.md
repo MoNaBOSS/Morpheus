@@ -10,17 +10,26 @@ Unclear speech offers repeat-or-type repair under the existing reply/mute policy
 Known one-step app/URL and privacy-safe system interactions have separate bounded
 60/minute admission; other plans keep their limits, scopes and permissions.
 The first frozen 1.5.0 package exposed the old ten-plan quota and a generated
-native wake transcript miss. Its receipts are historical; diagnose the actual
-captured PCM and requalify the corrected final bytes.
+native wake transcript miss. Its receipts are historical; the captured PCM
+diagnosis and qualification of corrected final bytes follow below.
 The native helper correction keeps one continuous recognition session and an
 absolute stream position. Its guarded source proof passes 23 seconds of generated
-idle then two exact wake phrases; package/human acceptance remains independent.
-Combined source, rendered and normal package qualification is in progress; no new
-installer or public stable acceptance is claimed yet. The single
+idle then two exact wake phrases. The final normal package repeats that proof below;
+human acceptance remains independent.
+Separate local delivery is now **1.5.0**, application `7ae1423a`, at
+`E:/Morpheus-builds/deliveries/Morpheus-Windows-BYOK-1.5.0`.
+Normal package passes 30 direct zero-inference Core actions, 23-second idle/two
+exact wake commands, actual speech/motion and a separate real adapter/Core routing
+fixture with restart persistence. NSIS paths/CRC/selected hashes match those bytes.
+Exact-source installed Windows run `37277301637` also passes actual upgrade,
+reinstall/uninstall and normal runtime with synthetic settings/history/credential
+retention, using independently rebuilt CI bytes separate from the local EXE.
+The EXE is NotSigned; no public stable acceptance is claimed. The single
 [specification](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) and
 [checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) own evidence and next step.
 Preview.18 delivery and installed preview.16 remain preserved. Signing, physical
-voice/wake and disposable installation are independent acceptance gates.
+voice/wake/display are independent acceptance gates. Exact next step is the short
+PC acceptance check and signing configuration, without repeating approved design.
 
 # Current component — Deepgram connected speech, 2026-10-05
 

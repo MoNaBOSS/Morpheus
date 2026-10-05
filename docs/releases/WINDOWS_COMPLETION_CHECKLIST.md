@@ -31,18 +31,18 @@ Electron checks pass all four translated model-routing settings journeys, exact
 full/compact site searches, real synthetic RMS endpoint/recovery, saved Evil horns
 and ambiguous-transcript repeat/type repair without a guessed action. Model metadata
 and final STT text in those UI checks are fixtures, not live availability or ASR
-accuracy. Normal packaged qualification and NSIS identity remain pending below.
-- [ ] Qualify direct actions with zero planning calls and bounded latency; qualify
+accuracy. Final normal packaged qualification and NSIS identity pass below.
+- [x] Qualify direct actions with zero planning calls and bounded latency; qualify
   generated addressed input -> actual safe Core result and typed follow-up on final
   normal package bytes, alongside protected voice setup and real output.
-- [ ] Produce separate identified 1.5.0 artifact only after relevant checks; inspect
+- [x] Produce separate identified 1.5.0 artifact only after relevant checks; inspect
   exact NSIS bytes. Older checks do not transfer automatically to new bytes.
 - [x] Correct the measured ordinary-command quota in source: separate bounded one-step local
   interactions from worker/consequential limits, retain permissions/concurrency,
   distinguish quota versus busy errors, and repeat the rapid benchmark on final bytes.
   The first `838010ad` normal run completed ten native reports then hit the existing
-  ten-plans/minute cap. Its failed receipt is retained; changed quota behavior needs
-  a new source freeze and actual package qualification.
+  ten-plans/minute cap. Its failed receipt is retained. The final `7ae1423a`
+  package now passes 30 rapid independent requests.
 - [x] Diagnose the historical native wake transcript miss using actual captured
   PCM; complete input recognizes correctly, captured input omits about 900 ms
   of active tail because restarted recognition and continuous PCM origins differ.
@@ -50,12 +50,64 @@ accuracy. Normal packaged qualification and NSIS identity remain pending below.
   after 23 seconds of generated-stream silence and twice sequentially; both full
   transcripts match, absolute sample ranges and child stop/late-frame guards pass.
   Source-level native proof is not final packaged or physical acceptance.
-- [ ] Qualify the continuous-session repair
+- [x] Qualify the continuous-session repair
   on new bytes with mute/foreground/cancellation vetoes. Exact transcript and
   semantic execution evidence must remain separate.
-- [ ] Actual disposable install/upgrade/reinstall/uninstall, human microphone/noise/
-  echo/interruption, native wake timing, display/taskbar and signing remain acceptance
-  gates. Preserve existing stable release publisher checks and inert updater.
+- [x] Actual exact-source disposable Windows install/upgrade/reinstall/uninstall,
+  normal installed runtime and synthetic protected account/history/settings retention.
+  Independently rebuilt CI installer bytes are identified separately below.
+- [ ] Human microphone/noise/echo/interruption, native wake responsiveness,
+  display/taskbar and signing remain acceptance gates. Preserve existing stable
+  release publisher checks and inert updater.
+
+Final local delivery: `E:/Morpheus-builds/deliveries/Morpheus-Windows-BYOK-1.5.0/Morpheus-1.5.0-win-x64.exe`,
+version **1.5.0**, application source **`7ae1423a8a23100b1ee27c33116b52fa4b90ec7c`**.
+EXE **494,778,521 bytes**, SHA256
+**`9634d21b75251082738812282e8281e16ae8c51481d3048c5b7f68ff4f24fae3`**,
+**NotSigned**. Qualified ASAR
+**`a118381255e0ae3d99d50678e6a3c5623f80ff8ed3056d7d4f989f2629249fdb`**,
+application EXE **`cd718c7dc1e7f2baca0a2070810f0735faae40d87b6fb7231b769a8f9ab55803`**.
+
+Actual normal package evidence: 30 sequential real `system.report` requests succeed
+once each with no provider usage/external delegation; warm Core p50/p95 **17/19 ms**,
+observed GUI **55/63 ms** on this PC. This does not measure network/complex tasks.
+After **23,016 ms** armed generated-stream silence, one continuous Windows session
+retains the complete unchanged addressed phrase twice and Core executes once each.
+Native range clock repair removes the measured truncated tail; exact transcript
+and semantic checks both pass. Input is synthetic selected-stream PCM, not human
+microphone/room/noise acceptance. Mute and visible-chat vetoes pass.
+Actual included output is **7.60025 seconds**, cold first PCM **3,968 ms**, with
+an **8.747-second** actual motion excerpt; source, waveform and video remain distinct.
+All media and exact normal receipts are in the curated delivery, without profiles/keys.
+
+Normal routing evidence uses actual Main/HTTP adapter/Core with labelled local
+provider responses: routine efficient 1 call, complex strong 1, malformed first
+plan efficient -> strong 2 before one effect; direct before/after connection 0,
+HTTP402 1 with no escalation/effect and unknown usage/cost. Restart preserves
+roles, original model/provider and muted/quiet voice settings. All 14 checks pass;
+synthetic tokens/model responses do not prove live quality or dollar savings.
+Static NSIS inspection verifies all **40,928** embedded paths/sizes and CRCs plus
+**74** selected identities, including the complete 29-file speech worker subtree.
+ASAR/app EXE match the exact normal-qualification bytes. No owner installation ran.
+
+Earlier failed quota, clipped-audio and qualifier-correlation receipts are retained
+as historical/diagnostic evidence. Exact-source installed Windows run
+[37277301637](https://github.com/MoNaBOSS/Morpheus/actions/runs/37277301637) passes
+at `7ae1423a`, version 1.5.0, with no errors. Actual pinned previous-version upgrade,
+same-version reinstall, normal packaged runtime, navigation/draft/Advanced,
+synthetic protected credential/account/model/memory/Core-history retention and
+default uninstall/rollback retention pass. No owner profile was installed or modified.
+The independently rebuilt CI installer SHA256 is
+`655739c73aee9bbd45d1572dc4109bdc911a812d0b2b74597f292bf814c923bd`,
+installed ASAR `469da24f3e106336dc7a147fc03ab7a24bcf8fc82cfbfc3e452034d5e19e7e1b`;
+these differ from the local delivery bytes. The actual downloaded receipt and scope
+manifest are included separately in the delivery. This is not physical audio/wake,
+SmartScreen/interactive UAC, signing or paid-provider acceptance. Candidate voice
+readiness passes with a retained synthetic task account; the fresh no-account
+assertion belongs only to the previous-version baseline. Earlier successful run
+`37274562151` belongs only to prior `838010ad`.
+Signing, physical voice/wake/display acceptance, live provider quality and funded
+hosted/payments remain independent. Bare SemVer does not mark these gates complete.
 
 ## Current component — optional Deepgram speech, October 5
 
