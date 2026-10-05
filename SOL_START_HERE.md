@@ -1,13 +1,19 @@
-Active component — 1.5.1 reliability repair, October 5: continue from clean
+Current component — 1.5.1 reliability repair, October 5: continue from clean
 `919a12d8`; owner rejected actual 1.5.0. Actual protected Deepgram setup passed
 and was selected through installed Voice settings. Preserve connection result
 through authority refresh, acknowledge hidden addressed capture with the existing
 native orb, and reuse Chrome's validated existing last-used profile when it is the
 Windows default. Exact wake/action authority, mute, visible-chat suspension and
-capabilities are unchanged. Qualify corrected source and normal package before a
-new delivery claim. The single experience specification and checklist own evidence.
+capabilities are unchanged. Frozen application `91ee256c` now passes two actual
+native-wake/live-cloud/Core/spoken-result loops with generated input, visible
+PCM-driven settings-orb motion, synthetic-provider routing/persistence and exact
+compiled installer integrity. Separate delivery is `E:/Morpheus-builds/deliveries/Morpheus-Windows-BYOK-1.5.1`;
+actual owner upgrade preserves 38 checked state fingerprints and installs matching
+qualified bytes. EXE is NotSigned. Physical wake/accent/current-browser/interruption/
+display acceptance remains open; generated checks are not owner approval. Next:
+the single short tray/YouTube/Mr Beast spoken test in the specification/checklist.
 
-# Current component — 1.5.0 bounded task routing, 2026-10-05
+# Historical component — 1.5.0 bounded task routing, 2026-10-05
 
 Owner PC acceptance has since **rejected** 1.5.0. Installed ASAR/app EXE match the
 exact local delivery. Current profile still uses legacy provider voice, absent

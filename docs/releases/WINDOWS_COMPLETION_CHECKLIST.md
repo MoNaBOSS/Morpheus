@@ -1,21 +1,45 @@
 # Current Windows experience completion checklist
 
-Active reliability repair, October 5:
+Current reliability repair — **1.5.1**, October 5 (earlier sections are history):
 - [x] Securely save and test the provided Deepgram connection in the actual
   installed application; explicitly select cloud voice without changing mute.
 - [x] Reproduce lost Save & test result caused by voice authority refresh.
-- [ ] Preserve the connection panel/result through invalidation and rendered QA.
-- [ ] Restore informational wake orb before secondary recognition, with hidden
+- [x] Preserve the connection panel/result through invalidation and rendered QA.
+- [x] Restore informational wake orb before secondary recognition, with hidden
   scope and mute veto; no change to execution or follow-up authority.
-- [ ] Reuse validated existing Chrome profile for its default-browser URL actions.
-- [ ] Qualify corrected normal package, real cloud stages and browser delegation;
+- [x] Reuse validated existing Chrome profile for its default-browser URL actions.
+- [x] Qualify corrected normal package, real cloud stages and browser delegation;
   distinguish generated speech from owner accent and physical microphone acceptance.
 - [x] First live-cloud normal package reproduced a verified `shows system information`
   transcript that Auto rejected without executing. Test credential removed; receipt
   retained. Add voice-only bounded routine inflection handling with negative cases.
-- [ ] Repeat the same actual native/cloud/Core/spoken-result test on corrected bytes.
+- [x] Repeat the same actual native/cloud/Core/spoken-result test on corrected bytes:
+  23-second generated idle and two Nova-3 -> safe Core -> Kit PCM loops, one action
+  each, zero planning calls; real native orb visibility, mute/foreground veto and
+  protected test credential cleanup. Input is generated, not physical acceptance.
+- [x] Actual visible settings orb motion follows real included PCM; preserve a
+  9.316-second clip and actual cloud-result WAV. Native pixel motion remains unverified.
+- [x] Corrected normal app routing/persistence checks use real Main/adapter/Core
+  and clearly synthetic loopback model replies. Live owner OpenRouter service
+  access passes; this does not test model generation or configure empty role choices.
+- [x] Inspect actual compiled 1.5.1 NSIS CRCs, all 40,928 paths/sizes and 74 selected
+  identities against this exact clean application freeze `91ee256c`.
+- [x] Actual owner installation upgrade to 1.5.1: installer exit 0, matching
+  qualified ASAR/EXE, 38 preservation fingerprints unchanged. No owner key/profile ships.
+- [ ] Owner's physical wake/accent, exact current-browser search, interruption,
+  echo, taskbar/display and final acceptance. Signing service/certificate absent.
 
-Owner acceptance, October 5: **REJECTED**. Exact installed 1.5.0 ASAR/app EXE
+Current separate EXE: `E:/Morpheus-builds/deliveries/Morpheus-Windows-BYOK-1.5.1/Morpheus-1.5.1-win-x64.exe`.
+Application source `91ee256c47f3de343f228b709581d2936ad0841d`; 495,432,951 bytes;
+SHA256 `6b25d772c9ad706cc7d31b9e6eacb1ddf3637fab334708b5dac7962b58895b85`;
+**NotSigned**. Installed app: `C:/Users/monir/AppData/Local/Programs/Morpheus/Morpheus.exe`.
+Actual stage timings: Nova-3 1.837–1.958 s after upload; Kit first PCM 1.277–1.292 s
+after synthesis request. No instant-wake, physical accuracy or commercial readiness claim.
+Exact next PC test: keep the app in the tray with commands/microphone enabled,
+say “Hey Morpheus, open YouTube and search Mr Beast,” without pressing Finish;
+check one correct search, existing profile, visible orb, spoken reply and fade.
+
+Historical owner acceptance of 1.5.0, October 5: **REJECTED**. Its installed ASAR/app EXE
 match the local delivery identities below. The owner reports inconsistent wake,
 wrong Chrome profile and slow/unreliable commands.
 
@@ -35,7 +59,7 @@ The single specification owns this repair contract. Preserve previous receipts,
 but do not present generated voice, static installer inspection or disposable
 installation as owner acceptance. Next step is the one real interaction above.
 
-## Current component — 1.5.0 precision and bounded task routing, October 5
+## Historical component — 1.5.0 precision and bounded task routing, October 5
 
 - [x] Verify clean `a532df90`, branch/remotes/fetch 0/0 and C:5.3/E:108.1 GiB;
   preview.18 delivery and actual installed preview.16/profile remain preserved.

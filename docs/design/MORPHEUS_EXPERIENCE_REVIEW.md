@@ -1,18 +1,59 @@
 # Morpheus experience specification
 
-Active repair, October 5: owner authorized autonomous correction of the rejected
-installed 1.5.0. Secure Deepgram setup in the actual application passed service
-access and cloud voice was explicitly selected; no credentials enter source or
-delivery. Reproduced save/test remount loses its result. Preserve the mounted
-connection panel during authority refresh, restore an informational native orb
-during real addressed capture only while the main window is hidden, and reuse
-Chrome's validated existing last-used profile when Chrome is the Windows default.
-Do not relax exact wake verification, mute, chat suspension or action authority.
-Next step: implement and qualify this bounded component, then test normal packaged
-bytes. Earlier owner rejection remains in force until the corrected interaction
-is demonstrated. Browser computer control was blocked by URL verification; use
-isolated Electron rendered tests and explicit runtime evidence, not a claimed
-inspection of the owner's Chrome page.
+Current repair — **1.5.1**, October 5: continue the preserved application from
+`919a12d8`; frozen application source is `91ee256c47f3de343f228b709581d2936ad0841d`.
+Implemented and qualified: keep Voice setup/test results mounted during credential
+authority refresh; acknowledge real hidden addressed capture with the existing
+native orb; reuse Chrome's validated existing last-used profile for its Windows
+default protocol; interpret only bounded voice routine inflections. Exact wake
+verification, mute, chat suspension, literal queries and action authority remain.
+The earlier owner rejection of 1.5.0 is historical evidence, not withdrawn by tests.
+The sections below retain previous implementation/verification history; they are
+not competing active plans. No historical standalone A/B/C/D answer is reinterpreted.
+
+Exact normal 1.5.1 bytes passed actual local native wake after 23 seconds of
+generated-stream silence, then two live Nova-3 -> safe Core `system.report` ->
+real Kit PCM reply loops, one action per request. Informational native orb was
+visible without focus during secondary verification. Save/test result stays open;
+mute and foreground suspension pass; isolated protected test credentials were
+removed. Recognition service time was 1.837–1.958 s; first speech PCM was
+1.277–1.292 s after synthesis request. These are stage timings, not physical
+end-to-end latency, accent accuracy or an instant Siri-style wake claim. Simple
+Core actions used no task-model requests. Actual adapter/Core model routing,
+bounded escalation, payment-error handling and restart persistence passed with
+explicitly synthetic loopback model replies. Live owner OpenRouter service access
+passed its installed Connections test; model generation/quality and configured
+routine/complex roles remain distinct and unqualified.
+
+Real visible Voice-settings orb transforms and level changes were measured during
+included PCM playback; a 9.316-second chronological motion clip and actual cloud
+reply WAV accompany the delivery. Hidden presentation correctly pauses motion.
+The native-window recording could not establish pixel motion; do not label the
+settings clip as native desktop or microphone footage. Public YouTube search was
+handed to existing Chrome `Profile 1`, with no new profile directory. That is a
+real source-adapter/Windows handoff; browser UI control was blocked by URL
+verification, so visual profile/tab acceptance remains outstanding.
+
+Separate delivery: `E:/Morpheus-builds/deliveries/Morpheus-Windows-BYOK-1.5.1/`
+`Morpheus-1.5.1-win-x64.exe`, **495,432,951 bytes**, SHA256
+`6b25d772c9ad706cc7d31b9e6eacb1ddf3637fab334708b5dac7962b58895b85`.
+Compiled NSIS CRCs and all 40,928 file paths/sizes match the qualified payload;
+74 selected identities include matching application EXE/ASAR. Signature is
+**NotSigned**, not commercially signed. Actual owner 1.5.0 -> 1.5.1 upgrade exited
+0, installed these same EXE/ASAR hashes and preserved all 38 compared settings,
+protected provider, Morpheus store and structured OpenClaw state fingerprints.
+The owner Deepgram connection, EarPods choice and history are retained; no key
+or owner profile is bundled. Historical and first failed packages stay separate.
+
+Exact next acceptance: with the installed app kept in the tray, companion commands
+enabled and microphone allowed, say **“Hey Morpheus, open YouTube and search
+Mr Beast.”** Do not press Finish. Check visible acknowledgement, exactly one search
+in the existing browser profile, spoken reply and eventual fade. Then foreground
+expanded chat must suspend ambient listening; manual mute must always win.
+Physical microphone/accent/echo/interruption/display acceptance and signing remain
+open. Shared funded voice/models, hosted entitlements and Stripe/crypto deployment
+are external blockers; NerdGPT is deferred. Do not claim every capability, a signed
+commercial final product, unlimited funded voice or owner acceptance from this repair.
 
 Actual normal-package/live-cloud test reproduced `shows system information` from
 generated `Morpheus, show system information`. Exact wake verification succeeded,
@@ -22,7 +63,7 @@ navigation; preserve query words. Narration, filesystem/consequential verbs and
 partial compound instructions remain rejected. Typed surfaces retain strict
 wording. This is deterministic interpretation, not a claimed ASR accuracy gain.
 
-Owner PC review, October 5: **1.5.0 is rejected for reliability and latency**.
+Historical owner PC review before this repair, October 5: **1.5.0 is rejected for reliability and latency**.
 Read-only identity confirms the installed ASAR/app EXE exactly match the delivered
 `7ae1423a` local package; do not blame an older installer. Actual audit shows native
 wake detections rejected by included tiny.en verification. Saved engine is still
@@ -43,7 +84,7 @@ validate real task-model configuration separately before claiming complex routin
 No new build, account/voice settings changes or paid requests occurred during this
 review. Signing remains required but is not the cause of these runtime failures.
 
-## Current component — 1.5.0 precision and bounded task routing, October 5
+## Historical component — 1.5.0 precision and bounded task routing, October 5
 
 Owner requests an actual stable 1.5.0 with fast, correct execution and sensible
 credit use, including task-based model selection. This is continuation from clean
