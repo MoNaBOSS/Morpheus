@@ -207,6 +207,21 @@ describe('Morpheus cloud voice integration authority', () => {
     expect(JSON.stringify(h.recordControl.mock.calls)).not.toContain('Opened YouTube.');
   });
 
+  it('allows a deliberate cloud sample with automatic replies off and the microphone still muted', async () => {
+    const h = harness(); h.setCompanion(false);
+    await h.service.updateSettings({ engine: 'deepgram', enabled: false, speakResponses: false, ambientEnabled: false });
+    const before = (await h.service.status()).settings;
+    const sample = await h.service.synthesize({ text: 'Morpheus is connected.' });
+    expect(sample).toMatchObject({ mimeType: 'audio/wav', modelId: 'flux-kit-en', providerAccountId: 'deepgram' });
+    expect(Buffer.from(sample.audioBase64, 'base64').subarray(0, 4).toString('ascii')).toBe('RIFF');
+    expect(h.cloud.synthesize).toHaveBeenCalledOnce();
+    expect((await h.service.status()).settings).toEqual(before);
+    expect(h.service.presence().inputEnabled).toBe(false);
+    expect(h.native).not.toHaveBeenCalled();
+    expect(h.cloud.createRecognitionSession).not.toHaveBeenCalled();
+    expect(h.cloud.transcribe).not.toHaveBeenCalled();
+  });
+
   it('drops late PCM after cancellation even if an adapter ignores its abort signal', async () => {
     const h = harness(); await h.service.updateSettings({ engine: 'deepgram' });
     const complete = deferred<void>(); let emit!: (pcm: Buffer) => void;

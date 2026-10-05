@@ -767,7 +767,10 @@ export function createMorpheusVoiceService(options: {
     const checkCurrent = (): void => {
       if (generation !== speechGeneration) throw new DOMException('Speech cancelled', 'AbortError');
     };
-    if (!settings.speakResponses && !(options.localVoice && isIncludedVoiceEngine(settings.engine))) throw new Error('Spoken responses are disabled.');
+    // Automatic reply owners enforce speakResponses. An explicit Voice sample
+    // remains usable while replies are quiet, without changing input consent.
+    if (!settings.speakResponses && settings.engine !== 'deepgram'
+      && !(options.localVoice && isIncludedVoiceEngine(settings.engine))) throw new Error('Spoken responses are disabled.');
     if (!options.audit.isHealthy()) throw new Error('Neural speech is blocked while Audit is unavailable.');
     const text = payload.text.trim();
     if (!text || text.length > MORPHEUS_SPEECH_MAX_TEXT_CHARS) {
