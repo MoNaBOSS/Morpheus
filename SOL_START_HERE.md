@@ -15,10 +15,13 @@ no owner profile/app/source was changed. Flux is not established as best value.
 The current specification/checklist own prices, exact evidence and next step.
 The installed app and preview.17 have **no Deepgram integration**. Latest owner
 steering defers budget sizing and asks for a managed value-oriented service.
-Selected next component: Deepgram Voice Agent Standard, managed Gemini 3.1 Flash
-Lite + Flux Kit, keeping Main/Core as Windows execution authority. Qualify one
-addressed natural turn, real PCM output and deferred function request before
-connecting actions. Existing local wake/mute/foreground policy remains; an ambient
+Routing audit corrected the earlier bundled Voice Agent recommendation: prioritize
+hosted streaming recognition/turn detection + natural hosted speech into existing
+Main/Core. Full managed Voice Agent/Gemini remains optional conversational front
+end, not the website/task brain. Saved default is OpenRouter GPT-5.6 Luna; tray
+first-pass recognition still forces tiny.en, and strict routing can reject
+"opened" before planning. Qualify this addressed speech-to-agent path, preserving
+local wake/mute/foreground authority and real results; an ambient
 tray listener must not keep a paid cloud conversation open. Launch still requires
 secure funded operator hosting and usage limits. Exact contract and costs live in
 the single specification; no new application/package is claimed.

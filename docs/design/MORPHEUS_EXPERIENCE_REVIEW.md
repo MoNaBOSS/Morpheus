@@ -2,6 +2,43 @@
 
 ## Hosted voice decision and low-hardware requirement — October 5
 
+**Routing audit and corrected recommendation:** the owner asks how speech relates
+to the existing agent and website building. The recommendation is hosted streaming
+recognition with natural turn ending plus hosted natural speech, connected to the
+existing Morpheus agent. A complete managed Voice Agent is an optional alternative,
+not required to preserve or improve task capability. The earlier bundled Standard
+selection below was a recommendation, not an implementation; it is superseded by
+this bounded speech integration priority. Do not silently use Gemini as the
+website/task model or present a purchased voice service as fixing tool execution.
+
+Current source first matches deterministic capabilities before selecting a task
+provider (`objective-orchestrator.ts:681`). Otherwise a profile binding/default
+provider supplies typed planning and real Main/Core execution/review
+(`planner-selector.ts:85`, `objective-orchestrator.ts:732`). Conversation uses the
+separate existing OpenClaw/ACP route and can have a model override. Safe installed
+metadata was rechecked: default OpenRouter `openrouter/openai/gpt-5.6-luna`; an
+enabled nondefault OpenAI account has `openai/gpt-5.6-sol`. These are saved choices,
+not fresh successful live calls or proof of automatic complexity-based escalation.
+
+The tray's first addressed wake+command **forces included Whisper tiny.en**, even
+with saved `engine: provider` (`voice-service.ts:1089`, local branch at 531). The
+saved OpenRouter larger recognizer applies to explicit/provider recordings, not
+that first pass. Routing accepts imperative `open`; `opened the YouTube` misses
+the voice action route and becomes clarification before the task planner sees it
+(`shared/morpheus/operator-types.ts:85`). Fix this path and contextual intent
+interpretation, not just the LLM selection. Retain mute/address/cancellation
+authority; never globally convert all past-tense speech into authorized actions.
+
+Website Core builds real bounded static files and pinned interactive templates,
+with verification/revision/publication capabilities; its current website contract
+forbids arbitrary generated JS/package/full-stack work (`provider-planner.ts:162`).
+A more expensive voice or task model cannot bypass those missing capabilities.
+General coding/build/test/preview work requires a separately qualified worker.
+Exact next component: stream an addressed command through the selected hosted
+recognizer/turn detector into existing routing/Core, with real output and tested
+repair/cancellation. Flux is a turn-detection candidate, Nova-3 remains a measured
+recognition comparator; no human microphone winner is claimed.
+
 The owner supplied test access, questioned Flux's price/value after a recognition
 miss, preferred the full Voice Agent demo's conversational feel, and requires
 voice for users without powerful PCs or excellent microphones. Build on Morpheus's
@@ -10,8 +47,8 @@ question/cancellation authority, personality, permissions and task orchestration
 with replaceable recognition, reasoning and output adapters. Training new speech
 models is not required.
 
-Latest owner decision: use a managed voice service with good value and defer the
-launch budget calculation. Selected next component is **Deepgram Voice Agent
+Earlier recommendation, superseded by the routing audit above: use a managed
+voice service with good value and defer launch budget sizing. Consider **Deepgram Voice Agent
 Standard**, initially managed **Gemini 3.1 Flash Lite + Flux Kit speech**, matching
 the liked conversational demo. Delegate conversational audio/turn orchestration;
 retain Morpheus Main/Core as the only Windows execution authority. This is an
@@ -94,10 +131,11 @@ the desktop. A short-lived token's expiry alone does not stop an admitted stream
 or cap spending. The existing installed app and preview.17 have **no Deepgram
 integration**; the external live comparison is not an app qualification or a new
 release. Owner deferred budget sizing; this does not block an isolated managed
-voice component using authorized test access. Exact next step: qualify one
-addressed managed turn with natural end, real output and a validated deferred
-function request before wiring the existing Main/Core action bridge; then test
-human/weak-mic/noisy input and interruption. Operator hosting/funding and enforced
+voice component using authorized test access. Exact next step is the addressed
+streaming speech-to-existing-agent component described above, then human/weak-mic/
+noisy input and interruption. If a full managed Voice Agent is evaluated later,
+qualify deferred function requests before connecting Main/Core actions.
+Operator hosting/funding and enforced
 usage limits are required before customer rollout. No broad UI/backend rewrite.
 
 ## Active voice interaction correction — October 5

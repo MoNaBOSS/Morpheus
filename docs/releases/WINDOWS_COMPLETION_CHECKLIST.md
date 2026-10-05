@@ -2,6 +2,17 @@
 
 ## Hosted voice evaluation — October 5
 
+- [x] Recheck actual saved provider metadata and source routing: default task
+  account OpenRouter GPT-5.6 Luna, nondefault OpenAI GPT-5.6 Sol, configured provider
+  recordings Whisper large-v3-turbo and Orpheus/Leo. Saved choices are not live
+  call success. Tray's first addressed command forces included tiny.en instead.
+- [x] Record strict imperative routing (`opened` misses `open`) and bounded
+  website/tool contracts as independent issues a voice-model switch cannot fix.
+- [x] Correct recommendation: prioritize streaming STT/turn detection + hosted TTS
+  into existing Core; full managed Voice Agent remains optional. No Gemini task
+  substitution or new integration/package. The previous Standard choice was advice.
+- [ ] Qualify addressed hosted recognition -> contextual intent -> existing Core
+  -> real speech, retaining wake/mute/foreground/cancellation and task continuity.
 - [x] Recheck clean `e4e14db4`, branch/remotes, fetch and storage (C: 5.5 GiB,
   E: 114.6 GiB); preserve existing installed profile and preview.17 delivery.
 - [x] Read safe saved model metadata without reading protected credentials;
@@ -16,8 +27,9 @@
   propose hosted recognition and hosted natural speech online, local wake and
   included offline fallback, existing Morpheus agent and replaceable providers.
 - [x] Record owner direction to use a managed value-oriented service and defer
-  budget sizing. Select Deepgram Voice Agent Standard with Gemini 3.1 Flash Lite
-  and Flux Kit for the next bounded component; this is not installed integration
+  budget sizing. Earlier recommendation was Deepgram Voice Agent Standard with
+  Gemini 3.1 Flash Lite and Flux Kit; current routing audit favors speech adapters
+  into the existing agent first. This is not installed integration
   or a proven recognizer/microphone winner. Keep Main/Core execution authority.
 - [ ] Qualify one managed addressed turn with natural ending, real PCM output and
   deferred function request (`defer_until_eot: true`), cancellation and duplicate
