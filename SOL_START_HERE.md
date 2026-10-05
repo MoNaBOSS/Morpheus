@@ -1,5 +1,28 @@
 # Current continuation — voice interaction correction, 2026-10-05
 
+**Current hosted-voice decision:** owner requires voice on modest PCs and asks
+for Morpheus's own agent. Preserve existing task/personality/permission owners;
+use replaceable recognition/reasoning/speech, not a new foundation or training
+campaign. Propose hosted recognition and hosted natural speech online, local wake
+and optional included offline fallback. Budget/active users and an authenticated
+operator backend are unresolved; no shared long-lived key may ship in the desktop.
+Actual external live Flux/Nova-3 comparison on the same generated 40 WAVs completed
+at `E:\Morpheus-builds\experience-hosted-voice-comparison\run-1791171707447`.
+Strict intent/slot/turn outcomes: Flux 26/40, Nova-3 33/40 (one natural endpoint
+timeout), with case/verb-form/router differences retained. This is not human ASR
+accuracy or app integration. Supplied test access was ephemeral input/header only;
+no owner profile/app/source was changed. Flux is not established as best value.
+The current specification/checklist own prices, exact evidence and next step.
+The installed app and preview.17 have **no Deepgram integration**. Latest owner
+steering defers budget sizing and asks for a managed value-oriented service.
+Selected next component: Deepgram Voice Agent Standard, managed Gemini 3.1 Flash
+Lite + Flux Kit, keeping Main/Core as Windows execution authority. Qualify one
+addressed natural turn, real PCM output and deferred function request before
+connecting actions. Existing local wake/mute/foreground policy remains; an ambient
+tray listener must not keep a paid cloud conversation open. Launch still requires
+secure funded operator hosting and usage limits. Exact contract and costs live in
+the single specification; no new application/package is claimed.
+
 **Current separate handoff:** `1.2.0-preview.17`, frozen application source
 `c64f132c3d43f17e5d1794779de1429795b08010`, passed normal packaged qualification
 and installer byte/integrity inspection. The normal runtime used no E2E mode and

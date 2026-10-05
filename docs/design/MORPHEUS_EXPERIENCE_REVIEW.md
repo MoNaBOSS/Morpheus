@@ -1,5 +1,105 @@
 # Morpheus experience specification
 
+## Hosted voice decision and low-hardware requirement — October 5
+
+The owner supplied test access, questioned Flux's price/value after a recognition
+miss, preferred the full Voice Agent demo's conversational feel, and requires
+voice for users without powerful PCs or excellent microphones. Build on Morpheus's
+existing agent, not a new foundation: retain local wake/mute/session control,
+question/cancellation authority, personality, permissions and task orchestration,
+with replaceable recognition, reasoning and output adapters. Training new speech
+models is not required.
+
+Latest owner decision: use a managed voice service with good value and defer the
+launch budget calculation. Selected next component is **Deepgram Voice Agent
+Standard**, initially managed **Gemini 3.1 Flash Lite + Flux Kit speech**, matching
+the liked conversational demo. Delegate conversational audio/turn orchestration;
+retain Morpheus Main/Core as the only Windows execution authority. This is an
+implementation choice, not proof of market-wide superiority or human accuracy.
+Recognition remains separately qualified; Flux-only recognition results below do
+not measure this full agent. The cheaper modular pipeline stays a future option.
+
+Standard is $0.075 per connected conversation minute ($4.50/hour; $22.50 for
+300 minutes). GPT-5.2 is Advanced ($0.163/min; $48.90/300 minutes). These session
+costs differ from the modular recognition-minute/character example below. Do not
+keep a paid cloud conversation running for ambient tray wake. A consented local
+wake listener opens a bounded addressed session; foreground chat and manual mute
+retain their existing authority. Cloud operation requires a usable connection.
+
+For the next managed contract, register action functions with
+`defer_until_eot: true`: provider function calls are speculative by default. Main
+validates tool/argument/permission and session/call identity, rejects duplicates,
+handles `FunctionCallCancelled` without late responses, and returns actual results
+through `FunctionCallResponse`. No provider-generated acknowledgement proves an
+action occurred. Managed voice does not fix delayed SAPI wake notification or wire
+real audio into the orb automatically. Verify these as separate app components.
+See [function calling](https://developers.deepgram.com/docs/voice-agents-function-calling)
+and [turn confirmation](https://developers.deepgram.com/docs/voice-agent-speculative-replies).
+
+Proposed online default is hosted recognition **and hosted natural speech**, with
+lightweight local wake and optional included offline fallback. Keeping Kokoro as
+the only normal output would still put generation latency on low-end PCs. This
+supersedes the earlier keep-Kokoro-only hosted evaluation proposal below; it does
+not remove included local voice or alter existing saved provider choices. Use
+selected-microphone guidance, real level checks, echo/noise handling and fresh
+retry/typing when audio is unusable. No provider can recover absent audio reliably.
+
+The latest demo screenshot selects GPT-5.2 (Deepgram Advanced tier); the earlier
+one selected Gemini 3.1 Flash Lite (Standard). These are reasoning models, separate
+from recognition and the selected Deepgram Kit speaking voice. The read-only
+installed profile requests OpenRouter `openrouter/openai/gpt-5.6-luna`, explicit
+provider recognition `openai/whisper-large-v3-turbo` and Orpheus/Leo speech; native
+wake still uses included recognition. Configuration is not live provider success.
+
+Actual live comparison on the unchanged 40 generated 16k mono WAVs, paced at
+80 ms through Flux v2 and Nova-3 v1 streaming, is recorded at
+`E:\Morpheus-builds\experience-hosted-voice-comparison\run-1791171707447\comparison.json`.
+The supplied test credential was ephemeral input/header data, not source, saved
+configuration, logs or installer content. No app/profile changes or capabilities
+were executed. Flux used default semantic EndOfTurn; Nova-3 used explicit 500 ms
+endpointing. No keyterm hints, transcript rewriting or forced finalization.
+
+Flux: 26/40 strict intent/slot/turn outcomes, zero errors, all endings `model`.
+Nova-3: 33/40, one missing natural endpoint. These are not word-error rates or
+human-microphone accuracy. Flux failures include four query-casing differences,
+seven changed verb forms/router mismatches, two lexical substitutions and split
+"you tube"; Nova-3 includes three case/punctuation differences, three verb/lexical
+mismatches and the endpoint timeout. Neither lane ended with remaining signal
+above the probe's threshold; the limited unaddressed negative was ignored. This
+does not establish a general false-wake rate. Completion time includes original
+speech pacing and connection, not just post-speech latency. Estimated recognition
+usage was $0.030324 combined at promotional rates, not an invoice.
+
+Flux is a candidate for turn-taking, not a proven best-value recognizer. Current
+generated evidence favors further Nova-3 comparison; select the default only after
+real human/noisy/low-cost microphone evaluation, checking recognition, turn ending,
+intent and tool execution separately. Do not blanket-rewrite past tense into an
+imperative or route partial/interim transcripts. A genuine ambiguous command asks;
+known low-risk actions can use context while existing authority remains in force.
+
+Published Pay As You Go rates: Nova-3 English streaming $0.0048/min promotional,
+Flux English $0.0065/min promotional; both show $0.0077/min regular. Flux Kit TTS is
+$0.045/1,000 characters, Aura-2 $0.030/1,000. Full Voice Agent Standard is
+$0.075/min and Advanced $0.163/min. At 300 streamed minutes plus 100,000 spoken
+characters monthly, recognition + Flux Kit is approximately $5.94 (Nova-3) or
+$6.45 (Flux) at promotional rates, before task-model and hosting costs. These are
+explicit example operating costs, not prices or unlimited customer entitlements.
+See [pricing](https://deepgram.com/pricing) and
+[model tiers](https://developers.deepgram.com/docs/voice-agent-llm-models).
+
+Global included hosted voice still requires a funded, authenticated operator
+backend, secure service configuration, consent, per-user allowances/concurrency,
+usage accounting and outage recovery. Shared long-lived keys must never ship in
+the desktop. A short-lived token's expiry alone does not stop an admitted stream
+or cap spending. The existing installed app and preview.17 have **no Deepgram
+integration**; the external live comparison is not an app qualification or a new
+release. Owner deferred budget sizing; this does not block an isolated managed
+voice component using authorized test access. Exact next step: qualify one
+addressed managed turn with natural end, real output and a validated deferred
+function request before wiring the existing Main/Core action bridge; then test
+human/weak-mic/noisy input and interruption. Operator hosting/funding and enforced
+usage limits are required before customer rollout. No broad UI/backend rewrite.
+
 ## Active voice interaction correction — October 5
 
 The owner authorized this measured component: explicit voice retry and

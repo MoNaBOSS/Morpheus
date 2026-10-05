@@ -1,5 +1,49 @@
 # Current Windows experience completion checklist
 
+## Hosted voice evaluation — October 5
+
+- [x] Recheck clean `e4e14db4`, branch/remotes, fetch and storage (C: 5.5 GiB,
+  E: 114.6 GiB); preserve existing installed profile and preview.17 delivery.
+- [x] Read safe saved model metadata without reading protected credentials;
+  distinguish reasoning, recognition and speech from the Deepgram demo choices.
+- [x] Run live Flux/Nova-3 streaming on the same immutable 40 generated WAVs with
+  natural final-turn authority and no real capability execution; supplied test
+  key stays ephemeral and out of app/source/installer/evidence.
+- [x] Preserve every outcome/failure, transmitted audio including failures,
+  source/audio identity and exact protocol settings. Read-only review confirms
+  strict outcomes are not ASR accuracy or human/wake/app acceptance.
+- [x] Reconcile the single specification with the low-hardware requirement:
+  propose hosted recognition and hosted natural speech online, local wake and
+  included offline fallback, existing Morpheus agent and replaceable providers.
+- [x] Record owner direction to use a managed value-oriented service and defer
+  budget sizing. Select Deepgram Voice Agent Standard with Gemini 3.1 Flash Lite
+  and Flux Kit for the next bounded component; this is not installed integration
+  or a proven recognizer/microphone winner. Keep Main/Core execution authority.
+- [ ] Qualify one managed addressed turn with natural ending, real PCM output and
+  deferred function request (`defer_until_eot: true`), cancellation and duplicate
+  guards before connecting real Windows actions. Local wake must not maintain a
+  paid ambient cloud session; current SAPI notification delay needs separate work.
+- [ ] Receive expected active users, per-user/total monthly funding and hosting
+  deployment details before rollout; define honest allowance and secure operator
+  access. Owner deferred these launch decisions; isolated testing can continue.
+- [ ] Qualify representative human/weak-mic/noisy input, naturalness and interruption;
+  choose default recognizer from evidence, not demo/model marketing.
+- [ ] Implement/qualify the bounded addressed hosted-turn component, server-owned
+  accounting/caps and recovery. No Deepgram connection in the installed app or EXE.
+
+Evidence: `E:\Morpheus-builds\experience-hosted-voice-comparison\run-1791171707447`.
+Flux 26/40 strict intent/slot/turn outcomes, zero errors; Nova-3 33/40, one natural
+endpoint timeout. Counts include case/punctuation and changed verb-form/router
+differences; do not call them recognition percentages. Neither lane showed a final
+with remaining signal above the probe threshold. The unaddressed negative stayed
+ignored; this small negative set cannot qualify false wakes. Times include original
+speech pacing/connection. Sent audio includes failures: 161.2 / 160.76 seconds;
+promotional-rate estimate totals $0.030324, not an invoice. Live provider requests
+used generated speech only, no owner microphone/profile or task execution. A first
+plain-pipe input attempt closed before a credential/network call; raw TTY input
+with echo disabled completed the run. No key was persisted or emitted. The actual
+installed app still uses its previous selected provider/included native-wake paths.
+
 ## Active voice interaction correction — October 5
 
 - [x] Inspect actual directory/remotes/branch/clean `593da4b4`; fetch without
