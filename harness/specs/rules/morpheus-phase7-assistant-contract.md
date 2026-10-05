@@ -37,6 +37,17 @@ unnecessary planning/approvals; exact remembered scopes survive replans. One tas
 cancellation cannot cancel independent work. Stop speech invalidates pending audio
 and does not imply task cancellation. Recovery reconciles uncertain side effects.
 
+Direct interpretation must preserve complete command intent and literal content;
+negated or reported tails cannot select a destructive or partial action. Adaptive
+task planning is local classification on auto profiles only. Pin approved account
+and model roles per objective, preserve explicit bindings and ACP overrides, and
+share original call/output reservations across any single pre-execution typed-plan
+repair. Authentication, uncertain transport, unavailable capabilities and already
+executed effects cannot trigger a model switch or replay. Unknown price is unknown.
+Ambiguous speech needs a readable recovery prompt rather than a transcript echo;
+spoken repair obeys the originating surface, saved reply policy and mute. Never
+turn a guessed correction or a bare yes into new execution authority.
+
 Local HTML preview and static-site restrictions remain intact. Interactive builds
 and remote browsing need separate scoped workers/sessions. A working directory,
 child process or utility process alone is not an OS sandbox for generated code.

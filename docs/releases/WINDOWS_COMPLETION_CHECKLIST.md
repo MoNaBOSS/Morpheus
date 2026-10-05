@@ -1,5 +1,46 @@
 # Current Windows experience completion checklist
 
+## Current component — 1.5.0 precision and bounded task routing, October 5
+
+- [x] Verify clean `a532df90`, branch/remotes/fetch 0/0 and C:5.3/E:108.1 GiB;
+  preview.18 delivery and actual installed preview.16/profile remain preserved.
+- [x] Audit actual direct/provider/ACP paths and cost bounds; automatic complexity
+  selection is absent. Direct registered actions already avoid planning calls.
+- [x] Reproduce negated/reported compound text producing an incorrect deletion
+  plan through pure source interpretation only; no action was executed.
+- [x] Record authorized 1.5.0 target and bounded precision/adaptive route contract
+  in the single specification; signing and physical gates remain explicit.
+- [x] Validate task harness, then fix negative/reported/partial command admission
+  with exact literal preservation and no broad past-tense authorization.
+- [x] Implement local complexity selection only for auto profiles, approved
+  same-default-account model roles and pinned objective authority; preserve explicit
+  bindings and ACP personality/history/model overrides.
+- [x] Share request/token reservations across at most one strict pre-execution
+  repair escalation; reject expensive retry on auth/payment/rate limit/uncertain
+  transport/cancel/audit/permission failures or after execution; record actual model.
+- [x] Integrate concise connected model-routing settings with truthful unset roles,
+  four locales, draft/return continuity and rendered Electron verification.
+- [x] Replace ambiguous transcript echo with repeat-or-type recovery; tests cover
+  originating surface/quiet policy, failed speech and cancellation without execution
+  or automatic recapture. Physical output is a separate acceptance gate.
+
+Source/rendered qualification: Node/web/managed typechecks pass; full lint has
+zero errors and 12 existing warnings. Focused command, planner/Core, policy/API,
+voice/quiet/cancel and preserved profile/context/signing/updater tests pass.
+Electron checks pass all four translated model-routing settings journeys, exact
+full/compact site searches, real synthetic RMS endpoint/recovery, saved Evil horns
+and ambiguous-transcript repeat/type repair without a guessed action. Model metadata
+and final STT text in those UI checks are fixtures, not live availability or ASR
+accuracy. Normal packaged qualification and NSIS identity remain pending below.
+- [ ] Qualify direct actions with zero planning calls and bounded latency; qualify
+  generated addressed input -> actual safe Core result and typed follow-up on final
+  normal package bytes, alongside protected voice setup and real output.
+- [ ] Produce separate identified 1.5.0 artifact only after relevant checks; inspect
+  exact NSIS bytes. Older checks do not transfer automatically to new bytes.
+- [ ] Actual disposable install/upgrade/reinstall/uninstall, human microphone/noise/
+  echo/interruption, native wake timing, display/taskbar and signing remain acceptance
+  gates. Preserve existing stable release publisher checks and inert updater.
+
 ## Current component — optional Deepgram speech, October 5
 
 - [x] Inspect clean `08f48658`, actual branch/remotes/fetched origin and storage;

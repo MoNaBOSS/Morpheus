@@ -63,6 +63,8 @@ import { createMorpheusVoiceService, type MorpheusVoiceService } from './voice/v
 import { createMorpheusDeepgramConnectionService, type MorpheusDeepgramConnectionService } from './voice/deepgram-connection';
 import { createMorpheusDeepgramVoice, probeMorpheusDeepgramConnection } from './voice/deepgram-voice';
 import { getSecretStore } from '../secrets/secret-store';
+import { getSetting } from '../../utils/store';
+import { normalizeMorpheusPlannerRoutingPolicy } from '@shared/morpheus/planner-routing';
 import {
   createMorpheusWorkspaceStore,
   type MorpheusWorkspaceStore,
@@ -228,10 +230,11 @@ export function createMorpheusService(options: CreateMorpheusServiceOptions): Mo
   const plannerSelector = createMorpheusPlannerSelector({
     providerService,
     getManagedRuntime: options.getManagedRuntime,
-    recordUsage: async (accountId, modelId, usage) => {
+    getRoutingPolicy: async () => normalizeMorpheusPlannerRoutingPolicy(await getSetting('morpheusPlannerRouting')),
+    recordUsage: async (accountId, _modelId, usage) => {
       await audit.recordControl({
         category: 'objective', event: 'provider-usage', subjectId: accountId,
-        details: { ...usage, ...(modelId ? { modelId } : {}) }, appVersion: options.appVersion,
+        details: { ...usage }, appVersion: options.appVersion,
       });
     },
   });

@@ -11,6 +11,7 @@ import { useMorpheusQuickCommandStore } from '@/stores/morpheus-quick-command';
 import { MorpheusProactiveSettings } from '@/components/morpheus/MorpheusProactiveSettings';
 import { MorpheusAccountPlans } from '@/components/morpheus/MorpheusAccountPlans';
 import { MorpheusUnrestrictedPreview } from '@/components/morpheus/MorpheusUnrestrictedPreview';
+import { MorpheusModelRouting } from '@/components/morpheus/MorpheusModelRouting';
 
 const sections = [['connections', Cable], ['voice', Mic], ['personality', Smile], ['account', CreditCard], ['advanced', SlidersHorizontal]] as const;
 export function MorpheusSettings() {
@@ -32,7 +33,7 @@ export function MorpheusSettings() {
     <div className="min-h-0 flex-1 overflow-y-auto"><div className="morpheus-settings-content mx-auto space-y-5">
       <p className="text-sm leading-relaxed text-muted-foreground">{t(`morpheus.experience.settings.${section}Body`)}</p>
       {section === 'account' ? <MorpheusAccountPlans/> : null}
-      {section === 'connections' ? <ProvidersSettings/> : section === 'voice' ? <MorpheusVoiceSetup/> : section === 'personality' ? <><MorpheusUnrestrictedPreview/><MorpheusOnboardingSettings/><details className="rounded-xl border border-border p-4"><summary className="cursor-pointer text-sm font-medium">{t('morpheus.proactive.settings.title')}</summary><div className="mt-4"><MorpheusProactiveSettings/></div></details></> : section === 'account' ? <MorpheusManagedAccount/> : <div className="space-y-3">
+      {section === 'connections' ? <><MorpheusModelRouting/><ProvidersSettings/></> : section === 'voice' ? <MorpheusVoiceSetup/> : section === 'personality' ? <><MorpheusUnrestrictedPreview/><MorpheusOnboardingSettings/><details className="rounded-xl border border-border p-4"><summary className="cursor-pointer text-sm font-medium">{t('morpheus.proactive.settings.title')}</summary><div className="mt-4"><MorpheusProactiveSettings/></div></details></> : section === 'account' ? <MorpheusManagedAccount/> : <div className="space-y-3">
         <Link to={morpheusAdvancedSettingsPath(location.search)} data-testid="morpheus-advanced-settings" className="block rounded-xl border border-border bg-surface-input p-4 text-sm hover:bg-white/5">{t('morpheus.experience.advancedSettings')}</Link>
         <Link to="/chat" data-testid="morpheus-advanced-chat" className="block rounded-xl border border-border bg-surface-input p-4 text-sm hover:bg-white/5">{t('morpheus.experience.advancedChat')}</Link>
         <Link to="/missions" className="block rounded-xl border border-border bg-surface-input p-4 text-sm hover:bg-white/5">{t('morpheus.signalOs.nav.missions')}</Link>

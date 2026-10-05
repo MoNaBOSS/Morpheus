@@ -28,7 +28,14 @@ import {
   type PermissionRequirement,
 } from '../execution-types';
 import type { MorpheusActionParams } from '../action-types';
-import { COMMAND_REQUEST_PREFIX, hasSeparateCommand, parseBrowserSearch } from './browser-search';
+import {
+  COMMAND_REQUEST_PREFIX,
+  YOUTUBE_DESTINATION_PATTERN,
+  hasNonActionCommandContext,
+  hasSeparateCommand,
+  hasUnresolvedCommandCompound,
+  parseBrowserSearch,
+} from './browser-search';
 
 export type InterpretOptions = {
   objective: string;
@@ -58,9 +65,6 @@ const PROCESS_PATTERNS = [
 ];
 
 const URL_PATTERN = /\bhttps?:\/\/[^\s<>"']+/i;
-const BROWSER_HOME_PATTERNS = [
-  /\b(open|launch|start)\b[^.]*\b(browser|web)\b/i,
-];
 const PROJECT_PATTERNS = [
   /\b(open|launch)\b.*\b(vscode|visual\s+studio\s+code|project|workspace)\b/i,
 ];
@@ -88,6 +92,7 @@ const NAMED_SITES: Readonly<Record<string, string>> = Object.freeze({
 });
 
 const REQUEST_END = '(?:\\s*,?\\s*please)?[.!?]*';
+const BROWSER_HOME_REQUEST = new RegExp(`^${COMMAND_REQUEST_PREFIX}(?:open|launch|start)\\s+(?:(?:the|my)\\s+)?(?:default\\s+)?(?:browser|web)${REQUEST_END}$`, 'i');
 const SIMPLE_APP_REQUEST = new RegExp(`^${COMMAND_REQUEST_PREFIX}(?:(?:open|launch|start|run)\\s+)?(?:note\\s*pad|calculator|calc|paint|mspaint|spotify)${REQUEST_END}$`, 'i');
 
 const CLIPBOARD_READ_PATTERNS = [
@@ -117,8 +122,8 @@ export function extractQuoted(objective: string): string | null {
 }
 
 const FILE_CREATE_PATTERNS = [
-  /^\s*(?:please\s+)?(create|make|write|new)\b[^\r\n]{0,240}\b(text\s+)?file\b/i,
-  /^\s*(?:please\s+)?(create|make|write|save)\b[^\r\n]{0,240}\.txt\b/i,
+  new RegExp(`^${COMMAND_REQUEST_PREFIX}(?:create|make|write|new)\\b[^\\r\\n]{0,240}\\b(?:text\\s+)?file\\b`, 'i'),
+  new RegExp(`^${COMMAND_REQUEST_PREFIX}(?:create|make|write|save)\\b[^\\r\\n]{0,240}\\.txt\\b`, 'i'),
 ];
 
 const FILE_APPEND_PATTERNS = [
@@ -151,8 +156,8 @@ const REMINDER_RELATIVE_PATTERN = /\bremind\s+me\s+in\s+(\d{1,3})\s*(minute|hour
  * `critical` tier confirm it — not so deleting becomes quietly convenient.
  */
 const FILE_DELETE_PATTERNS = [
-  /\b(delete|remove|erase)\b[^.]*\b(file|folder|directory)\b/i,
-  /\b(delete|remove)\s+[\w-]+\.\w{1,6}\b/i,
+  new RegExp(`^${COMMAND_REQUEST_PREFIX}(?:delete|remove|erase)\\s+(?:(?:the|my|a)\\s+)?(?:text\\s+)?(?:file|folder|directory)\\s+(?:(?:named|called)\\s+)?["']?[\\w./\\\\-]+["']?${REQUEST_END}$`, 'i'),
+  new RegExp(`^${COMMAND_REQUEST_PREFIX}(?:delete|remove)\\s+["']?[\\w-]+\\.\\w{1,6}["']?${REQUEST_END}$`, 'i'),
 ];
 
 const FOLDER_CREATE_PATTERNS = [
@@ -227,11 +232,15 @@ export function extractFileName(objective: string): string {
 
 /** Extracts quoted content, if the user supplied any. */
 export function extractFileContent(objective: string): string {
+  const saying = objective.match(/\b(?:saying|containing|with(?:\s+the)?\s+(?:text|content))\s+([\s\S]{1,4000})$/i);
+  if (saying) {
+    const content = saying[1].trim();
+    const delimited = /^(?:"([^"]*)"|“([^”]*)”|'([^']*)')$/.exec(content);
+    return delimited ? delimited[1] ?? delimited[2] ?? delimited[3] : content;
+  }
+
   const quoted = objective.match(/["“']([^"”']{1,4000})["”']/);
   if (quoted && !quoted[1].toLowerCase().endsWith('.txt')) return quoted[1];
-
-  const saying = objective.match(/\b(?:saying|containing|with(?:\s+the)?\s+(?:text|content))\s+(.{1,4000})$/i);
-  if (saying) return saying[1].trim();
 
   return 'Created by Morpheus.';
 }
@@ -297,15 +306,20 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
   if (browserSearch?.kind === 'unsupported') {
     return { ok: false, unsupported: { objective: text, reason: 'not-understood', supportedCapabilities } };
   }
+
   if (browserSearch?.kind === 'search') {
     return { ok: true, plan: basePlan([makeStep('step-1', 'web.openUrl', { url: browserSearch.url },
       buildPermission('web.openUrl', platform, new URL(browserSearch.url).origin),
       'morpheus.plan.steps.webSearch', { query: browserSearch.query })]) };
   }
 
+  if (hasNonActionCommandContext(text)) {
+    return { ok: false, unsupported: { objective: text, reason: 'not-understood', supportedCapabilities } };
+  }
+
   // A one-step keyword match must not quietly discard another requested
   // action. Browser queries were handled above; quoted content stays literal.
-  if (hasSeparateCommand(text)) {
+  if (hasSeparateCommand(text, true) || hasUnresolvedCommandCompound(text)) {
     return { ok: false, unsupported: { objective: text, reason: 'not-understood', supportedCapabilities } };
   }
 
@@ -471,9 +485,9 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
   }
 
   const navigation = '(?:open|launch|visit|browse|go\\s+to|navigate\\s+to|take\\s+me\\s+to)';
-  const namedSite = new RegExp(`^${COMMAND_REQUEST_PREFIX}${navigation}\\s+(?:the\\s+)?(youtube(?:\\s+music)?|instagram|pornhub|github|gmail|google)(?:\\s+(?:website|site))?${REQUEST_END}$`, 'i').exec(text);
+  const namedSite = new RegExp(`^${COMMAND_REQUEST_PREFIX}${navigation}\\s+(?:the\\s+)?(${YOUTUBE_DESTINATION_PATTERN}|instagram|pornhub|github|gmail|google)(?:\\s+(?:website|site))?${REQUEST_END}$`, 'i').exec(text);
   const bareDomain = new RegExp(`^${COMMAND_REQUEST_PREFIX}${navigation}\\s+((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,24})${REQUEST_END}$`, 'i').exec(text);
-  const url = namedSite ? NAMED_SITES[namedSite[1].toLowerCase().replace(/\s+/g, ' ')]
+  const url = namedSite ? NAMED_SITES[namedSite[1].toLowerCase().replace(/\s+/g, ' ').replace(/^(?:you tube|u tube)(?= |$)/, 'youtube')]
     : bareDomain ? `https://${bareDomain[1].toLowerCase()}/`
       : new RegExp(`^(?:${COMMAND_REQUEST_PREFIX}${navigation}\\s+)?https?://[^\\s<>"']+${REQUEST_END}$`, 'i').test(text)
         ? extractHttpUrl(text) : null;
@@ -583,7 +597,7 @@ export function interpretCommand(options: InterpretOptions): InterpretationResul
     };
   }
 
-  const openBrowserHome = BROWSER_HOME_PATTERNS.some((pattern) => pattern.test(text));
+  const openBrowserHome = BROWSER_HOME_REQUEST.test(text);
   if (openBrowserHome) {
     const targetUrl = 'https://www.google.com/';
     return {

@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 
 import { hostApi } from '@/lib/host-api';
-import { stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
+import { playMorpheusSpeech, stopMorpheusSpeech } from '@/lib/morpheus-speech-player';
+import { shouldSpeakMorpheusReply } from '@/lib/morpheus-reply-speech';
 import { hostEvents } from '@/lib/host-events';
 import i18n from '@/i18n';
 import type { MorpheusVoiceReplyTurn } from '@/lib/morpheus-conversation-speech';
@@ -213,6 +214,21 @@ async function routeVoiceInput(text: string, generation: number, question?: Morp
   const operator = useMorpheusOperatorStore.getState();
   const decision = await operator.route(text, 'voice');
   if (generation !== operationGeneration) return;
+  if (decision.route === 'clarification') {
+    const message = i18n.t('dashboard:morpheus.operator.clarification');
+    // The original words stay editable. A fresh explicit command is required;
+    // neither a guessed correction nor a bare yes receives tool authority.
+    useMorpheusVoiceStore.setState({ phase: 'error', errorKind: 'repeat', error: message, startedAt: null });
+    const status = useMorpheusVoiceStore.getState().status;
+    if (shouldSpeakMorpheusReply(status?.settings, { surface, input: 'voice' }) && status?.neuralSpeechAvailable) {
+      try {
+        await playMorpheusSpeech(message, { neuralAvailable: true, format: status.speechFormat, allowWindowsFallback: false });
+      } catch {
+        // Keep the actionable repeat/type controls when natural output fails.
+      }
+    }
+    return;
+  }
   if (decision.route === 'objective') {
     if (await useMorpheusCommandStore.getState().runObjective(decision.text, 'voice', (id) => {
       if (generation === operationGeneration) useMorpheusCommandStore.getState().bindObjectiveSpeech(id, { surface, input: 'voice' });

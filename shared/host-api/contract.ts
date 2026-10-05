@@ -8,6 +8,7 @@ import type {
 import type { RawMessage } from '../chat/types';
 import type { ManagedAccountSnapshot, ManagedAuthResult } from '../morpheus/managed-types';
 import type { MorpheusAppearance } from '../morpheus/appearance-types';
+import type { MorpheusPlannerRoutingPolicy } from '../morpheus/planner-routing';
 import type { MorpheusAmbientInputSession, MorpheusWakeAudioFrame } from '../morpheus/wake-audio-types';
 import type { MorpheusPublicationConnectionInput, MorpheusPublicationPreview, MorpheusPublicationReceipt, MorpheusPublicationResult, MorpheusPublicationSource, MorpheusPublicationState } from '../morpheus/publication-types';
 import type { AgentsSnapshot } from '../types/agent';
@@ -249,6 +250,7 @@ export type UpdateSetAutoDownloadPayload = { enable: boolean };
 export type SettingsSnapshot = Partial<{
   theme: 'light' | 'dark' | 'system';
   morpheusAppearance: MorpheusAppearance;
+  morpheusPlannerRouting: MorpheusPlannerRoutingPolicy;
   language: string;
   startMinimized: boolean;
   launchAtStartup: boolean;

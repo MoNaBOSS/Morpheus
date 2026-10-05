@@ -9,6 +9,7 @@ import { resolveSupportedLanguage } from '@shared/language';
 import { DEFAULT_WORKSPACE_CWD } from '@shared/workspace';
 import type { MorpheusOrbPlacement } from '@shared/morpheus/orb-presentation';
 import type { MorpheusAppearance } from '@shared/morpheus/appearance-types';
+import { DEFAULT_MORPHEUS_PLANNER_ROUTING, type MorpheusPlannerRoutingPolicy } from '@shared/morpheus/planner-routing';
 
 // Lazy-load electron-store (ESM module)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,6 +58,7 @@ export interface AppSettings {
   // UI State
   sidebarCollapsed: boolean;
   morpheusAppearance: MorpheusAppearance;
+  morpheusPlannerRouting: MorpheusPlannerRoutingPolicy;
   morpheusOrbPlacement: MorpheusOrbPlacement | null;
   devModeUnlocked: boolean;
   chatWorkspacePath: string;
@@ -118,6 +120,7 @@ function createDefaultSettings(): AppSettings {
     // UI State
     sidebarCollapsed: false,
     morpheusAppearance: 'green',
+    morpheusPlannerRouting: { ...DEFAULT_MORPHEUS_PLANNER_ROUTING, routes: {} },
     morpheusOrbPlacement: null,
     devModeUnlocked: false,
     chatWorkspacePath: DEFAULT_WORKSPACE_CWD,

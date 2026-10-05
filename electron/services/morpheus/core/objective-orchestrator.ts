@@ -634,6 +634,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
     let totalSteps = initialRun?.observations.filter((item) => item.planId !== owner.preparedPlan?.planId)
       .reduce((sum, observation) => sum + observation.steps.length, 0) ?? 0;
     let planner: MorpheusPlanner;
+    let getProviderRoute: (() => { modelId: string; reason: string }) | undefined;
     let proposed: InterpretationResult | null = null;
     let reportSave: { planId: string; summary: string } | undefined;
     let unavailableSources: MorpheusResearchEvidence['unavailable'] = [];
@@ -713,7 +714,9 @@ export function createMorpheusObjectiveOrchestrator(options: {
           // planners must not stop an explicit app/site command from starting.
           releaseSlot = await taskSlots.acquire([], taskPriority(run.origin.type), owner.controller.signal);
           if (!isCurrent(objectiveRunId, generation)) return;
-          const plannerSelection: MorpheusPlannerSelection = await options.planners.select(agent);
+          const plannerSelection: MorpheusPlannerSelection = await options.planners.select(agent, {
+            objective: effectiveObjective(run), context,
+          });
           if (!isCurrent(objectiveRunId, generation)) return;
           if (!plannerSelection.ok) {
             await transition(objectiveRunId, 'needs-clarification', { clarification: plannerSelection.reason });
@@ -721,12 +724,13 @@ export function createMorpheusObjectiveOrchestrator(options: {
             return;
           }
           planner = plannerSelection.planner;
+          getProviderRoute = plannerSelection.getCurrentRoute;
           const route: MorpheusObjectiveRoute = {
             kind: planner.plannedBy === 'provider' ? 'provider-plan' : 'deterministic-fallback',
             plannerId: planner.plannerId,
             selectedAt: now().toISOString(),
             reason: planner.plannedBy === 'provider'
-              ? 'The objective requires provider-backed planning.'
+              ? plannerSelection.routingReason ?? 'The objective requires provider-backed planning.'
               : 'No configured provider was available; using the bounded offline interpreter.',
           };
           await transition(objectiveRunId, 'planning', {
@@ -778,6 +782,7 @@ export function createMorpheusObjectiveOrchestrator(options: {
               objectiveRunId, iteration, capabilities, context, limits,
             });
             planner = deterministic;
+            getProviderRoute = undefined;
             const route: MorpheusObjectiveRoute = {
               kind: 'deterministic-fallback',
               plannerId: deterministic.plannerId,
@@ -810,6 +815,16 @@ export function createMorpheusObjectiveOrchestrator(options: {
           workspaceId,
         };
         ensurePlanAllowed(plan, capabilities, totalSteps, fingerprints);
+        const currentProviderRoute = getProviderRoute?.();
+        const routedRun = options.store.get(objectiveRunId);
+        if (currentProviderRoute && (routedRun?.modelId !== currentProviderRoute.modelId
+          || routedRun.route?.reason !== currentProviderRoute.reason)) {
+          await transition(objectiveRunId, 'planning', {
+            modelId: currentProviderRoute.modelId,
+            route: { kind: 'provider-plan', plannerId: planner.plannerId, selectedAt: now().toISOString(), reason: currentProviderRoute.reason },
+          });
+        }
+        if (!isCurrent(objectiveRunId, generation) || owner.controller.signal.aborted) return;
         const checkpoint = options.checkpoints?.get(objectiveRunId);
         if (checkpoint && checkpoint.plan?.planId !== plan.planId) {
           for (const step of plan.steps) {

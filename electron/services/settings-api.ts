@@ -14,6 +14,7 @@ import {
 } from '../utils/store';
 import { isRecord } from './payload-utils';
 import { isMorpheusAppearance, normalizeMorpheusAppearance, type MorpheusAppearance } from '../../shared/morpheus/appearance-types';
+import { isMorpheusPlannerRoutingPolicy } from '../../shared/morpheus/planner-routing';
 
 type KeyPayload = {
   key?: unknown;
@@ -68,6 +69,9 @@ async function requireSettingsPatch(payload: unknown): Promise<Partial<AppSettin
 function requireSettingValue(key: string, value: unknown): void {
   if (key === 'morpheusAppearance' && !isMorpheusAppearance(value)) {
     throw new Error('Invalid Morpheus appearance');
+  }
+  if (key === 'morpheusPlannerRouting' && !isMorpheusPlannerRoutingPolicy(value)) {
+    throw new Error('Invalid Morpheus task model routing');
   }
 }
 

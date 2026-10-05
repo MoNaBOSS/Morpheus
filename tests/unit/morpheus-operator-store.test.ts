@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import i18n from 'i18next';
 
 const routeInteraction = vi.hoisted(() => vi.fn());
 
@@ -68,8 +69,10 @@ describe('Morpheus operator interface state', () => {
 
     await useMorpheusOperatorStore.getState().route('Do that thing', 'quick-command');
     expect(useMorpheusOperatorStore.getState()).toMatchObject({
-      clarification: 'Do that thing',
+      clarification: i18n.t('dashboard:morpheus.operator.clarification'),
       pendingConversation: null,
     });
+    expect(useMorpheusOperatorStore.getState().lastDecision?.text).toBe('Do that thing');
+    expect(useMorpheusOperatorStore.getState().clarification).not.toBe('Do that thing');
   });
 });

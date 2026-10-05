@@ -1,3 +1,19 @@
+# Current component — 1.5.0 bounded task routing, 2026-10-05
+
+Continue the existing project. Version target is 1.5.0, with complete-command
+precision, local routine/complex task classification and one same-account typed-plan
+repair sharing four calls / 12,288 reserved output tokens. Direct registered actions
+still bypass inference. Connections offers Automatic/Saved model and optional
+routine/complex roles; unset roles use the saved model, without price or availability
+claims. Explicit profiles, ACP choices, history and personality keep their owners.
+Unclear speech offers repeat-or-type repair under the existing reply/mute policy.
+Combined source, rendered and normal package qualification is in progress; no new
+installer or public stable acceptance is claimed yet. The single
+[specification](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) and
+[checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) own evidence and next step.
+Preview.18 delivery and installed preview.16 remain preserved. Signing, physical
+voice/wake and disposable installation are independent acceptance gates.
+
 # Current component — Deepgram connected speech, 2026-10-05
 
 Owner authorized modular hosted speech and easy secure setup. Preview.18 delivery

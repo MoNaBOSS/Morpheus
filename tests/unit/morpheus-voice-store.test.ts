@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   voiceStatus: vi.fn(),
   prepareVoiceOutput: vi.fn(async () => ({ prepared: true })),
+  playSpeech: vi.fn(async () => 'neural'),
   transcribeAudio: vi.fn(),
   submitObjective: vi.fn(),
   correctObjective: vi.fn(async () => ({ accepted: true })),
@@ -44,6 +45,11 @@ vi.mock('@/stores/morpheus-conversation', () => ({ useMorpheusConversationStore:
   submit: mocks.submitConversation, setDraft: mocks.setDraft, dispatchError: null,
 }) } }));
 
+vi.mock('@/lib/morpheus-speech-player', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/morpheus-speech-player')>(),
+  playMorpheusSpeech: mocks.playSpeech,
+}));
+
 vi.mock('@/lib/host-events', () => ({
   hostEvents: {
     onMorpheusObjectiveEvent: vi.fn(() => vi.fn()),
@@ -58,6 +64,7 @@ vi.mock('@/lib/host-events', () => ({
 import { useMorpheusCommandStore } from '@/stores/morpheus-command';
 import { classifyMorpheusVoiceError, useMorpheusVoiceStore } from '@/stores/morpheus-voice';
 import { useMorpheusOperatorStore } from '@/stores/morpheus-operator';
+import i18n from '@/i18n';
 
 class FakeMediaRecorder {
   static isTypeSupported = vi.fn(() => true);
@@ -82,6 +89,7 @@ const getUserMedia = vi.fn(async () => ({ getTracks: () => [track], getAudioTrac
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.playSpeech.mockResolvedValue('neural');
   mocks.meterByte = 128;
   getUserMedia.mockResolvedValue({ getTracks: () => [track], getAudioTracks: () => [] });
   vi.stubGlobal('AudioWorkletNode', class {
@@ -156,6 +164,64 @@ afterEach(async () => {
 });
 
 describe('Morpheus renderer voice controller', () => {
+  it.each([
+    ['quick-command', true, 1],
+    ['command-center', true, 0],
+    ['quick-command', false, 0],
+  ] as const)('gives a safe repeat prompt on %s and respects spoken replies %s', async (source, speakResponses, calls) => {
+    const status = await mocks.voiceStatus();
+    mocks.voiceStatus.mockResolvedValue({ ...status, neuralSpeechAvailable: true, speechFormat: 'pcm24',
+      settings: { ...status.settings, speakResponses, replySpeechMode: 'orb' } });
+    mocks.transcribeAudio.mockResolvedValue({ transcript: 'opened the YouTube', durationMs: 1000 });
+    mocks.routeInteraction.mockResolvedValue({ route: 'clarification', reason: 'ambiguous-command',
+      confidence: 'low', text: 'opened the YouTube' });
+    await useMorpheusVoiceStore.getState().startListening(source);
+    useMorpheusVoiceStore.getState().stopListening();
+    await vi.waitFor(() => expect(useMorpheusVoiceStore.getState().phase).toBe('error'));
+    await vi.waitFor(() => expect(mocks.playSpeech).toHaveBeenCalledTimes(calls));
+    expect(useMorpheusVoiceStore.getState()).toMatchObject({ errorKind: 'repeat',
+      error: i18n.t('dashboard:morpheus.operator.clarification'), transcript: 'opened the YouTube' });
+    expect(useMorpheusOperatorStore.getState().lastDecision?.text).toBe('opened the YouTube');
+    expect(useMorpheusOperatorStore.getState().clarification).not.toBe('opened the YouTube');
+    expect(mocks.submitObjective).not.toHaveBeenCalled();
+    expect(mocks.submitConversation).not.toHaveBeenCalled();
+    expect(getUserMedia).toHaveBeenCalledOnce();
+    expect(track.stop).toHaveBeenCalledOnce();
+  });
+
+  it('keeps repeat or typing recovery when the natural clarification reply fails', async () => {
+    const status = await mocks.voiceStatus();
+    mocks.voiceStatus.mockResolvedValue({ ...status, neuralSpeechAvailable: true,
+      settings: { ...status.settings, replySpeechMode: 'orb' } });
+    mocks.routeInteraction.mockResolvedValue({ route: 'clarification', reason: 'ambiguous-command',
+      confidence: 'low', text: 'opened YouTube' });
+    mocks.playSpeech.mockRejectedValueOnce(new Error('Speech service unavailable'));
+    await useMorpheusVoiceStore.getState().startListening('quick-command');
+    useMorpheusVoiceStore.getState().stopListening();
+    await vi.waitFor(() => expect(mocks.playSpeech).toHaveBeenCalledOnce());
+    await Promise.resolve();
+    expect(useMorpheusVoiceStore.getState()).toMatchObject({ phase: 'error', errorKind: 'repeat',
+      error: i18n.t('dashboard:morpheus.operator.clarification') });
+    expect(mocks.submitObjective).not.toHaveBeenCalled();
+    expect(getUserMedia).toHaveBeenCalledOnce();
+  });
+
+  it('cannot speak or act on a late ambiguous route after cancellation', async () => {
+    const status = await mocks.voiceStatus();
+    mocks.voiceStatus.mockResolvedValue({ ...status, neuralSpeechAvailable: true });
+    let decide!: (decision: unknown) => void;
+    mocks.routeInteraction.mockReturnValueOnce(new Promise(resolve => { decide = resolve; }));
+    await useMorpheusVoiceStore.getState().startListening('quick-command');
+    useMorpheusVoiceStore.getState().stopListening();
+    await vi.waitFor(() => expect(mocks.routeInteraction).toHaveBeenCalledOnce());
+    useMorpheusVoiceStore.getState().cancel();
+    decide({ route: 'clarification', reason: 'ambiguous-command', confidence: 'low', text: 'opened YouTube' });
+    await Promise.resolve(); await Promise.resolve();
+    expect(mocks.playSpeech).not.toHaveBeenCalled();
+    expect(mocks.submitObjective).not.toHaveBeenCalled();
+    expect(useMorpheusVoiceStore.getState().errorKind).toBeNull();
+  });
+
   const companionStatus = async () => ({ ...await mocks.voiceStatus(), settings: {
     ...(await mocks.voiceStatus()).settings, ambientEnabled: true, localWakeEnabled: true,
     ambientSilenceMs: 1000, ambientMaxUtteranceMs: 20000,

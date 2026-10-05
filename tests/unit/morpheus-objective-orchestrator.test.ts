@@ -13,6 +13,7 @@ import type { MorpheusAuditSink } from '@electron/services/morpheus/audit';
 import type { MorpheusRuntime } from '@electron/services/morpheus/runtime';
 import type { MorpheusPlanner } from '@shared/morpheus/planner';
 import { MorpheusProviderRequestError } from '@electron/services/morpheus/planning/provider-planner';
+import { createMorpheusPlannerSelector, type MorpheusPlannerSelector } from '@electron/services/morpheus/planning/planner-selector';
 import type { ExecutionPlan } from '@shared/morpheus/execution-types';
 import type { MorpheusObjectiveEvent } from '@shared/morpheus/core/objective-types';
 import { DEFAULT_OBJECTIVE_LIMITS, type MorpheusObjectiveLimits } from '@shared/morpheus/core/objective-types';
@@ -43,6 +44,7 @@ function setup(
   configuration: {
     now?: () => Date;
     limits?: MorpheusObjectiveLimits;
+    planners?: MorpheusPlannerSelector;
   } = {},
 ) {
   const root = mkdtempSync(join(tmpdir(), 'morpheus-orchestrator-'));
@@ -65,11 +67,12 @@ function setup(
     recordControl: vi.fn(async (entry: { event: string }) => { auditEvents.push(entry.event); }),
   } as unknown as MorpheusAuditSink;
   const memory = createMorpheusMemoryStore({ userDataDir: root });
+  const planners = configuration.planners ?? { select: vi.fn(async () => ({ ok: true as const, planner, providerAccountId: 'provider-1', modelId: 'model-1' })) };
   const orchestrator = createMorpheusObjectiveOrchestrator({
     store: createMorpheusObjectiveStore({ userDataDir: root }),
     runtime,
     agents,
-    planners: { select: vi.fn(async () => ({ ok: true as const, planner, providerAccountId: 'provider-1', modelId: 'model-1' })) },
+    planners,
     audit,
     appVersion: '1.0.0',
     workspaces: {
@@ -100,10 +103,40 @@ function setup(
       events.push(event);
     },
   });
-  return { orchestrator, runtime, events, memory, auditEvents, agents };
+  return { orchestrator, runtime, events, memory, auditEvents, agents, planners };
 }
 
 describe('Main-owned objective orchestration', () => {
+  it('records the stronger initial repair before one native execution and preserves actual call models', async () => {
+    const recordUsage = vi.fn(async () => undefined);
+    const planners = createMorpheusPlannerSelector({
+      providerService: {
+        listAccounts: async () => [{ id: 'work', vendorId: 'openrouter', label: 'Work', authMode: 'api_key',
+          baseUrl: 'https://provider.example/v1', apiProtocol: 'openai-completions', model: 'vendor/saved',
+          enabled: true, isDefault: true, createdAt: '', updatedAt: '' }],
+        getDefaultAccountId: async () => 'work', getAccountRuntimeApiKey: async () => 'synthetic-key',
+      } as never,
+      getRoutingPolicy: () => ({ mode: 'adaptive', routes: { work: { efficientModelId: 'vendor/efficient', strongModelId: 'vendor/strong' } } }),
+      recordUsage,
+    });
+    const fetchImpl = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: 'not json' } }] })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ steps: [{
+        stepId: 'report', capabilityId: 'system.report', params: {}, dependsOn: [], summary: 'Report system facts',
+      }] }) } }] })));
+    vi.stubGlobal('fetch', fetchImpl);
+    const { orchestrator, runtime, events } = setup({ plannerId: 'unused', plannedBy: 'deterministic', plan: vi.fn() }, undefined, undefined, { planners });
+    try {
+      const submitted = await orchestrator.submit({ objective: 'Conduct a readiness check', originType: 'command-bar' });
+      const terminal = await orchestrator.waitForTerminal(submitted.objectiveRunId);
+      expect(terminal).toMatchObject({ state: 'complete', providerAccountId: 'work', modelId: 'vendor/strong', route: { reason: expect.stringContaining('before execution') } });
+      expect(runtime.executePlan).toHaveBeenCalledOnce();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      expect(events.filter((event) => event.state === 'planning').map((event) => event.run.modelId)).toEqual(['vendor/efficient', 'vendor/strong']);
+      expect(recordUsage.mock.calls.filter((call) => (call[2] as { phase: string }).phase === 'started').map((call) => call[1]))
+        .toEqual(['vendor/efficient', 'vendor/strong']);
+    } finally { orchestrator.dispose(); vi.unstubAllGlobals(); }
+  });
+
   it.each(['saved', 'denied', 'missing-file'] as const)('research reviews retrieved evidence and only completes after verified save: %s', async (saveOutcome) => {
     const researchPlan = plan('research-plan');
     researchPlan.steps = [{ ...researchPlan.steps[0], capabilityId: 'web.readPage', params: { url: 'https://example.com/guide' }, permission: { ...researchPlan.steps[0].permission, capabilityId: 'web.readPage' } }];

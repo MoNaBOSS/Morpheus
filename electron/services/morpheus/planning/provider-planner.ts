@@ -28,6 +28,38 @@ const MAX_PROMPT_CHARS = 48_000;
 const MAX_REQUESTS = 4;
 const MAX_RESERVED_OUTPUT_TOKENS = 12_288;
 
+export type MorpheusPlannerRequestBudget = {
+  reserve(input: { objective: string; inputChars: number; objectiveRunId?: string; signal?: AbortSignal }): {
+    requestNumber: number;
+    outputTokenLimit: number;
+  };
+};
+
+/** One objective owns this budget even if its initial typed plan needs repair. */
+export function createMorpheusPlannerRequestBudget(): MorpheusPlannerRequestBudget {
+  let requestCount = 0;
+  let reservedOutput = 0;
+  let ownerBound = false;
+  let ownerId: string | undefined;
+  return {
+    reserve({ objective, inputChars, objectiveRunId, signal }) {
+      signal?.throwIfAborted();
+      if (ownerBound && ownerId !== objectiveRunId) throw new Error('A planning route cannot be reused by another objective.');
+      ownerBound = true;
+      ownerId = objectiveRunId;
+      const outputTokenLimit = /\b(website|web site|landing page)\b/i.test(objective) ? 4_096 : 2_048;
+      if (inputChars > MAX_PROMPT_CHARS) throw new Error('Planning input exceeds the bounded context allowance. Narrow this objective.');
+      if (requestCount >= MAX_REQUESTS || reservedOutput + outputTokenLimit > MAX_RESERVED_OUTPUT_TOKENS) {
+        throw new Error('Planning request allowance reached. Review the current result before starting more provider work.');
+      }
+      // A failed/cancelled call still may be billed. Never refund a reservation.
+      requestCount += 1;
+      reservedOutput += outputTokenLimit;
+      return { requestNumber: requestCount, outputTokenLimit };
+    },
+  };
+}
+
 export type MorpheusPlannerUsage = Partial<MorpheusUsageCounts> & {
   requestId: string;
   objectiveRunId?: string;
@@ -96,6 +128,7 @@ export type MorpheusProviderPlannerOptions = {
   now?: () => Date;
   createId?: () => string;
   recordUsage?: (usage: MorpheusPlannerUsage) => Promise<void>;
+  requestBudget?: MorpheusPlannerRequestBudget;
 };
 
 function protocolFor(account: ProviderAccount): SupportedPlannerProtocol | null {
@@ -370,26 +403,14 @@ export function createMorpheusProviderPlanner(options: MorpheusProviderPlannerOp
   const model = resolveMorpheusPlannerModelId(options.account, options.modelId);
   const now = options.now ?? (() => new Date());
   const createId = options.createId ?? (() => randomUUID());
-  let requestCount = 0;
-  let reservedOutput = 0;
-  let ownerBound = false;
-  let ownerId: string | undefined;
+  const budget = options.requestBudget ?? createMorpheusPlannerRequestBudget();
   const invoke = async (system: string, user: string, objective: string, signal?: AbortSignal, objectiveRunId?: string): Promise<string> => {
     signal?.throwIfAborted();
-    if (ownerBound && ownerId !== objectiveRunId) throw new Error('A planning route cannot be reused by another objective.');
-    ownerBound = true;
-    ownerId = objectiveRunId;
     // Reserve before awaiting: failed requests and retries still consume allowance.
-    const outputTokenLimit = /\b(website|web site|landing page)\b/i.test(objective) ? 4_096 : 2_048;
     const inputChars = system.length + user.length;
-    if (inputChars > MAX_PROMPT_CHARS) throw new Error('Planning input exceeds the bounded context allowance. Narrow this objective.');
-    if (requestCount >= MAX_REQUESTS || reservedOutput + outputTokenLimit > MAX_RESERVED_OUTPUT_TOKENS) {
-      throw new Error('Planning request allowance reached. Review the current result before starting more provider work.');
-    }
-    requestCount += 1;
-    reservedOutput += outputTokenLimit;
+    const reservation = budget.reserve({ objective, inputChars, objectiveRunId, signal });
     const allowance: MorpheusPlannerUsage = {
-      requestId: randomUUID(), phase: 'started', requestNumber: requestCount, inputChars, outputTokenLimit,
+      requestId: randomUUID(), phase: 'started', ...reservation, inputChars,
       modelId: model, costStatus: 'unknown',
       ...(objectiveRunId ? { objectiveRunId } : {}),
     };

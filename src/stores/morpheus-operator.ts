@@ -56,7 +56,8 @@ export const useMorpheusOperatorStore = create<MorpheusOperatorState>()(
         }
         set({
           lastDecision: decision,
-          clarification: decision.route === 'clarification' ? decision.text : null,
+          clarification: decision.route === 'clarification'
+            ? i18n.t('dashboard:morpheus.operator.clarification') : null,
         });
         return decision;
       },

@@ -1,5 +1,59 @@
 # Morpheus experience specification
 
+## Current component — 1.5.0 precision and bounded task routing, October 5
+
+Owner requests an actual stable 1.5.0 with fast, correct execution and sensible
+credit use, including task-based model selection. This is continuation from clean
+`a532df90`, fetched application origin 0/0, C: 5.3 GiB / E: 108.1 GiB. Preserve the
+preview.18 delivery, owner installation/profile and all current capabilities.
+No release label substitutes for runtime, installer, physical or signing evidence.
+
+Inherited implemented baseline: Core already matches direct registered commands
+before asking a planning provider. Named YouTube searches retain the destination
+and literal query without planning credits. Auto profiles otherwise choose a saved
+default account/model; complexity routing was absent. Explicit profiles
+and original ACP conversation overrides have separate existing authority.
+
+Reproduced and corrected source defect, without executing any action: negated/reported
+tails such as `Open YouTube and do not delete file notes.txt` can create a sole
+deletion plan. Anchored complete-command interpretation now prevents that path.
+Never rewrite quoted search/file text or silently execute a partial compound task.
+Recognized bounded site aliases apply only to destination slots. Past-tense,
+negated, reported and uncertain speech is not automatically action authority.
+
+Implemented bounded routing contract: only auto profiles use a local no-inference
+routine/complex classifier. Approved efficient and strong model choices stay on
+the selected default account, with its endpoint/credential pinned per objective.
+Unset model roles fall back to the existing saved model with an honest explanation;
+no account/default is silently rewritten and no unknown model is called cheapest.
+Explicit model/profile choices remain honored. One stronger pre-execution repair
+may follow strict typed-plan validation failure, sharing the original four-request
+and 12,288 reserved-output-token budget. Auth/payment/429, uncertain transport,
+cancellation, audit failure, permission/capability failure and already executed
+tools cannot trigger an expensive escalation or replay. Usage records the actual
+requested model; unknown money cost remains unknown. Existing ACP personality,
+history and conversation model selection stay with their current owners.
+
+Connections now offers a compact automatic/fixed setting with optional approved
+model roles; ordinary interaction does not expose planning stages. Test direct
+dispatch with zero provider calls, exact intent/slots and provider model/call/token
+limits, then normal generated-audio -> real safe Core task/result on final bytes.
+UI uses the existing connected settings, four locales, draft and return path.
+
+Unclear voice input now keeps the original words editable and shows a repeat-or-type
+repair prompt, optionally spoken under the originating surface's saved reply policy.
+It does not execute a guessed correction, accept a bare yes or silently reacquire
+the microphone. New input/cancellation retain the existing generation veto.
+
+Exact next step: complete combined focused source/rendered checks, build once on E:,
+qualify the actual normal package,
+then create and inspect its exact NSIS payload. Keep source, generated/provider,
+package, installed and human evidence distinct. Owner still runs preview.16;
+preview.18 was delivered separately and must not be described as installed.
+Bare-SemVer public release requires the existing signing/publisher guards. No
+certificate/service, funded all-user backend or payment account has been supplied;
+never bypass these gates to pretend 1.5.0 is a signed public stable release.
+
 ## Current component — optional Deepgram speech, October 5
 
 Owner authorized modular hosted speech integration and easy secure configuration.
