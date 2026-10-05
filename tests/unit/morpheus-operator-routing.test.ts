@@ -4,6 +4,20 @@ import { routeMorpheusInteraction } from '@shared/morpheus/operator-types';
 import { validateRouteInteractionPayload } from '@electron/services/morpheus-api';
 
 describe('Morpheus Ask, Auto, and Act routing', () => {
+  it.each([
+    ['shows system information', 'show system information'],
+    ['opened the YouTube', 'open the YouTube'],
+    ['opens Notepad', 'open Notepad'],
+    ['opened YouTube and search for "Opened file notes.txt"', 'open YouTube and search for "Opened file notes.txt"'],
+  ])('accepts a narrow routine speech inflection without changing literal content: %s', (text, canonical) => {
+    expect(routeMorpheusInteraction({ text, mode: 'auto', surface: 'voice' })).toMatchObject({ route: 'objective', text: canonical });
+    expect(routeMorpheusInteraction({ text, mode: 'auto', surface: 'quick-command' }).route).toBe('clarification');
+    expect(routeMorpheusInteraction({ text, mode: 'ask', surface: 'voice' })).toMatchObject({ route: 'conversation', text });
+  });
+  it.each(['opened file notes.txt', 'deleted file notes.txt', 'shows private passwords',
+    'opened YouTube then delete file notes.txt', 'I opened YouTube', 'Morpheus opened YouTube yesterday'])('does not repair narration, consequential commands or partial compound tasks: %s', (text) => {
+    expect(routeMorpheusInteraction({ text, mode: 'auto', surface: 'voice' }).route).not.toBe('objective');
+  });
   it('keeps Ask conversational even when the text sounds actionable', () => {
     expect(routeMorpheusInteraction({
       text: 'Build me a website', mode: 'ask', surface: 'chat',

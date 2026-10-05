@@ -14,6 +14,14 @@ is demonstrated. Browser computer control was blocked by URL verification; use
 isolated Electron rendered tests and explicit runtime evidence, not a claimed
 inspection of the owner's Chrome page.
 
+Actual normal-package/live-cloud test reproduced `shows system information` from
+generated `Morpheus, show system information`. Exact wake verification succeeded,
+but Auto routing clarified and never called Core. Add a narrow voice-only routine
+verb interpretation for `shows` system information and `opened`/`opens` public
+navigation; preserve query words. Narration, filesystem/consequential verbs and
+partial compound instructions remain rejected. Typed surfaces retain strict
+wording. This is deterministic interpretation, not a claimed ASR accuracy gain.
+
 Owner PC review, October 5: **1.5.0 is rejected for reliability and latency**.
 Read-only identity confirms the installed ASAR/app EXE exactly match the delivered
 `7ae1423a` local package; do not blame an older installer. Actual audit shows native

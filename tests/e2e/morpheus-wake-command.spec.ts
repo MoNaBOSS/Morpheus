@@ -31,7 +31,7 @@ test('a verified Main wake-command fixture admits one direct turn without a seco
       const main = BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Morpheus');
       if (!main) throw new Error('Main window missing');
       const presence = { v: 1, state: 'understanding', ambientEnabled: true,
-        wakeSequence: 1, wakeCommand: 'Show system information' };
+        wakeSequence: 1, wakeCommand: 'shows system information' };
       main.webContents.send('morpheus:voice-presence', presence);
       main.webContents.send('morpheus:voice-presence', presence);
     });
@@ -43,7 +43,7 @@ test('a verified Main wake-command fixture admits one direct turn without a seco
     const submissions = calls.filter((request) => request.action === 'submitObjective');
     expect(routes).toHaveLength(1);
     expect(submissions).toHaveLength(1);
-    expect(submissions[0].payload).toMatchObject({ objective: 'Show system information', originType: 'voice' });
+    expect(submissions[0].payload).toMatchObject({ objective: 'show system information', originType: 'voice' });
     expect(calls.filter((request) => ['beginAmbientVoice', 'prepareAmbientVoiceInput', 'feedAmbientWakeAudio', 'setAmbientVoiceListening', 'transcribeAudio', 'transcribeAmbientAudio', 'synthesizeSpeech'].includes(request.action ?? ''))).toEqual([]);
     const orb = app.windows().find((window) => window !== page);
     if (process.platform === 'win32') {

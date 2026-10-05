@@ -10,6 +10,10 @@ Active reliability repair, October 5:
 - [ ] Reuse validated existing Chrome profile for its default-browser URL actions.
 - [ ] Qualify corrected normal package, real cloud stages and browser delegation;
   distinguish generated speech from owner accent and physical microphone acceptance.
+- [x] First live-cloud normal package reproduced a verified `shows system information`
+  transcript that Auto rejected without executing. Test credential removed; receipt
+  retained. Add voice-only bounded routine inflection handling with negative cases.
+- [ ] Repeat the same actual native/cloud/Core/spoken-result test on corrected bytes.
 
 Owner acceptance, October 5: **REJECTED**. Exact installed 1.5.0 ASAR/app EXE
 match the local delivery identities below. The owner reports inconsistent wake,

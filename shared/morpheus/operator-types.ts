@@ -64,6 +64,23 @@ const CONVERSATIONAL_QUESTION = /^(?:what|why|who|where|when|how|which|is|are|am
 const COMPANION_CONVERSATION = /^(?:(?:hi|hello|hey|good morning|good evening|thanks|thank you)(?:[\s,!].*)?|(?:i prefer|remember(?: that)?|call me)\s+.+|(?:please\s+)?(?:don't|do not)\s+(?:roast|mock|joke|make jokes|use jokes|make fun|tease)\b.*)[.!?]?$/i;
 const NAVIGATION_REQUEST = /^(?:(?:(?:can|could|would|will)\s+you|i\s+(?:want|need)\s+you\s+to|help\s+me)\s+)?(?:(?:please|kindly)\s+)?(?:go\s+to|navigate\s+to|take\s+me\s+to|visit|browse|look\s+up)\s+\S/i;
 
+/** Narrow speech inflections for routine navigation/read-only commands.
+ * Never changes query words, accepts narration, or repairs consequential verbs.
+ */
+export function normalizeSpokenRoutineCommand(text: string): string | null {
+  const report = /^shows\s+((?:the\s+)?system\s+(?:information|info|report|status|details))[.!]?$/i.exec(text);
+  if (report) return `show ${report[1]}`;
+  const opening = /^(?:opened|opens)\s+(.+)$/i.exec(text);
+  if (!opening) return null;
+  const candidate = `open ${opening[1]}`;
+  // Site-search parsing validates the whole request and preserves the literal query.
+  if (parseBrowserSearch(candidate)?.kind === 'search') return candidate;
+  if (/^(?:the\s+)?(?:youtube|you tube|u tube|instagram|github|gmail|google|pornhub|notepad|calculator|paint|spotify)(?:\s+(?:website|site|app))?[.!]?$/i.test(opening[1])) return candidate;
+  if (/^https?:\/\/[^\s<>"']+[.!]?$/i.test(opening[1])
+    || /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}[.!]?$/i.test(opening[1])) return candidate;
+  return null;
+}
+
 /**
  * Bounded deterministic routing for Auto mode.
  *
@@ -81,6 +98,9 @@ export function routeMorpheusInteraction(
   if (payload.mode === 'act') {
     return { route: 'objective', reason: 'act-selected', confidence: 'explicit', text };
   }
+
+  const spokenRoutine = payload.surface === 'voice' ? normalizeSpokenRoutineCommand(text) : null;
+  if (spokenRoutine) return { route: 'objective', reason: 'actionable-intent', confidence: 'high', text: spokenRoutine };
 
   if (IMPERATIVE_ACTION.test(text) || REQUEST_ACTION.test(text)
     || DESIRE_ACTION.test(text) || ACTION_NOUN_REQUEST.test(text)

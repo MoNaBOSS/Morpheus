@@ -58,6 +58,7 @@ requiredTests:
   - pnpm run comms:compare
   - pnpm run harness:ci
 acceptance:
+  - Voice-only routine inflection repair accepts bounded shows-system-information and opened/opens navigation to compiled sites/apps or a complete public site search; narration, filesystem and consequential verbs remain strict and query contents never change.
   - Native wake verification immediately restores an informational orb in hidden companion scope, without granting transcript, follow-up or execution authority; visible chat and mute suppress restoration.
   - Saving protected voice credentials preserves the mounted connection form and its test result while old audio authority is revoked.
   - When Chrome is the Windows HTTP/HTTPS default, URL actions reuse its validated existing last-used profile without creating a user-data directory; other defaults retain Windows delegation.
