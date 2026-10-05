@@ -1,5 +1,12 @@
 # Current component — 1.5.0 bounded task routing, 2026-10-05
 
+Owner PC acceptance has since **rejected** 1.5.0. Installed ASAR/app EXE match the
+exact local delivery. Current profile still uses legacy provider voice, absent
+Deepgram connection, tiny.en wake verification and unconfigured model roles;
+actual speech timings and Chrome-profile complaint are recorded in the single
+specification/checklist. Next step is one measured real wake/command/current-browser/
+action/spoken-result loop. Do not package another version or claim stability first.
+
 Continue the existing project. Version target is 1.5.0, with complete-command
 precision, local routine/complex task classification and one same-account typed-plan
 repair sharing four calls / 12,288 reserved output tokens. Direct registered actions
@@ -27,9 +34,9 @@ retention, using independently rebuilt CI bytes separate from the local EXE.
 The EXE is NotSigned; no public stable acceptance is claimed. The single
 [specification](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) and
 [checklist](docs/releases/WINDOWS_COMPLETION_CHECKLIST.md) own evidence and next step.
-Preview.18 delivery and installed preview.16 remain preserved. Signing, physical
-voice/wake/display are independent acceptance gates. Exact next step is the short
-PC acceptance check and signing configuration, without repeating approved design.
+Earlier preview.18 delivery remains preserved; owner now runs exact local 1.5.0.
+Signing, physical voice/wake/display remain acceptance gates. Follow the owner
+rejection and immediate repair component above without repeating approved design.
 
 # Current component — Deepgram connected speech, 2026-10-05
 

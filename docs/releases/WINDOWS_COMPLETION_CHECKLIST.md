@@ -1,5 +1,25 @@
 # Current Windows experience completion checklist
 
+Owner acceptance, October 5: **REJECTED**. Exact installed 1.5.0 ASAR/app EXE
+match the local delivery identities below. The owner reports inconsistent wake,
+wrong Chrome profile and slow/unreliable commands.
+
+- [x] Read-only installed identity, safe voice/routing metadata and actual timing
+  audit: legacy `provider` engine, absent protected Deepgram connection, tiny.en
+  wake-verification rejections; manual ASR 2.230–2.541 s, first speech audio
+  2.511–4.561 s. Model-routing roles are empty. No settings or secrets changed.
+- [ ] Prove a real addressed command after idle, visible wake acknowledgement,
+  automatic turn end, exactly one correct action in the chosen existing Chrome
+  profile, streamed speech, interruption and mute; measure each stage.
+- [ ] Reproduce the reported browser-profile failure and explicitly preserve the
+  user's selected profile. Current direct URL path delegates profile choice to Windows.
+- [ ] Validate a real saved task-model connection and configure actual role models;
+  fixture routing checks do not qualify live provider availability or quality.
+
+The single specification owns this repair contract. Preserve previous receipts,
+but do not present generated voice, static installer inspection or disposable
+installation as owner acceptance. Next step is the one real interaction above.
+
 ## Current component — 1.5.0 precision and bounded task routing, October 5
 
 - [x] Verify clean `a532df90`, branch/remotes/fetch 0/0 and C:5.3/E:108.1 GiB;

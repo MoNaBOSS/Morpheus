@@ -1,5 +1,26 @@
 # Morpheus experience specification
 
+Owner PC review, October 5: **1.5.0 is rejected for reliability and latency**.
+Read-only identity confirms the installed ASAR/app EXE exactly match the delivered
+`7ae1423a` local package; do not blame an older installer. Actual audit shows native
+wake detections rejected by included tiny.en verification. Saved engine is still
+`provider`; the Deepgram connection is absent in this installed profile. Manual
+recognition waits 2.230–2.541 seconds after upload, and observed first speech audio
+waits 2.511–4.561 seconds. Automatic model routing has no configured role accounts
+and therefore uses the saved model. Owner reports a separate Chrome profile;
+the direct URL capability delegates to Windows without explicit profile selection.
+The specific failing browser launch has not been reproduced. Generated and fixture
+qualification remains historical evidence, not real-user acceptance.
+
+Exact next component: qualify one real wake -> complete recognized command ->
+chosen existing browser profile -> correct action -> streamed spoken response loop,
+with visible wake acknowledgement, natural speech end and stage timings. Use the
+existing protected cloud speech integration; preserve included fallback, mute,
+Advanced and task authority. Repair browser profile selection explicitly and
+validate real task-model configuration separately before claiming complex routing.
+No new build, account/voice settings changes or paid requests occurred during this
+review. Signing remains required but is not the cause of these runtime failures.
+
 ## Current component — 1.5.0 precision and bounded task routing, October 5
 
 Owner requests an actual stable 1.5.0 with fast, correct execution and sensible
@@ -100,10 +121,11 @@ with synthetic credential/settings/history retention. Its independently rebuilt
 CI bytes differ from the local EXE; exact identities and scope are in the checklist.
 It is not owner installation or physical audio acceptance.
 
-Exact next step: run the short actual PC acceptance checklist and configure signing.
+That package's original next step was actual PC acceptance; the owner rejection
+and immediate repair component now supersede it above.
 Keep source, generated/provider,
-package, installed and human evidence distinct. Owner still runs preview.16;
-preview.18 was delivered separately and must not be described as installed.
+package, installed and human evidence distinct. Owner now runs the exact local
+1.5.0 bytes. Earlier preview.18 delivery remains separately preserved.
 Bare-SemVer public release requires the existing signing/publisher guards. No
 certificate/service, funded all-user backend or payment account has been supplied;
 never bypass these gates to pretend 1.5.0 is a signed public stable release.
