@@ -11,19 +11,23 @@ $ErrorActionPreference = 'Stop'
 try {
   Add-Type -AssemblyName System.Speech
   $config = [Console]::ReadLine() | ConvertFrom-Json
-  Add-Type -TypeDefinition @'
+  Add-Type -ReferencedAssemblies ([System.Speech.Recognition.SpeechRecognitionEngine].Assembly.Location) -TypeDefinition @'
 using System;
 using System.IO;
+using System.Globalization;
+using System.Speech.Recognition;
+using System.Threading;
 // System.Speech uses file-style reads. Live input must block for a complete
 // requested read, and expose an endless length rather than a pipe's unsupported
 // Length/Seek. EOF is real termination, never synthetic silence.
 public sealed class MorpheusWakeInput : Stream {
   private readonly Stream input = Console.OpenStandardInput();
+  private long position;
   public override bool CanRead { get { return true; } }
   public override bool CanSeek { get { return false; } }
   public override bool CanWrite { get { return false; } }
   public override long Length { get { return -1; } }
-  public override long Position { get { return 0; } set { throw new NotSupportedException(); } }
+  public override long Position { get { return Interlocked.Read(ref position); } set { throw new NotSupportedException(); } }
   public override int Read(byte[] buffer, int offset, int count) {
     int received = 0;
     while (received < count) {
@@ -31,12 +35,46 @@ public sealed class MorpheusWakeInput : Stream {
       if (next == 0) break;
       received += next;
     }
+    Interlocked.Add(ref position, received);
     return received;
   }
-  public override long Seek(long offset, SeekOrigin origin) { return 0; }
+  public override long Seek(long offset, SeekOrigin origin) { return Position; }
   public override void Flush() { }
   public override void SetLength(long value) { throw new NotSupportedException(); }
   public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException(); }
+}
+// A single asynchronous recognition session preserves input-stream time after
+// silence. Repeated Recognize(initialSilenceTimeout) calls report ranges from
+// later operations while Main still owns the original monotonic PCM stream.
+// The compiled event handler needs no PowerShell callback runspace.
+public sealed class MorpheusWakeOutput {
+  private readonly string phrase;
+  private MorpheusWakeOutput(string value) { phrase = value; }
+  public static void Attach(SpeechRecognitionEngine engine, string phrase) {
+    var output = new MorpheusWakeOutput(phrase);
+    engine.SpeechRecognized += output.OnRecognized;
+    engine.RecognizeCompleted += output.OnCompleted;
+  }
+  private void OnRecognized(object sender, SpeechRecognizedEventArgs args) {
+    var result = args.Result;
+    if (result == null || result.Audio == null || String.IsNullOrEmpty(result.Text) || result.Confidence < 0.82) return;
+    var text = result.Text;
+    var prefix = phrase;
+    if (text.StartsWith("hey " + prefix, StringComparison.OrdinalIgnoreCase)) prefix = "hey " + prefix;
+    if (!text.Equals(prefix, StringComparison.OrdinalIgnoreCase)
+      && !text.StartsWith(prefix + " ", StringComparison.OrdinalIgnoreCase)) return;
+    // Native words only address the assistant. Included/selected recognition
+    // still receives the original scoped PCM and remains the command source.
+    long start = (long)Math.Round(result.Audio.AudioPosition.TotalSeconds * 16000);
+    long count = (long)Math.Round(result.Audio.Duration.TotalSeconds * 16000);
+    Console.WriteLine("audio-wake:{\"startSample\":" + start.ToString(CultureInfo.InvariantCulture)
+      + ",\"sampleCount\":" + count.ToString(CultureInfo.InvariantCulture) + "}");
+  }
+  private void OnCompleted(object sender, RecognizeCompletedEventArgs args) {
+    // Main must revoke capture when recognition ends unexpectedly. Its stopped
+    // controller already ignores this line during an intentional cancellation.
+    Console.WriteLine("unavailable");
+  }
 }
 '@
   $info = [System.Speech.Recognition.SpeechRecognitionEngine]::InstalledRecognizers() |
@@ -62,23 +100,13 @@ public sealed class MorpheusWakeInput : Stream {
       [System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen,
       [System.Speech.AudioFormat.AudioChannel]::Mono)
     $engine.SetInputToAudioStream($inputAudio, $format)
+    [MorpheusWakeOutput]::Attach($engine, [string]$config.phrase)
     [Console]::WriteLine('ready')
+    $engine.RecognizeAsync([System.Speech.Recognition.RecognizeMode]::Multiple)
     while (Get-Process -Id $config.parentPid -ErrorAction SilentlyContinue) {
-      $result = $engine.Recognize([TimeSpan]::FromSeconds(1))
-      if ($null -ne $result -and $result.Confidence -ge 0.82) {
-        $text = [string]$result.Text
-        $prefix = [string]$config.phrase
-        if ($text.StartsWith('hey ' + $prefix, [StringComparison]::OrdinalIgnoreCase)) { $prefix = 'hey ' + $prefix }
-        if ($text.Equals($prefix, [StringComparison]::OrdinalIgnoreCase) -or $text.StartsWith($prefix + ' ', [StringComparison]::OrdinalIgnoreCase)) {
-          # Dictation is only an address gate. Its words never become commands.
-          # Preserve the original selected-stream range for included Whisper.
-          $range = @{ startSample = [long][Math]::Round($result.Audio.AudioPosition.TotalSeconds * 16000);
-            sampleCount = [long][Math]::Round($result.Audio.Duration.TotalSeconds * 16000) }
-          [Console]::WriteLine('audio-wake:' + (ConvertTo-Json -InputObject $range -Compress))
-        }
-      }
+      Start-Sleep -Milliseconds 200
     }
-  } finally { $engine.Dispose() }
+  } finally { try { $engine.RecognizeAsyncCancel() } catch {}; $engine.Dispose() }
 } catch { [Console]::WriteLine('unavailable'); exit 1 }
 `;
 

@@ -7,6 +7,14 @@ still bypass inference. Connections offers Automatic/Saved model and optional
 routine/complex roles; unset roles use the saved model, without price or availability
 claims. Explicit profiles, ACP choices, history and personality keep their owners.
 Unclear speech offers repeat-or-type repair under the existing reply/mute policy.
+Known one-step app/URL and privacy-safe system interactions have separate bounded
+60/minute admission; other plans keep their limits, scopes and permissions.
+The first frozen 1.5.0 package exposed the old ten-plan quota and a generated
+native wake transcript miss. Its receipts are historical; diagnose the actual
+captured PCM and requalify the corrected final bytes.
+The native helper correction keeps one continuous recognition session and an
+absolute stream position. Its guarded source proof passes 23 seconds of generated
+idle then two exact wake phrases; package/human acceptance remains independent.
 Combined source, rendered and normal package qualification is in progress; no new
 installer or public stable acceptance is claimed yet. The single
 [specification](docs/design/MORPHEUS_EXPERIENCE_REVIEW.md) and

@@ -28,7 +28,7 @@ const FILES_ROOT = 'C:\\Morpheus\\files';
 /** Executions actually performed, in order. The only trustworthy assertion. */
 let executed: string[] = [];
 
-function registryWithFakeCapability(fail = new Set<string>()) {
+function registryWithFakeCapability(fail = new Set<string>(), reports = false) {
   const registry = createMorpheusCapabilityRegistry();
   registry.register({
     actionId: 'file.createText',
@@ -45,6 +45,9 @@ function registryWithFakeCapability(fail = new Set<string>()) {
       };
     },
   });
+  if (reports) registry.register({ actionId: 'system.report', platform: 'win32', resolve: async () => ({
+    target: { kind: 'none' }, execute: async () => { executed.push('report'); return { kind: 'system', info: {} as never }; },
+  }) });
   return registry;
 }
 
@@ -57,6 +60,8 @@ let consentRequests: MorpheusPlanConsentRequest[] = [];
 function makeRuntime(options: {
   fail?: Set<string>;
   autoDecide?: (request: MorpheusPlanConsentRequest, runtime: () => MorpheusRuntime) => void;
+  reports?: boolean;
+  now?: () => Date;
 } = {}): MorpheusRuntime {
   counter += 1;
   store = createMorpheusGrantStore({ userDataDir: join(scratch, `case-${counter}`) });
@@ -78,7 +83,7 @@ function makeRuntime(options: {
 
   let created: MorpheusRuntime;
   created = createMorpheusRuntime({
-    registry: registryWithFakeCapability(options.fail),
+    registry: registryWithFakeCapability(options.fail, options.reports),
     roots,
     audit,
     gate: createPolicyPermissionGate(engine, store),
@@ -91,6 +96,7 @@ function makeRuntime(options: {
       options.autoDecide?.(request, () => created);
     },
     permissionTimeoutMs: 50,
+    now: options.now,
   });
   return created;
 }
@@ -125,6 +131,12 @@ function plan(steps: ExecutionStep[], planId = 'plan-1'): ExecutionPlan {
   };
 }
 
+function reportStep(stepId = 'report'): ExecutionStep {
+  return { stepId, capabilityId: 'system.report', params: {}, summaryKey: 'test', dependsOn: [], permission: {
+    capabilityId: 'system.report', platform: 'win32', riskTier: 'low', resourceScope: 'runtime', mandatoryConfirmation: false,
+  } };
+}
+
 /**
  * Trust as the runtime derives it.
  *
@@ -149,6 +161,59 @@ beforeEach(() => {
 });
 
 describe('runtime plan execution', () => {
+  it('shares bounded fast admission between direct requests and one-step plans', async () => {
+    const runtime = makeRuntime({ reports: true, now: () => new Date('2026-10-05T00:00:00.000Z') });
+    for (let index = 0; index < 30; index++) await runtime.requestAction({ actionId: 'system.report' });
+    for (let index = 0; index < 30; index++) {
+      const id = `read-${index}`;
+      runtime.registerPlan(plan([reportStep()], id));
+      expect((await runtime.executePlan({ planId: id })).status).toBe('completed');
+    }
+    expect(executed).toHaveLength(60);
+    runtime.registerPlan(plan([reportStep()], 'read-overflow'));
+    expect(await runtime.executePlan({ planId: 'read-overflow' })).toMatchObject({
+      status: 'rejected', rejection: { code: 'rate-limited', message: expect.stringMatching(/last minute/) }, steps: [],
+    });
+    expect((await runtime.executePlan({ planId: 'read-0' })).rejection?.message).toMatch(/Unknown or expired plan/);
+    expect(executed).toHaveLength(60);
+    runtime.dispose();
+  });
+
+  it('keeps writes and mixed plans on the original quota while single reports remain responsive', async () => {
+    const runtime = makeRuntime({ reports: true, now: () => new Date('2026-10-05T00:00:00.000Z') });
+    store.createGrant(GRANT_SCOPE, 'persistent');
+    for (let index = 0; index < 10; index++) {
+      const id = `write-${index}`;
+      runtime.registerPlan(plan([step(id)], id));
+      expect((await runtime.executePlan({ planId: id })).status).toBe('completed');
+    }
+    runtime.registerPlan(plan([reportStep(), step('overflow')], 'mixed-overflow'));
+    expect(await runtime.executePlan({ planId: 'mixed-overflow' })).toMatchObject({
+      status: 'rejected', rejection: { code: 'rate-limited', message: expect.stringMatching(/last minute/) }, steps: [],
+    });
+    expect(executed).toHaveLength(10);
+    runtime.registerPlan(plan([reportStep()], 'quick-after-writes'));
+    expect((await runtime.executePlan({ planId: 'quick-after-writes' })).status).toBe('completed');
+    expect(executed).toEqual([...Array.from({ length: 10 }, (_, index) => `write-${index}.txt`), 'report']);
+    runtime.dispose();
+  });
+
+  it('keeps multi-step report plans in the existing quota rather than qualifying by one safe member', async () => {
+    const runtime = makeRuntime({ reports: true, now: () => new Date('2026-10-05T00:00:00.000Z') });
+    for (let index = 0; index < 10; index++) {
+      const id = `multi-${index}`;
+      runtime.registerPlan(plan([reportStep('first'), reportStep('second')], id));
+      expect((await runtime.executePlan({ planId: id })).status).toBe('completed');
+    }
+    runtime.registerPlan(plan([reportStep('first'), reportStep('second')], 'multi-overflow'));
+    expect((await runtime.executePlan({ planId: 'multi-overflow' })).rejection?.code).toBe('rate-limited');
+    runtime.registerPlan(plan([reportStep()], 'single-after-multiple'));
+    expect((await runtime.executePlan({ planId: 'single-after-multiple' })).status).toBe('completed');
+    expect(executed).toHaveLength(21);
+    expect(consentRequests).toEqual([]);
+    runtime.dispose();
+  });
+
   it('queues plans that share a workspace instead of rejecting the second task', async () => {
     const runtime = makeRuntime();
     runtime.registerPlan(plan([step('first')], 'plan-first'));

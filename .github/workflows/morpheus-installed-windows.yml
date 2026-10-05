@@ -11,11 +11,15 @@ on:
       - src/components/morpheus/MorpheusConversationThread.tsx
       - shared/morpheus/voice-types.ts
       - electron/services/morpheus/voice/voice-service.ts
+      - electron/services/morpheus/voice/windows-wake.ts
+      - electron/services/morpheus/voice/wake-audio-buffer.ts
       - package.json
       - src/components/settings/ProvidersSettings.tsx
       - src/lib/providers.ts
       - electron/services/providers/provider-validation.ts
       - electron/services/morpheus/planning/provider-planner.ts
+      - electron/services/morpheus/runtime.ts
+      - shared/morpheus/actions/registry.ts
   workflow_dispatch:
 
 permissions:

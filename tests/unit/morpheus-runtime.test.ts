@@ -72,6 +72,7 @@ function makeHarness(options: {
   platform?: string;
   permissionTimeoutMs?: number;
   auditFails?: boolean;
+  now?: () => Date;
   workspace?: {
     workspaceId: string;
     access: 'read' | 'read-write';
@@ -135,6 +136,7 @@ function makeHarness(options: {
     platform: options.platform ?? 'win32',
     env: { SystemRoot: 'C:\\Windows' },
     permissionTimeoutMs: options.permissionTimeoutMs,
+    now: options.now,
     createRunId: (() => {
       let n = 0;
       return () => {
@@ -388,15 +390,114 @@ describe('morpheus runtime — validation and limits', () => {
     expect(h.executeSpy).not.toHaveBeenCalled();
   });
 
-  it('enforces the per-minute request ceiling', async () => {
+  it('admits 30 rapid privacy-safe reads without consuming the consequential quota', async () => {
+    const h = makeHarness({ gate: { evaluate: () => ({ outcome: 'allow', reason: 'privacy-safe-auto' }), recordGrantUse: () => {} },
+      now: () => new Date('2026-10-05T00:00:00.000Z') });
+    for (let i = 0; i < 30; i += 1) await h.runtime.requestAction({ actionId: 'system.report' });
+    expect(h.executeSpy).toHaveBeenCalledTimes(30);
+    expect(h.events.filter((event) => event.phase === 'succeeded')).toHaveLength(30);
+    expect(h.events.filter((event) => event.error?.code === 'rate-limited')).toEqual([]);
+    expect(h.audited.filter((entry) => entry.phase === 'succeeded')).toHaveLength(30);
+    h.runtime.dispose();
+  });
+
+  it('bounds rapid reads and allows them again when the rolling minute expires', async () => {
+    let clock = Date.parse('2026-10-05T00:00:00.000Z');
+    const h = makeHarness({ gate: { evaluate: () => ({ outcome: 'allow', reason: 'privacy-safe-auto' }), recordGrantUse: () => {} },
+      now: () => new Date(clock) });
+    for (let i = 0; i < 60; i += 1) await h.runtime.requestAction({ actionId: 'system.report' });
+    expect(h.executeSpy).toHaveBeenCalledTimes(60);
+    await h.runtime.requestAction({ actionId: 'system.report' });
+    expect(h.events.at(-1)).toMatchObject({ phase: 'failed', error: { code: 'rate-limited', message: expect.stringMatching(/last minute/) } });
+    expect(h.executeSpy).toHaveBeenCalledTimes(60);
+    clock += 60_000;
+    await h.runtime.requestAction({ actionId: 'system.report' });
+    expect(h.events.at(-1)?.phase).toBe('succeeded');
+    expect(h.executeSpy).toHaveBeenCalledTimes(61);
+    h.runtime.dispose();
+  });
+
+  it('keeps consequential requests bounded independently of rapid reads', async () => {
     const h = makeHarness();
-    for (let i = 0; i < 12; i += 1) {
-      const { runId } = await h.runtime.requestAction({ actionId: 'system.report' });
+    h.registry.register(makeCapability(h.executeSpy, { actionId: 'file.createText' }));
+    for (let i = 0; i < 10; i += 1) {
+      const { runId } = await h.runtime.requestAction({ actionId: 'file.createText', params: { fileName: 'example.txt', content: 'x' } });
       await h.runtime.cancelAction({ runId });
     }
+    await h.runtime.requestAction({ actionId: 'file.createText', params: { fileName: 'example.txt', content: 'x' } });
+    expect(h.events.at(-1)).toMatchObject({ phase: 'failed', error: { code: 'rate-limited', message: expect.stringMatching(/last minute/) } });
+    const read = await h.runtime.requestAction({ actionId: 'system.report' });
+    expect(h.events.at(-1)?.phase).toBe('awaiting-permission');
+    await h.runtime.respondPermission({ runId: read.runId, decision: 'granted' });
+    expect(h.executeSpy).toHaveBeenCalledTimes(1);
+    h.runtime.dispose();
+  });
 
-    const rateLimited = h.events.filter((e) => e.error?.code === 'rate-limited');
-    expect(rateLimited.length).toBeGreaterThan(0);
+  it('still asks for exact app and URL scope after a burst of privacy-safe reads', async () => {
+    const evaluate = vi.fn((input: Parameters<MorpheusPermissionGate['evaluate']>[0]) => input.scope.riskTier === 'low'
+      ? { outcome: 'allow' as const, reason: 'privacy-safe-auto' as const }
+      : { outcome: 'prompt' as const, reason: 'prompt-required' as const });
+    const h = makeHarness({ gate: { evaluate, recordGrantUse: () => {} } });
+    h.registry.register(makeCapability(h.executeSpy, { actionId: 'app.launch', resolve: async () => ({
+      target: { kind: 'executable', path: 'C:\\Windows\\System32\\notepad.exe', applicationKey: 'notepad' }, execute: h.executeSpy,
+    }) }));
+    h.registry.register(makeCapability(h.executeSpy, { actionId: 'web.openUrl' }));
+    for (let i = 0; i < 30; i += 1) await h.runtime.requestAction({ actionId: 'system.report' });
+    for (const request of [{ actionId: 'app.launch' as const, params: { applicationKey: 'notepad' } },
+      { actionId: 'web.openUrl' as const, params: { url: 'https://example.com/page' } }]) {
+      const result = await h.runtime.requestAction(request);
+      expect(h.events.at(-1)?.phase).toBe('awaiting-permission');
+      await h.runtime.respondPermission({ runId: result.runId, decision: 'denied' });
+    }
+    expect(evaluate).toHaveBeenCalledWith(expect.objectContaining({ scope: expect.objectContaining({
+      capabilityId: 'app.launch', resourceScope: 'notepad', riskTier: 'medium',
+    }) }));
+    expect(evaluate).toHaveBeenCalledWith(expect.objectContaining({ scope: expect.objectContaining({
+      capabilityId: 'web.openUrl', resourceScope: 'https://example.com', riskTier: 'medium',
+    }) }));
+    expect(h.executeSpy).toHaveBeenCalledTimes(30);
+    h.runtime.dispose();
+  });
+
+  it('keeps the 32-request concurrent admission ceiling distinct from the rolling quota', async () => {
+    const h = makeHarness();
+    for (let i = 0; i < 32; i += 1) await h.runtime.requestAction({ actionId: 'system.report' });
+    await h.runtime.requestAction({ actionId: 'system.report' });
+    expect(h.events.filter((event) => event.phase === 'awaiting-permission')).toHaveLength(32);
+    expect(h.events.at(-1)).toMatchObject({ phase: 'failed', error: { code: 'rate-limited', message: expect.stringMatching(/awaiting approval or executing/) } });
+    expect(h.executeSpy).not.toHaveBeenCalled();
+    h.runtime.dispose();
+  });
+
+  it('reserves the concurrent slot while parallel capability resolution is still awaiting', async () => {
+    let finishResolution!: () => void;
+    const held = new Promise<void>((resolve) => { finishResolution = resolve; });
+    const resolve = vi.fn(async () => { await held; return { target: { kind: 'none' as const }, execute: vi.fn() }; });
+    const h = makeHarness({ capability: makeCapability(vi.fn(), { resolve }), now: () => new Date('2026-10-05T00:00:00.000Z') });
+    const requests = Array.from({ length: 33 }, () => h.runtime.requestAction({ actionId: 'system.report' }));
+    try {
+      await vi.waitFor(() => expect(resolve).toHaveBeenCalledTimes(32));
+      expect(h.events.filter((event) => event.error?.code === 'rate-limited')).toHaveLength(1);
+      expect(h.events.at(-1)?.error?.message).toMatch(/awaiting approval or executing/);
+    } finally { finishResolution(); await Promise.all(requests); }
+    expect(h.events.filter((event) => event.phase === 'awaiting-permission')).toHaveLength(32);
+    h.runtime.dispose();
+  });
+
+  it('retains the independent worker ceiling and lets quick local interactions continue', async () => {
+    const h = makeHarness();
+    h.registry.register(makeCapability(h.executeSpy, { actionId: 'web.readPage' }));
+    for (let i = 0; i < 10; i += 1) {
+      const requested = await h.runtime.requestAction({ actionId: 'web.readPage', params: { url: 'https://example.com/source' } });
+      await h.runtime.cancelAction({ runId: requested.runId });
+    }
+    await h.runtime.requestAction({ actionId: 'web.readPage', params: { url: 'https://example.com/source' } });
+    expect(h.events.at(-1)).toMatchObject({ phase: 'failed', error: { code: 'rate-limited', message: expect.stringMatching(/last minute/) } });
+    const read = await h.runtime.requestAction({ actionId: 'system.report' });
+    expect(h.events.at(-1)?.phase).toBe('awaiting-permission');
+    await h.runtime.respondPermission({ runId: read.runId, decision: 'granted' });
+    expect(h.executeSpy).toHaveBeenCalledTimes(1);
+    h.runtime.dispose();
   });
 
   it('frees the slot once a run settles', async () => {

@@ -66,6 +66,41 @@ describe.skipIf(process.platform !== 'win32')('Windows local wake boundary', () 
     expect(child.kill).toHaveBeenCalledOnce();
     expect(mocks.spawn).toHaveBeenCalledOnce();
   });
+  it('retains absolute counters over long idle and repeated addressed results, then ignores stopped output', async () => {
+    const child = Object.assign(new EventEmitter(), {
+      stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn(),
+    });
+    child.stdin.resume();
+    mocks.spawn.mockReturnValue(child);
+    const onWake = vi.fn();
+    const controller = startWindowsWake({ phrase: 'Morpheus', onWake, onError: vi.fn() });
+    child.stdout.write('ready\n'); await controller.ready;
+    for (let index = 0; index < 120; index++) await controller.pushAudio(Buffer.alloc(6400));
+    child.stdout.write('audio-wake:{"startSample":363200,');
+    child.stdout.write('"sampleCount":35200}\n');
+    child.stdout.write('audio-wake:{"startSample":494400,"sampleCount":35040}\n');
+    expect(onWake.mock.calls).toEqual([
+      [undefined, { startSample: 363200, sampleCount: 35200 }],
+      [undefined, { startSample: 494400, sampleCount: 35040 }],
+    ]);
+    controller.stop();
+    child.stdout.write('audio-wake:{"startSample":600000,"sampleCount":35040}\n');
+    expect(onWake).toHaveBeenCalledTimes(2);
+  });
+  it('revokes ready capture when the continuous recognizer completes unexpectedly', async () => {
+    const child = Object.assign(new EventEmitter(), {
+      stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn(),
+    });
+    mocks.spawn.mockReturnValue(child);
+    const onError = vi.fn(), onWake = vi.fn();
+    const controller = startWindowsWake({ phrase: 'Morpheus', onWake, onError });
+    child.stdout.write('ready\n'); await controller.ready;
+    child.stdout.write('unavailable\n');
+    expect(onError).toHaveBeenCalledOnce(); expect(child.kill).toHaveBeenCalledOnce();
+    await expect(controller.pushAudio(Buffer.alloc(6400))).rejects.toThrow('not ready');
+    child.stdout.write('audio-wake:{"startSample":3200,"sampleCount":3200}\n');
+    expect(onWake).not.toHaveBeenCalled();
+  });
   it('revokes stalled input and refuses frames after stop', async () => {
     vi.useFakeTimers();
     const child = Object.assign(new EventEmitter(), {

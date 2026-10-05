@@ -45,7 +45,44 @@ repair prompt, optionally spoken under the originating surface's saved reply pol
 It does not execute a guessed correction, accept a bare yes or silently reacquire
 the microphone. New input/cancellation retain the existing generation veto.
 
-Exact next step: complete combined focused source/rendered checks, build once on E:,
+Actual normal package `838010ad` exposed an inherited throughput limit: ten safe
+system reports completed (cold Core 23 ms, subsequent 11–15 ms), then the eleventh
+rapid independent plan was rejected by the ten native plans/minute bucket. The
+error incorrectly claimed another action was still in progress. A single plan
+is charged once, so this does not imply its eleventh step is rejected. Preserve
+that failed receipt and the unchanged-byte paced baseline as historical evidence.
+Small correction: only one-step `app.launch`, `web.openUrl`, `system.report` and
+`system.storage` use a separate 60/minute local-interaction allowance. This is an
+engineering anti-spam default, not universal measured throughput or a paid quota.
+Every mixed, worker, private-read, write or consequential plan retains the original
+10/minute bucket. Concurrency, permissions, scopes, audit and model bounds remain.
+Quota exhaustion and concurrent admission need distinct actionable messages.
+Rebuild and requalify changed bytes; do not carry the old baseline forward as final.
+
+Historical generated wake qualification on the same `838010ad` package executed
+one real `system.report`, but the native path lost the final word in
+`Morpheus, show system information`. The complete generated WAV transcribes
+exactly with the bundled recognizer. Capture-range/context diagnosis is open;
+retain the exact transcript miss and compare actual admitted PCM before changing
+the voice pipeline. A correct system action does not prove complete recognition.
+Same-input comparison now confirms approximately 900 ms of active tail audio was
+omitted: captured and complete waveforms align at 0.905 correlation, and padding
+the captured waveform with silence does not recover the word. Investigate native
+recognition-operation origins against Main's continuous selected-stream clock;
+fix that origin contract, then qualify idle and repeated wake behavior on new bytes.
+The old native helper reported a 430 ms start/2,190 ms duration after 4,400 ms
+of forwarded stream; its restarted synchronous recognition clock differs from
+Main's absolute PCM origin. The smallest correction is one continuous native
+recognition session and truthful monotonic stream position, retaining the existing
+range protocol, wake grammar, confidence, endpoints and 300 ms context. Verify
+over-21.5-second idle and two successive addressed utterances before freezing.
+The corrected guarded native helper now passes that source-level proof: 23 seconds
+of actual generated-stream silence, then the unchanged phrase twice, both recognized
+exactly with absolute ranges and owned-child stop/late-frame refusal. This is real
+Windows helper/recognizer evidence with generated input, not packaged or human
+acceptance. Node boundary/service/voice tests and independent authority review pass.
+
+Exact next step: freeze the tested corrections, build once on E:,
 qualify the actual normal package,
 then create and inspect its exact NSIS payload. Keep source, generated/provider,
 package, installed and human evidence distinct. Owner still runs preview.16;

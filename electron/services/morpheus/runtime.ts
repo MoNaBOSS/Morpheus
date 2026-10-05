@@ -16,6 +16,7 @@ import {
   MORPHEUS_MAX_AUDIT_PAGE,
   MORPHEUS_MAX_CONCURRENT_RUNS,
   MORPHEUS_MAX_RUNS_PER_MINUTE,
+  MORPHEUS_MAX_FAST_INTERACTIVE_RUNS_PER_MINUTE,
   MORPHEUS_PERMISSION_TIMEOUT_MS,
   getMorpheusActionDescriptor,
   isMorpheusWorkspaceWriteAction,
@@ -391,6 +392,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
   };
 
   const pending = new Map<string, PendingRun>();
+  const resolvingActions = new Set<string>();
   const executing = new Set<string>();
   const queuedActions = new Map<string, AbortController>();
   const planStore = options.planStore ?? createMorpheusPlanStore({ now });
@@ -404,6 +406,7 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
   const coordinator = createMorpheusTaskCoordinator();
   let recentRequests: number[] = [];
   let recentWorkerRequests: number[] = [];
+  let recentFastRequests: number[] = [];
   // Admission is shared across every entry point; resource leases coordinate
   // conflicts while each individual plan retains dependency ordering.
   let activePlans = 0;
@@ -505,14 +508,33 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
     }
   };
 
-  const withinRateLimit = (worker = false): boolean => {
+  // Admission is not authority. These exact local interactions retain normal
+  // resolution, permissions, audit and resource leases. Private reads, writes,
+  // controls, unknown actions and multi-step plans stay in the existing bucket.
+  const fastInteractiveActions = new Set<string>(['app.launch', 'web.openUrl', 'system.report', 'system.storage']);
+  const admissionError = (actions: readonly string[]): MorpheusError | null => {
+    if (inFlight() >= MORPHEUS_MAX_CONCURRENT_RUNS) return {
+      code: 'rate-limited', message: 'Too many actions are already awaiting approval or executing.',
+    };
     const cutoff = now().getTime() - 60_000;
     recentRequests = recentRequests.filter((timestamp) => timestamp > cutoff);
     recentWorkerRequests = recentWorkerRequests.filter((timestamp) => timestamp > cutoff);
-    return (worker ? recentWorkerRequests : recentRequests).length < MORPHEUS_MAX_RUNS_PER_MINUTE;
+    recentFastRequests = recentFastRequests.filter((timestamp) => timestamp > cutoff);
+    const worker = actions.some((action) => isMorpheusActionId(action) && isMorpheusWorkerAction(action));
+    const fast = !worker && actions.length === 1 && fastInteractiveActions.has(actions[0]);
+    const requests = worker ? recentWorkerRequests : fast ? recentFastRequests : recentRequests;
+    const limit = fast ? MORPHEUS_MAX_FAST_INTERACTIVE_RUNS_PER_MINUTE : MORPHEUS_MAX_RUNS_PER_MINUTE;
+    if (requests.length >= limit) return {
+      code: 'rate-limited', message: 'Too many actions were requested in the last minute. Try again shortly.',
+    };
+    // Check/reserve synchronously across both entry points, before any await.
+    requests.push(now().getTime());
+    return null;
   };
 
-  const inFlight = (): number => pending.size + executing.size + activePlans;
+  // Resolution reserves admission until handoff; the same run is counted once
+  // when its pending/executing state is installed before that reservation ends.
+  const inFlight = (): number => new Set([...resolvingActions, ...pending.keys(), ...executing]).size + activePlans;
 
   const toError = (error: unknown, fallback: MorpheusFailureCode): MorpheusError => {
     if (error instanceof MorpheusCapabilityError) {
@@ -854,159 +876,164 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
 
       await transition({ runId, actionId, phase: 'requested', auditParams });
 
-      if (!withinRateLimit(isMorpheusWorkerAction(actionId)) || inFlight() >= MORPHEUS_MAX_CONCURRENT_RUNS) {
+      const rejectedAdmission = admissionError([actionId]);
+      if (rejectedAdmission) {
         await transition({
           runId,
           actionId,
           phase: 'failed',
           auditParams,
-          error: { code: 'rate-limited', message: 'Another action is already in progress' },
-          durationMs: now().getTime() - startedAt,
-        });
-        return { runId };
-      }
-      (isMorpheusWorkerAction(actionId) ? recentWorkerRequests : recentRequests).push(startedAt);
-
-      const capability = options.registry.resolve(actionId, platform);
-      if (!capability && !(isMorpheusWorkerAction(actionId) && options.workerPort)) {
-        await transition({
-          runId,
-          actionId,
-          phase: 'unsupported-platform',
-          auditParams,
-          error: { code: 'unsupported-platform', message: `${actionId} is not available on ${platform}` },
+          error: rejectedAdmission,
           durationMs: now().getTime() - startedAt,
         });
         return { runId };
       }
 
-      const accessError = workspaceError(actionId, workspaceId);
-      if (accessError) {
-        await transition({
-          runId,
-          actionId,
-          phase: 'failed',
-          auditParams,
-          error: accessError,
-          durationMs: now().getTime() - startedAt,
-        });
-        return { runId };
-      }
-
-      let resolution: MorpheusResolution;
+      resolvingActions.add(runId);
       try {
-        // The registry dispatches on a runtime id, so the static type argument
-        // is erased at the lookup. `params` was validated against THIS action's
-        // descriptors in `validateRequestActionPayload` before reaching here.
-        resolution = isMorpheusWorkerAction(actionId) && options.workerPort
-          ? await options.workerPort.resolve(workerOperationFromParams(actionId, params as MorpheusParamRecord), {
-            objectiveRunId: runId, attemptId: `${runId}:1`, cancellationGeneration: 1, workspaceId, planId: runId, stepId: 'read-page',
-          }) : await capability!.resolve(params as MorpheusParamsFor<MorpheusActionId>, {
-          roots: options.roots.forWorkspace(workspaceId),
-          appVersion: options.appVersion,
-          env,
-          workspaceId,
+        const capability = options.registry.resolve(actionId, platform);
+        if (!capability && !(isMorpheusWorkerAction(actionId) && options.workerPort)) {
+          await transition({
+            runId,
+            actionId,
+            phase: 'unsupported-platform',
+            auditParams,
+            error: { code: 'unsupported-platform', message: `${actionId} is not available on ${platform}` },
+            durationMs: now().getTime() - startedAt,
+          });
+          return { runId };
+        }
+
+        const accessError = workspaceError(actionId, workspaceId);
+        if (accessError) {
+          await transition({
+            runId,
+            actionId,
+            phase: 'failed',
+            auditParams,
+            error: accessError,
+            durationMs: now().getTime() - startedAt,
+          });
+          return { runId };
+        }
+
+        let resolution: MorpheusResolution;
+        try {
+          // The registry dispatches on a runtime id, so the static type argument
+          // is erased at the lookup. `params` was validated against THIS action's
+          // descriptors in `validateRequestActionPayload` before reaching here.
+          resolution = isMorpheusWorkerAction(actionId) && options.workerPort
+            ? await options.workerPort.resolve(workerOperationFromParams(actionId, params as MorpheusParamRecord), {
+              objectiveRunId: runId, attemptId: `${runId}:1`, cancellationGeneration: 1, workspaceId, planId: runId, stepId: 'read-page',
+            }) : await capability!.resolve(params as MorpheusParamsFor<MorpheusActionId>, {
+            roots: options.roots.forWorkspace(workspaceId),
+            appVersion: options.appVersion,
+            env,
+            workspaceId,
+          });
+        } catch (error) {
+          await transition({
+            runId,
+            actionId,
+            phase: 'failed',
+            auditParams,
+            error: toError(error, 'resolution-failed'),
+            durationMs: now().getTime() - startedAt,
+          });
+          return { runId };
+        }
+
+        // Resource scope is derived from what Main RESOLVED, never from the
+        // request, so a grant can only ever bind to a real target.
+        const singleDescriptor = getMorpheusActionDescriptor(actionId);
+        const scope: PermissionScope = {
+          capabilityId: actionId,
+          // Grouped capabilities share ONE workspace decision, so the grant binds
+          // to the group rather than the verb. Audit still records the exact
+          // capability, so history stays precise while trust stays workspace-shaped.
+          capabilityGroup: singleDescriptor.group,
+          platform,
+          resourceScope: actionId === 'web.openUrl' || isMorpheusWorkerAction(actionId) ? new URL(String((params as MorpheusParamRecord).url)).origin : resourceScopeFor(resolution.target),
+          riskTier: singleDescriptor.riskTier,
+          originType,
+          agentId,
+        };
+
+        const verdict = options.gate.evaluate({
+          scope,
+          auditHealth: (options.auditHealth ?? (() => 'healthy' as AuditHealth))(),
         });
-      } catch (error) {
-        await transition({
+
+        if (verdict.outcome === 'deny') {
+          await transition({
+            runId,
+            actionId,
+            phase: 'denied',
+            auditParams,
+            target: resolution.target,
+            decision: 'denied',
+            reason: verdict.reason,
+            error: {
+              code: verdict.reason === 'audit-degraded' ? 'internal' : 'permission-denied',
+              message: verdict.reason === 'audit-degraded'
+                ? 'Blocked: auditing is unavailable, so only read-only actions may run'
+                : 'Blocked by a saved decision for this exact scope',
+            },
+            durationMs: now().getTime() - startedAt,
+          });
+          return { runId };
+        }
+
+        const timer = setTimeout(() => {
+          const timedOut = consumePending(runId);
+          if (!timedOut) return;
+          void finishDenied(timedOut, 'timed-out', 'permission-timeout', 'Confirmation was not answered in time');
+        }, permissionTimeoutMs);
+        // A pending confirmation must never hold the process open.
+        timer.unref?.();
+
+        const run: PendingRun = {
           runId,
           actionId,
-          phase: 'failed',
+          scope,
+          target: resolution.target,
+          resolution,
           auditParams,
-          error: toError(error, 'resolution-failed'),
-          durationMs: now().getTime() - startedAt,
-        });
-        return { runId };
-      }
+          startedAt,
+          timer,
+        };
 
-      // Resource scope is derived from what Main RESOLVED, never from the
-      // request, so a grant can only ever bind to a real target.
-      const singleDescriptor = getMorpheusActionDescriptor(actionId);
-      const scope: PermissionScope = {
-        capabilityId: actionId,
-        // Grouped capabilities share ONE workspace decision, so the grant binds
-        // to the group rather than the verb. Audit still records the exact
-        // capability, so history stays precise while trust stays workspace-shaped.
-        capabilityGroup: singleDescriptor.group,
-        platform,
-        resourceScope: actionId === 'web.openUrl' || isMorpheusWorkerAction(actionId) ? new URL(String((params as MorpheusParamRecord).url)).origin : resourceScopeFor(resolution.target),
-        riskTier: singleDescriptor.riskTier,
-        originType,
-        agentId,
-      };
+        if (verdict.outcome === 'allow') {
+          clearTimeout(timer);
+          if (verdict.grantId) {
+            options.gate.recordGrantUse(verdict.grantId);
+            await options.audit.recordControl({
+              category: 'permission', event: 'grant-used', subjectId: verdict.grantId,
+              details: {
+                capabilityId: scope.capabilityId,
+                resourceScope: scope.resourceScope,
+                originType: scope.originType,
+              },
+              appVersion: options.appVersion,
+            });
+          }
+          await execute(run, verdict.reason, verdict.grantId);
+          return { runId };
+        }
 
-      const verdict = options.gate.evaluate({
-        scope,
-        auditHealth: (options.auditHealth ?? (() => 'healthy' as AuditHealth))(),
-      });
-
-      if (verdict.outcome === 'deny') {
+        pending.set(runId, run);
         await transition({
           runId,
           actionId,
-          phase: 'denied',
+          phase: 'awaiting-permission',
           auditParams,
           target: resolution.target,
-          decision: 'denied',
           reason: verdict.reason,
-          error: {
-            code: verdict.reason === 'audit-degraded' ? 'internal' : 'permission-denied',
-            message: verdict.reason === 'audit-degraded'
-              ? 'Blocked: auditing is unavailable, so only read-only actions may run'
-              : 'Blocked by a saved decision for this exact scope',
-          },
-          durationMs: now().getTime() - startedAt,
         });
         return { runId };
+      } finally {
+        resolvingActions.delete(runId);
       }
-
-      const timer = setTimeout(() => {
-        const timedOut = consumePending(runId);
-        if (!timedOut) return;
-        void finishDenied(timedOut, 'timed-out', 'permission-timeout', 'Confirmation was not answered in time');
-      }, permissionTimeoutMs);
-      // A pending confirmation must never hold the process open.
-      timer.unref?.();
-
-      const run: PendingRun = {
-        runId,
-        actionId,
-        scope,
-        target: resolution.target,
-        resolution,
-        auditParams,
-        startedAt,
-        timer,
-      };
-
-      if (verdict.outcome === 'allow') {
-        clearTimeout(timer);
-        if (verdict.grantId) {
-          options.gate.recordGrantUse(verdict.grantId);
-          await options.audit.recordControl({
-            category: 'permission', event: 'grant-used', subjectId: verdict.grantId,
-            details: {
-              capabilityId: scope.capabilityId,
-              resourceScope: scope.resourceScope,
-              originType: scope.originType,
-            },
-            appVersion: options.appVersion,
-          });
-        }
-        await execute(run, verdict.reason, verdict.grantId);
-        return { runId };
-      }
-
-      pending.set(runId, run);
-      await transition({
-        runId,
-        actionId,
-        phase: 'awaiting-permission',
-        auditParams,
-        target: resolution.target,
-        reason: verdict.reason,
-      });
-      return { runId };
     },
 
     async respondPermission(payload: MorpheusRespondPermissionPayload): Promise<MorpheusAcknowledgement> {
@@ -1086,15 +1113,15 @@ export function createMorpheusRuntime(options: MorpheusRuntimeOptions): Morpheus
       }
 
       const hasWorkers = plan.steps.some((step) => isMorpheusWorkerAction(step.capabilityId));
-      if (!withinRateLimit(hasWorkers) || inFlight() >= MORPHEUS_MAX_CONCURRENT_RUNS) {
+      const rejectedAdmission = admissionError(plan.steps.map((step) => step.capabilityId));
+      if (rejectedAdmission) {
         return {
           planId,
           status: 'rejected',
           steps: [],
-          rejection: { code: 'rate-limited', message: 'Another action is already in progress' },
+          rejection: rejectedAdmission,
         };
       }
-      (hasWorkers ? recentWorkerRequests : recentRequests).push(now().getTime());
 
       activePlans += 1;
       const controller = new AbortController();

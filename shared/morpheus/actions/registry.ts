@@ -719,6 +719,8 @@ export const MORPHEUS_PERMISSION_TIMEOUT_MS = 60_000;
 /** Bounded admission; resource leases separately limit active native work. */
 export const MORPHEUS_MAX_CONCURRENT_RUNS = 32;
 export const MORPHEUS_MAX_RUNS_PER_MINUTE = 10;
+/** Separate bounded admission for one quick registered local interaction. */
+export const MORPHEUS_MAX_FAST_INTERACTIVE_RUNS_PER_MINUTE = 60;
 
 /** Upper bound on how many audit entries the Renderer may request at once. */
 export const MORPHEUS_MAX_AUDIT_PAGE = 200;

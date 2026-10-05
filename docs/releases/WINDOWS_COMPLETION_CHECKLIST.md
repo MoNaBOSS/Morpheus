@@ -37,6 +37,22 @@ accuracy. Normal packaged qualification and NSIS identity remain pending below.
   normal package bytes, alongside protected voice setup and real output.
 - [ ] Produce separate identified 1.5.0 artifact only after relevant checks; inspect
   exact NSIS bytes. Older checks do not transfer automatically to new bytes.
+- [x] Correct the measured ordinary-command quota in source: separate bounded one-step local
+  interactions from worker/consequential limits, retain permissions/concurrency,
+  distinguish quota versus busy errors, and repeat the rapid benchmark on final bytes.
+  The first `838010ad` normal run completed ten native reports then hit the existing
+  ten-plans/minute cap. Its failed receipt is retained; changed quota behavior needs
+  a new source freeze and actual package qualification.
+- [x] Diagnose the historical native wake transcript miss using actual captured
+  PCM; complete input recognizes correctly, captured input omits about 900 ms
+  of active tail because restarted recognition and continuous PCM origins differ.
+- [x] Preserve the unchanged generated phrase and prove the guarded native helper
+  after 23 seconds of generated-stream silence and twice sequentially; both full
+  transcripts match, absolute sample ranges and child stop/late-frame guards pass.
+  Source-level native proof is not final packaged or physical acceptance.
+- [ ] Qualify the continuous-session repair
+  on new bytes with mute/foreground/cancellation vetoes. Exact transcript and
+  semantic execution evidence must remain separate.
 - [ ] Actual disposable install/upgrade/reinstall/uninstall, human microphone/noise/
   echo/interruption, native wake timing, display/taskbar and signing remain acceptance
   gates. Preserve existing stable release publisher checks and inert updater.
